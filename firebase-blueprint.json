@@ -1,0 +1,17 @@
+{
+  "entities": {
+    "QuickNote": {
+      "title": "QuickNote",
+      "description": "Anlik akla gelen kisa notlar",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "color": { "type": "string" },
+        "isPinned": { "type": "boolean" }
+      },
+      "required": ["id", "text", "createdAt"]
+    }
+  }
+}
