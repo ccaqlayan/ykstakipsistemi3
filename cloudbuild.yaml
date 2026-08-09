@@ -1,0 +1,24 @@
+steps:
+  # 1. Dockerfile ile imajı derle
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/yks-takip-sistemi:$COMMIT_SHA', '.']
+
+  # 2. İmajı saklama alanına yükle
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/yks-takip-sistemi:$COMMIT_SHA']
+
+  # 3. Cloud Run'a otomatik yayınla
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'yks-takip-sistemi'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/yks-takip-sistemi:$COMMIT_SHA'
+      - '--region'
+      - 'europe-west1'
+      - '--allow-unauthenticated'
+
+images:
+  - 'gcr.io/$PROJECT_ID/yks-takip-sistemi:$COMMIT_SHA'
