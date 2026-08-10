@@ -22,3 +22,7 @@ steps:
 
 images:
   - 'gcr.io/$PROJECT_ID/yks-takip-sistemi:$COMMIT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
