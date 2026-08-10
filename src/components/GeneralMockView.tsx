@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, 
-  Plus
+  Plus,
+  Award,
+  GraduationCap
 } from 'lucide-react';
 import { GeneralMockExam, StudentProfile, TytDetails, AytDetails, SubSubjectScore, InstitutionalMockExam } from '../types';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
@@ -923,6 +925,59 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
         >
           <Plus className="w-4 h-4" />
           <span>Genel Deneme Sonucu Gir</span>
+        </button>
+      </div>
+
+      {/* === TOP TAB SWITCHER: Bireysel / Kurumsal === */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={() => setMockListTab('individual')}
+          className={`relative flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer group ${
+            mockListTab === 'individual'
+              ? 'bg-indigo-600/20 border-indigo-500 shadow-lg shadow-indigo-600/20'
+              : 'bg-slate-900 border-slate-800 hover:border-slate-600 hover:bg-slate-800/60'
+          }`}
+        >
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+            mockListTab === 'individual' ? 'bg-indigo-600 shadow-md shadow-indigo-600/40' : 'bg-slate-800 group-hover:bg-slate-700'
+          }`}>
+            <Award className={`w-5 h-5 ${mockListTab === 'individual' ? 'text-white' : 'text-slate-400 group-hover:text-white'}`} />
+          </div>
+          <div className="text-center">
+            <div className={`text-sm font-bold ${mockListTab === 'individual' ? 'text-white' : 'text-slate-300'}`}>Bireysel Denemelerim</div>
+            <div className={`text-xs mt-0.5 font-semibold ${mockListTab === 'individual' ? 'text-indigo-300' : 'text-slate-500'}`}>
+              {generalMocks.length} deneme
+            </div>
+          </div>
+          {mockListTab === 'individual' && (
+            <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-indigo-400 shadow-sm shadow-indigo-400/60" />
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setMockListTab('institutional')}
+          className={`relative flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer group ${
+            mockListTab === 'institutional'
+              ? 'bg-emerald-600/20 border-emerald-500 shadow-lg shadow-emerald-600/20'
+              : 'bg-slate-900 border-slate-800 hover:border-slate-600 hover:bg-slate-800/60'
+          }`}
+        >
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+            mockListTab === 'institutional' ? 'bg-emerald-600 shadow-md shadow-emerald-600/40' : 'bg-slate-800 group-hover:bg-slate-700'
+          }`}>
+            <GraduationCap className={`w-5 h-5 ${mockListTab === 'institutional' ? 'text-white' : 'text-slate-400 group-hover:text-white'}`} />
+          </div>
+          <div className="text-center">
+            <div className={`text-sm font-bold ${mockListTab === 'institutional' ? 'text-white' : 'text-slate-300'}`}>Kurumsal Deneme Karnelerim</div>
+            <div className={`text-xs mt-0.5 font-semibold ${mockListTab === 'institutional' ? 'text-emerald-300' : 'text-slate-500'}`}>
+              {institutionalMocks.length} karne
+            </div>
+          </div>
+          {mockListTab === 'institutional' && (
+            <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/60" />
+          )}
         </button>
       </div>
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Award, GraduationCap, ArrowDown, ArrowUp, CheckCircle2, Pencil, Clock, SlidersHorizontal, ChevronDown, Calculator, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, CheckCircle2, Pencil, Clock, SlidersHorizontal, ChevronDown, Calculator, Trash2 } from 'lucide-react';
 import { GeneralMockExam, InstitutionalMockExam } from '../../types';
 
 interface MockTableSectionProps {
@@ -39,59 +39,30 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
 }) => {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5">
-      {/* Tab switcher header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-        <div className="flex items-center space-x-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
-          <button
-            type="button"
-            onClick={() => setMockListTab('individual')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center space-x-2 ${
-              mockListTab === 'individual'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-            }`}
-          >
-            <Award className="w-3.5 h-3.5" />
-            <span>Bireysel Denemelerim ({generalMocks.length})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMockListTab('institutional')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center space-x-2 ${
-              mockListTab === 'institutional'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-            }`}
-          >
-            <GraduationCap className="w-3.5 h-3.5" />
-            <span>Kurumsal Deneme Karnelerim ({institutionalMocks.length})</span>
-          </button>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-            className="flex items-center space-x-1.5 text-xs font-bold text-slate-300 hover:text-white transition-colors cursor-pointer bg-slate-950 px-3 py-2 rounded-xl border border-slate-800"
-          >
-            <span>Sıralama:</span>
-            <span className="text-indigo-400">
-              {sortOrder === 'desc' ? 'Yeni' : 'Eski'}
-            </span>
-            {sortOrder === 'desc' ? (
-              <ArrowDown className="w-3.5 h-3.5 text-indigo-400" />
-            ) : (
-              <ArrowUp className="w-3.5 h-3.5 text-indigo-400" />
-            )}
-          </button>
-
-          {mockListTab === 'individual' && generalMocks.length > 0 && (
-            <div className="flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl text-xs text-emerald-300 font-semibold">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{generalMocks.filter(m => m.isAnalyzed).length} / {generalMocks.length} Analiz Edildi</span>
-            </div>
+      {/* Controls bar */}
+      <div className="flex flex-wrap items-center gap-3 border-b border-slate-800 pb-4">
+        <button
+          type="button"
+          onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+          className="flex items-center space-x-1.5 text-xs font-bold text-slate-300 hover:text-white transition-colors cursor-pointer bg-slate-950 px-3 py-2 rounded-xl border border-slate-800"
+        >
+          <span>Sıralama:</span>
+          <span className="text-indigo-400">
+            {sortOrder === 'desc' ? 'Yeni' : 'Eski'}
+          </span>
+          {sortOrder === 'desc' ? (
+            <ArrowDown className="w-3.5 h-3.5 text-indigo-400" />
+          ) : (
+            <ArrowUp className="w-3.5 h-3.5 text-indigo-400" />
           )}
-        </div>
+        </button>
+
+        {mockListTab === 'individual' && generalMocks.length > 0 && (
+          <div className="flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl text-xs text-emerald-300 font-semibold">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{generalMocks.filter(m => m.isAnalyzed).length} / {generalMocks.length} Analiz Edildi</span>
+          </div>
+        )}
       </div>
 
       {mockListTab === 'institutional' ? (
