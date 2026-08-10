@@ -16,6 +16,8 @@ import {
 import { UserAccount, UserRole } from '../types';
 import { YildizLisesiLogo } from './YildizLisesiLogo';
 import { DEFAULT_AVATAR } from '../data/initialData';
+import { APP_VERSION } from '../version';
+
 
 interface LoginViewProps {
   users: UserAccount[];
@@ -716,6 +718,15 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <div>Öğretmen: caglayan.mat@gmail.com (Şifre: 123)</div>
           </div>
         </div>
+
+        {/* App Version Footer */}
+        <div className="mt-4 pt-3 border-t border-white/5 text-center flex items-center justify-center space-x-2">
+          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="text-[11px] font-mono font-medium text-slate-400">
+            Sistem Versiyonu: <span className="text-indigo-400 font-bold tracking-wide">{APP_VERSION}</span>
+          </span>
+        </div>
+
 
       </div>
     </div>
