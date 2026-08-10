@@ -47,6 +47,8 @@ export const AdminMessageManagement: React.FC<AdminMessageManagementProps> = ({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [roleFilter, setRoleFilter] = useState<string>('ALL'); // ALL, student, teacher, school_counselor, etc.
   const [hasAttachmentFilter, setHasAttachmentFilter] = useState<boolean>(false);
+  const [classFilter, setClassFilter] = useState<string>('ALL');
+  const [nameFilter, setNameFilter] = useState<string>('');
 
   // Broadcast Modal State
   const [showBroadcastModal, setShowBroadcastModal] = useState<boolean>(false);
@@ -241,6 +243,17 @@ export const AdminMessageManagement: React.FC<AdminMessageManagementProps> = ({
     );
   };
 
+  // Dynamic list of classes derived from users
+  const classesList = useMemo(() => {
+    const set = new Set<string>();
+    users.forEach(u => {
+      if (u.className) {
+        set.add(u.className);
+      }
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'tr'));
+  }, [users]);
+
   // Filtering Logic
   const filteredMessages = useMemo(() => {
     const rawFiltered = messages.filter(msg => {
@@ -255,7 +268,26 @@ export const AdminMessageManagement: React.FC<AdminMessageManagementProps> = ({
 
       const attachmentMatch = !hasAttachmentFilter || !!msg.attachmentUrl;
 
-      return (contentMatch || senderMatch || receiverMatch) && roleMatch && attachmentMatch;
+      // Class Filter
+      const senderUser = users.find(u => u.id === msg.senderId);
+      const receiverUser = users.find(u => u.id === msg.receiverId);
+      const senderClass = senderUser?.className || '';
+      const receiverClass = receiverUser?.className || '';
+      let rxClass = '';
+      if (msg.receiverId?.startsWith('class-group-')) {
+        rxClass = msg.receiverId.replace('class-group-', '');
+      }
+      const classMatch = classFilter === 'ALL' ||
+                         senderClass.toLowerCase() === classFilter.toLowerCase() ||
+                         receiverClass.toLowerCase() === classFilter.toLowerCase() ||
+                         rxClass.toLowerCase() === classFilter.toLowerCase();
+
+      // Name Filter
+      const nameMatch = !nameFilter ||
+                        (msg.senderName || '').toLowerCase().includes(nameFilter.toLowerCase()) ||
+                        (msg.receiverName || '').toLowerCase().includes(nameFilter.toLowerCase());
+
+      return (contentMatch || senderMatch || receiverMatch) && roleMatch && attachmentMatch && classMatch && nameMatch;
     });
 
     const seen = new Set<string>();
@@ -265,7 +297,7 @@ export const AdminMessageManagement: React.FC<AdminMessageManagementProps> = ({
       seen.add(msg.id);
       return true;
     });
-  }, [messages, searchTerm, roleFilter, hasAttachmentFilter]);
+  }, [messages, searchTerm, roleFilter, hasAttachmentFilter, classFilter, nameFilter, users]);
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -381,13 +413,13 @@ export const AdminMessageManagement: React.FC<AdminMessageManagementProps> = ({
         {/* SEARCH AND FILTERS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2">
           {/* Search Input */}
-          <div className="md:col-span-5 relative">
+          <div className="md:col-span-3 relative">
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Mesaj içeriği, gönderen veya alıcı adı ara..."
+              placeholder="Mesaj içeriğinde ara..."
               className="w-full bg-slate-950 text-white placeholder-slate-500 text-xs pl-9 pr-4 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-indigo-500 transition-all"
             />
             {searchTerm && (
@@ -400,36 +432,71 @@ export const AdminMessageManagement: React.FC<AdminMessageManagementProps> = ({
             )}
           </div>
 
+          {/* Name Filter */}
+          <div className="md:col-span-3 relative">
+            <User className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+              placeholder="Kişi adı ara (gönderen/alıcı)..."
+              className="w-full bg-slate-950 text-white placeholder-slate-500 text-xs pl-9 pr-4 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-indigo-500 transition-all"
+            />
+            {nameFilter && (
+              <button 
+                onClick={() => setNameFilter('')} 
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
           {/* Role Filter */}
-          <div className="md:col-span-3">
+          <div className="md:col-span-2">
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
               className="w-full bg-slate-950 text-slate-300 text-xs px-3 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-indigo-500 transition-all cursor-pointer font-medium"
             >
-              <option value="ALL">Tüm Rolleri Göster</option>
-              <option value="student">Sadece Öğrenciler</option>
-              <option value="school_counselor">Sadece Rehberlik</option>
-              <option value="teacher">Sadece Branş Öğretmenleri</option>
-              <option value="class_teacher">Sadece Sınıf Öğretmenleri</option>
+              <option value="ALL">Tüm Hesap Türleri</option>
+              <option value="student">Öğrenciler</option>
+              <option value="school_counselor">Rehberlik</option>
+              <option value="teacher">Branş Öğretmenleri</option>
+              <option value="class_teacher">Sınıf Öğretmenleri</option>
+              <option value="admin">Yöneticiler</option>
+            </select>
+          </div>
+
+          {/* Class Filter */}
+          <div className="md:col-span-2">
+            <select
+              value={classFilter}
+              onChange={(e) => setClassFilter(e.target.value)}
+              className="w-full bg-slate-950 text-slate-300 text-xs px-3 py-2.5 rounded-xl border border-slate-800 focus:outline-none focus:border-indigo-500 transition-all cursor-pointer font-medium"
+            >
+              <option value="ALL">Tüm Sınıflar</option>
+              {classesList.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
             </select>
           </div>
 
           {/* Attachment Toggle Filter */}
-          <div className="md:col-span-4 flex items-center">
+          <div className="md:col-span-2 flex items-center">
             <button
               onClick={() => setHasAttachmentFilter(prev => !prev)}
-              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                 hasAttachmentFilter
                   ? 'bg-indigo-600/20 text-indigo-300 border-indigo-500/50 shadow-md shadow-indigo-500/5'
                   : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-900'
               }`}
             >
-              <div className="flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-indigo-400" />
-                <span>Sadece Fotoğraflı / Ekli Mesajlar</span>
+              <div className="flex items-center gap-1.5 truncate">
+                <ImageIcon className="w-4 h-4 text-indigo-400 shrink-0" />
+                <span className="truncate">Sadece Resimliler</span>
               </div>
-              <div className={`w-2.5 h-2.5 rounded-full ${hasAttachmentFilter ? 'bg-indigo-400' : 'bg-slate-800'}`} />
+              <div className={`w-2 h-2 rounded-full shrink-0 ${hasAttachmentFilter ? 'bg-indigo-400' : 'bg-slate-800'}`} />
             </button>
           </div>
         </div>
@@ -448,16 +515,18 @@ export const AdminMessageManagement: React.FC<AdminMessageManagementProps> = ({
           </div>
           <h4 className="font-bold text-white text-sm">Hiç Mesaj Bulunmadı</h4>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            {searchTerm || roleFilter !== 'ALL' || hasAttachmentFilter
+            {searchTerm || roleFilter !== 'ALL' || hasAttachmentFilter || classFilter !== 'ALL' || nameFilter
               ? 'Aradığınız kriterlere uygun herhangi bir mesaj eşleşmedi. Filtreleri temizlemeyi deneyin.'
               : 'Veritabanında henüz kayıtlı bir sohbet mesajı bulunmuyor.'}
           </p>
-          {(searchTerm || roleFilter !== 'ALL' || hasAttachmentFilter) && (
+          {(searchTerm || roleFilter !== 'ALL' || hasAttachmentFilter || classFilter !== 'ALL' || nameFilter) && (
             <button
               onClick={() => {
                 setSearchTerm('');
                 setRoleFilter('ALL');
                 setHasAttachmentFilter(false);
+                setClassFilter('ALL');
+                setNameFilter('');
               }}
               className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer inline-block"
             >

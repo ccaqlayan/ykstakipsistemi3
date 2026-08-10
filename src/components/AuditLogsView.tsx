@@ -51,12 +51,13 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({
   lastUndoDescription = '',
   onClearLogs
 }) => {
-  const isTeacher = currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor' || currentUser?.role === 'teacher';
+  const isTeacher = currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor' || currentUser?.role === 'teacher' || currentUser?.role === 'admin';
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'student' | 'teacher'>('all');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
   const [classFilter, setClassFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [nameFilter, setNameFilter] = useState('');
 
   // Time & Type Filters
   const [timeFilter, setTimeFilter] = useState<'today' | '7_days' | '30_days' | 'all'>('all');
@@ -437,12 +438,25 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({
       if (typeFilter !== 'all' && logInfo.mainCategory !== typeFilter) return false;
 
       // Filter by UI selects
-      if (roleFilter === 'student' && log.actorRole !== 'student') return false;
-      if (roleFilter === 'teacher' && log.actorRole === 'student') return false;
+      if (roleFilter !== 'all') {
+        if (roleFilter === 'teacher') {
+          if (log.actorRole !== 'teacher' && log.actorRole !== 'class_teacher') return false;
+        } else {
+          if (log.actorRole !== roleFilter) return false;
+        }
+      }
 
       if (classFilter !== 'all' && log.actorClassName !== classFilter) return false;
 
       if (categoryFilter !== 'all' && log.category !== categoryFilter) return false;
+
+      // Name Filter
+      if ((nameFilter || '').trim()) {
+        const q = safeLower(nameFilter);
+        const matchesName = safeLower(log.actorName).includes(q);
+        const matchesTarget = safeLower(log.targetUserName).includes(q);
+        if (!matchesName && !matchesTarget) return false;
+      }
 
       // Search query
       if ((searchQuery || '').trim()) {
@@ -456,7 +470,7 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({
 
       return true;
     });
-  }, [effectiveAuditLogs, currentUser, roleFilter, classFilter, categoryFilter, searchQuery, timeFilter, typeFilter]);
+  }, [effectiveAuditLogs, currentUser, roleFilter, classFilter, categoryFilter, searchQuery, nameFilter, timeFilter, typeFilter]);
 
   // Pagination state (20 items per page)
   const ITEMS_PER_PAGE = 20;
@@ -465,7 +479,7 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, roleFilter, classFilter, categoryFilter, timeFilter, typeFilter]);
+  }, [searchQuery, roleFilter, classFilter, categoryFilter, nameFilter, timeFilter, typeFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredLogs.length / ITEMS_PER_PAGE));
   const safePage = Math.min(currentPage, totalPages);
@@ -647,69 +661,94 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({
         </div>
       </div>
 
-      {/* COMPACT SEARCH & DROPDOWNS (Teacher exclusive, neatly styled) */}
-      <div className="bg-slate-900/20 rounded-2xl flex flex-col md:flex-row gap-2.5 items-stretch md:items-center">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Arama yapın (İsim, ders, konu, işlem türü)..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-900/60 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-slate-700/80"
-          />
-          {searchQuery && (
-            <button 
-              onClick={() => setSearchQuery('')} 
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
+      {/* COMPACT SEARCH & DROPDOWNS (Teacher/Admin exclusive, neatly styled) */}
+      <div className="bg-slate-900/20 rounded-2xl flex flex-col gap-3">
+        <div className="flex flex-col lg:flex-row gap-2.5 items-stretch lg:items-center">
+          {/* General Search */}
+          <div className="relative flex-1">
+            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="İşlem açıklaması, ders veya konu ara..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-900/60 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-slate-700/80"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')} 
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
 
-        {/* Dynamic selects if teacher/counselor */}
-        {isTeacher && (
-          <div className="flex flex-wrap gap-2">
-            <select
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value as any)}
-              className="bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 font-semibold focus:outline-none focus:border-slate-700 cursor-pointer"
-            >
-              <option value="all">Tüm Roller</option>
-              <option value="student">Öğrenciler</option>
-              <option value="teacher">Öğretmenler</option>
-            </select>
+          {/* Name Search */}
+          <div className="relative lg:w-64">
+            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Kişi adına göre filtrele..."
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+              className="w-full bg-slate-900/60 border border-slate-800 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-slate-700/80"
+            />
+            {nameFilter && (
+              <button 
+                onClick={() => setNameFilter('')} 
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
 
-            {availableClassNames.length > 0 && (
+          {/* Dynamic selects if teacher/counselor/admin */}
+          {isTeacher && (
+            <div className="flex flex-wrap gap-2">
               <select
-                value={classFilter}
-                onChange={(e) => setClassFilter(e.target.value)}
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
                 className="bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 font-semibold focus:outline-none focus:border-slate-700 cursor-pointer"
               >
-                <option value="all">Tüm Sınıflar</option>
-                {availableClassNames.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
+                <option value="all">Tüm Hesap Türleri</option>
+                <option value="student">Öğrenciler</option>
+                <option value="school_counselor">Rehberlik</option>
+                <option value="teacher">Branş Öğretmenleri</option>
+                <option value="class_teacher">Sınıf Öğretmenleri</option>
+                <option value="admin">Yöneticiler</option>
               </select>
-            )}
 
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 font-semibold focus:outline-none focus:border-slate-700 cursor-pointer"
-            >
-              <option value="all">Tüm Detaylar</option>
-              <option value="study">Müfredat & Görev</option>
-              <option value="exam">Deneme Sonuçları</option>
-              <option value="profile">Profil Güncellemeleri</option>
-              <option value="template">Ders Şablonları</option>
-              <option value="management">Sınıf Yönetimi</option>
-              <option value="system">Sistem Girişleri</option>
-            </select>
-          </div>
-        )}
+              {availableClassNames.length > 0 && (
+                <select
+                  value={classFilter}
+                  onChange={(e) => setClassFilter(e.target.value)}
+                  className="bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 font-semibold focus:outline-none focus:border-slate-700 cursor-pointer"
+                >
+                  <option value="all">Tüm Sınıflar</option>
+                  {availableClassNames.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              )}
+
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="bg-slate-900/60 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 font-semibold focus:outline-none focus:border-slate-700 cursor-pointer"
+              >
+                <option value="all">Tüm Detaylar</option>
+                <option value="study">Müfredat & Görev</option>
+                <option value="exam">Deneme Sonuçları</option>
+                <option value="profile">Profil Güncellemeleri</option>
+                <option value="template">Ders Şablonları</option>
+                <option value="management">Sınıf Yönetimi</option>
+                <option value="system">Sistem Girişleri</option>
+              </select>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* MINIMALIST TIMELINE LIST */}
