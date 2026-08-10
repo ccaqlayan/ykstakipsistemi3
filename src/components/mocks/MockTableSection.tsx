@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowDown, ArrowUp, CheckCircle2, Pencil, Clock, SlidersHorizontal, ChevronDown, Calculator, Trash2 } from 'lucide-react';
+import { GraduationCap, ArrowDown, ArrowUp, CheckCircle2, Pencil, Clock, SlidersHorizontal, ChevronDown, Calculator, Trash2 } from 'lucide-react';
 import { GeneralMockExam, InstitutionalMockExam } from '../../types';
 
 interface MockTableSectionProps {
