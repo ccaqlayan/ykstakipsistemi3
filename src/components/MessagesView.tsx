@@ -489,14 +489,14 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
       const unreadA = msgsA.filter(m => 
         m.senderId !== currentUser.id && 
-        (a.id?.startsWith('class-group-') 
+        ((a.id?.startsWith('class-group-') || a.id?.startsWith('broadcast-') || a.id === 'broadcast-all')
           ? (!m.readBy || !m.readBy.some(r => r.userId === currentUser.id)) 
           : !m.isRead)
       ).length;
 
       const unreadB = msgsB.filter(m => 
         m.senderId !== currentUser.id && 
-        (b.id?.startsWith('class-group-') 
+        ((b.id?.startsWith('class-group-') || b.id?.startsWith('broadcast-') || b.id === 'broadcast-all')
           ? (!m.readBy || !m.readBy.some(r => r.userId === currentUser.id)) 
           : !m.isRead)
       ).length;
@@ -654,7 +654,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     const unreadReceivedIds = conversationMessages
       .filter(m => 
         m.senderId !== currentUser.id && 
-        (activeContact.id?.startsWith('class-group-') 
+        ((activeContact.id?.startsWith('class-group-') || activeContact.id?.startsWith('broadcast-') || activeContact.id === 'broadcast-all')
           ? (!m.readBy || !m.readBy.some(r => r.userId === currentUser.id))
           : !m.isRead) && 
         !markedAsReadRef.current.has(m.id)
@@ -671,7 +671,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   useEffect(() => {
     if (messages.length > prevMessageCountRef.current) {
       const newMessages = messages.slice(prevMessageCountRef.current);
-      const hasNewIncoming = newMessages.some(m => m.senderId !== currentUser.id && (m.receiverId === currentUser.id || m.receiverId?.startsWith('class-group-')));
+      const hasNewIncoming = newMessages.some(m => m.senderId !== currentUser.id && (m.receiverId === currentUser.id || m.receiverId?.startsWith('class-group-') || m.receiverId?.startsWith('broadcast-')));
       
       if (hasNewIncoming && currentUser.soundEnabled !== false) {
         playNotificationSound();
@@ -1176,7 +1176,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 ) : (
                   displayedMessages.map((msg, idx) => {
                     const isMine = msg.senderId === currentUser.id;
-                    const isGroupChat = activeContact.id?.startsWith('class-group-');
+                    const isGroupChat = activeContact.id?.startsWith('class-group-') || activeContact.id?.startsWith('broadcast-') || activeContact.id === 'broadcast-all';
 
                     const prevMsg = idx > 0 ? displayedMessages[idx - 1] : null;
                     const nextMsg = idx < displayedMessages.length - 1 ? displayedMessages[idx + 1] : null;
@@ -1798,7 +1798,17 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
         let groupMembers: UserAccount[] = [];
 
-        if (readReceiptModalMsg.receiverId?.startsWith('class-group-')) {
+        if (readReceiptModalMsg.receiverId?.startsWith('broadcast-') || readReceiptModalMsg.receiverId === 'broadcast-all') {
+          groupMembers = allUsers.filter(u => {
+            if (u.id === readReceiptModalMsg.senderId) return false;
+            if (u.status === 'pending' || u.status === 'rejected') return false;
+            if (readReceiptModalMsg.receiverId === 'broadcast-all') return true;
+            if (readReceiptModalMsg.receiverId === 'broadcast-students') return u.role === 'student' || u.role === 'admin';
+            if (readReceiptModalMsg.receiverId === 'broadcast-teachers') return u.role === 'teacher' || u.role === 'class_teacher' || u.role === 'admin';
+            if (readReceiptModalMsg.receiverId === 'broadcast-counselors') return u.role === 'school_counselor' || u.role === 'admin';
+            return false;
+          });
+        } else if (readReceiptModalMsg.receiverId?.startsWith('class-group-')) {
           const classId = readReceiptModalMsg.receiverId.replace('class-group-', '');
           const classDef = classes.find(c => c.id === classId);
 
