@@ -450,6 +450,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           onToggleFavoriteBook={handleToggleFavoriteBook}
           currentUser={currentUser}
           customRecommendations={globalState.customRecommendations || { channels: [], books: [] }}
+          onAddAuditLog={addAuditAndUndo}
         />
       )}
 

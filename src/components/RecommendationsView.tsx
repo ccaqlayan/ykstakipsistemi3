@@ -32,6 +32,15 @@ interface RecommendationsViewProps {
     channels: RecommendedChannel[];
     books: RecommendedBook[];
   };
+  onAddAuditLog?: (
+    description: string,
+    category: any,
+    actionType: string,
+    undoFn?: () => void,
+    targetUserId?: string,
+    targetUserName?: string,
+    metadata?: any
+  ) => void;
 }
 
 const RECOMMENDED_CHANNELS: RecommendedChannel[] = [
@@ -169,7 +178,8 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   favoriteBooks = [],
   onToggleFavoriteBook,
   currentUser,
-  customRecommendations = { channels: [], books: [] }
+  customRecommendations = { channels: [], books: [] },
+  onAddAuditLog
 }) => {
   const [activeTab, setActiveTab] = useState<'youtube' | 'books'>('youtube');
   const [selectedSubject, setSelectedSubject] = useState<string>('Matematik');
@@ -250,6 +260,9 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
     e.preventDefault();
     // Explicitly preserve or reconstruct the ID to prevent editing from creating duplicates
     let chanId = editingChannel?.id;
+    const isEdit = !!editingChannel;
+    const oldState = editingChannel ? { ...editingChannel } : null;
+
     if (editingChannel && !chanId) {
       // Reconstruct ID for default channel if it is somehow missing
       const safeSubject = (editingChannel.subject || 'Matematik').toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -268,7 +281,36 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
       subscribersCount: 0,
       url: channelUrl
     };
+
+    const addedId = chanId;
     await saveRecommendationToFirestore(newChan);
+
+    if (onAddAuditLog) {
+      if (isEdit) {
+        onAddAuditLog(
+          `${currentUser?.name || 'Kullanıcı'}, "${channelName}" adlı YouTube kanalı tavsiyesini güncelledi.`,
+          'management',
+          'EDIT_REC_CHANNEL',
+          async () => {
+            if (oldState) {
+              await saveRecommendationToFirestore(oldState);
+            } else {
+              await deleteRecommendationFromFirestore(addedId);
+            }
+          }
+        );
+      } else {
+        onAddAuditLog(
+          `${currentUser?.name || 'Kullanıcı'}, "${channelName}" adlı yeni bir YouTube kanalı tavsiyesi ekledi.`,
+          'management',
+          'ADD_REC_CHANNEL',
+          async () => {
+            await deleteRecommendationFromFirestore(addedId);
+          }
+        );
+      }
+    }
+
     setSuccessToast(editingChannel ? `"${channelName}" kanalı güncellendi!` : `"${channelName}" kanalı tavsiyelere eklendi!`);
     setShowAddChannelModal(false);
     resetChannelForm();
@@ -279,6 +321,9 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
     e.preventDefault();
     // Explicitly preserve or reconstruct the ID to prevent editing from creating duplicates
     let bookId = editingBook?.id;
+    const isEdit = !!editingBook;
+    const oldState = editingBook ? { ...editingBook } : null;
+
     if (editingBook && !bookId) {
       // Reconstruct ID for default book if it is somehow missing
       const safeCategory = (editingBook.category || 'Konu Anlatımı').toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -301,14 +346,43 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
       reason: bookReason,
       isPopular: bookIsPopular
     };
+
+    const addedId = bookId;
     await saveRecommendationToFirestore(newBook);
+
+    if (onAddAuditLog) {
+      if (isEdit) {
+        onAddAuditLog(
+          `${currentUser?.name || 'Kullanıcı'}, "${bookPublisher} - ${bookName}" adlı kaynak kitap tavsiyesini güncelledi.`,
+          'management',
+          'EDIT_REC_BOOK',
+          async () => {
+            if (oldState) {
+              await saveRecommendationToFirestore(oldState);
+            } else {
+              await deleteRecommendationFromFirestore(addedId);
+            }
+          }
+        );
+      } else {
+        onAddAuditLog(
+          `${currentUser?.name || 'Kullanıcı'}, "${bookPublisher} - ${bookName}" adlı yeni bir kaynak kitap tavsiyesi ekledi.`,
+          'management',
+          'ADD_REC_BOOK',
+          async () => {
+            await deleteRecommendationFromFirestore(addedId);
+          }
+        );
+      }
+    }
+
     setSuccessToast(editingBook ? `"${bookPublisher} - ${bookName}" kitabı güncellendi!` : `"${bookPublisher} - ${bookName}" kitabı tavsiyelere eklendi!`);
     setShowAddBookModal(false);
     resetBookForm();
-    setTimeout(() => setSuccessToast(null), 3000);
+    setTimeout(() => setSuccessToast(null), 3500);
   };
 
-  const isTeacher = currentUser?.role === 'teacher' || currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor';
+  const isTeacher = currentUser?.role === 'teacher' || currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor' || currentUser?.role === 'admin';
 
   // --- YouTube Follow Logic ---
   const isChannelAdded = (channelName: string) => {
@@ -1225,35 +1299,76 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         itemName={deletingItem?.name}
         onConfirm={async () => {
           if (deletingItem) {
-            const isDefault = deletingItem.id.startsWith('def-chan-') || deletingItem.id.startsWith('def-book-');
+            const id = deletingItem.id;
+            const type = deletingItem.type;
+            const name = deletingItem.name;
+            const isDefault = id.startsWith('def-chan-') || id.startsWith('def-book-');
+            let oldState: any = null;
+
             if (isDefault) {
-              if (deletingItem.type === 'channel') {
-                const original = defaultChannelsWithIds.find(c => c.id === deletingItem.id);
-                if (original) {
+              if (type === 'channel') {
+                oldState = defaultChannelsWithIds.find(c => c.id === id);
+              } else {
+                oldState = defaultBooksWithIds.find(b => b.id === id);
+              }
+            } else {
+              if (type === 'channel') {
+                oldState = (customRecommendations?.channels || []).find(c => c.id === id);
+              } else {
+                oldState = (customRecommendations?.books || []).find(b => b.id === id);
+              }
+            }
+
+            if (isDefault) {
+              if (type === 'channel') {
+                if (oldState) {
                   await saveRecommendationToFirestore({
-                    ...original,
-                    id: deletingItem.id,
+                    ...oldState,
+                    id,
                     type: 'channel',
                     isDeleted: true
                   });
                 }
               } else {
-                const original = defaultBooksWithIds.find(b => b.id === deletingItem.id);
-                if (original) {
+                if (oldState) {
                   await saveRecommendationToFirestore({
-                    ...original,
-                    id: deletingItem.id,
+                    ...oldState,
+                    id,
                     type: 'book',
                     isDeleted: true
                   });
                 }
               }
             } else {
-              await deleteRecommendationFromFirestore(deletingItem.id);
+              await deleteRecommendationFromFirestore(id);
             }
-            setSuccessToast(deletingItem.type === 'channel' 
-              ? `"${deletingItem.name}" kanalı tavsiyelerden kaldırıldı.`
-              : `"${deletingItem.name}" kitabı tavsiyelerden kaldırıldı.`
+
+            if (onAddAuditLog) {
+              onAddAuditLog(
+                `${currentUser?.name || 'Kullanıcı'}, "${name}" adlı ${type === 'channel' ? 'YouTube kanalı' : 'kaynak kitap'} tavsiyesini sildi.`,
+                'management',
+                type === 'channel' ? 'DELETE_REC_CHANNEL' : 'DELETE_REC_BOOK',
+                async () => {
+                  if (isDefault) {
+                    if (oldState) {
+                      await saveRecommendationToFirestore({
+                        ...oldState,
+                        type,
+                        isDeleted: false
+                      });
+                    }
+                  } else {
+                    if (oldState) {
+                      await saveRecommendationToFirestore(oldState);
+                    }
+                  }
+                }
+              );
+            }
+
+            setSuccessToast(type === 'channel' 
+              ? `"${name}" kanalı tavsiyelerden kaldırıldı.`
+              : `"${name}" kitabı tavsiyelerden kaldırıldı.`
             );
             setTimeout(() => setSuccessToast(null), 3000);
             setDeletingItem(null);
