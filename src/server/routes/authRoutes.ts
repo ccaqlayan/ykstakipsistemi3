@@ -425,6 +425,7 @@ router.post('/send-code', async (req, res) => {
     return res.json({ 
       success: true, 
       devMode: true,
+      devCode: code,
       info: 'E-posta servisleri bağlı olmadığı için güvenlik kodu sunucu konsoluna yazdırıldı.' 
     });
   }

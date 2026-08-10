@@ -450,7 +450,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
                       setForgotStep(2);
                       setEnteredCode('');
                       if (result.devMode) {
-                        setSuccessMessage('E-posta servisleri bağlı olmadığı için güvenlik kodu sunucu terminal loglarına yazdırıldı.');
+                        if (result.devCode) {
+                          setEnteredCode(result.devCode);
+                          setSuccessMessage(`[Geliştirici Modu] E-posta servisi bağlı olmadığı için onay kodunuz (${result.devCode}) kutucuğa otomatik dolduruldu.`);
+                        } else {
+                          setSuccessMessage('E-posta servisleri bağlı olmadığı için güvenlik kodu sunucu terminal loglarına yazdırıldı.');
+                        }
                       } else {
                         setSuccessMessage('Doğrulama kodu başarıyla e-posta adresinize gönderildi.');
                       }
