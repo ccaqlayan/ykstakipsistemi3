@@ -270,7 +270,7 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
                           setEditStudentName(student.name);
                           setEditStudentEmail(student.email);
                           setEditStudentClassName(student.className || '');
-                          setEditStudentPassword(student.password || '');
+                          setEditStudentPassword('');
                           setShowEditStudentModal(true);
                         }}
                       >

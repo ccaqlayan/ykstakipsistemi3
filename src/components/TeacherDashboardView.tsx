@@ -1999,7 +1999,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
                     password: '' // Don't write password in plaintext
                   });
                   
-                  if (editStudentPassword.trim() && editStudentPassword.trim() !== '123' && editStudentPassword.trim() !== existingUser.password) {
+                  if (editStudentPassword.trim()) {
                      fetch('/api/auth/reset-password', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -2051,11 +2051,12 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Şifre Güncelle</label>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  Şifre Güncelle <span className="text-[10px] text-slate-400 font-normal">(İsteğe Bağlı)</span>
+                </label>
                 <input
                   type="text"
-                  required
-                  placeholder="Yeni şifre girin..."
+                  placeholder="Değiştirmek istemiyorsanız boş bırakın..."
                   value={editStudentPassword}
                   onChange={(e) => setEditStudentPassword(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-400 font-mono font-bold"
