@@ -700,11 +700,61 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
     return dateA - dateB;
   });
 
+  // Convert institutional mocks to GeneralMockExam-compatible chart data
+  const institutionalAsMocks: GeneralMockExam[] = React.useMemo(() => {
+    return [...institutionalMocks]
+      .sort((a, b) => new Date(a.examDate).getTime() - new Date(b.examDate).getTime())
+      .map(exam => {
+        const getNet = (name: string) =>
+          exam.subjects.find(s => s.subjectName.toLowerCase().includes(name.toLowerCase()))?.net ?? 0;
+
+        const tytTurkce = getNet('Türkçe');
+        const tytMat = getNet('TYT Mat') || getNet('Temel Mat');
+        const tytFen = getNet('TYT Fen') || getNet('Fen Bil');
+        const tytSosyal = getNet('TYT Sos') || getNet('Sosyal Bil');
+        const aytMat = getNet('AYT Mat') || getNet('Matematik');
+        const aytFen = getNet('AYT Fen') || getNet('Fen Bil') || 0;
+        const aytEdeb = getNet('Edebiyat') || getNet('AYT Ed') || 0;
+        const aytSos2 = getNet('AYT Sos') || getNet('Sos-2') || 0;
+
+        const sayScore = exam.scores?.sayScore ?? 0;
+        const eaScore = exam.scores?.eaScore ?? 0;
+        const sozScore = exam.scores?.sozScore ?? 0;
+        const estimatedScore = sayScore || eaScore || sozScore || undefined;
+
+        return {
+          id: exam.id,
+          title: exam.examTitle,
+          date: exam.examDate,
+          tyt: {
+            turkce: tytTurkce,
+            mat: tytMat,
+            fen: tytFen,
+            sosyal: tytSosyal,
+            totalNet: Number((tytTurkce + tytMat + tytFen + tytSosyal).toFixed(2)),
+          },
+          ayt: {
+            mat: aytMat,
+            fen: aytFen,
+            edebiyatSos1: aytEdeb,
+            sos2: aytSos2,
+            totalNet: Number((aytMat + aytFen + aytEdeb + aytSos2).toFixed(2)),
+          },
+          estimatedRank: estimatedScore,
+          notes: '',
+          isAnalyzed: false,
+        } as GeneralMockExam;
+      });
+  }, [institutionalMocks]);
+
+  // Active data source: switch between individual and institutional based on tab
+  const activeSourceMocks = mockListTab === 'institutional' ? institutionalAsMocks : sortedByDateMocks;
+
   const filteredByCountMocks = mockCountFilter === '7'
-    ? sortedByDateMocks.slice(-7)
+    ? activeSourceMocks.slice(-7)
     : mockCountFilter === '30'
-    ? sortedByDateMocks.slice(-30)
-    : sortedByDateMocks;
+    ? activeSourceMocks.slice(-30)
+    : activeSourceMocks;
 
   const chartData = filteredByCountMocks.map((m) => ({
     id: m.id,
@@ -883,7 +933,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
     .filter(s => s.meta.examType === subSubjectExamTab)
     .filter(s => s.status === 'critical' || s.accuracyPercent < 50);
 
-  const sortedGeneralMocks = [...generalMocks].sort((a, b) => {
+  const sortedGeneralMocks = [...(mockListTab === 'institutional' ? institutionalAsMocks : generalMocks)].sort((a, b) => {
     const dateA = new Date(a.date).getTime() || 0;
     const dateB = new Date(b.date).getTime() || 0;
     return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
@@ -983,7 +1033,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
 
       {/* Charts Section */}
       <MockChartsSection
-        generalMocks={generalMocks}
+        generalMocks={mockListTab === 'institutional' ? institutionalAsMocks : generalMocks}
         filteredByCountMocks={filteredByCountMocks}
         mockCountFilter={mockCountFilter}
         setMockCountFilter={setMockCountFilter}
