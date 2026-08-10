@@ -1,29 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { RotateCcw, CheckCircle2, X, Maximize, Minimize } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Sidebar, TabType } from './components/Sidebar';
-import { YildizLisesiLogo } from './components/YildizLisesiLogo';
 import { LoginView } from './components/LoginView';
-import { TeacherDashboardView } from './components/TeacherDashboardView';
-import { DashboardView } from './components/DashboardView';
-import SubjectProgressView from './components/SubjectProgressView';
-import { RoutinesView } from './components/RoutinesView';
-import { StudyPlannerView } from './components/StudyPlannerView';
-import { PomodoroView } from './components/PomodoroView';
-import { QuestionTrackerView } from './components/QuestionTrackerView';
-import { ResourceTrackerView } from './components/ResourceTrackerView';
-import { PastQuestionsView } from './components/PastQuestionsView';
-import { BranchExamView } from './components/BranchExamView';
-import { GeneralMockView } from './components/GeneralMockView';
-import { YouTubeTrackerView } from './components/YouTubeTrackerView';
-import { AICoachView } from './components/AICoachView';
-import { GoogleSheetsView } from './components/GoogleSheetsView';
-import { AuditLogsView } from './components/AuditLogsView';
 import { ProfileModal } from './components/ProfileModal';
-import { RecommendationsView } from './components/RecommendationsView';
-import { MessagesView } from './components/MessagesView';
-import { SystemManagementView } from './components/SystemManagementView';
-import { BulkExamImportView } from './components/BulkExamImportView';
 
 import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, InstitutionalMockExam, FieldType } from './types';
 import { deleteStorageFile } from './services/storageUpload';
@@ -43,11 +22,9 @@ import {
   deleteUserFromFirestore,
   deleteClassFromFirestore,
   saveMessageToFirestore,
-  deleteMessageFromFirestore,
   markMessagesAsDeliveredInFirestore,
   markMessagesAsReadInFirestore,
   saveAuditLogToFirestore,
-  deleteAuditLogFromFirestore,
   clearAllAuditLogsInFirestore,
   onQuotaError,
   updateUserPresenceInFirestore,
@@ -61,33 +38,16 @@ import {
 } from './services/firebase';
 import { INITIAL_STATE, createEmptyStudentData, DEFAULT_AVATAR } from './data/initialData';
 
-interface UndoItem {
-  id: string;
-  description: string;
-  undoAction: () => void;
-  timestamp: string;
-  createdAt: number;
-}
-
-let cachedUserIp = '';
-const fetchUserIp = async () => {
-  if (cachedUserIp) return cachedUserIp;
-  try {
-    const res = await fetch('https://api.ipify.org?format=json');
-    const data = await res.json();
-    cachedUserIp = data.ip;
-  } catch (err) {
-    console.warn('Could not fetch IP address', err);
-  }
-  return cachedUserIp;
-};
-fetchUserIp(); // Fetch on module load
+// Subcomponents
+import { UndoItem, getCachedUserIp, getDeviceType } from './components/app/AppTypes';
+import { AppToastBanner } from './components/app/AppToastBanner';
+import { AppTabRouter } from './components/app/AppTabRouter';
 
 export default function App() {
   const [globalState, setGlobalState] = useState<AppGlobalState>(() => loadGlobalState());
   const currentUser = globalState.currentUser;
 
-  // Audit loglarını sadece öğrenci olmayan roller için dinle (gereksiz okuma isteğini önlemek amacıyla)
+  // Audit loglarını sadece öğrenci olmayan roller için dinle
   useEffect(() => {
     if (!currentUser || currentUser.role === 'student') {
       return;
@@ -98,7 +58,7 @@ export default function App() {
     return () => unsubscribeAuditLogs();
   }, [currentUser?.id, currentUser?.role]);
 
-  // studentsData: role'e göre daralt — öğrenci sadece kendi verisini, diğer roller tüm listeyi dinler
+  // studentsData: role'e göre daralt
   useEffect(() => {
     if (!currentUser) {
       return;
@@ -115,7 +75,6 @@ export default function App() {
     } else {
       const unsubscribeAll = subscribeToAllStudentsData((dataMap) => {
         setGlobalState((prev) => {
-          // Mevcut "sanitize" mantığı: yeni oluşturulan ama yanlışlıkla demo plan miras alan öğrencileri düzelt
           const sanitizedStudentsData = { ...dataMap };
           (prev.users || []).forEach((u) => {
             if (u.role === 'student' && u.id !== 'student-1') {
@@ -132,7 +91,7 @@ export default function App() {
     }
   }, [currentUser?.id, currentUser?.role]);
 
-  // messages: login öncesi hiç dinleme, login sonrası herkes için aç
+  // messages: login sonrası dinle
   useEffect(() => {
     if (!currentUser) {
       return;
@@ -152,7 +111,7 @@ export default function App() {
     return () => unsubscribeMessages();
   }, [currentUser?.id]);
 
-  // institutionalMockExams: sadece school_counselor/admin rolleri, sadece login sonrası dinlesin
+  // institutionalMockExams: sadece counselor/admin rolleri
   useEffect(() => {
     if (!currentUser || (currentUser.role !== 'school_counselor' && currentUser.role !== 'admin')) {
       return;
@@ -261,7 +220,6 @@ export default function App() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isVirtualFullscreen, setIsVirtualFullscreen] = useState(false);
 
-  // PWA & Device Detection Effect
   useEffect(() => {
     const checkDevice = () => {
       const ua = navigator.userAgent.toLowerCase();
@@ -284,7 +242,6 @@ export default function App() {
     };
   }, []);
 
-  // Fullscreen Listener Effect
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -293,21 +250,16 @@ export default function App() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Browser History and Back-Button support (navigates previous tabs/pages inside the app on mobile & desktop instead of exiting)
   useEffect(() => {
     if (!currentUser) return;
-
-    // Initialize state with the starting activeTab
     if (!window.history.state || window.history.state.tab !== activeTab) {
       window.history.replaceState({ tab: activeTab }, '', '');
     }
-
     const handlePopState = (event: PopStateEvent) => {
       if (event.state && event.state.tab) {
         setActiveTab(event.state.tab);
       }
     };
-
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [currentUser]);
@@ -319,14 +271,11 @@ export default function App() {
     }
   }, [activeTab, currentUser]);
 
-  // User Presence and Heartbeat Tracker (more reliable online tracking strategy)
+  // Presence Tracker
   useEffect(() => {
     if (!currentUser?.id) return;
-
-    // 1. Set online instantly on mount / login
     updateUserPresenceInFirestore(currentUser.id, true);
 
-    // 2. Setup periodic heartbeat SADECE ayarlardan aktifse
     let interval: ReturnType<typeof setInterval> | null = null;
     if (getPresenceHeartbeatEnabled()) {
       interval = setInterval(() => {
@@ -334,14 +283,11 @@ export default function App() {
       }, getPresenceHeartbeatMinutes() * 60 * 1000);
     }
 
-    // 3. Update presence on visibility change (re-focusing tab)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         updateUserPresenceInFirestore(currentUser.id, true);
       }
     };
-
-    // 4. Mark offline on browser/tab close
     const handleBeforeUnload = () => {
       updateUserPresenceInFirestore(currentUser.id, false);
     };
@@ -357,9 +303,6 @@ export default function App() {
     };
   }, [currentUser?.id]);
 
-
-
-  // Smooth scroll to top whenever activeTab or view changes
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
@@ -411,7 +354,6 @@ export default function App() {
     }
   };
 
-  // Escape key handler to exit virtual fullscreen
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isVirtualFullscreen) {
@@ -434,7 +376,6 @@ export default function App() {
     });
   }, []);
 
-  // Timer to check 1-minute expiration for navbar undo button
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(Date.now());
@@ -442,11 +383,9 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Compute if latest undo item was created less than 1 minute (60 seconds) ago for Navbar
   const latestUndoItem = undoStack[undoStack.length - 1];
   const canUndoForNavbar = latestUndoItem ? (currentTime - (latestUndoItem.createdAt || 0)) < 60000 : false;
 
-  // Auto-dismiss lastToast notification after 5 seconds
   useEffect(() => {
     if (lastToast) {
       const timer = setTimeout(() => {
@@ -456,7 +395,6 @@ export default function App() {
     }
   }, [lastToast]);
 
-  // Global Ctrl+Z / Cmd+Z Keyboard Shortcut listener for Undo
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
@@ -476,7 +414,6 @@ export default function App() {
     lastItem.undoAction();
     setUndoStack((prev) => prev.slice(0, prev.length - 1));
 
-    // Log undo action in Audit Logs
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -495,7 +432,7 @@ export default function App() {
         actionType: 'undo',
         actionDescription: `[Geri Alındı] ${lastItem.description}`,
         category: 'system',
-        ipAddress: cachedUserIp
+        ipAddress: getCachedUserIp()
       };
       saveAuditLogToFirestore(undoAuditItem);
       setGlobalState((prev) => ({
@@ -528,27 +465,6 @@ export default function App() {
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const timeStr = `${year}-${month}-${day} ${hours}:${minutes}`;
 
-    const getDeviceType = (): 'Mobil' | 'Tablet' | 'Masaüstü' => {
-      const ua = navigator.userAgent.toLowerCase();
-      const isMobileUA = /iphone|ipod|android.*mobile|blackberry|iemobile|opera mini/i.test(ua);
-      const isTabletUA = /ipad|android(?!.*mobile)|tablet/i.test(ua);
-      
-      if (isMobileUA) {
-        return 'Mobil';
-      } else if (isTabletUA) {
-        return 'Tablet';
-      } else {
-        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-        if (isTouch && window.innerWidth < 1024) {
-          if (window.innerWidth < 640) {
-            return 'Mobil';
-          }
-          return 'Tablet';
-        }
-        return 'Masaüstü';
-      }
-    };
-
     const newLog: AuditLogItem = {
       id: 'log-' + Date.now(),
       timestamp: timeStr,
@@ -562,7 +478,7 @@ export default function App() {
       actionDescription: description,
       category,
       deviceType: getDeviceType(),
-      ipAddress: cachedUserIp,
+      ipAddress: getCachedUserIp(),
       metadata
     };
 
@@ -584,7 +500,6 @@ export default function App() {
     }
   };
 
-  // Real-time Firebase Firestore listener
   useEffect(() => {
     seedInitialFirestoreData();
     const unsubscribe = subscribeToFirestore(({ users, classes, customRecommendations }) => {
@@ -601,7 +516,6 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Sync tab on user switch
   useEffect(() => {
     const isTeacherRole = currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor' || currentUser?.role === 'teacher' || currentUser?.role === 'admin';
     if (isTeacherRole) {
@@ -611,7 +525,6 @@ export default function App() {
     }
   }, [currentUser?.id, currentUser?.role]);
 
-  // Auto-mark messages as delivered when receiver logs in / currentUser changes
   useEffect(() => {
     if (!currentUser) return;
     setGlobalState(prev => {
@@ -633,7 +546,6 @@ export default function App() {
     });
   }, [currentUser?.id]);
 
-  // Auto-save global state locally as fallback & update activity timestamp
   useEffect(() => {
     saveGlobalState(globalState);
     if (globalState.currentUser) {
@@ -668,12 +580,9 @@ export default function App() {
     }
   }, []);
 
-  // Current active student data (if logged in as student)
   const currentStudentData: YKSDataState = (currentUser && globalState.studentsData[currentUser.id]) || (currentUser ? createEmptyStudentData(currentUser.name, currentUser.className) : INITIAL_STATE);
-
   const unresolvedErrorCount = currentStudentData.topicErrors.filter((e) => !e.revised).length;
 
-  // Helper to update current student's state slice in both React and Firestore
   const updateCurrentStudentData = (updater: (prev: YKSDataState) => YKSDataState) => {
     if (!currentUser) return;
     setGlobalState((prev) => {
@@ -778,7 +687,6 @@ export default function App() {
     );
   };
 
-  // Login handler
   const handleLoginSuccess = (user: UserAccount) => {
     const now = new Date();
     const year = now.getFullYear();
@@ -806,7 +714,7 @@ export default function App() {
       actionType: 'USER_LOGIN',
       actionDescription: `${user.name} (${roleText}${user.className ? ` - ${user.className}` : ''}) hesaba giriş yaptı. Oturum açıldı.`,
       category: 'system',
-      ipAddress: cachedUserIp
+      ipAddress: getCachedUserIp()
     };
 
     saveAuditLogToFirestore(loginAuditItem);
@@ -820,7 +728,6 @@ export default function App() {
     }));
   };
 
-  // Create account handler with Firestore persistence
   const handleCreateAccount = (newUserData: Omit<UserAccount, 'id'>) => {
     const newId = (newUserData.role === 'student' ? 'student-' : 'teacher-') + Date.now();
     const newUser: UserAccount = { ...newUserData, id: newId };
@@ -867,7 +774,7 @@ export default function App() {
         ? `${newUser.name} (${roleText}) yeni hesap oluşturdu (Öğretmen onayı bekleniyor).`
         : `${newUser.name} (${roleText}) yeni hesap oluşturdu ve giriş yaptı.`,
       category: 'system',
-      ipAddress: cachedUserIp
+      ipAddress: getCachedUserIp()
     };
 
     saveAuditLogToFirestore(registerAuditItem);
@@ -894,7 +801,6 @@ export default function App() {
     });
   };
 
-  // Logout handler
   const handleLogout = async () => {
     try {
       await flushPendingFirestoreWrites();
@@ -935,7 +841,7 @@ export default function App() {
         actionType: 'USER_LOGOUT',
         actionDescription: `${prevUser.name} (${roleText}) hesaptan çıkış yaptı.`,
         category: 'system',
-        ipAddress: cachedUserIp
+        ipAddress: getCachedUserIp()
       };
 
       saveAuditLogToFirestore(logoutAuditItem);
@@ -956,7 +862,6 @@ export default function App() {
     localStorage.removeItem('yks_last_active_time');
   };
 
-  // Teacher action: Update a student's profile (e.g., write coach notes)
   const handleUpdateStudentProfileByTeacher = (studentId: string, updatedProfile: StudentProfile) => {
     const studentUser = globalState.users.find(u => u.id === studentId);
     const prevStudentData = globalState.studentsData[studentId] || INITIAL_STATE;
@@ -992,7 +897,6 @@ export default function App() {
     );
   };
 
-  // Teacher action: Create new class
   const handleCreateClass = (className: string, field: FieldType, description?: string) => {
     const newClass: ClassDefinition = {
       id: 'class-' + Date.now(),
@@ -1041,12 +945,9 @@ export default function App() {
     );
   };
 
-  // Teacher action: Assign student to a new class
   const handleAssignStudentClass = (studentId: string, newClassName: string) => {
     const targetStudent = globalState.users.find(u => u.id === studentId);
     const prevClassName = targetStudent?.className || 'Atanmamış';
-    
-    // Find the class definition to get its field
     const targetClass = globalState.classes.find(c => c.name === newClassName);
 
     setGlobalState((prev) => {
@@ -1093,7 +994,6 @@ export default function App() {
     );
   };
 
-  // Teacher action: Update a student's study plans directly
   const handleUpdateStudentStudyPlansByTeacher = (studentId: string, updatedPlans: any[]) => {
     const targetStudent = globalState.users.find(u => u.id === studentId);
     const prevPlans = globalState.studentsData[studentId]?.studyPlans || [];
@@ -1123,7 +1023,6 @@ export default function App() {
     );
   };
 
-  // Program Templates handlers
   const handleSaveProgramTemplate = (templateData: any) => {
     const now = new Date();
     const year = now.getFullYear();
@@ -1374,6 +1273,7 @@ export default function App() {
       }
     );
   };
+
   const handleCreateStudentUser = (newStudent: Omit<UserAccount, 'id'>) => {
     const studentId = `student-${Date.now()}`;
     const createdStudent: UserAccount = {
@@ -1384,7 +1284,6 @@ export default function App() {
     };
     saveUserToFirestore(createdStudent);
 
-    // Initialize clean empty student state data for target, plans, questions, resources, mocks
     const targetClass = globalState.classes.find(c => c.name === createdStudent.className);
     const initialDataForStudent: YKSDataState = createEmptyStudentData(createdStudent.name, createdStudent.className, targetClass?.field);
     saveStudentDataToFirestore(studentId, initialDataForStudent);
@@ -1459,7 +1358,6 @@ export default function App() {
 
       const updatedStudentsData = { ...prev.studentsData };
 
-      // If old studentId existed and changed or removed, remove from old student's institutionalMocks
       if (oldExam?.studentId && oldExam.studentId !== updatedExam.studentId) {
         const oldStudentData = updatedStudentsData[oldExam.studentId];
         if (oldStudentData && oldStudentData.institutionalMocks) {
@@ -1472,7 +1370,6 @@ export default function App() {
         }
       }
 
-      // If new studentId exists, add or update in new student's institutionalMocks
       if (updatedExam.studentId) {
         const studentData = updatedStudentsData[updatedExam.studentId] || createEmptyStudentData(updatedExam.studentName, updatedExam.className || '');
         const currentMocks = studentData.institutionalMocks || [];
@@ -1503,12 +1400,10 @@ export default function App() {
     const ids = Array.isArray(examIdOrIds) ? examIdOrIds : [examIdOrIds];
     if (ids.length === 0) return;
 
-    // 1. Delete from Firestore's institutional_mock_exams collection
     for (const id of ids) {
       await deleteInstitutionalExamFromFirestore(id);
     }
 
-    // 2. Update React global state & persist modified student documents to Firestore
     setGlobalState((prev) => {
       const existingGlobal = prev.institutionalMockExams || [];
       const updatedGlobal = existingGlobal.filter(e => !ids.includes(e.id));
@@ -1516,7 +1411,6 @@ export default function App() {
       const updatedStudentsData = { ...prev.studentsData };
       const studentIdsToUpdate = new Set<string>();
 
-      // Scan all student profiles to find and clean up any reference to these exam IDs
       Object.entries(updatedStudentsData).forEach(([studentId, val]) => {
         const studentState = val as YKSDataState;
         if (studentState && studentState.institutionalMocks) {
@@ -1532,7 +1426,6 @@ export default function App() {
         }
       });
 
-      // Persist any updated student records back to Firestore
       studentIdsToUpdate.forEach((studentId) => {
         saveStudentDataToFirestore(studentId, updatedStudentsData[studentId]);
       });
@@ -1547,13 +1440,9 @@ export default function App() {
 
   const handleDeleteAllInstitutionalExams = async () => {
     try {
-      // Set local storage exempt flag to prevent automatic re-upload/auto-seed on empty check
       localStorage.setItem('yks_exempt_auto_seed', 'true');
-
-      // 1. Delete all institutional exams and clear student sub-arrays from Firestore
       await deleteAllInstitutionalExamsFromFirestore();
 
-      // 2. Clear local React state
       setGlobalState((prev) => {
         const updatedStudentsData = { ...prev.studentsData };
         Object.keys(updatedStudentsData).forEach((studentId) => {
@@ -1705,12 +1594,10 @@ export default function App() {
     );
   };
 
-  // Action handler: User Profile Update with Audit & Undo
   const handleUpdateProfile = (updatedUser: UserAccount, updatedStudentProfile?: StudentProfile) => {
     const prevUser = currentUser;
     const prevStudentProfile = currentStudentData?.profile;
 
-    // Save updated user to Firestore & local global state
     saveUserToFirestore(updatedUser);
     setGlobalState((prev) => {
       const updatedUsers = prev.users.map((u) => (u.id === updatedUser.id ? updatedUser : u));
@@ -1722,7 +1609,6 @@ export default function App() {
       };
     });
 
-    // If student profile provided, update current student data
     if (updatedStudentProfile && currentUser) {
       updateCurrentStudentData((prev) => ({
         ...prev,
@@ -1892,7 +1778,6 @@ export default function App() {
 
   const handleUpdateResource = (res: any) => {
     const prevResources = currentStudentData.resources || [];
-    const oldRes = prevResources.find((r) => r.id === res.id);
     updateCurrentStudentData((prev) => ({
       ...prev,
       resources: (prev.resources || []).map((r) => (r.id === res.id ? res : r))
@@ -1931,7 +1816,6 @@ export default function App() {
     status: 'Çalışmadım' | 'Erteledim' | 'Zor Geldi' | 'Çalıştım' | 'Uzmanlaştım',
     isManual: boolean = false
   ) => {
-    // If student has solved at least 1 test in any resource for this topic, prevent setting status to 'Çalışmadım'
     if (status === 'Çalışmadım') {
       const isSolvedInAnyResource = (currentStudentData.resources || []).some(
         (b) => (b.completedTopics || []).includes(topicName)
@@ -2010,27 +1894,6 @@ export default function App() {
       'toggle_past_topic',
       () => {
         updateCurrentStudentData((prev) => ({ ...prev, completedPastTopics: prevList }));
-      }
-    );
-  };
-
-  const handleTogglePastExamSolved = (id: string) => {
-    const prevExams = currentStudentData.pastExams || [];
-    const pe = prevExams.find(x => x.id === id);
-    const newSolvedState = pe ? !pe.solved : true;
-    updateCurrentStudentData((prev) => ({
-      ...prev,
-      pastExams: prev.pastExams.map((pe) =>
-        pe.id === id ? { ...pe, solved: !pe.solved } : pe
-      )
-    }));
-
-    addAuditAndUndo(
-      `${currentUser?.name || 'Öğrenci'} "${pe ? `${pe.year} ${pe.examType} ${pe.subject}` : ''}" çıkmış sınavını ${newSolvedState ? 'çözüldü' : 'çözülmedi'} olarak işaretledi.`,
-      'exam',
-      'toggle_past_exam_solved',
-      () => {
-        updateCurrentStudentData((prev) => ({ ...prev, pastExams: prevExams }));
       }
     );
   };
@@ -2239,7 +2102,6 @@ export default function App() {
 
   const handleUpdateYouTubeVideo = (vid: any) => {
     const prevVideos = currentStudentData.youtubeVideos || [];
-    const oldVid = prevVideos.find((v) => v.id === vid.id);
     updateCurrentStudentData((prev) => ({
       ...prev,
       youtubeVideos: (prev.youtubeVideos || []).map((v) => (v.id === vid.id ? vid : v))
@@ -2437,10 +2299,6 @@ export default function App() {
     );
   };
 
-  const handleUpdateSheetsStatus = (status: any) => {
-    updateCurrentStudentData((prev) => ({ ...prev, sheetsStatus: status }));
-  };
-
   const handleSendMessage = (receiverId: string, content: string, attachmentUrl?: string, replyTo?: DirectMessage['replyTo']) => {
     if (!currentUser) return;
     
@@ -2480,7 +2338,6 @@ export default function App() {
       return msg;
     };
 
-    // Broadcast Target 1: ALL REGISTERED USERS
     if (receiverId === 'broadcast-all') {
       createAndDispatchMsg('broadcast-all', 'Tüm Kayıtlı Kullanıcılar (Toplu Duyuru)', 'all');
       const activeTargets = globalState.users.filter(u => u.id !== currentUser.id && u.status !== 'pending' && u.status !== 'rejected');
@@ -2495,7 +2352,6 @@ export default function App() {
       return;
     }
 
-    // Broadcast Target 2: ALL STUDENTS
     if (receiverId === 'broadcast-students') {
       createAndDispatchMsg('broadcast-students', 'Tüm Öğrenciler', 'student');
       const activeStudents = globalState.users.filter(u => u.id !== currentUser.id && u.role === 'student' && u.status !== 'pending' && u.status !== 'rejected');
@@ -2503,7 +2359,6 @@ export default function App() {
       return;
     }
 
-    // Broadcast Target 3: ALL TEACHERS
     if (receiverId === 'broadcast-teachers') {
       createAndDispatchMsg('broadcast-teachers', 'Tüm Öğretmenler', 'teacher');
       const activeTeachers = globalState.users.filter(u => u.id !== currentUser.id && (u.role === 'teacher' || u.role === 'class_teacher') && u.status !== 'pending' && u.status !== 'rejected');
@@ -2511,7 +2366,6 @@ export default function App() {
       return;
     }
 
-    // Broadcast Target 4: ALL COUNSELORS
     if (receiverId === 'broadcast-counselors') {
       createAndDispatchMsg('broadcast-counselors', 'Tüm Rehber Öğretmenler', 'school_counselor');
       const activeCounselors = globalState.users.filter(u => u.id !== currentUser.id && u.role === 'school_counselor' && u.status !== 'pending' && u.status !== 'rejected');
@@ -2572,7 +2426,6 @@ export default function App() {
     const msgToDelete = (globalState.messages || []).find(m => m.id === messageId);
     if (!msgToDelete) return;
 
-    // Check 1-minute time constraint (60 seconds)
     const msgTimeMs = getMessageTimestampMs(msgToDelete);
     if (msgTimeMs > 0) {
       const elapsed = Date.now() - msgTimeMs;
@@ -2615,7 +2468,6 @@ export default function App() {
     const msgToEdit = (globalState.messages || []).find(m => m.id === messageId);
     if (!msgToEdit) return;
 
-    // Check 1-minute time constraint (60 seconds)
     const msgTimeMs = getMessageTimestampMs(msgToEdit);
     if (msgTimeMs > 0) {
       const elapsed = Date.now() - msgTimeMs;
@@ -2713,360 +2565,155 @@ export default function App() {
 
       {/* Top Navbar */}
       {!isZenMode && (
-      <Navbar
-        currentUser={currentUser}
-        profile={currentStudentData.profile}
-        sheetsStatus={currentStudentData.sheetsStatus}
-        onOpenProfile={() => setShowProfileModal(true)}
-        onOpenSheetsModal={() => setActiveTab('sheets')}
-        onExportJSON={() => exportDataAsJSON(globalState)}
-        onResetData={() => {
-          if (confirm('Tüm verileri varsayılan fabrika ayarlarına sıfırlamak istediğinize emin misiniz?')) {
-            const defaultData = resetToDefaultData();
-            setGlobalState(defaultData);
-            seedInitialFirestoreData();
-          }
-        }}
-        onLogout={handleLogout}
-        onUndo={handleUndo}
-        canUndo={canUndoForNavbar}
-        undoCount={canUndoForNavbar ? undoStack.length : 0}
-        onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
-        unreadMessageCount={unreadMessageCount}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        alwaysShowMenuButton={activeTab === 'bulk_exam_import'}
-      />
+        <Navbar
+          currentUser={currentUser}
+          profile={currentStudentData.profile}
+          sheetsStatus={currentStudentData.sheetsStatus}
+          onOpenProfile={() => setShowProfileModal(true)}
+          onOpenSheetsModal={() => setActiveTab('sheets')}
+          onExportJSON={() => exportDataAsJSON(globalState)}
+          onResetData={() => {
+            if (confirm('Tüm verileri varsayılan fabrika ayarlarına sıfırlamak istediğinize emin misiniz?')) {
+              const defaultData = resetToDefaultData();
+              setGlobalState(defaultData);
+              seedInitialFirestoreData();
+            }
+          }}
+          onLogout={handleLogout}
+          onUndo={handleUndo}
+          canUndo={canUndoForNavbar}
+          undoCount={canUndoForNavbar ? undoStack.length : 0}
+          onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
+          unreadMessageCount={unreadMessageCount}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          alwaysShowMenuButton={activeTab === 'bulk_exam_import'}
+        />
       )}
 
-      {/* Firebase Quota Warning Banner */}
-      {!isZenMode && isQuotaExceeded && (
-        <div className="w-full max-w-7xl mx-auto px-4 pt-4 relative z-20 animate-fade-in">
-          <div className="bg-amber-950/60 border border-amber-500/40 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl backdrop-blur-md">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-sm font-bold text-amber-200">
-                  Bulut Veri Tabanı Kotası Doldu (Sorunsuz Oturum Devam Ediyor)
-                </h4>
-                <p className="text-xs text-amber-300/90 leading-relaxed max-w-3xl">
-                  Yüksek kullanım sebebiyle ücretsiz Google Firebase bulut veri tabanı günlük yazma sınırına ulaşıldı. 
-                  Yaptığınız değişiklikler tarayıcınızın <strong>Yerel Depolama (localStorage)</strong> hafızasında güvenle saklanacak, 
-                  oturumunuz kesintiye uğramadan çalışmaya devam edecektir. Dilerseniz tüm verilerinizi sağ üstteki menüden 
-                  <strong> "Veri Yedekle (JSON)"</strong> butonu ile bilgisayarınıza indirebilirsiniz. Sınırlar sıfırlandığında bulut otomatik eşitlenecektir.
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsQuotaExceeded(false)}
-              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 transition-all cursor-pointer self-end md:self-auto shrink-0"
-            >
-              Anladım, Kapat
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Toast and Banners */}
+      <AppToastBanner
+        isZenMode={isZenMode}
+        isQuotaExceeded={isQuotaExceeded}
+        setIsQuotaExceeded={setIsQuotaExceeded}
+        lastToast={lastToast}
+        setLastToast={setLastToast}
+        activeTab={activeTab}
+        isFullscreen={isFullscreen}
+        isVirtualFullscreen={isVirtualFullscreen}
+        handleToggleFullscreen={handleToggleFullscreen}
+        showPwaGuide={showPwaGuide}
+        setShowPwaGuide={setShowPwaGuide}
+        currentSchoolName={currentSchoolName}
+      />
 
       {/* Main Container */}
       <div className={`flex-1 ${activeTab === 'bulk_exam_import' ? 'w-full max-w-none px-2 sm:px-4' : 'max-w-7xl w-full mx-auto'} flex flex-col md:flex-row relative z-10`}>
         
         {/* Navigation Sidebar */}
         {!isZenMode && (
-        <Sidebar
-          currentUser={currentUser}
-          activeTab={activeTab}
-          onSelectTab={handleTabChange}
-          unresolvedErrorCount={unresolvedErrorCount}
-          unreadMessageCount={unreadMessageCount}
-          onLogout={handleLogout}
-          isOpenMobile={isMobileMenuOpen}
-          onCloseMobile={() => setIsMobileMenuOpen(false)}
-          isMobileOrTablet={isMobileOrTablet}
-          onAddToHomeScreen={handleAddToHomeScreen}
-          isHideDesktopSidebar={activeTab === 'bulk_exam_import'}
-        />
+          <Sidebar
+            currentUser={currentUser}
+            activeTab={activeTab}
+            onSelectTab={handleTabChange}
+            unresolvedErrorCount={unresolvedErrorCount}
+            unreadMessageCount={unreadMessageCount}
+            onLogout={handleLogout}
+            isOpenMobile={isMobileMenuOpen}
+            onCloseMobile={() => setIsMobileMenuOpen(false)}
+            isMobileOrTablet={isMobileOrTablet}
+            onAddToHomeScreen={handleAddToHomeScreen}
+            isHideDesktopSidebar={activeTab === 'bulk_exam_import'}
+          />
         )}
 
         {/* Content Area */}
         <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
-          
-          {/* AUDIT LOGS / AYAK İZİ VIEW */}
-          {activeTab === 'audit_logs' && currentUser && currentUser.role !== 'student' && (
-            <AuditLogsView
-              currentUser={currentUser}
-              auditLogs={globalState.auditLogs || []}
-              classes={globalState.classes}
-              studentsData={globalState.studentsData}
-              allUsers={globalState.users}
-              onUndoLastAction={handleUndo}
-              canUndo={undoStack.length > 0}
-              lastUndoDescription={undoStack[undoStack.length - 1]?.description || ''}
-              onClearLogs={() => {
-                clearAllAuditLogsInFirestore();
-                setGlobalState(prev => ({ ...prev, auditLogs: [] }));
-              }}
-            />
-          )}
-
-          {/* SYSTEM MANAGEMENT / SİSTEM YÖNETİMİ & MALİYET ANALİZİ VIEW */}
-          {activeTab === 'teacher_system' && currentUser.role === 'admin' && (
-            <SystemManagementView 
-              auditLogs={globalState.auditLogs || []} 
-              currentUser={currentUser}
-              users={globalState.users}
-              onSendMessage={handleSendMessage}
-            />
-          )}
-
-          {/* BULK EXAM IMPORT VIEW */}
-          {activeTab === 'bulk_exam_import' && (currentUser.role === 'school_counselor' || currentUser.role === 'admin') && (
-            <BulkExamImportView
-              currentUser={currentUser}
-              users={globalState.users}
-              classes={globalState.classes}
-              studentsData={globalState.studentsData}
-              institutionalMockExams={globalState.institutionalMockExams || []}
-              onSaveInstitutionalExams={handleSaveInstitutionalExams}
-              onUpdateInstitutionalExam={handleUpdateInstitutionalExam}
-              onDeleteInstitutionalExam={handleDeleteInstitutionalExam}
-              onDeleteAllInstitutionalExams={handleDeleteAllInstitutionalExams}
-              onAddAuditLog={addAuditAndUndo}
-              onToggleMenu={() => setIsMobileMenuOpen(prev => !prev)}
-            />
-          )}
-
-          {/* TEACHER DASHBOARD */}
-          {(activeTab === 'teacher_summary' || activeTab === 'teacher_students' || activeTab === 'teacher_teachers' || activeTab === 'teacher_templates') && (currentUser.role === 'class_teacher' || currentUser.role === 'school_counselor' || currentUser.role === 'teacher' || currentUser.role === 'admin') && (
-            <TeacherDashboardView
-              teacher={currentUser}
-              classes={globalState.classes}
-              allUsers={globalState.users}
-              studentsData={globalState.studentsData}
-              programTemplates={globalState.programTemplates || []}
-              auditLogs={globalState.auditLogs || []}
-              activeTeacherSubView={activeTab === 'teacher_summary' ? 'summary' : activeTab === 'teacher_teachers' ? 'teachers' : activeTab === 'teacher_templates' ? 'templates' : 'students'}
-              onUpdateStudentProfile={handleUpdateStudentProfileByTeacher}
-              onUpdateStudentStudyPlans={handleUpdateStudentStudyPlansByTeacher}
-              onCreateClass={handleCreateClass}
-              onAssignStudentClass={handleAssignStudentClass}
-              onSaveProgramTemplate={handleSaveProgramTemplate}
-              onUpdateProgramTemplate={handleUpdateProgramTemplate}
-              onDeleteProgramTemplate={handleDeleteProgramTemplate}
-              onApplyTemplateToStudent={handleApplyTemplateToStudent}
-              onUpdateTeacherAssignedClasses={handleUpdateTeacherAssignedClasses}
-              onUpdateTeacherAccount={handleUpdateTeacherAccount}
-              onDeleteClass={handleDeleteClassDefinition}
-              onUpdateClass={handleUpdateClassDefinition}
-              onCreateTeacherAccount={handleCreateTeacherUser}
-              onDeleteTeacherAccount={handleDeleteTeacherUser}
-              onCreateStudentAccount={handleCreateStudentUser}
-              onUpdateStudentAccount={handleUpdateStudentAccount}
-              onDeleteStudentAccount={handleDeleteStudentUser}
-              onApproveStudent={handleApproveStudent}
-              onRejectStudent={handleRejectStudent}
-              onUpdateStudentSubjectNotes={handleUpdateStudentSubjectNotesByTeacher}
-            />
-          )}
-
-          {/* STUDENT DASHBOARD */}
-          {activeTab === 'dashboard' && (
-            <DashboardView
-              state={currentStudentData}
-              currentUser={currentUser}
-              onNavigateTab={setActiveTab}
-              onOpenProfile={() => setShowProfileModal(true)}
-              onUpdateRoutines={handleUpdateRoutines}
-              onUpdateStudentProfile={handleUpdateStudentProfile}
-              onUpdateSubjectNotes={handleUpdateSubjectNotes}
-              onUpdateDashboardWidgets={handleUpdateDashboardWidgets}
-              onUpdateQuickNotes={handleUpdateQuickNotes}
-            />
-          )}
-
-          {activeTab === 'subject_progress' && (
-            <SubjectProgressView
-              state={currentStudentData}
-              onUpdateTopicStatus={handleUpdateTopicStatus}
-              onNavigateTab={handleNavigateTab}
-            />
-          )}
-
-          {activeTab === 'routines' && (
-            <RoutinesView
-              state={currentStudentData}
-              onUpdateRoutines={handleUpdateRoutines}
-            />
-          )}
-
-          {activeTab === 'planner' && (
-            <StudyPlannerView
-              studyPlans={currentStudentData.studyPlans}
-              questionLogs={currentStudentData.questionLogs}
-              onAddPlan={handleAddPlan}
-              onUpdatePlan={handleUpdatePlan}
-              onDeletePlan={handleDeletePlan}
-              onAddQuestionLog={handleAddQuestionLog}
-              onDeleteQuestionLog={handleDeleteQuestionLog}
-              onUpdateAllPlans={handleUpdateAllPlans}
-              taskTypes={currentStudentData.taskTypes}
-              onUpdateTaskTypes={handleUpdateTaskTypes}
-              isZenMode={isZenMode}
-              onZenModeChange={setIsZenMode}
-            />
-          )}
-
-          {activeTab === 'pomodoro' && (
-            <PomodoroView
-              studyPlans={currentStudentData.studyPlans}
-              routines={currentStudentData.routines || []}
-              onUpdatePlan={handleUpdatePlan}
-              onZenModeChange={setIsZenMode}
-            />
-          )}
-
-          {activeTab === 'questions' && (
-            <QuestionTrackerView
-              questionLogs={currentStudentData.questionLogs}
-              onAddLog={handleAddQuestionLog}
-              onUpdateLog={handleUpdateQuestionLog}
-              onDeleteLog={handleDeleteQuestionLog}
-              theme={theme}
-            />
-          )}
-
-          {activeTab === 'resources' && (
-            <ResourceTrackerView
-              resources={currentStudentData.resources}
-              pastExams={currentStudentData.pastExams}
-              onAddResource={handleAddResource}
-              onUpdateResource={handleUpdateResource}
-              onDeleteResource={handleDeleteResource}
-              onUpdatePastExam={handleUpdatePastExam}
-              topicStatuses={currentStudentData.topicStatuses || {}}
-              onUpdateTopicStatus={handleUpdateTopicStatus}
-              manuallyChangedTopicStatuses={currentStudentData.manuallyChangedTopicStatuses || []}
-              initialTrackerTab={resourceTrackerTab}
-              initialDersFilter={resourceTrackerDers}
-            />
-          )}
-
-          {activeTab === 'past_questions' && (
-            <PastQuestionsView
-              completedPastTopics={currentStudentData.completedPastTopics}
-              onTogglePastTopic={handleToggleTopicCompleted}
-            />
-          )}
-
-          {activeTab === 'errors' && (
-            <BranchExamView
-              currentUser={currentUser || undefined}
-              mode="errors"
-              branchExams={currentStudentData.branchExams}
-              topicErrors={currentStudentData.topicErrors}
-              generalMocks={currentStudentData.generalMocks}
-              resources={currentStudentData.resources}
-              topicTipsCache={currentStudentData.topicTipsCache}
-              onAddBranchExam={handleAddBranchExam}
-              onUpdateBranchExam={handleUpdateBranchExam}
-              onDeleteBranchExam={handleDeleteBranchExam}
-              onAddTopicError={handleAddTopicError}
-              onUpdateTopicError={handleUpdateTopicError}
-              onDeleteTopicError={handleDeleteTopicError}
-              onUpdateTopicTipsCache={handleUpdateTopicTipsCache}
-              theme={theme}
-              onAddAuditLog={addAuditAndUndo}
-            />
-          )}
-
-          {activeTab === 'branches' && (
-            <BranchExamView
-              currentUser={currentUser || undefined}
-              mode="branches"
-              branchExams={currentStudentData.branchExams}
-              topicErrors={currentStudentData.topicErrors}
-              generalMocks={currentStudentData.generalMocks}
-              resources={currentStudentData.resources}
-              topicTipsCache={currentStudentData.topicTipsCache}
-              onAddBranchExam={handleAddBranchExam}
-              onUpdateBranchExam={handleUpdateBranchExam}
-              onDeleteBranchExam={handleDeleteBranchExam}
-              onAddTopicError={handleAddTopicError}
-              onUpdateTopicError={handleUpdateTopicError}
-              onDeleteTopicError={handleDeleteTopicError}
-              onUpdateTopicTipsCache={handleUpdateTopicTipsCache}
-              theme={theme}
-              onAddAuditLog={addAuditAndUndo}
-            />
-          )}
-
-          {activeTab === 'mocks' && (
-            <GeneralMockView
-              generalMocks={currentStudentData.generalMocks}
-              profile={currentStudentData.profile}
-              institutionalMocks={currentStudentData.institutionalMocks || []}
-              onAddMock={handleAddGeneralMock}
-              onDeleteMock={handleDeleteGeneralMock}
-              onUpdateMock={handleUpdateGeneralMock}
-              onUpdateProfile={handleUpdateStudentProfile}
-            />
-          )}
-
-          {activeTab === 'youtube' && (
-            <YouTubeTrackerView
-              videos={currentStudentData.youtubeVideos}
-              onAddVideo={handleAddYouTubeVideo}
-              onUpdateVideo={handleUpdateYouTubeVideo}
-              onDeleteVideo={handleDeleteYouTubeVideo}
-            />
-          )}
-
-          {activeTab === 'ai_coach' && (
-            <AICoachView
-              state={currentStudentData}
-              onSaveAdvice={handleSaveAICoachAdvice}
-              onDeleteAdvice={handleDeleteAICoachAdvice}
-              onSaveClassAdvice={handleSaveClassAICoachAdvice}
-              onDeleteClassAdvice={handleDeleteClassAICoachAdvice}
-              currentUser={currentUser}
-              allUsers={globalState.users}
-              classes={globalState.classes}
-              studentsData={globalState.studentsData}
-              onAddAuditLog={addAuditAndUndo}
-            />
-          )}
-
-          {activeTab === 'recommendations' && (
-            <RecommendationsView
-              onAddVideo={handleAddYouTubeVideo}
-              onAddResource={handleAddResource}
-              onDeleteVideo={handleDeleteYouTubeVideo}
-              onDeleteResource={handleDeleteResource}
-              trackedVideos={currentStudentData.youtubeVideos || []}
-              trackedResources={currentStudentData.resources || []}
-              favoriteBooks={currentStudentData.favoriteBooks || []}
-              onToggleFavoriteBook={handleToggleFavoriteBook}
-              currentUser={currentUser}
-              customRecommendations={globalState.customRecommendations || { channels: [], books: [] }}
-            />
-          )}
-
-          {activeTab === 'messages' && currentUser && (
-            <MessagesView
-              currentUser={currentUser}
-              allUsers={globalState.users}
-              classes={globalState.classes}
-              messages={globalState.messages || []}
-              studentsData={globalState.studentsData}
-              onSendMessage={handleSendMessage}
-              onEditMessage={handleEditMessage}
-              onDeleteMessage={handleDeleteMessage}
-              onMarkAsRead={handleMarkAsRead}
-            />
-          )}
+          <AppTabRouter
+            activeTab={activeTab}
+            currentUser={currentUser}
+            globalState={globalState}
+            currentStudentData={currentStudentData}
+            resourceTrackerTab={resourceTrackerTab}
+            resourceTrackerDers={resourceTrackerDers}
+            isZenMode={isZenMode}
+            setIsZenMode={setIsZenMode}
+            theme={theme}
+            undoStack={undoStack}
+            handleUndo={handleUndo}
+            clearAllAuditLogsInFirestore={clearAllAuditLogsInFirestore}
+            setGlobalState={setGlobalState}
+            handleSendMessage={handleSendMessage}
+            handleSaveInstitutionalExams={handleSaveInstitutionalExams}
+            handleUpdateInstitutionalExam={handleUpdateInstitutionalExam}
+            handleDeleteInstitutionalExam={handleDeleteInstitutionalExam}
+            handleDeleteAllInstitutionalExams={handleDeleteAllInstitutionalExams}
+            addAuditAndUndo={addAuditAndUndo}
+            setIsMobileMenuOpen={setIsMobileMenuOpen}
+            handleUpdateStudentProfileByTeacher={handleUpdateStudentProfileByTeacher}
+            handleUpdateStudentStudyPlansByTeacher={handleUpdateStudentStudyPlansByTeacher}
+            handleCreateClass={handleCreateClass}
+            handleAssignStudentClass={handleAssignStudentClass}
+            handleSaveProgramTemplate={handleSaveProgramTemplate}
+            handleUpdateProgramTemplate={handleUpdateProgramTemplate}
+            handleDeleteProgramTemplate={handleDeleteProgramTemplate}
+            handleApplyTemplateToStudent={handleApplyTemplateToStudent}
+            handleUpdateTeacherAssignedClasses={handleUpdateTeacherAssignedClasses}
+            handleUpdateTeacherAccount={handleUpdateTeacherAccount}
+            handleDeleteClassDefinition={handleDeleteClassDefinition}
+            handleUpdateClassDefinition={handleUpdateClassDefinition}
+            handleCreateTeacherUser={handleCreateTeacherUser}
+            handleDeleteTeacherUser={handleDeleteTeacherUser}
+            handleCreateStudentUser={handleCreateStudentUser}
+            handleUpdateStudentAccount={handleUpdateStudentAccount}
+            handleDeleteStudentUser={handleDeleteStudentUser}
+            handleApproveStudent={handleApproveStudent}
+            handleRejectStudent={handleRejectStudent}
+            handleUpdateStudentSubjectNotesByTeacher={handleUpdateStudentSubjectNotesByTeacher}
+            setActiveTab={setActiveTab}
+            setShowProfileModal={setShowProfileModal}
+            handleUpdateRoutines={handleUpdateRoutines}
+            handleUpdateStudentProfile={handleUpdateStudentProfile}
+            handleUpdateSubjectNotes={handleUpdateSubjectNotes}
+            handleUpdateDashboardWidgets={handleUpdateDashboardWidgets}
+            handleUpdateQuickNotes={handleUpdateQuickNotes}
+            handleUpdateTopicStatus={handleUpdateTopicStatus}
+            handleNavigateTab={handleNavigateTab}
+            handleAddPlan={handleAddPlan}
+            handleUpdatePlan={handleUpdatePlan}
+            handleDeletePlan={handleDeletePlan}
+            handleAddQuestionLog={handleAddQuestionLog}
+            handleDeleteQuestionLog={handleDeleteQuestionLog}
+            handleUpdateAllPlans={handleUpdateAllPlans}
+            handleUpdateTaskTypes={handleUpdateTaskTypes}
+            handleUpdateQuestionLog={handleUpdateQuestionLog}
+            handleAddResource={handleAddResource}
+            handleUpdateResource={handleUpdateResource}
+            handleDeleteResource={handleDeleteResource}
+            handleUpdatePastExam={handleUpdatePastExam}
+            handleToggleTopicCompleted={handleToggleTopicCompleted}
+            handleAddBranchExam={handleAddBranchExam}
+            handleUpdateBranchExam={handleUpdateBranchExam}
+            handleDeleteBranchExam={handleDeleteBranchExam}
+            handleAddTopicError={handleAddTopicError}
+            handleUpdateTopicError={handleUpdateTopicError}
+            handleDeleteTopicError={handleDeleteTopicError}
+            handleUpdateTopicTipsCache={handleUpdateTopicTipsCache}
+            handleAddGeneralMock={handleAddGeneralMock}
+            handleDeleteGeneralMock={handleDeleteGeneralMock}
+            handleUpdateGeneralMock={handleUpdateGeneralMock}
+            handleAddYouTubeVideo={handleAddYouTubeVideo}
+            handleUpdateYouTubeVideo={handleUpdateYouTubeVideo}
+            handleDeleteYouTubeVideo={handleDeleteYouTubeVideo}
+            handleSaveAICoachAdvice={handleSaveAICoachAdvice}
+            handleDeleteAICoachAdvice={handleDeleteAICoachAdvice}
+            handleSaveClassAICoachAdvice={handleSaveClassAICoachAdvice}
+            handleDeleteClassAICoachAdvice={handleDeleteClassAICoachAdvice}
+            handleToggleFavoriteBook={handleToggleFavoriteBook}
+            handleEditMessage={handleEditMessage}
+            handleDeleteMessage={handleDeleteMessage}
+            handleMarkAsRead={handleMarkAsRead}
+          />
         </main>
 
       </div>
@@ -3079,116 +2726,6 @@ export default function App() {
           onSave={handleUpdateProfile}
           onClose={() => setShowProfileModal(false)}
         />
-      )}
-
-      {/* Floating Undo Toast Notification */}
-      {lastToast && (
-        <div className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-6 sm:bottom-6 z-50 animate-bounce-short max-w-sm sm:max-w-md ml-auto">
-          <div className="bg-slate-900/95 border border-purple-500/40 text-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl shadow-2xl backdrop-blur-xl flex items-center space-x-2 sm:space-x-3.5">
-            <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider leading-tight">İşlem Gerçekleşti</div>
-              <p className="text-[11px] sm:text-xs font-semibold text-slate-100 truncate">{lastToast.message}</p>
-            </div>
-
-            {lastToast.undoFn && (
-              <button
-                onClick={() => {
-                  if (lastToast.undoFn) lastToast.undoFn();
-                }}
-                className="bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs flex items-center space-x-1 shadow-md shrink-0 cursor-pointer"
-              >
-                <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>Geri Al</span>
-              </button>
-            )}
-
-            <button
-              onClick={() => setLastToast(null)}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 shrink-0 cursor-pointer"
-            >
-              <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Floating Fullscreen Action Button - Sol Altta */}
-      {activeTab !== 'pomodoro' && !isZenMode && (
-      <button
-        onClick={handleToggleFullscreen}
-        className="fixed bottom-6 left-6 z-40 p-3.5 bg-slate-950/80 hover:bg-indigo-600 border border-white/10 text-white rounded-full shadow-2xl transition-all duration-300 flex items-center justify-center hover:scale-110 active:scale-95 group focus:outline-none"
-        title={isFullscreen || isVirtualFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran Yap"}
-      >
-        {isFullscreen || isVirtualFullscreen ? (
-          <Minimize className="w-5 h-5 text-indigo-300 group-hover:text-white transition-colors" />
-        ) : (
-          <Maximize className="w-5 h-5 text-indigo-300 group-hover:text-white transition-colors" />
-        )}
-      </button>
-      )}
-
-      {/* PWA Home Screen Install Guide Modal */}
-      {showPwaGuide && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-slate-900 border border-white/10 rounded-3xl max-w-md w-full p-6 shadow-2xl relative overflow-hidden">
-            {/* Background Accent */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            {/* Header */}
-            <div className="flex flex-col items-center text-center pb-5 border-b border-white/5 relative z-10">
-              <YildizLisesiLogo className="w-20 h-20 mb-3 filter drop-shadow-md" />
-              <h3 className="text-lg font-black text-white">YKS Takip Sistemi</h3>
-              <p className="text-xs text-indigo-300 font-bold mt-1">{currentSchoolName}</p>
-            </div>
-
-            {/* Body Instructions */}
-            <div className="py-5 space-y-4 text-slate-300 relative z-10 text-xs sm:text-sm">
-              <p className="text-slate-400 font-medium text-center">
-                Uygulamayı telefon veya tabletinizin ana ekranına ekleyerek tek dokunuşla bir uygulama gibi hızlıca açabilirsiniz.
-              </p>
-
-              {/* Apple iOS Safari Instructions */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
-                <div className="flex items-center space-x-2 text-white font-bold">
-                  <span className="w-5 h-5 rounded-lg bg-indigo-600/30 border border-indigo-400 text-indigo-300 flex items-center justify-center text-xs font-black">1</span>
-                  <span>Apple iOS (iPhone / iPad) için:</span>
-                </div>
-                <ul className="list-disc pl-5 space-y-1.5 text-slate-400 text-xs">
-                  <li>Tarayıcınızın altındaki <span className="text-white font-bold">"Paylaş" (Share)</span> butonuna tıklayın.</li>
-                  <li>Açılan menüden aşağı kaydırıp <span className="text-white font-bold">"Ana Ekrana Ekle" (Add to Home Screen)</span> seçeneğini seçin.</li>
-                  <li>Sağ üstteki <span className="text-white font-bold">"Ekle"</span> butonuna basarak tamamlayın.</li>
-                </ul>
-              </div>
-
-              {/* Android / Chrome Instructions */}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
-                <div className="flex items-center space-x-2 text-white font-bold">
-                  <span className="w-5 h-5 rounded-lg bg-indigo-600/30 border border-indigo-400 text-indigo-300 flex items-center justify-center text-xs font-black">2</span>
-                  <span>Android / Chrome için:</span>
-                </div>
-                <ul className="list-disc pl-5 space-y-1.5 text-slate-400 text-xs">
-                  <li>Tarayıcı adres çubuğunun sağındaki <span className="text-white font-bold">üç nokta (Menü)</span> simgesine tıklayın.</li>
-                  <li><span className="text-white font-bold">"Uygulamayı yükle"</span> veya <span className="text-white font-bold">"Ana ekrana ekle"</span> seçeneğini seçin.</li>
-                  <li>Gelen onay penceresinde <span className="text-white font-bold">"Ekle / Yükle"</span> butonuna tıklayın.</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex justify-end pt-3 relative z-10">
-              <button
-                onClick={() => setShowPwaGuide(false)}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-indigo-600/20"
-              >
-                Anladım, Kapat
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
     </div>
