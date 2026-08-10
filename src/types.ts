@@ -359,6 +359,35 @@ export interface GoogleSheetsStatus {
   lastSyncedAt?: string;
 }
 
+export interface QuestionLog {
+  id: string;
+  date: string;
+  subject: string;
+  topic?: string;
+  examType: 'TYT' | 'AYT';
+  targetCount: number;
+  solvedCount: number;
+  correctCount: number;
+  wrongCount: number;
+  emptyCount: number;
+  blankCount?: number;
+  netScore: number;
+  notes?: string;
+  studyPlanId?: string;
+}
+
+export interface ResourceItem {
+  id: string;
+  subject: string;
+  bookTitle: string;
+  publisher: string;
+  totalUnits: number; // Toplam Test veya Konu sayısı
+  completedUnits: number; // Çözülen Test veya Konu sayısı
+  status: 'not_started' | 'in_progress' | 'completed';
+  examType: 'TYT' | 'AYT';
+  notes?: string;
+}
+
 export interface RoutineHistoryEntry {
   weekLabel: string; // e.g., '20-26 Temmuz'
   completedDays: string[];
@@ -379,6 +408,7 @@ export interface RoutineItem {
   target?: string;
   completedDays: string[]; // e.g., ['Pazartesi', 'Salı']
   history?: RoutineHistoryEntry[];
+  isDeleted?: boolean;
 }
 
 export interface YKSDataState {
@@ -386,6 +416,7 @@ export interface YKSDataState {
   studyPlans: StudyPlanItem[];
   questionLogs: QuestionLog[];
   resources: ResourceItem[];
+  resourceTrackers?: any[];
   pastExams: PastExamItem[];
   branchExams: BranchExam[];
   topicErrors: TopicErrorItem[];
@@ -492,4 +523,38 @@ export interface AppGlobalState {
   messages?: DirectMessage[];
   institutionalMockExams?: InstitutionalMockExam[];
 }
+
+export interface ParsedStudentRow {
+  fileStudentName: string;
+  fileSchoolNumber: string;
+  fileClassName: string;
+  matchedStudentId: string | null;
+  selectedClassForMatch?: string;
+  matchScore: number;
+  matchReason: string;
+  isSelected: boolean;
+  sayScore: number;
+  eaScore: number;
+  sozScore: number;
+  sayClassRank: number;
+  sayClassTotal?: number;
+  sayInstitutionRank: number;
+  sayInstitutionTotal?: number;
+  sayGeneralRank: number;
+  sayGeneralTotal?: number;
+  eaClassRank: number;
+  eaClassTotal?: number;
+  eaInstitutionRank: number;
+  eaInstitutionTotal?: number;
+  eaGeneralRank: number;
+  eaGeneralTotal?: number;
+  sozClassRank: number;
+  sozClassTotal?: number;
+  sozInstitutionRank: number;
+  sozInstitutionTotal?: number;
+  sozGeneralRank: number;
+  sozGeneralTotal?: number;
+  subjects: InstitutionalSubjectDetail[];
+}
+
 
