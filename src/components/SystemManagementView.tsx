@@ -676,19 +676,23 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
         </div>
 
         {/* TOP TAB NAVIGATION BAR */}
-        <div className="mt-6 pt-4 border-t border-indigo-500/20 flex items-center justify-start gap-2 overflow-x-auto no-scrollbar">
+        <div className="mt-6 pt-4 border-t border-indigo-500/20 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <button
             onClick={() => setActiveTab('AI')}
-            className={`flex items-center space-x-2.5 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer shrink-0 border ${
+            className={`flex flex-col items-start justify-between p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
               activeTab === 'AI'
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-indigo-400/50 shadow-lg shadow-indigo-500/30'
-                : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-white hover:bg-slate-800'
+                ? 'bg-gradient-to-br from-indigo-600/90 to-purple-700/90 border-indigo-400 text-white shadow-lg shadow-indigo-500/25 ring-2 ring-indigo-400/30'
+                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800/90 hover:border-slate-700'
             }`}
           >
-            <Brain className="w-4 h-4 text-purple-300" />
-            <span>Yapay Zeka (AI)</span>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-              activeTab === 'AI' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+            <div className="flex items-center space-x-2 w-full justify-between mb-1.5">
+              <div className="flex items-center space-x-2">
+                <Brain className={`w-4 h-4 ${activeTab === 'AI' ? 'text-purple-200' : 'text-purple-400'}`} />
+                <span className="font-extrabold text-xs tracking-tight">Yapay Zeka (AI)</span>
+              </div>
+            </div>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+              activeTab === 'AI' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400 border border-slate-700/50'
             }`}>
               {summary.totalCalls} İstek
             </span>
@@ -696,16 +700,20 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
 
           <button
             onClick={() => setActiveTab('STORAGE')}
-            className={`flex items-center space-x-2.5 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer shrink-0 border ${
+            className={`flex flex-col items-start justify-between p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
               activeTab === 'STORAGE'
-                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-400/50 shadow-lg shadow-emerald-500/30'
-                : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-white hover:bg-slate-800'
+                ? 'bg-gradient-to-br from-emerald-600/90 to-teal-700/90 border-emerald-400 text-white shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-400/30'
+                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800/90 hover:border-slate-700'
             }`}
           >
-            <HardDrive className="w-4 h-4 text-emerald-300" />
-            <span>Depolama (Storage & Cloud)</span>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-              activeTab === 'STORAGE' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+            <div className="flex items-center space-x-2 w-full justify-between mb-1.5">
+              <div className="flex items-center space-x-2">
+                <HardDrive className={`w-4 h-4 ${activeTab === 'STORAGE' ? 'text-emerald-200' : 'text-emerald-400'}`} />
+                <span className="font-extrabold text-xs tracking-tight">Depolama (Storage & Cloud)</span>
+              </div>
+            </div>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+              activeTab === 'STORAGE' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400 border border-slate-700/50'
             }`}>
               {storageStats ? `${storageStats.diskStorage.usedMB} MB` : 'Canlı Veri'}
             </span>
@@ -713,16 +721,20 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
 
           <button
             onClick={() => setActiveTab('SETTINGS')}
-            className={`flex items-center space-x-2.5 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer shrink-0 border ${
+            className={`flex flex-col items-start justify-between p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
               activeTab === 'SETTINGS'
-                ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white border-amber-400/50 shadow-lg shadow-amber-500/30'
-                : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-white hover:bg-slate-800'
+                ? 'bg-gradient-to-br from-amber-600/90 to-orange-700/90 border-amber-400 text-white shadow-lg shadow-amber-500/25 ring-2 ring-amber-400/30'
+                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800/90 hover:border-slate-700'
             }`}
           >
-            <Settings2 className="w-4 h-4 text-amber-300" />
-            <span>Ayarlar</span>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-              activeTab === 'SETTINGS' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+            <div className="flex items-center space-x-2 w-full justify-between mb-1.5">
+              <div className="flex items-center space-x-2">
+                <Settings2 className={`w-4 h-4 ${activeTab === 'SETTINGS' ? 'text-amber-200' : 'text-amber-400'}`} />
+                <span className="font-extrabold text-xs tracking-tight">Ayarlar</span>
+              </div>
+            </div>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+              activeTab === 'SETTINGS' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400 border border-slate-700/50'
             }`}>
               Okul & Sistem
             </span>
@@ -730,16 +742,20 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
 
           <button
             onClick={() => setActiveTab('MESSAGES')}
-            className={`flex items-center space-x-2.5 px-5 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer shrink-0 border ${
+            className={`flex flex-col items-start justify-between p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
               activeTab === 'MESSAGES'
-                ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white border-rose-400/50 shadow-lg shadow-rose-500/30'
-                : 'bg-slate-900/80 text-slate-400 border-slate-800 hover:text-white hover:bg-slate-800'
+                ? 'bg-gradient-to-br from-rose-600/90 to-pink-700/90 border-rose-400 text-white shadow-lg shadow-rose-500/25 ring-2 ring-rose-400/30'
+                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800/90 hover:border-slate-700'
             }`}
           >
-            <MessageSquare className="w-4 h-4 text-rose-300" />
-            <span>Mesaj Yönetimi</span>
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-              activeTab === 'MESSAGES' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+            <div className="flex items-center space-x-2 w-full justify-between mb-1.5">
+              <div className="flex items-center space-x-2">
+                <MessageSquare className={`w-4 h-4 ${activeTab === 'MESSAGES' ? 'text-rose-200' : 'text-rose-400'}`} />
+                <span className="font-extrabold text-xs tracking-tight">Mesaj Yönetimi</span>
+              </div>
+            </div>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+              activeTab === 'MESSAGES' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400 border border-slate-700/50'
             }`}>
               Denetim
             </span>
