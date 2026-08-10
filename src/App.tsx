@@ -6,7 +6,7 @@ import { YildizLisesiLogo } from './components/YildizLisesiLogo';
 import { LoginView } from './components/LoginView';
 import { TeacherDashboardView } from './components/TeacherDashboardView';
 import { DashboardView } from './components/DashboardView';
-import { SubjectProgressView } from './components/SubjectProgressView';
+import SubjectProgressView from './components/SubjectProgressView';
 import { RoutinesView } from './components/RoutinesView';
 import { StudyPlannerView } from './components/StudyPlannerView';
 import { PomodoroView } from './components/PomodoroView';
