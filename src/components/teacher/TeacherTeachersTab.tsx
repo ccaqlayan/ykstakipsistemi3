@@ -57,6 +57,7 @@ interface TeacherTeachersTabProps {
 
 export const TeacherTeachersTab: React.FC<TeacherTeachersTabProps> = ({
   onUnlockUserAccount,
+  setEditTeacherPassword,
   allUsers,
   classes,
   teacher,

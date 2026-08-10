@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { google } from 'googleapis';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { collection, getDocs, setDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, getDoc, setDoc, doc } from 'firebase/firestore';
 import {
   db,
   getOAuth2Client,
