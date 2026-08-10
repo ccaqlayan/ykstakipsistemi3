@@ -7,7 +7,8 @@ import {
   Users, 
   RefreshCw, 
   FileSpreadsheet, 
-  XCircle 
+  XCircle,
+  Download
 } from 'lucide-react';
 import { ParsedStudentRow, UserAccount, YKSDataState, InstitutionalSubjectDetail, InstitutionalMockExam } from '../../types';
 import { DuplicateConfirmModal } from './BulkImportModals';
@@ -685,19 +686,28 @@ export const BulkImportCsvTab: React.FC<BulkImportCsvTabProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-slate-950/80 border border-white/10 rounded-xl p-4 space-y-2 flex flex-col justify-between">
+          <div className="bg-slate-950/80 border border-indigo-500/30 rounded-xl p-4 space-y-2 flex flex-col justify-between">
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
                   1. ADIM
                 </span>
-                <span className="text-[10px] text-slate-400 font-bold">PDF İndir</span>
+                <span className="text-[10px] text-slate-400 font-bold">Okulizyon PDF</span>
               </div>
-              <h4 className="text-xs font-bold text-white">Kurum Sonuç PDF'ini İndirin</h4>
+              <h4 className="text-xs font-bold text-white">Toplu Liste PDF İndirin</h4>
               <p className="text-[11px] text-slate-300 leading-relaxed">
-                Okulizyon veya ölçme değerlendirme sisteminizden sınavın <strong className="text-white font-bold">Toplu Kurum Konu Analizli Sonuç PDF'ini</strong> bilgisayarınıza indirin.
+                Okulizyon sitesi üzerinden <strong className="text-white font-bold">"TOPLU LİSTE - KARNE 110 (YKS-TYT) (TYT DERSLİ)"</strong> isimli listenizi PDF olarak bilgisayarınıza indirin.
               </p>
             </div>
+            <a
+              href="https://okulizyon.com/app2/olcme/?pg=ykstopluliste"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center justify-center space-x-1.5 px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 rounded-lg text-xs font-bold transition-all w-full text-center"
+            >
+              <Download className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Okulizyon İndirme Sayfası</span>
+            </a>
           </div>
 
           <div className="bg-slate-950/80 border border-amber-500/30 rounded-xl p-4 space-y-2 flex flex-col justify-between">
