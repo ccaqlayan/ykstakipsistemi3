@@ -194,7 +194,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
         return 'custom';
       }
     } catch {}
-    return 'all';
+    return 'net';
   });
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [visibleCharts, setVisibleCharts] = useState({
