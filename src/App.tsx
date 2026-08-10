@@ -553,32 +553,7 @@ export default function App() {
     }
   }, [globalState]);
 
-  useEffect(() => {
-    if (localStorage.getItem('yks_force_wipe_pending_v3') !== 'done') {
-      console.log('Forcing complete wipe of institutional exams...');
-      localStorage.setItem('yks_exempt_auto_seed', 'true');
-      deleteAllInstitutionalExamsFromFirestore().then(() => {
-        localStorage.setItem('yks_force_wipe_pending_v3', 'done');
-        
-        setGlobalState(prev => {
-          const updatedStudentsData = { ...prev.studentsData };
-          Object.keys(updatedStudentsData).forEach((studentId) => {
-            if (updatedStudentsData[studentId]) {
-              updatedStudentsData[studentId] = {
-                ...updatedStudentsData[studentId],
-                institutionalMocks: []
-              };
-            }
-          });
-          return {
-            ...prev,
-            institutionalMockExams: [],
-            studentsData: updatedStudentsData
-          };
-        });
-      });
-    }
-  }, []);
+
 
   const currentStudentData: YKSDataState = (currentUser && globalState.studentsData[currentUser.id]) || (currentUser ? createEmptyStudentData(currentUser.name, currentUser.className) : INITIAL_STATE);
   const unresolvedErrorCount = currentStudentData.topicErrors.filter((e) => !e.revised).length;
