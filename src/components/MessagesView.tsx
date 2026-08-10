@@ -1287,9 +1287,9 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                                   <Trash2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                                   <span>Bu mesaj kullanıcı tarafından silindi</span>
                                 </div>
-                                {(currentUser?.role === 'admin' || currentUser?.role === 'school_counselor' || currentUser?.role === 'class_teacher' || currentUser?.role === 'teacher') && msg.originalContent && (
+                                {currentUser?.role === 'admin' && msg.originalContent && (
                                   <div className="text-[10px] text-amber-300/90 font-mono not-italic bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20 max-w-md break-words">
-                                    <span className="font-bold text-amber-400">🔍 Admin/Öğretmen Görünümü (Silinen Mesaj):</span> "{msg.originalContent}"
+                                    <span className="font-bold text-amber-400">🔍 Admin Görünümü (Silinen Mesaj):</span> "{msg.originalContent}"
                                   </div>
                                 )}
                               </div>
