@@ -2446,10 +2446,13 @@ export default function App() {
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const timestampStr = `${year}-${month}-${day} ${hours}:${minutes}`;
 
+    const originalContentText = msgToDelete.originalContent || msgToDelete.content;
+
     const updatedMsg: DirectMessage = {
       ...msgToDelete,
       isDeleted: true,
       content: 'Bu mesaj kullanıcı tarafından silindi',
+      originalContent: originalContentText,
       attachmentUrl: undefined,
       replyTo: undefined,
       deletedAt: timestampStr,
@@ -2461,6 +2464,24 @@ export default function App() {
       messages: (prev.messages || []).map(m => m.id === messageId ? updatedMsg : m)
     }));
     saveMessageToFirestore(updatedMsg);
+
+    addAuditAndUndo(
+      `"${msgToDelete.receiverName}" kullanıcısına gönderilen mesaj 1dk içinde silindi. (Silinmeden önceki içerik: "${originalContentText}")`,
+      'social',
+      'MESAJ_SILINDI',
+      undefined,
+      msgToDelete.receiverId,
+      msgToDelete.receiverName,
+      {
+        messageId: msgToDelete.id,
+        originalContent: originalContentText,
+        deletedAt: timestampStr,
+        receiverId: msgToDelete.receiverId,
+        receiverName: msgToDelete.receiverName,
+        senderId: msgToDelete.senderId,
+        senderName: msgToDelete.senderName
+      }
+    );
   };
 
   const handleEditMessage = (messageId: string, newContent: string) => {
@@ -2479,14 +2500,15 @@ export default function App() {
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
-    const editedAtTime = `${hours}:${minutes}`;
+    const timeOnly = `${hours}:${minutes}`;
+
+    const oldContentText = msgToEdit.content;
 
     const updatedMsg: DirectMessage = {
       ...msgToEdit,
       content: newContent,
       isEdited: true,
-      editedAt: editedAtTime,
-      timestampMs: msgTimeMs || Date.now()
+      editedAt: timeOnly
     };
 
     setGlobalState(prev => ({
@@ -2494,6 +2516,22 @@ export default function App() {
       messages: (prev.messages || []).map(m => m.id === messageId ? updatedMsg : m)
     }));
     saveMessageToFirestore(updatedMsg);
+
+    addAuditAndUndo(
+      `"${msgToEdit.receiverName}" kullanıcısına gönderilen mesaj düzenlendi. (Eski içerik: "${oldContentText}", Yeni içerik: "${newContent}")`,
+      'social',
+      'MESAJ_DUZENLENDI',
+      undefined,
+      msgToEdit.receiverId,
+      msgToEdit.receiverName,
+      {
+        messageId: msgToEdit.id,
+        oldContent: oldContentText,
+        newContent,
+        receiverId: msgToEdit.receiverId,
+        receiverName: msgToEdit.receiverName
+      }
+    );
   };
 
   const handleMarkAsRead = (messageIds: string[]) => {

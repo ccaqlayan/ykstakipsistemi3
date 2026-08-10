@@ -505,6 +505,7 @@ export interface DirectMessage {
   };
   isDeleted?: boolean;
   deletedAt?: string;
+  originalContent?: string;
   isEdited?: boolean;
   editedAt?: string;
 }

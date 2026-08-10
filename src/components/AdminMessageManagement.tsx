@@ -556,7 +556,18 @@ export const AdminMessageManagement: React.FC<AdminMessageManagementProps> = ({
 
                     {/* Message content */}
                     <div className="text-xs text-slate-200 break-words leading-relaxed max-w-2xl font-medium">
-                      {msg.content || <span className="text-slate-500 italic">Mesaj içeriği bulunmuyor</span>}
+                      {msg.isDeleted ? (
+                        <div className="space-y-1">
+                          <span className="text-slate-400 italic">Bu mesaj kullanıcı tarafından silindi</span>
+                          {msg.originalContent && (
+                            <div className="text-[11px] text-amber-300 font-mono bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl">
+                              <span className="font-bold text-amber-400">🔍 Silinmeden Önceki Mesaj İçeriği:</span> "{msg.originalContent}"
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        msg.content || <span className="text-slate-500 italic">Mesaj içeriği bulunmuyor</span>
+                      )}
                     </div>
 
                     {/* Image Attachment (Thumb) */}

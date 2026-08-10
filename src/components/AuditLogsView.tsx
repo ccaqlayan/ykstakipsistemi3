@@ -769,6 +769,16 @@ export const AuditLogsView: React.FC<AuditLogsViewProps> = ({
                           <span className="text-xs text-slate-200 font-medium leading-relaxed block">
                             {log.actionDescription}
                           </span>
+
+                          {/* Extra callout box for deleted messages showing original content */}
+                          {log.metadata?.originalContent && (
+                            <div className="mt-1.5 p-2 rounded-xl bg-red-950/40 border border-red-800/40 text-[11px] text-red-200 space-y-0.5">
+                              <span className="font-bold text-red-400 flex items-center gap-1 text-[10px] uppercase tracking-wider">
+                                🗑️ Silinmeden Önceki Mesaj İçeriği:
+                              </span>
+                              <p className="font-mono text-slate-200 break-words italic">"{log.metadata.originalContent}"</p>
+                            </div>
+                          )}
                           
                           {/* Compact Metadata Subtitle */}
                           {(!isSelf || currentUser?.role !== 'student') && (

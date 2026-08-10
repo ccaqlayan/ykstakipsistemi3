@@ -1282,9 +1282,16 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                           {/* Message Content */}
                           <div className="flex flex-col min-w-[3rem]">
                             {msg.isDeleted ? (
-                              <div className="flex items-center space-x-1.5 py-1 text-slate-300/80 italic text-xs">
-                                <Trash2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                <span>Bu mesaj kullanıcı tarafından silindi</span>
+                              <div className="flex flex-col space-y-1 py-1">
+                                <div className="flex items-center space-x-1.5 text-slate-300/80 italic text-xs">
+                                  <Trash2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                  <span>Bu mesaj kullanıcı tarafından silindi</span>
+                                </div>
+                                {(currentUser?.role === 'admin' || currentUser?.role === 'school_counselor' || currentUser?.role === 'class_teacher' || currentUser?.role === 'teacher') && msg.originalContent && (
+                                  <div className="text-[10px] text-amber-300/90 font-mono not-italic bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20 max-w-md break-words">
+                                    <span className="font-bold text-amber-400">🔍 Admin/Öğretmen Görünümü (Silinen Mesaj):</span> "{msg.originalContent}"
+                                  </div>
+                                )}
                               </div>
                             ) : editingMessageId === msg.id ? (
                               <div className="flex flex-col space-y-2 w-full min-w-[200px] sm:min-w-[260px] py-1">
