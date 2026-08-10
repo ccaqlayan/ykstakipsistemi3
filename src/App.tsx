@@ -3,6 +3,7 @@ import { Navbar } from './components/Navbar';
 import { Sidebar, TabType } from './components/Sidebar';
 import { LoginView } from './components/LoginView';
 import { ProfileModal } from './components/ProfileModal';
+import { MandatoryPasswordChangeModal } from './components/MandatoryPasswordChangeModal';
 
 import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, InstitutionalMockExam, FieldType } from './types';
 import { deleteStorageFile } from './services/storageUpload';
@@ -2605,6 +2606,14 @@ export default function App() {
   // IF LOGGED IN -> MAIN APPLICATION VIEW
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white relative overflow-x-hidden">
+      {currentUser.mustChangePassword && (
+        <MandatoryPasswordChangeModal
+          currentUser={currentUser}
+          onPasswordChanged={(updatedUser) => {
+            handleUpdateStudentAccount(updatedUser);
+          }}
+        />
+      )}
       {/* Ambient Glows */}
       <div className="fixed -top-40 -right-40 w-64 h-64 sm:w-96 sm:h-96 bg-indigo-500/20 rounded-full blur-[80px] sm:blur-[120px] pointer-events-none z-0" />
       <div className="fixed top-1/3 -left-40 w-64 h-64 sm:w-96 sm:h-96 bg-fuchsia-500/15 rounded-full blur-[90px] sm:blur-[140px] pointer-events-none z-0" />

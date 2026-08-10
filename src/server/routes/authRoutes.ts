@@ -249,13 +249,64 @@ router.post('/register', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(userData.password, salt);
     
-    const newUser = { ...userData, passwordHash: hash };
+    const newUser = { ...userData, passwordHash: hash, mustChangePassword: userData.mustChangePassword !== false };
     delete newUser.password;
     
     await setDoc(doc(db, 'users', id), newUser);
     res.json({ success: true, user: newUser });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Kayıt başarısız.' });
+  }
+});
+
+router.post('/change-password-mandatory', async (req, res) => {
+  const { userId, currentPassword, newPassword } = req.body;
+  if (!userId || !currentPassword || !newPassword) {
+    return res.status(400).json({ success: false, error: 'Tüm alanların doldurulması gereklidir.' });
+  }
+
+  if (newPassword.trim().length < 6) {
+    return res.status(400).json({ success: false, error: 'Yeni şifre en az 6 karakter olmalıdır.' });
+  }
+
+  try {
+    const userDocRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userDocRef);
+    if (!userSnap.exists()) {
+      return res.status(404).json({ success: false, error: 'Kullanıcı bulunamadı.' });
+    }
+
+    const userData = userSnap.data();
+    let isValid = false;
+    if (userData.passwordHash) {
+      isValid = await bcrypt.compare(currentPassword, userData.passwordHash);
+    } else if (userData.password) {
+      isValid = (userData.password === currentPassword);
+    }
+
+    if (!isValid) {
+      return res.status(401).json({ success: false, error: 'Mevcut (eski) şifreniz hatalıdır.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(newPassword.trim(), salt);
+
+    const updatedUser = {
+      ...userData,
+      passwordHash: hash,
+      password: null,
+      mustChangePassword: false,
+      failedLoginAttempts: 0,
+      lockoutUntil: null,
+      isLocked: false
+    };
+
+    await setDoc(userDocRef, updatedUser);
+
+    res.json({ success: true, user: updatedUser });
+  } catch (err) {
+    console.error('Error changing mandatory password:', err);
+    res.status(500).json({ success: false, error: 'Şifre değiştirme başarısız oldu.' });
   }
 });
 

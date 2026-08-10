@@ -223,6 +223,8 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   const [editTeacherEmail, setEditTeacherEmail] = useState('');
   const [editTeacherTitle, setEditTeacherTitle] = useState('');
   const [editTeacherRole, setEditTeacherRole] = useState<'class_teacher' | 'teacher' | 'school_counselor'>('class_teacher');
+  const [editTeacherPassword, setEditTeacherPassword] = useState('');
+  const [newStudentPassword, setNewStudentPassword] = useState('123456');
 
   // Edit Student Account Modal State
   const [showEditStudentModal, setShowEditStudentModal] = useState(false);
@@ -966,6 +968,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           setDeleteTeacherConfirmationStep={setDeleteTeacherConfirmationStep}
           setTypedTeacherConfirmName={setTypedTeacherConfirmName}
           onUnlockUserAccount={onUnlockUserAccount}
+          setEditTeacherPassword={setEditTeacherPassword}
         />
       )}
 
@@ -1867,7 +1870,8 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
                     password: newTeacherPassword || '123456',
                     role: newTeacherRole,
                     title: newTeacherTitle.trim(),
-                    assignedClassNames: newTeacherAssignedClasses
+                    assignedClassNames: newTeacherAssignedClasses,
+                    mustChangePassword: true
                   });
                 }
                 setShowCreateTeacherModal(false);
@@ -1907,6 +1911,18 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
                   value={newTeacherTitle}
                   onChange={(e) => setNewTeacherTitle(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Giriş Şifresi</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Varsayılan: 123456"
+                  value={newTeacherPassword}
+                  onChange={(e) => setNewTeacherPassword(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-400 font-mono font-bold"
                 />
               </div>
 
@@ -2106,13 +2122,24 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
                 if (!editTeacherName.trim() || !editTeacherEmail.trim()) return;
                 const existingUser = allUsers.find(u => u.id === editingTeacherId);
                 if (existingUser && onUpdateTeacherAccount) {
-                  onUpdateTeacherAccount({
+                  const updatedUser = {
                     ...existingUser,
                     name: editTeacherName.trim(),
                     email: editTeacherEmail.trim(),
                     title: editTeacherTitle.trim(),
                     role: editTeacherRole
-                  });
+                  };
+
+                  if (editTeacherPassword.trim()) {
+                    fetch('/api/auth/reset-password', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ email: editTeacherEmail.trim(), newPassword: editTeacherPassword.trim() })
+                    }).catch(e => console.error("Teacher password reset failed", e));
+                    updatedUser.mustChangePassword = true;
+                  }
+
+                  onUpdateTeacherAccount(updatedUser);
                 }
                 setShowEditTeacherModal(false);
                 alert(`Öğretmen hesabı güncellendi: ${editTeacherName}`);
@@ -2167,6 +2194,19 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
                 </select>
               </div>
 
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  Şifre Güncelle <span className="text-[10px] text-slate-400 font-normal">(İsteğe Bağlı)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Değiştirmek istemiyorsanız boş bırakın..."
+                  value={editTeacherPassword}
+                  onChange={(e) => setEditTeacherPassword(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-400 font-mono font-bold"
+                />
+              </div>
+
               <div className="flex justify-end space-x-2 pt-2 border-t border-white/10">
                 <button
                   type="button"
@@ -2213,15 +2253,17 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
                   onCreateStudentAccount({
                     name: newStudentName.trim(),
                     email: newStudentEmail.trim(),
-                    password: '123456',
+                    password: newStudentPassword.trim() || '123456',
                     role: 'student',
                     className: targetClass,
-                    avatarUrl: `https://images.unsplash.com/photo-${1534528741775 + Math.floor(Math.random() * 50)}?w=150&auto=format&fit=crop&q=80`
+                    avatarUrl: `https://images.unsplash.com/photo-${1534528741775 + Math.floor(Math.random() * 50)}?w=150&auto=format&fit=crop&q=80`,
+                    mustChangePassword: true
                   });
                 }
                 setShowCreateStudentModal(false);
                 setNewStudentName('');
                 setNewStudentEmail('');
+                setNewStudentPassword('123456');
                 alert(`"${newStudentName.trim()}" isimli öğrenci (${targetClass}) başarıyla eklendi.`);
               }}
               className="space-y-3.5 text-xs"
@@ -2247,6 +2289,18 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
                   value={newStudentEmail}
                   onChange={(e) => setNewStudentEmail(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Giriş Şifresi</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Varsayılan: 123456"
+                  value={newStudentPassword}
+                  onChange={(e) => setNewStudentPassword(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-400 font-mono font-bold"
                 />
               </div>
 

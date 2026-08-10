@@ -52,6 +52,7 @@ interface TeacherTeachersTabProps {
   setDeleteTeacherConfirmationStep: (step: number) => void;
   setTypedTeacherConfirmName: (name: string) => void;
   onUnlockUserAccount?: (userId: string) => void;
+  setEditTeacherPassword?: (pwd: string) => void;
 }
 
 export const TeacherTeachersTab: React.FC<TeacherTeachersTabProps> = ({
@@ -330,6 +331,7 @@ export const TeacherTeachersTab: React.FC<TeacherTeachersTabProps> = ({
                             setEditTeacherEmail(tUser.email);
                             setEditTeacherTitle(tUser.title || 'Sınıf Rehber Öğretmeni');
                             setEditTeacherRole(tUser.role as any);
+                            if (setEditTeacherPassword) setEditTeacherPassword('');
                             setShowEditTeacherModal(true);
                           }}
                         >

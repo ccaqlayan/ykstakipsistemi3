@@ -23,6 +23,7 @@ export interface UserAccount {
   failedLoginAttempts?: number;
   lockoutUntil?: string | null;
   isLocked?: boolean;
+  mustChangePassword?: boolean;
 }
 
 export interface ClassDefinition {
