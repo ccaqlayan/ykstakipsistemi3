@@ -81,7 +81,15 @@ import { TemplateWeeklyPreviewModal } from './TemplateWeeklyPreviewModal';
 import { TemplateFullBuilderView } from './TemplateFullBuilderView';
 import { UniversityLogoManagerModal } from './UniversityLogoManagerModal';
 import { AuditLogsView } from './AuditLogsView';
+import { TeacherSummaryTab } from './teacher/TeacherSummaryTab';
+import { TeacherStudentsTab } from './teacher/TeacherStudentsTab';
+import { TeacherTemplatesTab } from './teacher/TeacherTemplatesTab';
+import { TeacherTeachersTab } from './teacher/TeacherTeachersTab';
 import { subscribeToPresence } from '../services/firebase';
+
+
+
+
 
 interface TeacherDashboardViewProps {
   teacher: UserAccount;
@@ -834,937 +842,114 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
 
       {/* VIEW 0: GENERAL SUMMARY (GENEL ÖZET) */}
       {activeTeacherView === 'summary' && (
-        <div className="space-y-6">
-          
-          {/* Weekly Executive Summary Metric Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            
-            {/* Metric 1: Total & Active Students */}
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-400">Toplam & Aktif Öğrenci</span>
-                <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 flex items-center justify-center">
-                  <Users className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-black text-white font-mono flex items-baseline space-x-2">
-                <span>{assignedStudentsList.length}</span>
-                <span className="text-xs font-medium text-emerald-400">({activeStudentCountOverall} Aktif)</span>
-              </div>
-              <div className="w-full bg-white/10 h-1.5 rounded-full mt-2 overflow-hidden">
-                <div 
-                  className="bg-emerald-400 h-full rounded-full transition-all duration-500" 
-                  style={{ width: `${assignedStudentsList.length > 0 ? (activeStudentCountOverall / assignedStudentsList.length) * 100 : 0}%` }}
-                />
-              </div>
-              <p className="text-[10px] text-slate-400 mt-1.5 flex justify-between">
-                <span>Aktiflik Oranı:</span>
-                <span className="font-bold text-emerald-400">%{assignedStudentsList.length > 0 ? Math.round((activeStudentCountOverall / assignedStudentsList.length) * 100) : 0}</span>
-              </p>
-            </div>
-
-            {/* Metric 2: Weekly Solved Questions */}
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-400">Toplam Çözülen Soru</span>
-                <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 flex items-center justify-center">
-                  <BookOpen className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-black text-amber-300 font-mono">{totalWeeklyQuestions.toLocaleString()} <span className="text-xs text-slate-400 font-normal">Soru</span></div>
-              <p className="text-[10px] text-slate-400 mt-2">Atanmış tüm öğrencilerin soru toplamı</p>
-            </div>
-
-            {/* Metric 3: Weekly Study Hours */}
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-400">Çalışma Programı Süresi</span>
-                <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-300 flex items-center justify-center">
-                  <Clock className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-black text-purple-300 font-mono">{weeklyStudyHours} <span className="text-xs text-slate-400 font-normal">Saat</span></div>
-              <p className="text-[10px] text-slate-400 mt-2">Tamamlanan çalışma programı saati</p>
-            </div>
-
-            {/* Metric 4: Program Completion Rate */}
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-400">Program Uyum Oranı</span>
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-black text-emerald-400 font-mono">%{planCompletionRate}</div>
-              <p className="text-[10px] text-slate-400 mt-2">{totalCompletedPlans} / {totalPlansCount} Görev tamamlandı</p>
-            </div>
-
-          </div>
-
-          {/* Section: Rectangular Class Cards (Sınıf Kutuları) */}
-          <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
-              <div>
-                <h2 className="text-lg font-bold text-white flex items-center space-x-2">
-                  <Building2 className="w-5 h-5 text-indigo-400" />
-                  <span>Sınıflarınız ve Öğrenci Durumu ({classSummaries.length} Sınıf)</span>
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Her bir sınıfın kayıtlı öğrenci sayısı ve aktif sistemi kullanan öğrenci sayısı. Detaylar ve öğrenci listesi için sınıfa tıklayın.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowCreateClassModal(true)}
-                className="bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center space-x-1.5 self-start sm:self-auto"
-              >
-                <Plus className="w-4 h-4 text-indigo-400" />
-                <span>Yeni Sınıf Ekle</span>
-              </button>
-            </div>
-
-            {classSummaries.length === 0 ? (
-              <div className="text-center py-12 bg-slate-950/40 rounded-2xl border border-dashed border-slate-800">
-                <Building2 className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                <p className="text-sm text-slate-400 font-medium">Henüz atanmış veya tanımlı sınıf bulunmuyor.</p>
-                <button
-                  onClick={() => setShowCreateClassModal(true)}
-                  className="mt-3 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl"
-                >
-                  Sınıf Eklemek İçin Tıklayın
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {classSummaries.map((cls) => (
-                  <div
-                    key={cls.className}
-                    onClick={() => {
-                      setSelectedClassFilter(cls.className);
-                      setActiveTeacherView('students');
-                    }}
-                    className="bg-slate-950/80 hover:bg-slate-800/90 border border-slate-800 hover:border-indigo-500/60 rounded-2xl p-5 shadow-xl transition-all cursor-pointer group flex flex-col justify-between"
-                  >
-                    <div>
-                      {/* Header */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 flex items-center justify-center font-bold">
-                            <GraduationCap className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <h3 className="text-base font-bold text-white group-hover:text-indigo-300 transition-colors flex items-center space-x-1.5">
-                              <span>{cls.className}</span>
-                            </h3>
-                            <span className="text-[11px] text-slate-400">Atanmış Sınıf</span>
-                          </div>
-                        </div>
-                        <span className="text-[11px] bg-indigo-500/10 text-indigo-300 font-semibold px-2.5 py-1 rounded-lg border border-indigo-500/20">
-                          {cls.registeredCount} Öğrenci
-                        </span>
-                      </div>
-
-                      {/* Main Numbers Breakdown Box */}
-                      <div className="grid grid-cols-2 gap-3 my-3 bg-slate-900/90 p-3.5 rounded-xl border border-slate-800">
-                        <div>
-                          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Kayıtlı Öğrenci</span>
-                          <div className="text-xl font-black text-white font-mono mt-0.5">{cls.registeredCount} <span className="text-xs text-slate-400 font-normal">Kişi</span></div>
-                        </div>
-                        <div>
-                          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center space-x-1">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block"></span>
-                            <span>Aktif Kullanıcı</span>
-                          </span>
-                          <div className="text-xl font-black text-emerald-400 font-mono mt-0.5">{cls.activeCount} <span className="text-xs text-slate-400 font-normal">Kişi</span></div>
-                        </div>
-                      </div>
-
-                      {/* Active Usage Progress Bar */}
-                      <div className="space-y-1 mb-4">
-                        <div className="flex justify-between text-[11px] text-slate-400">
-                          <span>Sistem Aktif Kullanım Oranı:</span>
-                          <span className="font-bold text-emerald-400 font-mono">%{cls.activePercent}</span>
-                        </div>
-                        <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
-                          <div 
-                            className="bg-emerald-400 h-full rounded-full transition-all duration-500" 
-                            style={{ width: `${cls.activePercent}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Academic Quick Stats */}
-                      <div className="space-y-1.5 border-t border-slate-800/80 pt-3 text-xs">
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-slate-400">TYT Net Ortalaması:</span>
-                          <span className="font-bold text-emerald-400 font-mono">{cls.avgTYT} Net</span>
-                        </div>
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-slate-400">AYT Net Ortalaması:</span>
-                          <span className="font-bold text-purple-300 font-mono">{cls.avgAYT} Net</span>
-                        </div>
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-slate-400">Toplam Çözülen Soru:</span>
-                          <span className="font-bold text-amber-300 font-mono">{cls.totalQuestions.toLocaleString()} Soru</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action Link Footer */}
-                    <div className="mt-4 pt-3 border-t border-slate-800/90 flex items-center justify-between text-xs font-bold text-indigo-400 group-hover:text-indigo-300 transition-colors">
-                      <span>Öğrenci Yönetim & Takip Sayfasına Git</span>
-                      <ChevronRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Section: Sınıflar Arası Karşılaştırma Grafiği */}
-          {classSummaries.length > 0 && (
-            <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4">
-              <h2 className="text-base font-bold text-white flex items-center space-x-2">
-                <BarChart3 className="w-5 h-5 text-purple-400" />
-                <span>Sınıflar Arası Aktif Öğrenci ve Kayıt Dağılım Grafiği</span>
-              </h2>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={classSummaries} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                    <XAxis dataKey="className" stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                    <YAxis stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', color: '#fff' }} 
-                    />
-                    <Legend wrapperStyle={{ fontSize: '12px', color: '#cbd5e1' }} />
-                    <Bar dataKey="registeredCount" name="Kayıtlı Öğrenci" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="activeCount" name="Aktif Kullanıcı" fill="#10b981" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          )}
-
-        </div>
+        <TeacherSummaryTab
+          assignedStudentsList={assignedStudentsList}
+          activeStudentCountOverall={activeStudentCountOverall}
+          totalWeeklyQuestions={totalWeeklyQuestions}
+          weeklyStudyHours={weeklyStudyHours}
+          planCompletionRate={planCompletionRate}
+          totalCompletedPlans={totalCompletedPlans}
+          totalPlansCount={totalPlansCount}
+          classSummaries={classSummaries}
+          setShowCreateClassModal={setShowCreateClassModal}
+          setSelectedClassFilter={setSelectedClassFilter}
+          setActiveTeacherView={setActiveTeacherView}
+        />
       )}
+
 
       {/* VIEW 1: STUDENTS & CLASSES */}
       {activeTeacherView === 'students' && (
-        <>
-          {/* Executive Summary Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-400">Takip Edilen Öğrenci</span>
-                <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 flex items-center justify-center">
-                  <Users className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-black text-white font-mono">{totalStudentsCount}</div>
-              <p className="text-[10px] text-slate-400 mt-1">Aktif kayıtlı öğrenci</p>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-400">Sınıf TYT Net Ort.</span>
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-black text-emerald-400 font-mono">{avgTYTNet} <span className="text-xs text-slate-400 font-normal">Net</span></div>
-              <p className="text-[10px] text-slate-400 mt-1">Son genel denemeler</p>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-400">Sınıf AYT Net Ort.</span>
-                <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-300 flex items-center justify-center">
-                  <BarChart3 className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-black text-purple-300 font-mono">{avgAYTNet} <span className="text-xs text-slate-400 font-normal">Net</span></div>
-              <p className="text-[10px] text-slate-400 mt-1">Son genel denemeler</p>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-400">Toplam Çözülen Soru</span>
-                <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 flex items-center justify-center">
-                  <BookOpen className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-black text-amber-300 font-mono">{totalQuestionsSolvedInClass}</div>
-              <p className="text-[10px] text-slate-400 mt-1">Haftalık Soru Günlükleri</p>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-400">Çözülmemiş Hata</span>
-                <div className="w-8 h-8 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-300 flex items-center justify-center">
-                  <AlertTriangle className="w-4 h-4" />
-                </div>
-              </div>
-              <div className="text-2xl font-black text-rose-400 font-mono">{totalUnresolvedErrorsInClass}</div>
-              <p className="text-[10px] text-slate-400 mt-1">Konu hatası bildirimleri</p>
-            </div>
-
-          </div>
-
-          {/* Student Matrix Table */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
-              <div className="flex items-center space-x-3">
-                <h2 className="text-base font-bold text-white flex items-center space-x-2">
-                  <Users className="w-5 h-5 text-indigo-400" />
-                  <span>Öğrenci Performans ve Çalışma Programı Takibi</span>
-                </h2>
-                
-                <div className="flex items-center space-x-1.5 bg-white/10 px-3 py-1 rounded-xl border border-white/10">
-                  <Filter className="w-3.5 h-3.5 text-slate-400" />
-                  <select
-                    value={selectedClassFilter}
-                    onChange={(e) => setSelectedClassFilter(e.target.value)}
-                    className="bg-transparent text-xs text-white font-bold border-none focus:outline-none cursor-pointer"
-                  >
-                    <option value="ALL" className="bg-slate-900">
-                      {isSchoolCounselor ? 'Tüm Okul Sınıfları (Tümü)' : `Tüm Atanmış Sınıflarım (${availableClasses.join(', ')})`}
-                    </option>
-                    {availableClasses.map((clsName) => (
-                      <option key={clsName} value={clsName} className="bg-slate-900">{clsName}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <div className="relative min-w-[200px]">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    placeholder="Öğrenci adı veya sınıf ara..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400"
-                  />
-                </div>
-
-                <button
-                  onClick={() => {
-                    if (!newStudentClass && availableClasses.length > 0) {
-                      setNewStudentClass(availableClasses[0]);
-                    }
-                    setShowCreateStudentModal(true);
-                  }}
-                  id="create-student-btn-table"
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-all flex items-center space-x-1.5 shadow-md shrink-0"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span>Öğrenci Ekle</span>
-                </button>
-              </div>
-            </div>
-
-            {filteredStudents.length === 0 ? (
-              <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-2xl bg-white/[0.02]">
-                <Users className="w-10 h-10 text-slate-500 mx-auto mb-2" />
-                <p className="text-sm text-slate-300 font-semibold">Kayıtlı öğrenci bulunamadı.</p>
-                <p className="text-xs text-slate-400 mt-1">Filtrenizi değiştirebilir veya yeni öğrenci kaydı ekleyebilirsiniz.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredStudents.map((student) => {
-                  const data = studentsData[student.id];
-                  const profile = data?.profile;
-                  const lastMock = data?.generalMocks?.[data.generalMocks.length - 1];
-                  const plansCount = data?.studyPlans?.length || 0;
-                  const hasCoachNote = Boolean(profile?.coachNotes);
-
-                  return (
-                    <div 
-                      key={student.id} 
-                      className="bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl p-5 shadow-lg hover:border-indigo-500/50 hover:bg-slate-800/60 transition-all cursor-pointer group flex flex-col h-full relative"
-                      onClick={() => handleOpenInspectStudent(student, 'performance')}
-                    >
-                      <div className="flex items-center space-x-4 mb-4">
-                        <div className="relative shrink-0">
-                          <img 
-                            src={student.avatarUrl || DEFAULT_AVATAR} 
-                            alt={student.name}
-                            className="w-12 h-12 rounded-2xl object-cover border-2 border-white/10 shadow-md group-hover:border-indigo-400/50 transition-colors shrink-0" 
-                          />
-                          <span 
-                            className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-slate-900 shadow-sm ${
-                              isStudentActive(student.id, studentsData[student.id]) ? 'bg-emerald-500' : 'bg-slate-500'
-                            }`}
-                            title={isStudentActive(student.id, studentsData[student.id]) ? 'Aktif Öğrenci (Sistem Kriterlerine Göre)' : 'Pasif Öğrenci (Sistem Kriterlerine Göre)'}
-                          />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="mb-0.5 flex">
-                            {isUserOnline(student) ? (
-                              <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center space-x-1 whitespace-nowrap" title="Sistemde Çevrimiçi (Online)">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-0.5"></span>
-                                <span>Çevrimiçi</span>
-                              </span>
-                            ) : (
-                              <OfflineStatusDisplay 
-                                user={student} 
-                                className="text-[10px] text-slate-400 font-medium px-2 py-0.5 rounded-full bg-white/5 border border-white/5 hover:text-slate-200 transition-colors whitespace-nowrap inline-flex" 
-                              />
-                            )}
-                          </div>
-                          <h3 
-                            className="text-sm font-bold text-white group-hover:text-indigo-300 transition-colors truncate hover:underline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (isBranchTeacher) {
-                                alert('Branş öğretmenlerinin öğrenci profili düzenleme yetkisi yoktur.');
-                                return;
-                              }
-                              setEditingStudentId(student.id);
-                              setEditStudentName(student.name);
-                              setEditStudentEmail(student.email);
-                              setEditStudentClassName(student.className || '');
-                              setEditStudentPassword(student.password || '');
-                              setShowEditStudentModal(true);
-                            }}
-                          >
-                            {student.name}
-                          </h3>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <span className="text-[10px] font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-lg border border-indigo-500/30 whitespace-nowrap">
-                              {student.className || '12-A SAY'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 mb-4 flex-1">
-                        <div className="bg-white/5 rounded-xl p-3 border border-white/5 flex flex-col justify-center">
-                          <div className="text-[10px] text-slate-400 mb-1 flex items-center gap-1"><Target className="w-3 h-3"/> Hedef</div>
-                          <div className="text-xs font-semibold text-slate-200 line-clamp-1" title={profile?.targetUniversity}>
-                            {profile?.targetUniversity || 'Üniversite'}
-                          </div>
-                          <div className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
-                            {profile?.targetDepartment || 'Bölüm'} • <strong className="text-amber-300">{profile?.targetRank?.toLocaleString() || '-'}</strong>
-                          </div>
-                        </div>
-                        <div className="bg-white/5 rounded-xl p-3 border border-white/5 flex flex-col justify-center">
-                          <div className="text-[10px] text-slate-400 mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3"/> Son Netler</div>
-                          <div className="text-sm font-black font-mono">
-                            <span className="text-emerald-400">{lastMock?.tyt?.totalNet || '-'}</span>
-                            <span className="text-slate-500 mx-1">/</span>
-                            <span className="text-purple-400">{lastMock?.ayt?.totalNet || '-'}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between mb-4 px-1">
-                        <div className="flex items-center space-x-2">
-                          <div className="text-[10px] bg-white/5 text-slate-300 px-2.5 py-1 rounded-lg flex items-center space-x-1 font-medium border border-white/5">
-                            <BookOpen className="w-3 h-3 text-fuchsia-400" />
-                            <span>{plansCount} Görev</span>
-                          </div>
-                          {hasCoachNote ? (
-                            <div className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-lg flex items-center space-x-1 font-medium border border-emerald-500/20">
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>Koç Notu</span>
-                            </div>
-                          ) : (
-                            <div className="text-[10px] bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-lg flex items-center space-x-1 font-medium border border-amber-500/20">
-                              <MessageSquare className="w-3 h-3" />
-                              <span>Not Yok</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-2 pt-3 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => handleOpenInspectStudent(student, 'planner')}
-                          className="flex-1 py-1.5 bg-fuchsia-600/80 hover:bg-fuchsia-500 text-white rounded-xl text-[11px] font-semibold transition-all border border-fuchsia-400/40 flex items-center justify-center space-x-1.5 shadow-sm"
-                          title="Haftalık Çalışma Planını İncele ve Düzenle"
-                        >
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span>Çalışma Planı</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleOpenInspectStudent(student, 'performance')}
-                          className="flex-1 py-1.5 bg-indigo-600/80 hover:bg-indigo-500 text-white rounded-xl text-[11px] font-semibold transition-all border border-indigo-400/40 flex items-center justify-center space-x-1.5 shadow-sm"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Detay</span>
-                        </button>
-
-                        {isSchoolCounselor && onDeleteStudentAccount && (
-                          <button
-                            onClick={() => {
-                              setStudentToDelete(student);
-                              setDeleteConfirmationStep(1);
-                              setTypedConfirmName('');
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-rose-400 bg-white/5 hover:bg-rose-500/10 rounded-xl transition-all border border-white/10 shrink-0"
-                            title="Öğrenciyi Sistemden Kalıcı Olarak Sil"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </>
+        <TeacherStudentsTab
+          totalStudentsCount={totalStudentsCount}
+          avgTYTNet={avgTYTNet}
+          avgAYTNet={avgAYTNet}
+          totalQuestionsSolvedInClass={totalQuestionsSolvedInClass}
+          totalUnresolvedErrorsInClass={totalUnresolvedErrorsInClass}
+          selectedClassFilter={selectedClassFilter}
+          setSelectedClassFilter={setSelectedClassFilter}
+          isSchoolCounselor={isSchoolCounselor}
+          availableClasses={availableClasses}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          newStudentClass={newStudentClass}
+          setNewStudentClass={setNewStudentClass}
+          setShowCreateStudentModal={setShowCreateStudentModal}
+          filteredStudents={filteredStudents}
+          studentsData={studentsData}
+          handleOpenInspectStudent={handleOpenInspectStudent}
+          isBranchTeacher={isBranchTeacher}
+          setEditingStudentId={setEditingStudentId}
+          setEditStudentName={setEditStudentName}
+          setEditStudentEmail={setEditStudentEmail}
+          setEditStudentClassName={setEditStudentClassName}
+          setEditStudentPassword={setEditStudentPassword}
+          setShowEditStudentModal={setShowEditStudentModal}
+          onDeleteStudentAccount={onDeleteStudentAccount}
+          setStudentToDelete={setStudentToDelete}
+          setDeleteConfirmationStep={setDeleteConfirmationStep}
+          setTypedConfirmName={setTypedConfirmName}
+          OfflineStatusDisplay={OfflineStatusDisplay}
+        />
       )}
+
 
       {/* VIEW 2: PROGRAM TEMPLATES & REUSABLE LIBRARY */}
       {activeTeacherView === 'templates' && (
-        <div className="space-y-6">
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
-              <div>
-                <h2 className="text-lg font-extrabold text-white flex items-center space-x-2">
-                  <Bookmark className="w-5 h-5 text-fuchsia-400" />
-                  <span>Kayıtlı Çalışma Programı Şablonları Kütüphanesi</span>
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Öğretmenlerin beğendiği ve kaydettiği tüm haftalık çalışma programı şablonları. Dilediğiniz şablonu herhangi bir öğrenciye tek tıkla uygulayabilirsiniz.
-                </p>
-              </div>
-
-              <button
-                onClick={() => setShowCreateTemplateModal(true)}
-                className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold px-4 py-2.5 rounded-2xl transition-all shadow-lg shadow-fuchsia-600/30 border border-fuchsia-400/40 flex items-center space-x-2 shrink-0"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Sıfırdan Yeni Şablon Oluştur</span>
-              </button>
-            </div>
-
-            {/* Template Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
-              {programTemplates.map((tpl) => {
-                const isExpanded = previewTemplateId === tpl.id;
-                return (
-                  <div 
-                    key={tpl.id}
-                    className="bg-slate-900/90 border border-white/10 rounded-2xl p-5 shadow-xl flex flex-col justify-between hover:border-fuchsia-500/40 transition-all space-y-4"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-[10px] font-bold bg-fuchsia-500/20 text-fuchsia-300 px-2.5 py-1 rounded-full border border-fuchsia-500/30 uppercase tracking-wider">
-                          {tpl.targetField || 'TÜMÜ'}
-                        </span>
-                        <span className="text-[10px] text-slate-400 flex items-center space-x-1">
-                          <Clock className="w-3 h-3" />
-                          <span>{tpl.items.length} Görev Maddesi</span>
-                        </span>
-                      </div>
-
-                      <h3 
-                        onClick={() => setWeeklyPreviewTemplate(tpl)}
-                        className="text-base font-extrabold text-white tracking-tight cursor-pointer hover:text-fuchsia-300 transition-colors flex items-center justify-between group"
-                        title="İsmi/Açıklamayı Düzenle ve Geniş Ekran Haftalık Önizleme Aç"
-                      >
-                        <span>{tpl.title}</span>
-                        <Edit className="w-4 h-4 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </h3>
-
-                      {tpl.description && (
-                        <p 
-                          onClick={() => setWeeklyPreviewTemplate(tpl)}
-                          className="text-xs text-slate-400 leading-relaxed line-clamp-2 cursor-pointer hover:text-slate-200 transition-colors"
-                          title="İsmi/Açıklamayı Düzenle ve Geniş Ekran Haftalık Önizleme Aç"
-                        >
-                          {tpl.description}
-                        </p>
-                      )}
-
-                      <div className="text-[11px] text-slate-500">
-                        Oluşturan: <strong className="text-slate-300">{tpl.createdByName || 'Rehber Koç'}</strong>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
-                      <button
-                        onClick={() => setWeeklyPreviewTemplate(tpl)}
-                        className="text-xs text-fuchsia-300 hover:text-fuchsia-200 font-bold transition-colors bg-fuchsia-500/10 hover:bg-fuchsia-500/20 border border-fuchsia-500/30 px-2.5 py-1.5 rounded-xl flex items-center space-x-1"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Haftalık Önizle & Düzenle</span>
-                      </button>
-
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => {
-                            setSelectedTemplateToApply(tpl);
-                            setTargetStudentIdForApply(studentUsers[0]?.id || '');
-                            setShowApplyTemplateModal(true);
-                          }}
-                          className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-all shadow-md shadow-indigo-600/20 border border-indigo-400/30 flex items-center space-x-1"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Öğrenciye Uygula</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            if (confirm(`"${tpl.title}" şablonunu silmek istediğinizden emin misiniz?`)) {
-                              onDeleteProgramTemplate(tpl.id);
-                            }
-                          }}
-                          className="p-1.5 text-slate-500 hover:text-rose-400 bg-white/5 hover:bg-rose-500/10 rounded-xl transition-all border border-white/10"
-                          title="Şablonu Sil"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <TeacherTemplatesTab
+          programTemplates={programTemplates}
+          setShowCreateTemplateModal={setShowCreateTemplateModal}
+          setWeeklyPreviewTemplate={setWeeklyPreviewTemplate}
+          setSelectedTemplateToApply={setSelectedTemplateToApply}
+          setTargetStudentIdForApply={setTargetStudentIdForApply}
+          studentUsers={studentUsers}
+          setShowApplyTemplateModal={setShowApplyTemplateModal}
+          onDeleteProgramTemplate={onDeleteProgramTemplate}
+        />
       )}
+
 
       {/* VIEW 3: TEACHERS & CLASS DEFINITIONS MANAGEMENT */}
       {activeTeacherView === 'teachers' && isSchoolCounselor && (
-        <div className="space-y-6 animate-in fade-in duration-200">
-          
-          {/* Executive Overview Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl flex items-center justify-between">
-              <div>
-                <span className="text-xs font-semibold text-slate-400 block">Okul Öğretmen Sayısı</span>
-                <div className="text-2xl font-black text-white font-mono mt-1">
-                  {allUsers.filter(u => u.role === 'class_teacher' || u.role === 'teacher' || u.role === 'school_counselor').length}
-                </div>
-                <p className="text-[10px] text-purple-300 mt-0.5">Kayıtlı Öğretmen Kadrosu</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-300 flex items-center justify-center">
-                <UserCheck className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl flex items-center justify-between">
-              <div>
-                <span className="text-xs font-semibold text-slate-400 block">Tanımlı Okul Sınıfları</span>
-                <div className="text-2xl font-black text-emerald-400 font-mono mt-1">
-                  {classes.length}
-                </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">Aktif Sınıf Şubeleri</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 flex items-center justify-center">
-                <Building2 className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl flex items-center justify-between">
-              <div>
-                <span className="text-xs font-semibold text-slate-400 block">Atanmış Sınıf Şubeleri</span>
-                <div className="text-2xl font-black text-indigo-300 font-mono mt-1">
-                  {Array.from(new Set(allUsers.flatMap(u => u.assignedClassNames || []))).length}
-                </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">Rehber Öğretmeni Olan Sınıflar</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl flex items-center justify-between">
-              <div>
-                <span className="text-xs font-semibold text-slate-400 block">Toplam Öğrenci Kapasitesi</span>
-                <div className="text-2xl font-black text-amber-300 font-mono mt-1">
-                  {allUsers.filter(u => u.role === 'student').length}
-                </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">Sınıflardaki Öğrenciler</p>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 flex items-center justify-center">
-                <Users className="w-5 h-5" />
-              </div>
-            </div>
-          </div>
-
-          {/* Section 1: Class Definitions & Assignments Overview */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
-              <div>
-                <h2 className="text-base font-bold text-white flex items-center space-x-2">
-                  <Building2 className="w-5 h-5 text-emerald-400" />
-                  <span>Sınıf Tanımları ve Sınıf Rehber Öğretmenleri</span>
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Okuldaki mevcut tüm sınıf şubelerini yönetin, yeni sınıf tanımı ekleyin veya sınıfların öğretmen atamalarını düzenleyin/silin.
-                </p>
-              </div>
-
-              <div className="flex items-center space-x-2 shrink-0">
-                <button
-                  onClick={() => setShowCreateClassModal(true)}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-md shadow-emerald-600/20 border border-emerald-400/30 flex items-center space-x-1.5"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Yeni Sınıf Tanımı Ekle</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {classes.map((cls) => {
-                const assignedTeachers = allUsers.filter(u => 
-                  (u.role === 'class_teacher' || u.role === 'teacher' || u.role === 'school_counselor') &&
-                  u.assignedClassNames?.includes(cls.name)
-                );
-                const studentsInClass = allUsers.filter(u => u.role === 'student' && u.className === cls.name);
-
-                return (
-                  <div key={cls.id} className="bg-slate-900/80 border border-white/10 rounded-2xl p-4 space-y-3 hover:border-emerald-500/40 transition-all">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
-                          {cls.name}
-                        </span>
-                        <h3 className="text-sm font-bold text-white mt-1">{cls.name} Şubesi</h3>
-                        {cls.description && <p className="text-[11px] text-slate-400 mt-0.5">{cls.description}</p>}
-                      </div>
-
-                      {onUpdateClass && (
-                        <button
-                          onClick={() => {
-                            setClassToEdit(cls);
-                            setEditClassNameInput(cls.name);
-                            setEditClassDescInput(cls.description || '');
-                            setEditClassFieldInput(cls.field || 'SAY');
-                            setShowEditClassModal(true);
-                          }}
-                          className="p-1.5 text-slate-500 hover:text-emerald-400 bg-white/5 hover:bg-emerald-500/10 rounded-xl transition-all border border-white/10"
-                          title="Sınıf Tanımını Düzenle"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="space-y-1.5 pt-2 border-t border-white/10 text-xs">
-                      <div className="flex items-center justify-between text-slate-300">
-                        <span className="text-slate-400">Atanmış Rehber Öğretmen:</span>
-                        <div className="font-semibold text-right">
-                          {assignedTeachers.length > 0 ? (
-                            assignedTeachers.map(t => (
-                              <span key={t.id} className="text-purple-300 block">{t.name}</span>
-                            ))
-                          ) : (
-                            <span className="text-amber-400 text-[11px]">Atama Yapılmadı</span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-slate-300">
-                        <span className="text-slate-400">Kayıtlı Öğrenci:</span>
-                        <span className="font-mono text-white font-bold">{studentsInClass.length} Öğrenci</span>
-                      </div>
-                    </div>
-
-                    <div className="pt-2 flex items-center justify-end space-x-2">
-                      <button
-                        onClick={() => {
-                          const assignedIds = allUsers
-                            .filter(u => (u.role === 'class_teacher' || u.role === 'teacher' || u.role === 'school_counselor') && u.assignedClassNames?.includes(cls.name))
-                            .map(u => u.id);
-                          setSelectedClassForTeacherAssign(cls);
-                          setSelectedTeacherIdsForClass(assignedIds);
-                          setClassTeacherSearchTerm('');
-                          setShowClassTeacherAssignModal(true);
-                        }}
-                        className="w-full bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/30 text-xs font-bold py-1.5 px-3 rounded-xl transition-all flex items-center justify-center space-x-1"
-                      >
-                        <UserCheck className="w-3.5 h-3.5" />
-                        <span>Sınıf Atamasını Düzenle</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Section 2: Teacher Users Management Table & Actions */}
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
-              <div>
-                <h2 className="text-base font-bold text-white flex items-center space-x-2">
-                  <UserCheck className="w-5 h-5 text-purple-400" />
-                  <span>Öğretmen Kadrosu & Sınıf Yetki Tanımları</span>
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Öğretmenlerin sorumlu olduğu sınıfları tanımlayabilir, değiştirebilir veya öğretmen hesabını silebilirsiniz.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="relative min-w-[200px]">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    placeholder="Öğretmen ara..."
-                    value={teacherSearchTerm}
-                    onChange={(e) => setTeacherSearchTerm(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-400"
-                  />
-                </div>
-
-                <button
-                  onClick={() => {
-                    setNewTeacherName('');
-                    setNewTeacherEmail('');
-                    setNewTeacherPassword('123456');
-                    setNewTeacherTitle('Sınıf Rehber Öğretmeni');
-                    setNewTeacherAssignedClasses([]);
-                    setShowCreateTeacherModal(true);
-                  }}
-                  className="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-md shadow-purple-600/20 border border-purple-400/30 flex items-center space-x-1.5"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  <span>Yeni Öğretmen Hesabı Tanımla</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Teachers Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {allUsers
-                .filter(u => u.role === 'class_teacher' || u.role === 'teacher' || u.role === 'school_counselor')
-                .filter(u => 
-                  teacherSearchTerm === '' ||
-                  u.name.toLowerCase().includes(teacherSearchTerm.toLowerCase()) ||
-                  u.email.toLowerCase().includes(teacherSearchTerm.toLowerCase()) ||
-                  (u.assignedClassNames || []).some(c => c.toLowerCase().includes(teacherSearchTerm.toLowerCase()))
-                )
-                .map((tUser) => {
-                  const assignedList = tUser.assignedClassNames || [];
-                  const totalStudentsCount = allUsers.filter(u => u.role === 'student' && assignedList.includes(u.className || '')).length;
-
-                  return (
-                    <div 
-                      key={tUser.id} 
-                      className="bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl p-5 shadow-lg hover:border-purple-500/50 hover:bg-slate-800/60 transition-all group flex flex-col h-full relative"
-                    >
-                      <div className="flex items-start space-x-4 mb-4">
-                        <img 
-                          src={tUser.avatarUrl || DEFAULT_AVATAR} 
-                          alt={tUser.name}
-                          className="w-12 h-12 rounded-2xl object-cover border-2 border-white/10 shadow-md group-hover:border-purple-400/50 transition-colors shrink-0" 
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                            <h3 
-                              className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors truncate hover:underline cursor-pointer"
-                              onClick={() => {
-                                setEditingTeacherId(tUser.id);
-                                setEditTeacherName(tUser.name);
-                                setEditTeacherEmail(tUser.email);
-                                setEditTeacherTitle(tUser.title || 'Sınıf Rehber Öğretmeni');
-                                setEditTeacherRole(tUser.role as any);
-                                setShowEditTeacherModal(true);
-                              }}
-                            >
-                              {tUser.name}
-                            </h3>
-                            {tUser.role === 'school_counselor' && (
-                              <span className="text-[9px] bg-purple-500/30 text-purple-200 px-1.5 py-0.5 rounded-md border border-purple-400/30 font-semibold whitespace-nowrap">
-                                Okul Rehberlik Yetkilisi
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="text-[10px] text-slate-400 mb-0.5">
-                            {tUser.title || 'Sınıf Rehber Öğretmeni'}
-                          </div>
-                          
-                          <div className="text-[10px] text-slate-400 truncate">
-                            {tUser.email}
-                          </div>
-                          <div className="text-[10px] text-purple-300/80 font-semibold mt-0.5">
-                            {tUser.role === 'school_counselor' 
-                              ? 'Okul Rehber Öğretmeni' 
-                              : tUser.role === 'class_teacher' 
-                              ? 'Sınıf Rehber Öğretmeni' 
-                              : tUser.role === 'teacher' 
-                              ? 'Branş Öğretmeni' 
-                              : 'Öğrenci'}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="bg-white/5 rounded-xl p-3 border border-white/5 mb-4 flex-1 flex flex-col justify-center">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                            <Building2 className="w-3 h-3"/> Atanmış Sınıflar
-                          </div>
-                          <div className="text-[10px] font-bold text-emerald-400 font-mono">
-                            {totalStudentsCount} Öğrenci
-                          </div>
-                        </div>
-                        {assignedList.length === 0 ? (
-                          <span className="text-[11px] text-amber-400 italic bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 inline-block w-fit mt-1">
-                            Atanmış sınıf yok
-                          </span>
-                        ) : (
-                          <div className="flex flex-wrap gap-1.5 mt-1">
-                            {assignedList.map(cName => (
-                              <span key={cName} className="text-[10px] font-bold bg-purple-500/20 text-purple-200 px-2.5 py-1 rounded-lg border border-purple-500/30">
-                                {cName}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col gap-2 pt-3 border-t border-white/10 mt-auto">
-                        <button
-                          onClick={() => {
-                            setSelectedTeacherForAssignment(tUser);
-                            setAssignedClassesForSelectedTeacher(assignedList);
-                            setShowAssignTeacherModal(true);
-                          }}
-                          className="w-full py-1.5 bg-purple-600/80 hover:bg-purple-500 text-white rounded-xl text-[11px] font-semibold transition-all border border-purple-400/40 flex items-center justify-center space-x-1.5 shadow-sm"
-                          title="Sınıf Atamalarını Değiştir veya Ekle"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                          <span>Sınıf Atamalarını Düzenle</span>
-                        </button>
-
-                        <div className="flex items-center gap-2 mt-2">
-                          {onDeleteTeacherAccount && tUser.id !== teacher.id && (
-                            <button
-                              onClick={() => {
-                                setTeacherToDelete(tUser);
-                                setDeleteTeacherConfirmationStep(1);
-                                setTypedTeacherConfirmName('');
-                              }}
-                              className="w-full py-1.5 text-slate-400 hover:text-rose-400 bg-white/5 hover:bg-rose-500/10 rounded-xl transition-all border border-white/10 flex items-center justify-center"
-                              title="Öğretmen Hesabını Sil"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span className="text-[11px] font-semibold ml-1.5">Hesabı Sil</span>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-
-        </div>
+        <TeacherTeachersTab
+          allUsers={allUsers}
+          classes={classes}
+          teacher={teacher}
+          setShowCreateClassModal={setShowCreateClassModal}
+          onUpdateClass={onUpdateClass}
+          setClassToEdit={setClassToEdit}
+          setEditClassNameInput={setEditClassNameInput}
+          setEditClassDescInput={setEditClassDescInput}
+          setEditClassFieldInput={setEditClassFieldInput}
+          setShowEditClassModal={setShowEditClassModal}
+          setSelectedClassForTeacherAssign={setSelectedClassForTeacherAssign}
+          setSelectedTeacherIdsForClass={setSelectedTeacherIdsForClass}
+          setClassTeacherSearchTerm={setClassTeacherSearchTerm}
+          setShowClassTeacherAssignModal={setShowClassTeacherAssignModal}
+          teacherSearchTerm={teacherSearchTerm}
+          setTeacherSearchTerm={setTeacherSearchTerm}
+          setNewTeacherName={setNewTeacherName}
+          setNewTeacherEmail={setNewTeacherEmail}
+          setNewTeacherPassword={setNewTeacherPassword}
+          setNewTeacherTitle={setNewTeacherTitle}
+          setNewTeacherAssignedClasses={setNewTeacherAssignedClasses}
+          setShowCreateTeacherModal={setShowCreateTeacherModal}
+          setEditingTeacherId={setEditingTeacherId}
+          setEditTeacherName={setEditTeacherName}
+          setEditTeacherEmail={setEditTeacherEmail}
+          setEditTeacherTitle={setEditTeacherTitle}
+          setEditTeacherRole={setEditTeacherRole}
+          setShowEditTeacherModal={setShowEditTeacherModal}
+          setSelectedTeacherForAssignment={setSelectedTeacherForAssignment}
+          setAssignedClassesForSelectedTeacher={setAssignedClassesForSelectedTeacher}
+          setShowAssignTeacherModal={setShowAssignTeacherModal}
+          onDeleteTeacherAccount={onDeleteTeacherAccount}
+          setTeacherToDelete={setTeacherToDelete}
+          setDeleteTeacherConfirmationStep={setDeleteTeacherConfirmationStep}
+          setTypedTeacherConfirmName={setTypedTeacherConfirmName}
+        />
       )}
+
 
       {/* MODAL 1: DETAILED STUDENT INSPECTION MODAL (PERFORMANCE & WEEKLY STUDY PLAN & RESOURCES & YOUTUBE) */}
       {selectedStudentUser && (
