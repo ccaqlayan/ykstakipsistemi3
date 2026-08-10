@@ -64,9 +64,22 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [isDevMode, setIsDevMode] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const [lockoutCountdownSeconds, setLockoutCountdownSeconds] = useState(0);
+
+  useEffect(() => {
+    if (cooldownSeconds <= 0 && lockoutCountdownSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setCooldownSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+      setLockoutCountdownSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldownSeconds, lockoutCountdownSeconds]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (cooldownSeconds > 0 || lockoutCountdownSeconds > 0) return;
+
     setErrorMessage('');
     setSuccessMessage('');
     setIsRegistering(true); // Using this for loading state
@@ -82,6 +95,11 @@ export const LoginView: React.FC<LoginViewProps> = ({
       
       if (!res.ok || !data.success) {
         setErrorMessage(data.error || 'Giriş yapılamadı.');
+        if (data.lockoutRemainingSeconds && data.lockoutRemainingSeconds > 0) {
+          setLockoutCountdownSeconds(data.lockoutRemainingSeconds);
+        } else {
+          setCooldownSeconds(5);
+        }
         setIsRegistering(false);
         return;
       }
@@ -374,10 +392,23 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
             <button
               type="submit"
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all shadow-lg shadow-indigo-600/30 border border-indigo-400/40 flex items-center justify-center space-x-2"
+              disabled={isRegistering || cooldownSeconds > 0 || lockoutCountdownSeconds > 0}
+              className={`w-full py-3 font-bold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 border ${
+                cooldownSeconds > 0 || lockoutCountdownSeconds > 0
+                  ? 'bg-slate-800 text-slate-400 border-slate-700 cursor-not-allowed'
+                  : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 border-indigo-400/40'
+              }`}
             >
-              <span>Güvenli Giriş Yap</span>
-              <ArrowRight className="w-4 h-4" />
+              {cooldownSeconds > 0 ? (
+                <span>Tekrar denemek için {cooldownSeconds} sn bekleyin...</span>
+              ) : lockoutCountdownSeconds > 0 ? (
+                <span>Kilitli ({Math.floor(lockoutCountdownSeconds / 60)}dk {lockoutCountdownSeconds % 60}sn)</span>
+              ) : (
+                <>
+                  <span>Güvenli Giriş Yap</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
         )}

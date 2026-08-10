@@ -20,6 +20,9 @@ export interface UserAccount {
   schoolNumber?: string;
   soundEnabled?: boolean;
   dashboardWidgets?: any[];
+  failedLoginAttempts?: number;
+  lockoutUntil?: string | null;
+  isLocked?: boolean;
 }
 
 export interface ClassDefinition {

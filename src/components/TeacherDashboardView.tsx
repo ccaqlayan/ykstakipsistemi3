@@ -121,6 +121,7 @@ interface TeacherDashboardViewProps {
   onApproveStudent?: (studentId: string) => void;
   onRejectStudent?: (studentId: string) => void;
   onUpdateStudentSubjectNotes?: (studentId: string, subjectName: string, notes: { studentNote?: string; teacherNote?: string }) => void;
+  onUnlockUserAccount?: (userId: string) => void;
 }
 
 const DAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
@@ -167,7 +168,8 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   onDeleteStudentAccount,
   onApproveStudent,
   onRejectStudent,
-  onUpdateStudentSubjectNotes
+  onUpdateStudentSubjectNotes,
+  onUnlockUserAccount
 }) => {
   // Check role
   const isAdmin = teacher.role === 'admin';
@@ -906,6 +908,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           setDeleteConfirmationStep={setDeleteConfirmationStep}
           setTypedConfirmName={setTypedConfirmName}
           OfflineStatusDisplay={OfflineStatusDisplay}
+          onUnlockUserAccount={onUnlockUserAccount}
         />
       )}
 
@@ -962,6 +965,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           setTeacherToDelete={setTeacherToDelete}
           setDeleteTeacherConfirmationStep={setDeleteTeacherConfirmationStep}
           setTypedTeacherConfirmName={setTypedTeacherConfirmName}
+          onUnlockUserAccount={onUnlockUserAccount}
         />
       )}
 

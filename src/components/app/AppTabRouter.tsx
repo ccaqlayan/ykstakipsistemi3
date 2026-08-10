@@ -61,6 +61,7 @@ interface AppTabRouterProps {
   handleApproveStudent: (studentId: string) => void;
   handleRejectStudent: (studentId: string) => void;
   handleUpdateStudentSubjectNotesByTeacher: (studentId: string, subjectName: string, notes: { studentNote?: string; teacherNote?: string }) => void;
+  handleUnlockUserAccount?: (userId: string) => void;
   setActiveTab: (tab: any) => void;
   setShowProfileModal: (show: boolean) => void;
   handleUpdateRoutines: (updatedRoutines: any[], actionText?: string) => void;
@@ -189,7 +190,8 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
   handleToggleFavoriteBook,
   handleEditMessage,
   handleDeleteMessage,
-  handleMarkAsRead
+  handleMarkAsRead,
+  handleUnlockUserAccount
 }) => {
   return (
     <>
@@ -268,6 +270,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           onApproveStudent={handleApproveStudent}
           onRejectStudent={handleRejectStudent}
           onUpdateStudentSubjectNotes={handleUpdateStudentSubjectNotesByTeacher}
+          onUnlockUserAccount={handleUnlockUserAccount}
         />
       )}
 

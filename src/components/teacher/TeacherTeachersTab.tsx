@@ -8,7 +8,9 @@ import {
   Edit, 
   Search, 
   UserPlus, 
-  Trash2 
+  Trash2,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { UserAccount, ClassDefinition } from '../../types';
 import { DEFAULT_AVATAR } from '../../data/initialData';
@@ -49,9 +51,11 @@ interface TeacherTeachersTabProps {
   setTeacherToDelete: (user: UserAccount) => void;
   setDeleteTeacherConfirmationStep: (step: number) => void;
   setTypedTeacherConfirmName: (name: string) => void;
+  onUnlockUserAccount?: (userId: string) => void;
 }
 
 export const TeacherTeachersTab: React.FC<TeacherTeachersTabProps> = ({
+  onUnlockUserAccount,
   allUsers,
   classes,
   teacher,
@@ -336,6 +340,12 @@ export const TeacherTeachersTab: React.FC<TeacherTeachersTabProps> = ({
                             Okul Rehberlik Yetkilisi
                           </span>
                         )}
+                        {(tUser.isLocked || (tUser.lockoutUntil && new Date(tUser.lockoutUntil).getTime() > Date.now())) && (
+                          <span className="text-[9px] bg-rose-500/30 text-rose-200 px-1.5 py-0.5 rounded-md border border-rose-400/30 font-semibold flex items-center gap-1 whitespace-nowrap" title="Hesap Kilitli">
+                            <Lock className="w-2.5 h-2.5 text-rose-400" />
+                            <span>Kilitli</span>
+                          </span>
+                        )}
                       </div>
                       
                       <div className="text-[10px] text-slate-400 mb-0.5">
@@ -396,6 +406,17 @@ export const TeacherTeachersTab: React.FC<TeacherTeachersTabProps> = ({
                     </button>
 
                     <div className="flex items-center gap-2 mt-2">
+                      {onUnlockUserAccount && (tUser.isLocked || (tUser.lockoutUntil && new Date(tUser.lockoutUntil).getTime() > Date.now())) && (
+                        <button
+                          onClick={() => onUnlockUserAccount(tUser.id)}
+                          className="w-full py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl text-[11px] font-semibold transition-all border border-amber-500/30 flex items-center justify-center space-x-1"
+                          title="Hesap Kilidini Aç"
+                        >
+                          <Unlock className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Kilidi Aç</span>
+                        </button>
+                      )}
+
                       {onDeleteTeacherAccount && tUser.id !== teacher.id && (
                         <button
                           onClick={() => {

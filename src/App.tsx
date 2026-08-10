@@ -1498,6 +1498,40 @@ export default function App() {
     );
   };
 
+  const handleUnlockUserAccount = async (userId: string) => {
+    const targetUser = globalState.users.find(u => u.id === userId);
+    try {
+      const res = await fetch('/api/auth/unlock-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setGlobalState((prev) => ({
+          ...prev,
+          users: prev.users.map((u) =>
+            u.id === userId
+              ? { ...u, failedLoginAttempts: 0, lockoutUntil: null, isLocked: false }
+              : u
+          )
+        }));
+        addAuditAndUndo(
+          `${currentUser?.name || 'Rehber Öğretmen'} "${targetUser?.name || 'Kullanıcı'}" kilitli hesabını yeniden aktif hale getirdi.`,
+          'management',
+          'unlock_user',
+          undefined,
+          userId,
+          targetUser?.name
+        );
+      } else {
+        alert(data.error || 'Hesap kilidi açılırken bir hata oluştu.');
+      }
+    } catch (err) {
+      alert('Sunucuya bağlanılamadı.');
+    }
+  };
+
   const handleApproveStudent = (studentId: string) => {
     const studentUser = globalState.users.find(u => u.id === studentId);
     setGlobalState((prev) => {
@@ -2683,6 +2717,7 @@ export default function App() {
             handleApproveStudent={handleApproveStudent}
             handleRejectStudent={handleRejectStudent}
             handleUpdateStudentSubjectNotesByTeacher={handleUpdateStudentSubjectNotesByTeacher}
+            handleUnlockUserAccount={handleUnlockUserAccount}
             setActiveTab={setActiveTab}
             setShowProfileModal={setShowProfileModal}
             handleUpdateRoutines={handleUpdateRoutines}

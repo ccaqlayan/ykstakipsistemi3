@@ -120,6 +120,32 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Bu e-posta adresiyle kayıtlı bir kullanıcı bulunamadı.' });
     }
     
+    // Check if account is currently locked or in cooldown/lockout period
+    if (targetUser.lockoutUntil) {
+      const lockoutTime = new Date(targetUser.lockoutUntil).getTime();
+      const now = Date.now();
+      if (lockoutTime > now) {
+        const remainingSeconds = Math.ceil((lockoutTime - now) / 1000);
+        const remainingMinutes = Math.ceil(remainingSeconds / 60);
+        return res.status(403).json({ 
+          success: false, 
+          isLocked: targetUser.isLocked || false,
+          lockoutRemainingSeconds: remainingSeconds,
+          error: targetUser.isLocked
+            ? `Hesabınız 5 kez hatalı giriş nedeniyle kilitlenmiştir (${remainingMinutes} dk kaldı). Şifrenizi sıfırlayabilir veya öğretmeninizle iletişime geçebilirsiniz.`
+            : `Hesabınız geçici olarak kilitlidir. Lütfen ${remainingMinutes} dakika sonra tekrar deneyin.`
+        });
+      }
+    }
+
+    if (targetUser.isLocked) {
+      return res.status(403).json({
+        success: false,
+        isLocked: true,
+        error: 'Hesabınız kilitlenmiştir. Lütfen şifremi unuttum sayfasından şifrenizi sıfırlayın veya öğretmeninizle iletişime geçin.'
+      });
+    }
+    
     let isValid = false;
     if (targetUser.passwordHash) {
       isValid = await bcrypt.compare(password, targetUser.passwordHash);
@@ -128,14 +154,67 @@ router.post('/login', async (req, res) => {
     }
     
     if (!isValid) {
-      return res.status(401).json({ success: false, error: 'Hatalı şifre! Lütfen tekrar deneyin.' });
+      const attempts = (targetUser.failedLoginAttempts || 0) + 1;
+      let lockoutMinutes = 0;
+      let isNowLocked = false;
+
+      if (attempts === 3) {
+        lockoutMinutes = 5;
+      } else if (attempts === 4) {
+        lockoutMinutes = 10;
+      } else if (attempts >= 5) {
+        lockoutMinutes = 30;
+        isNowLocked = true;
+      }
+
+      const lockoutUntil = lockoutMinutes > 0 
+        ? new Date(Date.now() + lockoutMinutes * 60 * 1000).toISOString()
+        : null;
+
+      const updatedFields = {
+        failedLoginAttempts: attempts,
+        lockoutUntil,
+        isLocked: isNowLocked ? true : (targetUser.isLocked || false)
+      };
+
+      await setDoc(doc(db, 'users', targetUser.id), updatedFields, { merge: true });
+
+      let errorMessage = `Hatalı şifre! Lütfen tekrar deneyin. (${attempts}/5)`;
+      if (lockoutMinutes > 0) {
+        if (isNowLocked) {
+          errorMessage = `5 kez hatalı şifre girildi! Hesabınız 30 dakika süreyle kilitlenmiştir.`;
+        } else {
+          errorMessage = `Hatalı şifre! ${attempts}. kez yanlış girdiniz. Hesabınız ${lockoutMinutes} dakika geçici olarak kilitlendi.`;
+        }
+      }
+
+      return res.status(401).json({ 
+        success: false, 
+        failedLoginAttempts: attempts,
+        lockoutUntil,
+        lockoutRemainingSeconds: lockoutMinutes * 60,
+        isLocked: isNowLocked,
+        error: errorMessage
+      });
     }
+
+    // Login successful -> reset attempts and lockout
+    await setDoc(doc(db, 'users', targetUser.id), {
+      failedLoginAttempts: 0,
+      lockoutUntil: null,
+      isLocked: false
+    }, { merge: true });
     
     if (targetUser.role === 'student' && targetUser.status === 'pending') {
       return res.status(403).json({ success: false, error: 'Hesabınız henüz öğretmeniniz tarafından onaylanmamıştır.' });
     }
     
-    const userToReturn = { ...targetUser };
+    const userToReturn = { 
+      ...targetUser,
+      failedLoginAttempts: 0,
+      lockoutUntil: null,
+      isLocked: false
+    };
     delete userToReturn.password;
     delete userToReturn.passwordHash;
     
@@ -250,12 +329,36 @@ router.post('/reset-password', async (req, res) => {
     await setDoc(doc(db, 'users', targetUser.id), {
       ...targetUser,
       passwordHash: hash,
-      password: null
+      password: null,
+      failedLoginAttempts: 0,
+      lockoutUntil: null,
+      isLocked: false
     });
     
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false });
+  }
+});
+
+router.post('/unlock-user', async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) {
+    return res.status(400).json({ success: false, error: 'Kullanıcı ID gereklidir.' });
+  }
+
+  try {
+    const userRef = doc(db, 'users', userId);
+    await setDoc(userRef, {
+      failedLoginAttempts: 0,
+      lockoutUntil: null,
+      isLocked: false
+    }, { merge: true });
+
+    res.json({ success: true, message: 'Kullanıcı hesabı ve kilidi başarıyla açıldı.' });
+  } catch (err) {
+    console.error('Error unlocking user account:', err);
+    res.status(500).json({ success: false, error: 'Hesap kilidi açılırken hata oluştu.' });
   }
 });
 
