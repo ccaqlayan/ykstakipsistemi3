@@ -708,7 +708,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
         {/* Demo Credentials Summary Footer */}
         <div className="mt-6 pt-4 border-t border-white/10 text-center">
           <p className="text-[11px] text-slate-400">
-            Sistemede tanımlı demo hesaplar:
+            Sisteme tanımlı demo hesaplar:
           </p>
           <div className="text-[10px] text-slate-300 space-y-0.5 mt-1 font-mono">
             <div>Öğrenci 1: ahmet@okul.edu.tr (Şifre: 123)</div>
