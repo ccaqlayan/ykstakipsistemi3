@@ -1814,7 +1814,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
           handleOpenSolveModal={handleOpenSolveModal}
           handleOpenSimilarModal={handleOpenSimilarModal}
           handleOpenQuestionReport={handleOpenQuestionReport}
-          setPreviewImage={setPreviewImage}
+          openImagePreview={openImagePreview}
           ERROR_REASON_LABELS={ERROR_REASON_LABELS}
           ERROR_REASON_COLORS={ERROR_REASON_COLORS}
         />

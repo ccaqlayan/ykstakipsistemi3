@@ -39,7 +39,7 @@ interface BranchErrorsTabProps {
   handleOpenSolveModal: (errorItem: TopicErrorItem) => void;
   handleOpenSimilarModal: (errorItem: TopicErrorItem) => void;
   handleOpenQuestionReport: (errorItem: TopicErrorItem) => void;
-  setPreviewImage: (img: { url: string; title: string } | null) => void;
+  openImagePreview: (url: string, title: string) => void;
   ERROR_REASON_LABELS: Record<string, string>;
   ERROR_REASON_COLORS: Record<string, string>;
 }
@@ -68,7 +68,7 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   handleOpenSolveModal,
   handleOpenSimilarModal,
   handleOpenQuestionReport,
-  setPreviewImage,
+  openImagePreview,
   ERROR_REASON_LABELS,
   ERROR_REASON_COLORS,
 }) => {
@@ -280,11 +280,11 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                         src={item.imageUrl} 
                         alt={item.topicName} 
                         className="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform duration-300"
-                        onClick={() => setPreviewImage({ url: item.imageUrl!, title: `${item.subject} - ${item.topicName}` })}
+                        onClick={() => openImagePreview(item.imageUrl!, `${item.subject} - ${item.topicName}`)}
                       />
                       <div 
                         className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                        onClick={() => setPreviewImage({ url: item.imageUrl!, title: `${item.subject} - ${item.topicName}` })}
+                        onClick={() => openImagePreview(item.imageUrl!, `${item.subject} - ${item.topicName}`)}
                       >
                         <div className="bg-slate-900/90 text-white text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-700 shadow-lg flex items-center space-x-1">
                           <Maximize2 className="w-3 h-3 text-indigo-400" />
