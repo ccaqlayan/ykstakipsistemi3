@@ -29,6 +29,8 @@ interface SubjectLandingGridProps {
   dailyAvgMins: number;
   selectedGroupFilter: string;
   setSelectedGroupFilter: (filter: string) => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
   targetField: FieldType;
   getFieldTitle: (f: FieldType) => string;
   filteredCategoryStats: any[];
@@ -44,6 +46,8 @@ export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
   dailyAvgMins,
   selectedGroupFilter,
   setSelectedGroupFilter,
+  searchQuery,
+  setSearchQuery,
   targetField,
   getFieldTitle,
   filteredCategoryStats,
@@ -52,60 +56,61 @@ export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
   formatMinutes,
 }) => {
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Header Banner */}
-      <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 p-5 sm:p-6 rounded-3xl shadow-2xl relative overflow-hidden space-y-4">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-indigo-500/20 to-fuchsia-500/20 rounded-full blur-3xl pointer-events-none" />
+    <div className="space-y-6 animate-fade-in">
+      
+      {/* ── HERO HEADER BANNER ── */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 p-6 sm:p-7 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-md relative overflow-hidden space-y-5">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-500/20 via-purple-500/10 to-fuchsia-500/20 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-1">
-            <div className="flex items-center space-x-2 text-indigo-400 text-xs font-bold uppercase tracking-wider">
-              <Sparkles className="w-4 h-4" />
-              <span>Ders İlerleme & İnceleme Paneli</span>
+          <div className="space-y-2">
+            <div className="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full text-xs font-bold text-indigo-300">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <span>YKS Ders İlerleme & İnceleme Paneli</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
               Ders İlerlemelerim
             </h1>
-            <p className="text-slate-300 text-xs sm:text-sm max-w-2xl">
-              YKS müfredatındaki derslerinizin konu tamamlama oranları, çözülen soru sayıları, çalışma süreleri ve deneme performanslarının bütüncül özeti.
+            <p className="text-slate-400 text-xs sm:text-sm max-w-2xl leading-relaxed">
+              YKS müfredatındaki tüm derslerinizin konu tamamlama oranları, çözülen soru sayıları, çalışma süreleri ve deneme performanslarının bütüncül özeti.
             </p>
           </div>
 
-          {/* Overall Progress Stat Card */}
-          <div className="bg-white/5 border border-white/10 p-4 rounded-2xl flex items-center space-x-4 shrink-0">
+          {/* Overall Progress Gauge Widget */}
+          <div className="bg-slate-950/80 border border-slate-800/80 p-4.5 rounded-2xl flex items-center space-x-4 shrink-0 shadow-xl backdrop-blur-md">
             <div className="text-center">
-              <div className="text-[10px] text-slate-400 font-bold uppercase">Genel Müfredat</div>
-              <div className="text-2xl font-black text-emerald-400 font-mono mt-0.5">%{globalCurriculumStats.percent}</div>
+              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Genel Müfredat</div>
+              <div className="text-3xl font-black text-emerald-400 font-mono mt-0.5">%{globalCurriculumStats.percent}</div>
               <div className="text-[10px] text-slate-400 mt-0.5 font-medium">{globalCurriculumStats.totalCompleted} / {globalCurriculumStats.totalTopics} Konu</div>
             </div>
-            <div className="w-14 h-14 relative flex items-center justify-center">
+            <div className="w-16 h-16 relative flex items-center justify-center">
               <svg className="w-full h-full transform -rotate-90">
-                <circle cx="28" cy="28" r="22" stroke="currentColor" strokeWidth="4" className="text-slate-800" fill="transparent" />
+                <circle cx="32" cy="32" r="26" stroke="currentColor" strokeWidth="5" className="text-slate-800" fill="transparent" />
                 <circle 
-                  cx="28" 
-                  cy="28" 
-                  r="22" 
+                  cx="32" 
+                  cy="32" 
+                  r="26" 
                   stroke="currentColor" 
-                  strokeWidth="4" 
+                  strokeWidth="5" 
                   className="text-emerald-400 transition-all duration-1000" 
                   fill="transparent"
-                  strokeDasharray={138}
-                  strokeDashoffset={138 - (138 * globalCurriculumStats.percent) / 100}
+                  strokeDasharray={163}
+                  strokeDashoffset={163 - (163 * globalCurriculumStats.percent) / 100}
                   strokeLinecap="round"
                 />
               </svg>
-              <BookOpen className="w-4 h-4 text-emerald-400 absolute" />
+              <BookOpen className="w-5 h-5 text-emerald-400 absolute" />
             </div>
           </div>
         </div>
 
         {/* Landing Time Range Selector Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800/80 relative z-10">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-800/80 relative z-10">
           <div className="flex items-center space-x-2 text-xs font-bold text-slate-300">
             <Calendar className="w-4 h-4 text-indigo-400 shrink-0" />
-            <span>Özet Bilgi Zaman Aralığı:</span>
+            <span>Özet İstatistik Zaman Aralığı:</span>
           </div>
-          <div className="inline-flex items-center p-1 bg-slate-950/90 border border-slate-800 rounded-2xl space-x-1 shadow-inner">
+          <div className="inline-flex items-center p-1 bg-slate-950 border border-slate-800 rounded-2xl space-x-1 shadow-inner">
             {[
               { id: 'haftalik', label: 'Haftalık (Son 7 Gün)' },
               { id: 'aylik', label: 'Aylık (Son 30 Gün)' },
@@ -114,10 +119,10 @@ export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
               <button
                 key={r.id}
                 onClick={() => setLandingTimeRange(r.id as any)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   landingTimeRange === r.id
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/40 border border-indigo-400'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/40 border border-indigo-400/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
                 }`}
               >
                 {r.label}
@@ -127,29 +132,30 @@ export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
         </div>
       </div>
 
-      {/* Global Top KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-        <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between">
-          <div className="text-[10px] text-slate-400 font-bold uppercase mb-2">Müfredat Tamamlama</div>
+      {/* ── 4 GLOBAL TOP KPI CARDS ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: TYT & AYT Split Progress */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl shadow-xl backdrop-blur-md flex flex-col justify-between hover:border-slate-700 transition-all">
+          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Müfredat Tamamlama</div>
           <div className="grid grid-cols-2 gap-3 divide-x divide-slate-800">
             <div>
-              <div className="text-[9px] text-blue-400 font-bold uppercase tracking-wider">TYT</div>
-              <div className="text-base font-black text-white font-mono mt-0.5">%{globalCurriculumStats.tytPercent}</div>
+              <div className="text-[10px] text-sky-400 font-bold uppercase tracking-wider">TYT</div>
+              <div className="text-xl font-black text-white font-mono mt-0.5">%{globalCurriculumStats.tytPercent}</div>
               <div className="w-full bg-slate-950 h-1.5 rounded-full mt-1.5 overflow-hidden">
                 <div 
                   style={{ width: `${globalCurriculumStats.tytPercent}%` }}
-                  className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                  className="h-full bg-sky-500 rounded-full transition-all duration-500"
                 />
               </div>
               <div className="text-[10px] text-slate-400 font-medium mt-1.5">{globalCurriculumStats.totalTytCompleted}/{globalCurriculumStats.totalTytTopics} Konu</div>
             </div>
             <div className="pl-3">
-              <div className="text-[9px] text-pink-400 font-bold uppercase tracking-wider">AYT</div>
-              <div className="text-base font-black text-white font-mono mt-0.5">%{globalCurriculumStats.aytPercent}</div>
+              <div className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">AYT</div>
+              <div className="text-xl font-black text-white font-mono mt-0.5">%{globalCurriculumStats.aytPercent}</div>
               <div className="w-full bg-slate-950 h-1.5 rounded-full mt-1.5 overflow-hidden">
                 <div 
                   style={{ width: `${globalCurriculumStats.aytPercent}%` }}
-                  className="h-full bg-pink-500 rounded-full transition-all duration-500"
+                  className="h-full bg-purple-500 rounded-full transition-all duration-500"
                 />
               </div>
               <div className="text-[10px] text-slate-400 font-medium mt-1.5">{globalCurriculumStats.totalAytCompleted}/{globalCurriculumStats.totalAytTopics} Konu</div>
@@ -157,39 +163,63 @@ export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
           </div>
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
-          <div className="text-[10px] text-slate-400 font-bold uppercase">
+        {/* Card 2: Soru Çözüm Sayısı */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl shadow-xl backdrop-blur-md flex flex-col justify-between hover:border-slate-700 transition-all">
+          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
             {landingTimeRange === 'haftalik' ? 'Soru (Son 7 Gün)' : landingTimeRange === 'aylik' ? 'Soru (Son 30 Gün)' : 'Toplam Soru (Tümü)'}
           </div>
-          <div className="text-xl font-black text-indigo-400 font-mono mt-1">{globalCurriculumStats.totalQuestions.toLocaleString('tr-TR')}</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">Soru Kaydı</div>
+          <div className="text-3xl font-black text-indigo-400 font-mono mt-1">{globalCurriculumStats.totalQuestions.toLocaleString('tr-TR')}</div>
+          <div className="text-[11px] text-slate-400 mt-1 font-medium">Soru Kaydı Girişi Yapıldı</div>
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between">
+        {/* Card 3: Çalışma Süresi & Ortalama */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl shadow-xl backdrop-blur-md flex flex-col justify-between hover:border-slate-700 transition-all">
           <div>
-            <div className="text-[10px] text-slate-400 font-bold uppercase">
+            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
               {landingTimeRange === 'haftalik' ? 'Çalışma (Son 7 Gün)' : landingTimeRange === 'aylik' ? 'Çalışma (Son 30 Gün)' : 'Toplam Çalışma (Tümü)'}
             </div>
-            <div className="text-xl font-black text-cyan-400 font-mono mt-1">{formatMinutes(globalCurriculumStats.totalStudyMins)}</div>
-            <div className="text-[11px] text-slate-400 mt-0.5">Tamamlanan Süre</div>
+            <div className="text-3xl font-black text-cyan-400 font-mono mt-1">{formatMinutes(globalCurriculumStats.totalStudyMins)}</div>
           </div>
-          <div className="text-[10.5px] text-emerald-400 font-bold border-t border-slate-800/60 pt-1.5 mt-1.5">
+          <div className="text-[11px] text-emerald-400 font-bold border-t border-slate-800/80 pt-2 mt-2 font-mono">
             Günlük Ort: {formatMinutes(dailyAvgMins)}
           </div>
         </div>
 
-        <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
-          <div className="text-[10px] text-slate-400 font-bold uppercase">Kayıtlı Kaynak</div>
-          <div className="text-xl font-black text-amber-400 font-mono mt-1">{globalCurriculumStats.totalResources} Kitap</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">Takip Listesinde</div>
+        {/* Card 4: Kayıtlı Kaynak Kitaplar */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl shadow-xl backdrop-blur-md flex flex-col justify-between hover:border-slate-700 transition-all">
+          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Kayıtlı Kaynak Kitaplar</div>
+          <div className="text-3xl font-black text-amber-400 font-mono mt-1">{globalCurriculumStats.totalResources} Kitap</div>
+          <div className="text-[11px] text-slate-400 mt-1 font-medium">Ders İlerleme Takibinde</div>
         </div>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-4 bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
+      {/* ── SEARCH & FILTER HUB ── */}
+      <div className="bg-slate-900 p-5 rounded-3xl border border-slate-800 shadow-xl space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          
+          {/* Live Subject Search Input */}
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
+            <input
+              type="text"
+              placeholder="Ders ara... (Ör: Matematik, Fizik, Türkçe, Kimya)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-11 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-2.5 text-slate-400 hover:text-white text-xs font-bold px-2 py-0.5 rounded-md bg-slate-900"
+              >
+                Temizle
+              </button>
+            )}
+          </div>
+
           {/* Filter Pills */}
-          <div className="flex items-center space-x-1.5 overflow-x-auto scrollbar-none pb-1 sm:pb-0">
+          <div className="flex items-center space-x-1.5 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
             {[
               { id: 'ALANIM', label: `⭐ Alanım (${getFieldTitle(targetField)})` },
               { id: 'ALL', label: 'Tüm Dersler' },
@@ -201,10 +231,10 @@ export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
               <button
                 key={f.id}
                 onClick={() => setSelectedGroupFilter(f.id)}
-                className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all whitespace-nowrap cursor-pointer ${
+                className={`text-xs font-bold px-3.5 py-2 rounded-xl border transition-all whitespace-nowrap cursor-pointer ${
                   selectedGroupFilter === f.id
-                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
-                    : 'bg-slate-950 text-slate-400 border-slate-850 hover:bg-slate-800 hover:text-white'
+                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
+                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-850 hover:text-white'
                 }`}
               >
                 {f.label}
@@ -215,7 +245,7 @@ export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
 
         {/* Profile Field Banner */}
         {selectedGroupFilter === 'ALANIM' && (
-          <div className="bg-indigo-950/40 border border-indigo-500/30 px-4 py-2.5 rounded-2xl flex items-center justify-between text-xs text-indigo-200 shadow-lg">
+          <div className="bg-indigo-950/40 border border-indigo-500/30 px-4 py-3 rounded-2xl flex items-center justify-between text-xs text-indigo-200 shadow-lg">
             <div className="flex items-center space-x-2">
               <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
               <span>
@@ -232,8 +262,8 @@ export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
         )}
       </div>
 
-      {/* Subject Cards Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+      {/* ── COURSE CARDS GRID ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
         {filteredCategoryStats.map(stat => {
           const cat: SubjectCategory = stat.category;
           const Icon = cat.icon;
@@ -245,9 +275,9 @@ export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
                 setSelectedSubjectId(cat.id);
                 setDetailSubTab('overview');
               }}
-              className={`bg-slate-900/90 hover:bg-slate-900 border ${cat.borderColor} hover:border-indigo-500/50 rounded-3xl p-5 shadow-xl transition-all hover:scale-[1.01] cursor-pointer space-y-4 group relative overflow-hidden`}
+              className={`bg-slate-900/90 hover:bg-slate-900 border ${cat.borderColor} hover:border-indigo-500/50 rounded-3xl p-5 sm:p-6 shadow-xl transition-all hover:scale-[1.01] cursor-pointer space-y-4 group relative overflow-hidden`}
             >
-              <div className={`absolute top-0 right-0 w-40 h-40 bg-gradient-to-br ${cat.gradient} opacity-5 group-hover:opacity-10 rounded-full blur-2xl transition-opacity pointer-events-none`} />
+              <div className={`absolute top-0 right-0 w-48 h-48 bg-gradient-to-br ${cat.gradient} opacity-5 group-hover:opacity-10 rounded-full blur-2xl transition-opacity pointer-events-none`} />
 
               {/* Top Bar: Icon + Subject Info */}
               <div className="flex items-start justify-between relative z-10">
