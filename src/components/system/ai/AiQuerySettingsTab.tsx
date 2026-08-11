@@ -164,6 +164,16 @@ const studyPlannerDataItems: DataItemConfig[] = [
     defaultCfg: { enabled: true }
   },
   {
+    key: 'lastWeekPlans',
+    title: 'Geçen Haftanın Plan Geçmişi (Referans)',
+    description: 'Önerilen görevi belirlerken geçen haftanın etüt planını ve tamamlanan konuları prompt verilerine ekler. (Varsayılan: KAPALI)',
+    icon: Calendar,
+    hasLimit: false,
+    min: 1,
+    max: 10,
+    defaultCfg: { enabled: false }
+  },
+  {
     key: 'generalMocks',
     title: 'Son Genel Deneme Netleri (Referans)',
     description: 'Görev önerisi için hangi derste zayıf olunduğunu tespit eden genel deneme net verileri.',

@@ -921,15 +921,67 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     setQuestionPromptNotes('');
   };
 
-  // AI Task Suggestion State
+  // AI Task Suggestion State & Helper Storage
   const [aiSuggestLoading, setAiSuggestLoading] = useState<boolean>(false);
   const [aiSuggestError, setAiSuggestError] = useState<string | null>(null);
   const [aiSuggestReason, setAiSuggestReason] = useState<string | null>(null);
+
+  const getSuggestionStorageKey = () => `ai_task_suggest_${profile?.id || profile?.name || 'default'}`;
+  const getTodayDateStr = () => new Date().toISOString().split('T')[0];
 
   const handleAiSuggestTask = async () => {
     setAiSuggestLoading(true);
     setAiSuggestError(null);
     setAiSuggestReason(null);
+
+    const storageKey = getSuggestionStorageKey();
+    const todayStr = getTodayDateStr();
+
+    let localData: {
+      date: string;
+      countToday: number;
+      draft: {
+        suggestion: any;
+        saved: boolean;
+      } | null;
+    } = { date: todayStr, countToday: 0, draft: null };
+
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.date === todayStr) {
+          localData = parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse suggestion storage:', e);
+    }
+
+    // 1. If an unsaved draft from today exists, use it immediately without calling Gemini API!
+    if (localData.draft && !localData.draft.saved && localData.draft.suggestion) {
+      const sug = localData.draft.suggestion;
+      if (sug.subject) setSubject(sug.subject);
+      if (sug.topic) setTopic(sug.topic);
+      if (sug.taskType && actualTaskTypes.includes(sug.taskType)) setTaskType(sug.taskType);
+      if (sug.plannedMinutes) setPlannedMinutes(Number(sug.plannedMinutes) || 60);
+      if (sug.targetQuestionCount !== undefined && sug.targetQuestionCount !== '') {
+        setTargetQuestionCount(Number(sug.targetQuestionCount) || '');
+      }
+      if (sug.notes) setNotes(sug.notes);
+      setAiSuggestReason((sug.reason || 'Daha önce aldığınız görev önerisi yüklendi.') + ' (Önceki kaydedilmemiş taslak öneriniz yüklendi)');
+      setAiSuggestLoading(false);
+      return;
+    }
+
+    // 2. Check daily limit (max 2 API queries per day)
+    if (localData.countToday >= 2) {
+      setAiSuggestError('Günlük 2 olan yapay zeka görev önerisi limitinize ulaştınız. Bugün daha fazla yeni öneri alamazsınız.');
+      setAiSuggestLoading(false);
+      return;
+    }
+
+    // 3. Query Gemini API
     try {
       const currentWeekPlans = studyPlans.filter(p => !p.archived);
       const lastWeekLabel = formatWeekLabelWithYear(addWeeks(selectedMondayDate, -1));
@@ -964,15 +1016,28 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         throw new Error(data.error || 'Yapay zeka görev önerisi şu an alınamadı.');
       }
 
-      const { subject: sugSubject, topic: sugTopic, taskType: sugTaskType, plannedMinutes: sugMins, targetQuestionCount: sugCount, notes: sugNotes, reason: sugReason } = data.suggestion || {};
+      const sug = data.suggestion || {};
 
-      if (sugSubject) setSubject(sugSubject);
-      if (sugTopic) setTopic(sugTopic);
-      if (sugTaskType && actualTaskTypes.includes(sugTaskType)) setTaskType(sugTaskType);
-      if (sugMins) setPlannedMinutes(Number(sugMins) || 60);
-      if (sugCount !== undefined && sugCount !== '') setTargetQuestionCount(Number(sugCount) || '');
-      if (sugNotes) setNotes(sugNotes);
-      if (sugReason) setAiSuggestReason(sugReason);
+      if (sug.subject) setSubject(sug.subject);
+      if (sug.topic) setTopic(sug.topic);
+      if (sug.taskType && actualTaskTypes.includes(sug.taskType)) setTaskType(sug.taskType);
+      if (sug.plannedMinutes) setPlannedMinutes(Number(sug.plannedMinutes) || 60);
+      if (sug.targetQuestionCount !== undefined && sug.targetQuestionCount !== '') {
+        setTargetQuestionCount(Number(sug.targetQuestionCount) || '');
+      }
+      if (sug.notes) setNotes(sug.notes);
+      if (sug.reason) setAiSuggestReason(sug.reason);
+
+      // Save suggestion as unsaved draft and increment countToday
+      const updatedStorage = {
+        date: todayStr,
+        countToday: localData.countToday + 1,
+        draft: {
+          suggestion: sug,
+          saved: false
+        }
+      };
+      localStorage.setItem(storageKey, JSON.stringify(updatedStorage));
     } catch (err: any) {
       console.error('AI Task Suggest error:', err);
       setAiSuggestError(err.message || 'Görev önerisi alınırken bir hata oluştu.');
@@ -1017,6 +1082,20 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       date,
       weekLabel
     });
+
+    // Mark current draft as saved in localStorage
+    try {
+      const storageKey = getSuggestionStorageKey();
+      const todayStr = getTodayDateStr();
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.date === todayStr && parsed.draft) {
+          parsed.draft.saved = true;
+          localStorage.setItem(storageKey, JSON.stringify(parsed));
+        }
+      }
+    } catch (e) {}
 
     setSubject('');
     setTopic('');

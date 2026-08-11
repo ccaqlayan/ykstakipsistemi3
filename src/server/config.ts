@@ -224,7 +224,10 @@ export function recordApiUsage(params: {
 
   if (db) {
     try {
-      setDoc(doc(db, 'api_usage_logs', record.id), record).catch(() => {});
+      const cleanData = JSON.parse(JSON.stringify(record));
+      setDoc(doc(db, 'api_usage_logs', record.id), cleanData).catch(err => {
+        console.warn('Failed to persist api log to firestore:', err.message);
+      });
     } catch (e) {
       console.warn('Failed to persist api log to firestore:', e);
     }

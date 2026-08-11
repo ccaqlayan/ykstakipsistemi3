@@ -50,8 +50,8 @@ interface SystemAiTabProps {
   defaultCoachDataSettings: CoachDataSettingsMap;
   dateFilter: '7days' | 'thisMonth' | 'allTime';
   setDateFilter: (filter: '7days' | 'thisMonth' | 'allTime') => void;
-  filterCategory: 'ALL' | 'AI_COACH' | 'QUESTION_ANALYSIS';
-  setFilterCategory: (cat: 'ALL' | 'AI_COACH' | 'QUESTION_ANALYSIS') => void;
+  filterCategory: 'ALL' | 'AI_COACH' | 'STUDY_TASK_SUGGEST' | 'QUESTION_ANALYSIS';
+  setFilterCategory: (cat: 'ALL' | 'AI_COACH' | 'STUDY_TASK_SUGGEST' | 'QUESTION_ANALYSIS') => void;
   currentPage: number;
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   itemsPerPage: number;

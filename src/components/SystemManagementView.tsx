@@ -155,7 +155,7 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showLogoManager, setShowLogoManager] = useState<boolean>(false);
-  const [filterCategory, setFilterCategory] = useState<'ALL' | 'AI_COACH' | 'QUESTION_ANALYSIS'>('ALL');
+  const [filterCategory, setFilterCategory] = useState<'ALL' | 'AI_COACH' | 'STUDY_TASK_SUGGEST' | 'QUESTION_ANALYSIS'>('ALL');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 10;
 
@@ -317,7 +317,8 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
     institutionalMocks: { enabled: true, limit: 3 },
     youtubeTracker: { enabled: true },
     pomodoroHistory: { enabled: true, limit: 3 },
-    studyPlannerTask: { enabled: true }
+    studyPlannerTask: { enabled: true },
+    lastWeekPlans: { enabled: false }
   };
 
   const handleCoachDataToggle = (key: string, enabled: boolean) => {

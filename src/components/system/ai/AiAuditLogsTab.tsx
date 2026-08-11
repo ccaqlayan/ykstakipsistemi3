@@ -4,8 +4,8 @@ import { ApiUsageLog, UsageStatsResponse } from '../SystemTypes';
 
 interface AiAuditLogsTabProps {
   stats: UsageStatsResponse | null;
-  filterCategory: 'ALL' | 'AI_COACH' | 'QUESTION_ANALYSIS';
-  setFilterCategory: (cat: 'ALL' | 'AI_COACH' | 'QUESTION_ANALYSIS') => void;
+  filterCategory: 'ALL' | 'AI_COACH' | 'STUDY_TASK_SUGGEST' | 'QUESTION_ANALYSIS';
+  setFilterCategory: (cat: 'ALL' | 'AI_COACH' | 'STUDY_TASK_SUGGEST' | 'QUESTION_ANALYSIS') => void;
   currentPage: number;
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   itemsPerPage: number;
@@ -25,6 +25,12 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
 
   const filteredLogs = (stats?.recentLogs || []).filter(log => {
     if (filterCategory === 'ALL') return true;
+    if (filterCategory === 'STUDY_TASK_SUGGEST') {
+      return log.featureKey === 'STUDY_TASK_SUGGEST';
+    }
+    if (filterCategory === 'AI_COACH') {
+      return log.category === 'AI_COACH' && log.featureKey !== 'STUDY_TASK_SUGGEST';
+    }
     return log.category === filterCategory;
   });
 
@@ -57,13 +63,25 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
   return (
     <div className="space-y-6 animate-fade-in relative">
       <div className="bg-slate-900/90 border border-white/10 rounded-2xl p-5 shadow-xl backdrop-blur-md space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
-          <div className="flex items-center space-x-2">
-            <Activity className="w-5 h-5 text-emerald-400" />
-            <h3 className="font-bold text-white text-base">Son Yapay Zeka İstek & Ayak İzi Günlüğü</h3>
+        <div className="space-y-3 pb-3 border-b border-white/10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-2">
+              <Activity className="w-5 h-5 text-emerald-400" />
+              <h3 className="font-bold text-white text-base">Son Yapay Zeka İstek & Ayak İzi Günlüğü</h3>
+            </div>
+
+            <button
+              onClick={handleClearOldLogs}
+              title="30 günden eski yapay zeka log kayıtlarını siler"
+              className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 hover:text-white border border-rose-500/30 transition-all cursor-pointer inline-flex items-center space-x-1 self-start sm:self-auto"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>30 Günden Eski Kayıtları Sil</span>
+            </button>
           </div>
 
-          <div className="flex items-center space-x-2">
+          {/* Filtreleme Butonları (Başlığın Altında) */}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
             <button
               onClick={() => { setFilterCategory('ALL'); setCurrentPage(1); }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -85,6 +103,16 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
               Yapay Zeka Koçu
             </button>
             <button
+              onClick={() => { setFilterCategory('STUDY_TASK_SUGGEST'); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                filterCategory === 'STUDY_TASK_SUGGEST'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/30'
+                  : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Görev Önerisi
+            </button>
+            <button
               onClick={() => { setFilterCategory('QUESTION_ANALYSIS'); setCurrentPage(1); }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 filterCategory === 'QUESTION_ANALYSIS'
@@ -93,14 +121,6 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
               }`}
             >
               Soru Analizi & Hata Defteri
-            </button>
-            <button
-              onClick={handleClearOldLogs}
-              title="30 günden eski yapay zeka log kayıtlarını siler"
-              className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 hover:text-white border border-rose-500/30 transition-all cursor-pointer inline-flex items-center space-x-1"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>30 Günden Eski Kayıtları Sil</span>
             </button>
           </div>
         </div>

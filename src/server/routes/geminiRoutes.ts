@@ -1229,8 +1229,8 @@ HEDEF GÜN: ${targetDay || 'Belirtilmedi'}
       prompt += `\nBU HAFTA HENÜZ PLANLANMIŞ GÖREV YOK.\n`;
     }
 
-    // Geçen hafta planı
-    if (lastWeekPlans && lastWeekPlans.length > 0) {
+    // Geçen hafta planı (admin ayarında lastWeekPlans.enabled === true ise eklenir)
+    if (settings.lastWeekPlans?.enabled === true && lastWeekPlans && lastWeekPlans.length > 0) {
       const lastWeekSummary = lastWeekPlans.slice(-10).map((p: any) => ({
         ders: p.subject,
         konu: p.topic,
