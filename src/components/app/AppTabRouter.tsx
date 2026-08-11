@@ -322,6 +322,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           topicErrors={currentStudentData.topicErrors}
           generalMocks={currentStudentData.generalMocks}
           branchExams={currentStudentData.branchExams}
+          youtubeVideos={currentStudentData.youtubeVideos || []}
         />
       )}
 

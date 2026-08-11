@@ -175,17 +175,28 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                 </div>
 
                 {!isArchivedWeek && (
-                  <button
-                    onClick={() => openAddModal(day)}
-                    className={`p-1.5 rounded-xl transition-all border shadow-sm day-header-add-btn ${
-                      isToday
-                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-400'
-                        : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-700/60'
-                    }`}
-                    title={`${day} gününe görev ekle`}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center space-x-1">
+                    {openAddVideoModal && (
+                      <button
+                        onClick={() => openAddVideoModal(day)}
+                        className="p-1.5 rounded-xl transition-all border shadow-sm bg-red-950/80 hover:bg-red-600 text-red-300 hover:text-white border-red-500/40 cursor-pointer"
+                        title={`${day} gününe YouTube video görevi ekle`}
+                      >
+                        <Youtube className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => openAddModal(day)}
+                      className={`p-1.5 rounded-xl transition-all border shadow-sm day-header-add-btn ${
+                        isToday
+                          ? 'bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-400'
+                          : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-700/60'
+                      }`}
+                      title={`${day} gününe görev ekle`}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -202,12 +213,23 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                   <div className="h-full flex flex-col items-center justify-center p-4 border border-dashed border-slate-800 rounded-xl text-center text-[11px] text-slate-500">
                     <span>Görev yok</span>
                     {!isArchivedWeek && (
-                      <button
-                        onClick={() => openAddModal(day)}
-                        className="mt-2 text-[10px] font-bold text-indigo-400 hover:text-indigo-300"
-                      >
-                        + Görev Ekle
-                      </button>
+                      <div className="flex items-center space-x-2 mt-2">
+                        {openAddVideoModal && (
+                          <button
+                            onClick={() => openAddVideoModal(day)}
+                            className="text-[10px] font-bold text-red-400 hover:text-red-300 flex items-center space-x-1"
+                          >
+                            <Youtube className="w-3 h-3" />
+                            <span>+ Video</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => openAddModal(day)}
+                          className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300"
+                        >
+                          + Görev Ekle
+                        </button>
+                      </div>
                     )}
                   </div>
                 ) : (

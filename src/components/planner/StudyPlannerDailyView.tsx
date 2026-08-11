@@ -10,7 +10,8 @@ import {
   BookOpen, 
   ChevronDown, 
   Sparkles, 
-  Edit2 
+  Edit2,
+  Youtube 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StudyPlanItem, DayOfWeek, QuestionLog } from '../../types';
@@ -21,6 +22,7 @@ interface StudyPlannerDailyViewProps {
   selectedDay: DayOfWeek;
   getSubjectTheme: (subject: string) => SubjectTheme;
   openAddModal: (day?: DayOfWeek) => void;
+  openAddVideoModal?: (day?: DayOfWeek) => void;
   setEditingPlan: (plan: StudyPlanItem | null) => void;
   setDeletingPlan: (plan: { id: string; title: string } | null) => void;
   onUpdatePlan: (plan: StudyPlanItem) => void;
@@ -39,6 +41,7 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
   selectedDay,
   getSubjectTheme,
   openAddModal,
+  openAddVideoModal,
   setEditingPlan,
   setDeletingPlan,
   onUpdatePlan,
@@ -52,8 +55,6 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
   isArchivedWeek = false
 }) => {
   const [expandedQuickControls, setExpandedQuickControls] = useState<Record<string, boolean>>({});
-  const [inlineEditingNotesPlanId, setInlineEditingNotesPlanId] = useState<string | null>(null);
-  const [inlineNotesText, setInlineNotesText] = useState<string>('');
 
   const dayPlans = activePlans.filter(p => p.day === selectedDay);
 
@@ -78,13 +79,24 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
             </span>
 
             {!isArchivedWeek && (
-              <button
-                onClick={() => openAddModal(selectedDay)}
-                className="text-[11px] sm:text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl transition-all font-bold flex items-center space-x-1 sm:space-x-1.5 shadow-lg shadow-indigo-600/30 border border-indigo-400/30 shrink-0 cursor-pointer whitespace-nowrap"
-              >
-                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                <span>Görev Ekle</span>
-              </button>
+              <div className="flex items-center space-x-2">
+                {openAddVideoModal && (
+                  <button
+                    onClick={() => openAddVideoModal(selectedDay)}
+                    className="text-[11px] sm:text-xs bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-all font-bold flex items-center space-x-1 sm:space-x-1.5 shadow-lg shadow-red-600/30 border border-red-400/30 shrink-0 cursor-pointer whitespace-nowrap"
+                  >
+                    <Youtube className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                    <span>Video Ekle</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => openAddModal(selectedDay)}
+                  className="text-[11px] sm:text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl transition-all font-bold flex items-center space-x-1 sm:space-x-1.5 shadow-lg shadow-indigo-600/30 border border-indigo-400/30 shrink-0 cursor-pointer whitespace-nowrap"
+                >
+                  <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                  <span>Görev Ekle</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -94,12 +106,23 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
             <Calendar className="w-10 h-10 text-slate-600 mx-auto mb-3" />
             <p className="text-sm text-slate-300 font-bold">Bu gün için henüz bir ders görevi planlanmadı.</p>
             {!isArchivedWeek && (
-              <button
-                onClick={() => openAddModal(selectedDay)}
-                className="mt-4 text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-md"
-              >
-                + {selectedDay} Gününe Görev Ekle
-              </button>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                {openAddVideoModal && (
+                  <button
+                    onClick={() => openAddVideoModal(selectedDay)}
+                    className="text-xs bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white px-3.5 py-2 rounded-xl font-bold transition-all shadow-md flex items-center space-x-1.5 cursor-pointer"
+                  >
+                    <Youtube className="w-4 h-4" />
+                    <span>Video Ekle</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => openAddModal(selectedDay)}
+                  className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-md"
+                >
+                  + {selectedDay} Gününe Görev Ekle
+                </button>
+              </div>
             )}
           </div>
         ) : (

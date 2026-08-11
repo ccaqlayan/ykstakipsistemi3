@@ -43,7 +43,8 @@ import {
   Settings,
   Edit2,
   Maximize,
-  Minimize
+  Minimize,
+  Youtube
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -58,13 +59,14 @@ import {
   CartesianGrid,
   Legend
 } from 'recharts';
-import { StudyPlanItem, DayOfWeek, QuestionLog } from '../types';
+import { StudyPlanItem, DayOfWeek, QuestionLog, YouTubeVideoItem } from '../types';
 import { YKS_SUBJECTS, YKS_CURRICULUM_TOPICS, DEFAULT_TASK_TYPES } from '../data/initialData';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { StudyPlannerWeeklyBoard } from './planner/StudyPlannerWeeklyBoard';
 import { StudyPlannerDailyView } from './planner/StudyPlannerDailyView';
 import { StudyPlannerStatsView } from './planner/StudyPlannerStatsView';
 import { StudyPlannerModals } from './planner/StudyPlannerModals';
+import { AddVideoTaskModal } from './planner/AddVideoTaskModal';
 
 interface StudyPlannerViewProps {
   studyPlans: StudyPlanItem[];
@@ -85,6 +87,7 @@ interface StudyPlannerViewProps {
   generalMocks?: any[];
   branchExams?: any[];
   coachDataSettings?: any;
+  youtubeVideos?: YouTubeVideoItem[];
 }
 
 const DAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
@@ -331,7 +334,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   topicErrors,
   generalMocks,
   branchExams,
-  coachDataSettings
+  coachDataSettings,
+  youtubeVideos = []
 }) => {
   const today = getTodayName();
   const [viewMode, setViewMode] = useState<'board' | 'daily' | 'stats'>('daily');
@@ -848,6 +852,15 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   const [targetQuestionCount, setTargetQuestionCount] = useState<number | ''>('');
   const [notes, setNotes] = useState('');
   const [targetDayForAdd, setTargetDayForAdd] = useState<DayOfWeek>(today);
+
+  // Add YouTube Video Task Modal States
+  const [showAddVideoModal, setShowAddVideoModal] = useState(false);
+  const [targetDayForAddVideo, setTargetDayForAddVideo] = useState<DayOfWeek>(today);
+
+  const openAddVideoModal = (day?: DayOfWeek) => {
+    setTargetDayForAddVideo(day || selectedDay || 'Pazartesi');
+    setShowAddVideoModal(true);
+  };
 
   // Completion duration, status & reflection input state
   const [completionMinutesInput, setCompletionMinutesInput] = useState<number>(60);
@@ -1555,6 +1568,16 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                 </div>
 
                 <button
+                  type="button"
+                  onClick={() => openAddVideoModal()}
+                  className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-md shadow-red-600/30 flex items-center space-x-1.5 border border-red-400/40 cursor-pointer shrink-0 whitespace-nowrap"
+                >
+                  <Youtube className="w-4 h-4 shrink-0" />
+                  <span>Video Ekle</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => openAddModal()}
                   className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-md shadow-indigo-600/30 flex items-center space-x-1.5 border border-indigo-400/40 cursor-pointer shrink-0 whitespace-nowrap"
                 >
@@ -1650,9 +1673,18 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                   </button>
                 </div>
 
-                {/* Add task button */}
+                {/* Add task buttons */}
                 <div className="flex flex-row items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
                   <button
+                    type="button"
+                    onClick={() => openAddVideoModal()}
+                    className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-[11px] sm:text-xs font-bold px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl transition-all shadow-md shadow-red-600/30 flex items-center space-x-1.5 border border-red-400/40 cursor-pointer shrink-0 whitespace-nowrap flex-1 sm:flex-initial justify-center"
+                  >
+                    <Youtube className="w-4 h-4 shrink-0" />
+                    <span>Video Ekle</span>
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => openAddModal()}
                     className="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl transition-all shadow-md shadow-indigo-600/30 flex items-center space-x-1.5 border border-indigo-400/40 cursor-pointer shrink-0 whitespace-nowrap flex-1 sm:flex-initial justify-center"
                   >
@@ -1859,6 +1891,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                 handleQuickMoveDay={handleQuickMoveDay}
                 handleDuplicatePlan={handleDuplicatePlan}
                 openAddModal={openAddModal}
+                openAddVideoModal={openAddVideoModal}
                 setEditingPlan={setEditingPlan}
                 setDeletingPlan={setDeletingPlan}
                 touchStartRef={touchStartRef}
@@ -1878,6 +1911,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
           selectedDay={selectedDay}
           getSubjectTheme={getSubjectTheme}
           openAddModal={openAddModal}
+          openAddVideoModal={openAddVideoModal}
           setEditingPlan={setEditingPlan}
           setDeletingPlan={setDeletingPlan}
           onUpdatePlan={onUpdatePlan}
@@ -2005,6 +2039,19 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         aiSuggestError={aiSuggestError}
         aiSuggestReason={aiSuggestReason}
         coachDataSettings={coachDataSettings}
+      />
+
+      <AddVideoTaskModal
+        isOpen={showAddVideoModal}
+        onClose={() => setShowAddVideoModal(false)}
+        youtubeVideos={youtubeVideos}
+        defaultDay={targetDayForAddVideo}
+        DAYS={DAYS}
+        onAddPlan={(plan) => {
+          const { date, weekLabel } = getPlanDateAndWeekLabel(plan.day);
+          onAddPlan({ ...plan, date, weekLabel });
+        }}
+        weekLabel={currentWeekLabel}
       />
     </div>
   );
