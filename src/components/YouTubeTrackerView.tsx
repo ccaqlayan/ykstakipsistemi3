@@ -61,17 +61,19 @@ const formatDuration = (totalMinutes: number): string => {
 // Helper: Extract YouTube Video ID from any YouTube URL
 const extractYouTubeVideoId = (url?: string): string | null => {
   if (!url) return null;
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|playlist\?list=.*&v=))([\w-]{11})/);
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|playlist\?list=.*[&?]v=))([\w-]{11})/);
   if (match && match[1]) return match[1];
   const matchV = url.match(/[?&]v=([\w-]{11})/);
   if (matchV && matchV[1]) return matchV[1];
+  const matchShort = url.match(/youtu\.be\/([\w-]{11})/);
+  if (matchShort && matchShort[1]) return matchShort[1];
   return null;
 };
 
 // Helper: Generate YouTube Thumbnail URL
 const getYouTubeThumbnail = (videoUrl?: string, firstSubVideoUrl?: string): string | null => {
   const id = extractYouTubeVideoId(videoUrl) || extractYouTubeVideoId(firstSubVideoUrl);
-  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
+  return id ? `https://i.ytimg.com/vi/${id}/mqdefault.jpg` : null;
 };
 
 export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
@@ -645,25 +647,32 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                             <img
                               src={thumbnailUrl}
                               alt={vid.topicName}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              referrerPolicy="no-referrer"
+                              className="relative z-10 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               onError={(e) => {
-                                // Fallback on broken image link
-                                (e.target as HTMLElement).style.display = 'none';
+                                const imgEl = e.currentTarget;
+                                if (imgEl.src.includes('mqdefault')) {
+                                  imgEl.src = imgEl.src.replace('mqdefault', 'hqdefault');
+                                } else if (imgEl.src.includes('i.ytimg.com')) {
+                                  imgEl.src = imgEl.src.replace('i.ytimg.com', 'img.youtube.com');
+                                } else {
+                                  imgEl.style.display = 'none';
+                                }
                               }}
                             />
                           ) : null}
 
                           {/* Fallback Graphic if no image */}
-                          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-red-950/80 flex flex-col items-center justify-center p-3 text-center -z-0">
+                          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-red-950/80 flex flex-col items-center justify-center p-3 text-center z-0">
                             <Youtube className="w-10 h-10 text-red-500 opacity-60 mb-1" />
                             <span className="text-[10px] font-bold text-slate-400 line-clamp-1">{vid.channelName}</span>
                           </div>
 
-                          {/* Dark Vignette Gradient */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent pointer-events-none" />
+                          {/* 20% Soft Vignette Gradient */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-transparent pointer-events-none z-20" />
 
                           {/* Top-Left Watch Status Glass Badge */}
-                          <div className="absolute top-2.5 left-2.5 z-10">
+                          <div className="absolute top-2.5 left-2.5 z-30">
                             {isFullyWatched ? (
                               <span className="bg-emerald-500/90 text-white backdrop-blur-md border border-emerald-400/40 text-[10px] font-black px-2.5 py-1 rounded-xl flex items-center space-x-1 shadow-lg">
                                 <CheckCircle className="w-3 h-3 text-white" />
@@ -681,7 +690,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                           </div>
 
                           {/* Bottom-Right Duration / Video Count Badge */}
-                          <div className="absolute bottom-2.5 right-2.5 z-10 bg-slate-950/90 text-white font-mono text-[10px] font-bold px-2 py-0.5 rounded-lg border border-white/10 shadow-md flex items-center space-x-1">
+                          <div className="absolute bottom-2.5 right-2.5 z-30 bg-slate-950/90 text-white font-mono text-[10px] font-bold px-2 py-0.5 rounded-lg border border-white/10 shadow-md flex items-center space-x-1">
                             {isPlaylist ? (
                               <>
                                 <ListVideo className="w-3 h-3 text-amber-400" />
@@ -701,7 +710,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                               href={vid.videoUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20"
+                              className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-40"
                               title="YouTube'da İzle"
                             >
                               <div className="p-3 bg-red-600 hover:bg-red-500 text-white rounded-full shadow-2xl scale-90 group-hover:scale-100 transition-all">
