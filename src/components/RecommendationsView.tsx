@@ -170,10 +170,7 @@ const SUBJECT_COLORS: Record<string, { bg: string, text: string, border: string 
 const getChannelAvatar = (channel: RecommendedChannel): string | null => {
   if (channel.avatarUrl) return channel.avatarUrl;
   if (channel.url) {
-    const handleMatch = channel.url.match(/@([\w.-]+)/);
-    if (handleMatch && handleMatch[1]) {
-      return `https://unavatar.io/youtube/${handleMatch[1]}`;
-    }
+    return `/api/youtube/avatar?url=${encodeURIComponent(channel.url)}`;
   }
   return null;
 };

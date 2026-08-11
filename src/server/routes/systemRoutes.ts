@@ -696,6 +696,48 @@ router.post('/youtube/video-info', async (req, res) => {
 });
 
 // -------------------------------------------------------------
+// YouTube Channel Avatar Proxy & Scraper
+// -------------------------------------------------------------
+const channelAvatarCache = new Map<string, string>();
+
+router.get('/youtube/avatar', async (req, res) => {
+  const channelUrl = req.query.url as string;
+  if (!channelUrl) return res.status(400).send('Missing url');
+
+  const cached = channelAvatarCache.get(channelUrl);
+  if (cached) {
+    return res.redirect(302, cached);
+  }
+
+  try {
+    const response = await fetch(channelUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Cookie': 'SOCS=CAESEwgDEgk0ODg3NTU0NTUaAnRyIAE; CONSENT=YES+cb.20210328-17-p0.tr+FX+999'
+      }
+    });
+
+    if (response.ok) {
+      const html = await response.text();
+      const ogMatch = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i) || html.match(/<link\s+rel="image_src"\s+href="([^"]+)"/i);
+      if (ogMatch && ogMatch[1]) {
+        let avatarUrl = ogMatch[1];
+        if (avatarUrl.includes('=s')) {
+          avatarUrl = avatarUrl.replace(/=s\d+-[^&]+/, '=s160-c-k-c0x00ffffff-no-rj');
+        }
+        channelAvatarCache.set(channelUrl, avatarUrl);
+        return res.redirect(302, avatarUrl);
+      }
+    }
+  } catch (err) {
+    console.error('YouTube avatar fetch error:', err);
+  }
+
+  res.status(404).send('Avatar not found');
+});
+
+// -------------------------------------------------------------
 // Photo Upload & Delete Endpoints
 // -------------------------------------------------------------
 router.post('/upload/photo', async (req, res) => {
