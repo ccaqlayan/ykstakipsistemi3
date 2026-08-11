@@ -448,7 +448,12 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   const [activeSimilarIdx, setActiveSimilarIdx] = useState<number>(0);
   const [showSimilarSolution, setShowSimilarSolution] = useState<boolean>(false);
   const [similarError, setSimilarError] = useState<string | null>(null);
-  const [aiModalTab, setAiModalTab] = useState<'solution' | 'similar'>('solution');
+
+  // Question report card state
+  const [reportLoading, setReportLoading] = useState<boolean>(false);
+  const [reportText, setReportText] = useState<string | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [aiModalTab, setAiModalTab] = useState<'solution' | 'similar' | 'report'>('solution');
 
   // AI Support menu and sub-features states
   const [activeSupportItem, setActiveSupportItem] = useState<TopicErrorItem | null>(null);
@@ -906,10 +911,12 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       setSolveSolution(matchingError.aiSolution || null);
       setSimilarQuestionsList(matchingError.similarQuestionsList || []);
       setActiveSimilarIdx(0);
+      setReportText(matchingError.aiAnalysis || null);
     } else {
       setSolveSolution(null);
       setSimilarQuestionsList([]);
       setActiveSimilarIdx(0);
+      setReportText(null);
     }
     setPreviewImage({ url, title });
   };
@@ -924,6 +931,9 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     setShowSimilarSolution(false);
     setSimilarLoading(false);
     setSimilarError(null);
+    setReportText(null);
+    setReportLoading(false);
+    setReportError(null);
   };
 
   const formatSolutionText = (text: string) => {
@@ -1368,6 +1378,84 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     }
   };
 
+  const handleGenerateQuestionReport = async (errorItem: TopicErrorItem) => {
+    const imageUrl = errorItem.imageUrl;
+    const title = `${errorItem.subject} - ${errorItem.topicName}`;
+    const matchingError = topicErrors.find(e => e.imageUrl === imageUrl || `${e.subject} - ${e.topicName}` === title);
+    
+    if (matchingError?.aiAnalysis) {
+      setReportText(matchingError.aiAnalysis);
+      return;
+    }
+
+    setReportLoading(true);
+    setReportError(null);
+    setReportText(null);
+
+    const solutionContext = matchingError?.aiSolution || solveSolution || matchingError?.aiAnalysis || undefined;
+
+    try {
+      const response = await fetch('/api/gemini/analyze-question-details', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageUrl,
+          solutionText: solutionContext,
+          subject: errorItem.subject,
+          topicName: errorItem.topicName
+        })
+      });
+
+      if (!response.ok) {
+        let errText = 'Yapay zeka özellikleri şu an için kullanılamıyor, lütfen daha sonra tekrar deneyiniz.';
+        try {
+          const errData = await response.json();
+          if (errData && errData.error) errText = errData.error;
+        } catch {}
+        throw new Error(errText);
+      }
+
+      const data = await response.json();
+      if (data.success && data.analysis) {
+        setReportText(data.analysis);
+        if (matchingError) {
+          const updated = { ...matchingError, aiAnalysis: data.analysis };
+          onUpdateTopicError(updated);
+        }
+        if (onAddAuditLog) {
+          onAddAuditLog(
+            `Hata Defteri "${title}" sorusu için Soru Karnesi oluşturuldu.`,
+            'system',
+            'AI_QUESTION_ANALYSIS',
+            undefined,
+            undefined,
+            undefined,
+            data.aiUsage
+          );
+        }
+      } else {
+        throw new Error(data.error || 'Soru karnesi oluşturulamadı.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setReportError(err.message || 'Bağlantı hatası oluştu.');
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handleOpenQuestionReport = (errorItem: TopicErrorItem) => {
+    if (errorItem.imageUrl) {
+      openImagePreview(errorItem.imageUrl, `${errorItem.subject} - ${errorItem.topicName}`);
+      setAiModalTab('report');
+      if (errorItem.aiAnalysis) {
+        setReportText(errorItem.aiAnalysis);
+      } else {
+        handleGenerateQuestionReport(errorItem);
+      }
+    }
+  };
+
   const handleAIAnalyzeError = () => {
     handleAIAnalyzePriority();
   };
@@ -1723,6 +1811,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
           handleOpenTipModal={handleOpenTipModal}
           handleOpenSolveModal={handleOpenSolveModal}
           handleOpenSimilarModal={handleOpenSimilarModal}
+          handleOpenQuestionReport={handleOpenQuestionReport}
           setPreviewImage={setPreviewImage}
           ERROR_REASON_LABELS={ERROR_REASON_LABELS}
           ERROR_REASON_COLORS={ERROR_REASON_COLORS}
@@ -1832,6 +1921,11 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         setPreviewImage={setPreviewImage}
         handleSolveQuestion={handleSolveQuestion}
         handleGenerateSimilarQuestions={handleGenerateSimilarQuestions}
+        handleOpenQuestionReport={handleOpenQuestionReport}
+        handleGenerateQuestionReport={handleGenerateQuestionReport}
+        reportLoading={reportLoading}
+        reportText={reportText}
+        reportError={reportError}
         activeSupportItem={activeSupportItem}
         setActiveSupportItem={setActiveSupportItem}
         activeSupportTab={activeSupportTab}

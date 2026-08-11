@@ -10,7 +10,8 @@ import {
   Maximize2, 
   Image as ImageIcon,
   Brain,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import { TopicErrorItem, BranchExam, ResourceItem } from '../../types';
 
@@ -37,6 +38,7 @@ interface BranchErrorsTabProps {
   handleOpenTipModal: (subject: string, topicName: string) => void;
   handleOpenSolveModal: (errorItem: TopicErrorItem) => void;
   handleOpenSimilarModal: (errorItem: TopicErrorItem) => void;
+  handleOpenQuestionReport: (errorItem: TopicErrorItem) => void;
   setPreviewImage: (img: { url: string; title: string } | null) => void;
   ERROR_REASON_LABELS: Record<string, string>;
   ERROR_REASON_COLORS: Record<string, string>;
@@ -65,6 +67,7 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   handleOpenTipModal,
   handleOpenSolveModal,
   handleOpenSimilarModal,
+  handleOpenQuestionReport,
   setPreviewImage,
   ERROR_REASON_LABELS,
   ERROR_REASON_COLORS,
@@ -307,6 +310,14 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                       >
                         <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
                         <span>Benzer Soru Oluştur</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenQuestionReport(item)}
+                        className="px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 w-fit"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-amber-400" />
+                        <span>{item.aiAnalysis ? 'Soru Karnesi' : 'Soru Karnesi Oluştur'}</span>
                       </button>
                     </div>
                   </div>

@@ -15,7 +15,8 @@ import {
   ChevronRight, 
   Zap,
   Eye,
-  EyeOff
+  EyeOff,
+  FileText
 } from 'lucide-react';
 import { BranchExam, TopicErrorItem, ErrorReason, GeneralMockExam, ResourceItem } from '../../types';
 import { ConfirmDeleteModal } from '../ConfirmDeleteModal';
@@ -23,32 +24,32 @@ import { ConfirmDeleteModal } from '../ConfirmDeleteModal';
 interface BranchModalsProps {
   // Error Modal
   showAddErrorModal: boolean;
-  setShowAddErrorModal: (val: boolean) => void;
+  setShowAddErrorModal: (show: boolean) => void;
   editingError: TopicErrorItem | null;
-  setEditingError: (val: TopicErrorItem | null) => void;
+  setEditingError: (err: TopicErrorItem | null) => void;
   errorSubject: string;
-  setErrorSubject: (val: string) => void;
+  setErrorSubject: (sub: string) => void;
   topicName: string;
-  setTopicName: (val: string) => void;
+  setTopicName: (name: string) => void;
   isCustomTopic: boolean;
-  setIsCustomTopic: (val: boolean) => void;
+  setIsCustomTopic: (custom: boolean) => void;
   errorPublisher: string;
-  setErrorPublisher: (val: string) => void;
+  setErrorPublisher: (pub: string) => void;
   selectedExamRef: string;
-  setSelectedExamRef: (val: string) => void;
+  setSelectedExamRef: (ref: string) => void;
   errorReason: ErrorReason;
-  setErrorReason: (val: ErrorReason) => void;
-  priority: string | number;
-  setPriority: (val: string | number) => void;
+  setErrorReason: (reason: ErrorReason) => void;
+  priority: number;
+  setPriority: (pri: number) => void;
   solutionNotes: string;
-  setSolutionNotes: (val: string) => void;
+  setSolutionNotes: (notes: string) => void;
   isAnalyzing: boolean;
-  aiFeedback: string;
-  setAiFeedback: (val: string) => void;
+  aiFeedback: string | null;
+  setAiFeedback: (feedback: string | null) => void;
   aiSuccess: boolean;
   aiButtonFaded: boolean;
-  errorImageUrl: string;
-  setErrorImageUrl: (val: string) => void;
+  errorImageUrl: string | null;
+  setErrorImageUrl: (url: string | null) => void;
   isCompressingImage: boolean;
   imageStats: { originalKb: number; compressedKb: number } | null;
   imageError: string | null;
@@ -56,52 +57,53 @@ interface BranchModalsProps {
   handleAIAnalyzeError: () => void;
   handleImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleRemoveImage: () => void;
+
   branchExams: BranchExam[];
   resources: ResourceItem[];
   last3GeneralMocks: GeneralMockExam[];
   YKS_CURRICULUM_TOPICS: Record<string, string[]>;
   ERROR_REASON_LABELS: Record<string, string>;
 
-  // Exam Modal
+  // Branch Exam Modal
   showAddExamModal: boolean;
-  setShowAddExamModal: (val: boolean) => void;
+  setShowAddExamModal: (show: boolean) => void;
   editingExam: BranchExam | null;
-  setEditingExam: (val: BranchExam | null) => void;
+  setEditingExam: (exam: BranchExam | null) => void;
   examDate: string;
-  setExamDate: (val: string) => void;
+  setExamDate: (date: string) => void;
   examType: 'TYT' | 'AYT';
-  setExamType: (val: 'TYT' | 'AYT') => void;
+  setExamType: (type: 'TYT' | 'AYT') => void;
   examSubject: string;
-  setExamSubject: (val: string) => void;
+  setExamSubject: (sub: string) => void;
   publisher: string;
-  setPublisher: (val: string) => void;
-  correct: number | string;
-  setCorrect: (val: number | string) => void;
-  wrong: number | string;
-  setWrong: (val: number | string) => void;
-  empty: number | string;
-  setEmpty: (val: number | string) => void;
-  durationMinutes: number | string;
-  setDurationMinutes: (val: number | string) => void;
+  setPublisher: (pub: string) => void;
+  correct: string;
+  setCorrect: (val: string) => void;
+  wrong: string;
+  setWrong: (val: string) => void;
+  empty: string;
+  setEmpty: (val: string) => void;
+  durationMinutes: string;
+  setDurationMinutes: (val: string) => void;
   isAnalyzed: boolean;
-  setIsAnalyzed: (val: boolean) => void;
+  setIsAnalyzed: (analyzed: boolean) => void;
   handleCreateBranchExam: (e: React.FormEvent) => void;
   YKS_SUBJECTS: Record<string, string[]>;
 
-  // Delete Modal
+  // Delete Confirm Modal
   deletingItem: { type: 'error' | 'exam'; id: string; title: string } | null;
   setDeletingItem: (item: { type: 'error' | 'exam'; id: string; title: string } | null) => void;
   handleConfirmDelete: () => void;
 
-  // AI Tip Modal
+  // AI Topic Tip Modal
   activeTipTopic: { subject: string; topicName: string } | null;
-  setActiveTipTopic: (val: { subject: string; topicName: string } | null) => void;
+  setActiveTipTopic: (topic: { subject: string; topicName: string } | null) => void;
   tipLoading: boolean;
-  topicTipData: { mistakes: { mistake: string; correction: string }[]; tips: string[]; summary?: string } | null;
+  topicTipData: { summary: string; mistakes: Array<{ mistake: string; correction: string }>; tips: string[] } | null;
   tipError: string | null;
   handleFetchTopicTips: (subject: string, topicName: string) => void;
 
-  // AI Solution & Similar Modal
+  // Image Preview & AI Solvers
   solveSolution: string | null;
   setSolveSolution: (val: string | null) => void;
   solveLoading: boolean;
@@ -111,12 +113,17 @@ interface BranchModalsProps {
   similarError: string | null;
   activeSimilarIdx: number;
   setActiveSimilarIdx: (val: number) => void;
-  aiModalTab: 'solution' | 'similar';
-  setAiModalTab: (val: 'solution' | 'similar') => void;
+  aiModalTab: 'solution' | 'similar' | 'report';
+  setAiModalTab: (val: 'solution' | 'similar' | 'report') => void;
   previewImage: { url: string; title: string } | null;
   setPreviewImage: (val: { url: string; title: string } | null) => void;
   handleSolveQuestion: (imgUrl: string, titleStr: string) => void;
   handleGenerateSimilarQuestions: (imgUrl: string, titleStr: string) => void;
+  handleOpenQuestionReport: (errorItem: TopicErrorItem) => void;
+  handleGenerateQuestionReport: (errorItem: TopicErrorItem) => void;
+  reportLoading: boolean;
+  reportText: string | null;
+  reportError: string | null;
 
   // AI Support Center
   activeSupportItem: any;
@@ -229,6 +236,11 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
   setPreviewImage,
   handleSolveQuestion,
   handleGenerateSimilarQuestions,
+  handleOpenQuestionReport,
+  handleGenerateQuestionReport,
+  reportLoading,
+  reportText,
+  reportError,
 
   activeSupportItem,
   setActiveSupportItem,
@@ -986,6 +998,24 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                       <HelpCircle className="w-3.5 h-3.5" />
                       <span>Benzer Sorular ({similarQuestionsList.length}/3)</span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAiModalTab('report');
+                        const matchingError = topicErrors.find(e => e.imageUrl === previewImage.url || `${e.subject} - ${e.topicName}` === previewImage.title);
+                        if (matchingError && !reportText) {
+                          handleOpenQuestionReport(matchingError);
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                        aiModalTab === 'report'
+                          ? 'bg-amber-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Soru Karnesi</span>
+                    </button>
                   </div>
 
                   {/* TAB 1: Soru Çözümü */}
@@ -1174,6 +1204,61 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                           >
                             <Sparkles className="w-4 h-4 text-cyan-200" />
                             <span>Benzer Soru Oluştur (1/3)</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* TAB 3: Soru Karnesi */}
+                  {aiModalTab === 'report' && (
+                    <div className="flex-1 flex flex-col space-y-2 min-h-0">
+                      <div className="flex items-center justify-between pb-1">
+                        <span className="text-[11px] font-semibold text-slate-400">Detaylı Soru Karnesi & Çeldirici Analizi</span>
+                        {reportText && (
+                          <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
+                            Kayıtlı
+                          </span>
+                        )}
+                      </div>
+
+                      {reportLoading ? (
+                        <div className="py-12 text-center space-y-3 my-auto">
+                          <Loader2 className="w-8 h-8 text-amber-400 animate-spin mx-auto" />
+                          <p className="text-xs text-slate-300 font-semibold">Soru karnesi ve detaylı çeldirici analizi hazırlanıyor...</p>
+                        </div>
+                      ) : reportError ? (
+                        <div className="p-3 bg-rose-950/30 border border-rose-800/50 rounded-xl space-y-2 text-center my-auto">
+                          <p className="text-xs text-rose-400 font-medium">{reportError}</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const matchingError = topicErrors.find(e => e.imageUrl === previewImage.url || `${e.subject} - ${e.topicName}` === previewImage.title);
+                              if (matchingError) handleGenerateQuestionReport(matchingError);
+                            }}
+                            className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
+                          >
+                            Yeniden Deneyin
+                          </button>
+                        </div>
+                      ) : reportText ? (
+                        <div className="space-y-2 overflow-y-auto pr-1 max-h-[45vh] flex-1">
+                          {formatAnalysisTable(reportText)}
+                        </div>
+                      ) : (
+                        <div className="py-8 text-center space-y-3 my-auto">
+                          <FileText className="w-10 h-10 text-amber-400/50 mx-auto" />
+                          <p className="text-xs text-slate-400">Bu sorunun henüz detaylı soru karnesi ve çeldirici analizi oluşturulmadı.</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const matchingError = topicErrors.find(e => e.imageUrl === previewImage.url || `${e.subject} - ${e.topicName}` === previewImage.title);
+                              if (matchingError) handleGenerateQuestionReport(matchingError);
+                            }}
+                            className="px-4 py-2 bg-gradient-to-r from-amber-600 to-indigo-600 hover:from-amber-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-amber-600/20 transition-all cursor-pointer inline-flex items-center space-x-1.5"
+                          >
+                            <Sparkles className="w-4 h-4 text-amber-200" />
+                            <span>Soru Karnesi Oluştur</span>
                           </button>
                         </div>
                       )}
