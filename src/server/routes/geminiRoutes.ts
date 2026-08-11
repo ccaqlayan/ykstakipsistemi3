@@ -5,6 +5,7 @@ import { GoogleGenAI } from '@google/genai';
 import { setDoc, doc } from 'firebase/firestore';
 import {
   db,
+  PORT,
   isAiEnabledOrRespond,
   featureModelConfig,
   coachDataSettings,
@@ -36,22 +37,25 @@ async function resolveImagePart(imageUrl: string): Promise<{ inlineData: { mimeT
     };
   }
 
-  // 2. Check for local upload relative path or URL containing /uploads/
-  let relativePath = imageUrl;
-  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+  // 2. Extract clean path without query parameters (?t=...)
+  const cleanUrl = imageUrl.split('?')[0];
+
+  // 3. Check for local upload relative path or URL containing /uploads/
+  let relativePath = cleanUrl;
+  if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
     try {
-      const parsedUrl = new URL(imageUrl);
+      const parsedUrl = new URL(cleanUrl);
       relativePath = parsedUrl.pathname;
     } catch {}
   }
 
   if (relativePath.includes('/uploads/')) {
-    const filename = relativePath.split('/uploads/').pop();
-    if (filename) {
-      const fullPath = path.join(uploadsDir, filename);
+    const relSubPath = relativePath.split('/uploads/')[1];
+    if (relSubPath) {
+      const fullPath = path.join(uploadsDir, relSubPath);
       if (fs.existsSync(fullPath)) {
         const buffer = fs.readFileSync(fullPath);
-        const ext = path.extname(filename).toLowerCase();
+        const ext = path.extname(relSubPath).toLowerCase();
         let mimeType = 'image/jpeg';
         if (ext === '.png') mimeType = 'image/png';
         else if (ext === '.webp') mimeType = 'image/webp';
@@ -63,10 +67,15 @@ async function resolveImagePart(imageUrl: string): Promise<{ inlineData: { mimeT
     }
   }
 
-  // 3. Remote HTTP / HTTPS image URL
-  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+  // 4. Remote HTTP / HTTPS image URL (convert relative path to absolute localhost URL if needed)
+  let fullFetchUrl = cleanUrl;
+  if (cleanUrl.startsWith('/')) {
+    fullFetchUrl = `http://localhost:${PORT}${cleanUrl}`;
+  }
+
+  if (fullFetchUrl.startsWith('http://') || fullFetchUrl.startsWith('https://')) {
     try {
-      const resp = await fetch(imageUrl);
+      const resp = await fetch(fullFetchUrl);
       if (resp.ok) {
         const arrayBuffer = await resp.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
@@ -76,7 +85,7 @@ async function resolveImagePart(imageUrl: string): Promise<{ inlineData: { mimeT
         };
       }
     } catch (err) {
-      console.error('Failed to fetch remote image URL in Gemini route:', err);
+      console.error('Failed to fetch image URL in Gemini route:', err);
     }
   }
 
