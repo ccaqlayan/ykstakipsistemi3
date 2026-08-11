@@ -1,3 +1,5 @@
+import path from 'path';
+import fs from 'fs';
 import { Router } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { setDoc, doc } from 'firebase/firestore';
@@ -17,10 +19,69 @@ import {
   setFeatureModelConfig,
   savePromptLogs,
   setSavePromptLogs,
-  clearApiUsageLogs
+  clearApiUsageLogs,
+  uploadsDir
 } from '../config';
 
 const router = Router();
+
+async function resolveImagePart(imageUrl: string): Promise<{ inlineData: { mimeType: string; data: string } } | null> {
+  if (!imageUrl || typeof imageUrl !== 'string') return null;
+
+  // 1. Check for Base64 Data URL (data:image/png;base64,...)
+  const matches = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (matches) {
+    return {
+      inlineData: { mimeType: matches[1], data: matches[2] }
+    };
+  }
+
+  // 2. Check for local upload relative path or URL containing /uploads/
+  let relativePath = imageUrl;
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    try {
+      const parsedUrl = new URL(imageUrl);
+      relativePath = parsedUrl.pathname;
+    } catch {}
+  }
+
+  if (relativePath.includes('/uploads/')) {
+    const filename = relativePath.split('/uploads/').pop();
+    if (filename) {
+      const fullPath = path.join(uploadsDir, filename);
+      if (fs.existsSync(fullPath)) {
+        const buffer = fs.readFileSync(fullPath);
+        const ext = path.extname(filename).toLowerCase();
+        let mimeType = 'image/jpeg';
+        if (ext === '.png') mimeType = 'image/png';
+        else if (ext === '.webp') mimeType = 'image/webp';
+        else if (ext === '.gif') mimeType = 'image/gif';
+        return {
+          inlineData: { mimeType, data: buffer.toString('base64') }
+        };
+      }
+    }
+  }
+
+  // 3. Remote HTTP / HTTPS image URL
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    try {
+      const resp = await fetch(imageUrl);
+      if (resp.ok) {
+        const arrayBuffer = await resp.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const contentType = resp.headers.get('content-type') || 'image/jpeg';
+        return {
+          inlineData: { mimeType: contentType.split(';')[0], data: buffer.toString('base64') }
+        };
+      }
+    } catch (err) {
+      console.error('Failed to fetch remote image URL in Gemini route:', err);
+    }
+  }
+
+  return null;
+}
 
 function extractResponseText(response: any): string {
   if (!response) return '';
@@ -585,9 +646,10 @@ router.post('/solve-question', async (req, res) => {
     });
 
     let contents: any[] = [];
+    const imagePart = imageUrl ? await resolveImagePart(imageUrl) : null;
 
     if (solutionText || existingAnalysis) {
-      contents = [{
+      const textPart = {
         text: `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru çözen uzman bir öğretmenisin.
 Aşağıda öğrencinin aynı sorusuna ait önceki çözüm/analiz verisi bulunmaktadır:
 ---
@@ -609,19 +671,12 @@ ASLA "Merhaba değerli öğrencim" veya benzeri giriş/selamlama cümleleri ya d
 ÖNEMLİ MATEMATİKSEL BİÇİMLENDİRME KURALLARI:
 - KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
 - Matematiksel ifadeleri normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`
-      }];
-    } else {
-      const matches = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
-      if (!matches) {
-        return res.status(400).json({ error: 'Geçersiz görsel formatı.' });
-      }
-
-      const mimeType = matches[1];
-      const base64Data = matches[2];
-
-      const imagePart = {
-        inlineData: { mimeType, data: base64Data }
       };
+      contents = imagePart ? [imagePart, textPart] : [textPart];
+    } else {
+      if (!imagePart) {
+        return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
+      }
 
       const textPart = {
         text: `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru çözen uzman bir öğretmenisin.
@@ -698,9 +753,10 @@ router.post('/similar-questions', async (req, res) => {
     });
 
     let contents: any[] = [];
+    const imagePart = imageUrl ? await resolveImagePart(imageUrl) : null;
 
     if (solutionText || existingAnalysis) {
-      contents = [{
+      const textPart = {
         text: `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru üreten uzman bir öğretmenisin.
 Öğrencinin daha önce çözülmüş/analiz edilmiş sorusu aşağıdaki gibidir:
 ---
@@ -716,19 +772,12 @@ Kesinlikle selamlaşma, "İşte senin için soru", "Başarılar dilerim" gibi hi
 ÖNEMLİ MATEMATİKSEL BİÇİMLENDİRME KURALLARI:
 - KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
 - Matematiksel ve geometrik ifadeleri herkesin kolayca okuyabileceği, normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`
-      }];
-    } else {
-      const matches = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
-      if (!matches) {
-        return res.status(400).json({ error: 'Geçersiz görsel formatı.' });
-      }
-
-      const mimeType = matches[1];
-      const base64Data = matches[2];
-
-      const imagePart = {
-        inlineData: { mimeType, data: base64Data }
       };
+      contents = imagePart ? [imagePart, textPart] : [textPart];
+    } else {
+      if (!imagePart) {
+        return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
+      }
 
       const textPart = {
         text: `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru üreten uzman bir öğretmenisin.
@@ -832,9 +881,10 @@ router.post('/analyze-question-details', async (req, res) => {
     });
 
     let contents: any[] = [];
+    const imagePart = imageUrl ? await resolveImagePart(imageUrl) : null;
 
     if (solutionText || existingAnalysis) {
-      contents = [{
+      const textPart = {
         text: `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden uzman bir öğretmen ve soru analistisin.
 Öğrencinin sorusuna ait önceden üretilmiş çözüm/metin verisi aşağıdadır:
 ---
@@ -864,19 +914,12 @@ BİÇİMLENDİRME:
 - Çeldirici Analizi Kuralı: Soruda şıklar (A, B, C, D, E) varsa TÜM şıkların ayrı ayrı çeldirici analizini yap. Eğer soruda şık yoksa "Olası Hatalı Yaklaşımlar / Hatalı Cevaplar" analizi yap.
 - KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
 - Tablonun Markdown sözdizimini bozacak karakterler kullanmaktan kaçın.`
-      }];
-    } else {
-      const matches = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
-      if (!matches) {
-        return res.status(400).json({ error: 'Geçersiz görsel formatı.' });
-      }
-
-      const mimeType = matches[1];
-      const base64Data = matches[2];
-
-      const imagePart = {
-        inlineData: { mimeType, data: base64Data }
       };
+      contents = imagePart ? [imagePart, textPart] : [textPart];
+    } else {
+      if (!imagePart) {
+        return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
+      }
 
       const textPart = {
         text: `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden uzman bir öğretmen ve soru analistiysen.

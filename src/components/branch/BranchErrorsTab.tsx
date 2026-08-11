@@ -68,6 +68,26 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   ERROR_REASON_LABELS,
   ERROR_REASON_COLORS,
 }) => {
+  const renderPriorityBar = (p: any) => {
+    let val = parseInt(p, 10);
+    if (isNaN(val)) {
+      val = p === 'high' ? 8 : p === 'low' ? 3 : 5;
+    }
+    const pct = Math.min(100, Math.max(10, (val / 10) * 100));
+    const barColor = val >= 7 ? 'from-rose-500 to-amber-500' : val >= 4 ? 'from-amber-500 to-emerald-500' : 'from-indigo-500 to-emerald-400';
+    const textColor = val >= 7 ? 'text-rose-400' : val >= 4 ? 'text-amber-400' : 'text-emerald-400';
+
+    return (
+      <div className="flex items-center space-x-1.5 bg-slate-900/90 px-2.5 py-1 rounded-full border border-slate-800 shrink-0">
+        <span className={`text-[10px] font-bold ${textColor}`}>Öncelik</span>
+        <div className="w-14 h-1.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-750">
+          <div className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-300`} style={{ width: `${pct}%` }} />
+        </div>
+        <span className="text-[10px] font-mono font-bold text-slate-300">{val}/10</span>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
       
@@ -217,11 +237,7 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                       <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider" style={{ backgroundColor: `${reasonColor}20`, color: reasonColor, border: `1px solid ${reasonColor}40` }}>
                         {reasonLabel}
                       </span>
-                      {item.priority !== undefined && (
-                        <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full font-mono font-bold">
-                          Öncelik: {item.priority}/10
-                        </span>
-                      )}
+                      {item.priority !== undefined && renderPriorityBar(item.priority)}
                     </div>
                     <h3 className="text-sm font-bold text-white leading-snug">{item.topicName}</h3>
                     {item.publisher && (
@@ -251,23 +267,45 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                   </div>
                 </div>
 
-                {/* Soru Görseli Varsa */}
+                {/* Soru Görseli Varsa: Küçük Görsel ve Sağında Dikey Yapay Zeka Butonları */}
                 {item.imageUrl && (
-                  <div className="relative group rounded-xl overflow-hidden border border-slate-800 bg-slate-900/50 max-w-xs">
-                    <img 
-                      src={item.imageUrl} 
-                      alt={item.topicName} 
-                      className="w-full h-40 object-cover object-center cursor-pointer group-hover:scale-105 transition-transform duration-300"
-                      onClick={() => setPreviewImage({ url: item.imageUrl!, title: `${item.subject} - ${item.topicName}` })}
-                    />
-                    <div 
-                      className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
-                      onClick={() => setPreviewImage({ url: item.imageUrl!, title: `${item.subject} - ${item.topicName}` })}
-                    >
-                      <div className="bg-slate-900/90 text-white text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-700 shadow-lg flex items-center space-x-1">
-                        <Maximize2 className="w-3.5 h-3.5 text-indigo-400" />
-                        <span>Büyüt</span>
+                  <div className="flex flex-col sm:flex-row items-start gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
+                    <div className="relative group rounded-xl overflow-hidden border border-slate-800 bg-slate-900 shrink-0 w-28 h-24 sm:w-36 sm:h-28">
+                      <img 
+                        src={item.imageUrl} 
+                        alt={item.topicName} 
+                        className="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform duration-300"
+                        onClick={() => setPreviewImage({ url: item.imageUrl!, title: `${item.subject} - ${item.topicName}` })}
+                      />
+                      <div 
+                        className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                        onClick={() => setPreviewImage({ url: item.imageUrl!, title: `${item.subject} - ${item.topicName}` })}
+                      >
+                        <div className="bg-slate-900/90 text-white text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-700 shadow-lg flex items-center space-x-1">
+                          <Maximize2 className="w-3 h-3 text-indigo-400" />
+                          <span>Büyüt</span>
+                        </div>
                       </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 flex-1 min-w-0 justify-center">
+                      <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">Yapay Zeka Destek Araçları</span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenSolveModal(item)}
+                        className="px-2.5 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 w-fit"
+                      >
+                        <Brain className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Çözüm Rehberi</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenSimilarModal(item)}
+                        className="px-2.5 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 w-fit"
+                      >
+                        <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Benzer Soru Oluştur</span>
+                      </button>
                     </div>
                   </div>
                 )}
@@ -280,7 +318,7 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                   </div>
                 )}
 
-                {/* Alt Aksiyon Butonları (AI İpucu, AI Çözüm, Benzer Soru, Tekrar Butonu) */}
+                {/* Alt Aksiyon Butonları */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-900">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <button
@@ -291,22 +329,26 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                       <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                       <span>Konu İpucu</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenSolveModal(item)}
-                      className="px-2.5 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1"
-                    >
-                      <Brain className="w-3.5 h-3.5 text-purple-400" />
-                      <span>Çözüm Rehberi</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenSimilarModal(item)}
-                      className="px-2.5 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1"
-                    >
-                      <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Benzer Soru Oluştur</span>
-                    </button>
+                    {!item.imageUrl && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenSolveModal(item)}
+                          className="px-2.5 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1"
+                        >
+                          <Brain className="w-3.5 h-3.5 text-purple-400" />
+                          <span>Çözüm Rehberi</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenSimilarModal(item)}
+                          className="px-2.5 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1"
+                        >
+                          <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>Benzer Soru Oluştur</span>
+                        </button>
+                      </>
+                    )}
                   </div>
 
                   <button

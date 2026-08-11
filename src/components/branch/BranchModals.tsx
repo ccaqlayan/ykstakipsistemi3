@@ -248,6 +248,72 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
   const isEditingError = editingError !== null;
   const isEditingExam = editingExam !== null;
 
+  const formatSolutionText = (text: string) => {
+    if (!text) return null;
+    let formattedText = text
+      .replace(/([^\n])\s*(Adım \d+[:\.-])/gi, '$1\n\n$2')
+      .replace(/([^\n])\s*(\d+\.\s+)/g, '$1\n$2')
+      .replace(/([^\n])\s*([A-E]\)\s+)/g, '$1\n$2')
+      .replace(/([^\n])\s*(Çözüm[:\.-])/gi, '$1\n\n$2')
+      .replace(/([^\n])\s*(Doğru Cevap[:\.-])/gi, '$1\n\n$2')
+      .replace(/([^\n])\s*(Sonuç[:\.-])/gi, '$1\n\n$2');
+
+    return formattedText.split('\n').map((line, idx) => {
+      let cleaned = line
+        .replace(/\$\$/g, '')
+        .replace(/\$/g, '')
+        .replace(/\\implies/g, ' ➔ ')
+        .replace(/\\cdot/g, ' · ')
+        .replace(/\\equiv/g, ' ≡ ')
+        .replace(/\\approx/g, ' ≈ ')
+        .replace(/\\ne/g, ' ≠ ')
+        .replace(/\\le/g, ' ≤ ')
+        .replace(/\\ge/g, ' ≥ ')
+        .replace(/\\infty/g, ' ∞ ')
+        .replace(/\\pm/g, ' ± ')
+        .replace(/\\times/g, ' × ')
+        .replace(/\\div/g, ' ÷ ')
+        .replace(/\\alpha/g, 'α')
+        .replace(/\\beta/g, 'β')
+        .replace(/\\theta/g, 'θ')
+        .replace(/\\pi/g, 'π')
+        .replace(/\\sqrt\{([^}]+)\}/g, 'kök($1)')
+        .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1 / $2)')
+        .replace(/\\Delta/g, 'Δ');
+
+      const parts = cleaned.split('**');
+      const elements = parts.map((part, i) => {
+        if (i % 2 === 1) {
+          return <strong key={i} className="text-amber-300 font-bold">{part}</strong>;
+        }
+        return part;
+      });
+
+      if (cleaned.trim().startsWith('- ') || cleaned.trim().startsWith('* ')) {
+        return (
+          <li key={idx} className="ml-4 list-disc text-slate-300 pl-1 py-0.5 text-xs leading-relaxed">
+            {elements}
+          </li>
+        );
+      }
+      if (cleaned.trim().match(/^\d+\./) || cleaned.trim().toLowerCase().startsWith('adım ')) {
+        return (
+          <div key={idx} className="text-xs text-slate-200 pl-3 font-semibold leading-relaxed my-2 border-l-2 border-emerald-400 py-1 bg-emerald-950/30 rounded-r-lg space-y-1">
+            {elements}
+          </div>
+        );
+      }
+      if (cleaned.trim() === '') {
+        return <div key={idx} className="h-2" />;
+      }
+      return (
+        <p key={idx} className="text-xs text-slate-300 leading-relaxed font-normal py-0.5">
+          {elements}
+        </p>
+      );
+    });
+  };
+
   return (
     <>
       {/* Modal: Add/Edit Topic Error */}
@@ -260,7 +326,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
             const showStep2 = isEditingError || errorSubject !== '';
             const showStep3 = isEditingError || (showStep2 && topicName.trim() !== '');
             const showStep4 = isEditingError || (showStep3 && Boolean(errorReason));
-            const showPrioritySection = isEditingError || !!aiFeedback;
+            const showPrioritySection = isEditingError || !!aiFeedback || Boolean(errorReason);
             const isFormValid = errorPublisher.trim() !== '' && errorSubject !== '' && topicName.trim() !== '' && Boolean(errorReason);
 
             const matchingBooks = resources.filter(r => r.subject === errorSubject);
@@ -276,7 +342,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                   <button 
                     type="button" 
                     onClick={() => { setShowAddErrorModal(false); setEditingError(null); }}
-                    className="text-slate-400 hover:text-white transition-colors"
+                    className="text-slate-400 hover:text-white transition-colors cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -422,7 +488,16 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                             <button
                               key={key}
                               type="button"
-                              onClick={() => setErrorReason(key as ErrorReason)}
+                              onClick={() => {
+                                setErrorReason(key as ErrorReason);
+                                let defaultPriority = 5;
+                                if (key === 'bilgi_eksigi') defaultPriority = 9;
+                                else if (key === 'soru_kokunu_yanlis_okuma') defaultPriority = 7;
+                                else if (key === 'iki_sik_arasinda') defaultPriority = 6;
+                                else if (key === 'zaman_yetmedi') defaultPriority = 5;
+                                else if (key === 'dikkat_hatasi') defaultPriority = 4;
+                                setPriority(defaultPriority);
+                              }}
                               className={`p-2 rounded-xl text-[11px] font-bold text-left transition-all cursor-pointer border ${
                                 isSelected
                                   ? 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-sm'
@@ -494,7 +569,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                         {imageError && <p className="text-[10px] text-rose-400 font-medium mt-1">{imageError}</p>}
                       </div>
 
-                      <div>
+                      <div className="space-y-2">
                         <div className="flex items-center justify-between mb-1">
                           <label className="block text-[11px] font-bold text-slate-300">
                             Çözüm Notları / Yapay Zeka Analizi
@@ -530,6 +605,16 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                           onChange={(e) => setSolutionNotes(e.target.value)}
                           className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-medium transition-colors"
                         />
+
+                        {aiFeedback && (
+                          <div className="p-3 bg-indigo-950/50 border border-indigo-500/30 rounded-xl space-y-1.5 text-xs animate-fade-in">
+                            <div className="flex items-center space-x-1.5 font-bold text-indigo-300">
+                              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                              <span>Yapay Zeka Analiz Değerlendirmesi</span>
+                            </div>
+                            <p className="text-slate-300 text-[11.5px] leading-relaxed whitespace-pre-line font-normal">{aiFeedback}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -593,7 +678,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
               <button 
                 type="button" 
                 onClick={() => { setShowAddExamModal(false); setEditingExam(null); }}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -636,15 +721,17 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                     onChange={(e) => setExamSubject(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
                   >
-                    {YKS_SUBJECTS[examType].map(s => <option key={s} value={s}>{s}</option>)}
+                    {YKS_SUBJECTS[examType].map((sub) => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Yayınevi / Yayın Adı</label>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">Yayın Evi</label>
                   <input
                     type="text"
                     required
-                    placeholder="Ör: 3D Yayınları Deneme #4"
+                    placeholder="Ör: Bilgi Sarmal"
                     value={publisher}
                     onChange={(e) => setPublisher(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
@@ -762,7 +849,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
               <button 
                 type="button" 
                 onClick={() => setActiveTipTopic(null)}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -847,20 +934,73 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
           className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setPreviewImage(null); }}
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full p-4 shadow-2xl space-y-3 animate-fade-in relative flex flex-col max-h-[90vh]">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full p-4 md:p-5 shadow-2xl space-y-3 animate-fade-in relative flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between pb-2 border-b border-slate-800 shrink-0">
               <h3 className="text-xs sm:text-sm font-bold text-white truncate max-w-[80%]">{previewImage.title}</h3>
               <button 
                 type="button" 
                 onClick={() => setPreviewImage(null)}
-                className="text-slate-400 hover:text-white transition-colors p-1"
+                className="text-slate-400 hover:text-white transition-colors p-1 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-auto flex items-center justify-center bg-slate-950 rounded-xl p-2">
-              <img src={previewImage.url} alt={previewImage.title} className="max-w-full max-h-[75vh] object-contain rounded-lg" />
+            <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto p-1">
+              <div className="flex items-center justify-center bg-slate-950 rounded-xl p-2 border border-slate-800/80 min-h-[250px] max-h-[60vh]">
+                <img src={previewImage.url} alt={previewImage.title} className="max-w-full max-h-[55vh] object-contain rounded-lg" />
+              </div>
+
+              <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-3 min-h-[250px] max-h-[60vh] overflow-y-auto">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                    <h4 className="text-xs font-bold text-white flex items-center space-x-1.5">
+                      <Brain className="w-4 h-4 text-purple-400" />
+                      <span>Yapay Zeka Soru Çözümü</span>
+                    </h4>
+                    {solveSolution && (
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
+                        Çözüldü
+                      </span>
+                    )}
+                  </div>
+
+                  {solveLoading ? (
+                    <div className="py-12 text-center space-y-3">
+                      <Loader2 className="w-8 h-8 text-purple-400 animate-spin mx-auto" />
+                      <p className="text-xs text-slate-300 font-semibold">Soru yapay zeka tarafından adım adım çözülüyor...</p>
+                    </div>
+                  ) : solveError ? (
+                    <div className="p-3 bg-rose-950/30 border border-rose-800/50 rounded-xl space-y-2 text-center">
+                      <p className="text-xs text-rose-400 font-medium">{solveError}</p>
+                      <button
+                        type="button"
+                        onClick={() => handleSolveQuestion(previewImage.url, previewImage.title)}
+                        className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
+                      >
+                        Yeniden Deneyin
+                      </button>
+                    </div>
+                  ) : solveSolution ? (
+                    <div className="space-y-2 overflow-y-auto pr-1 max-h-[45vh]">
+                      {formatSolutionText(solveSolution)}
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center space-y-3 my-auto">
+                      <Brain className="w-10 h-10 text-purple-400/50 mx-auto" />
+                      <p className="text-xs text-slate-400">Bu sorunun henüz adım adım yapay zeka çözümü üretilmedi.</p>
+                      <button
+                        type="button"
+                        onClick={() => handleSolveQuestion(previewImage.url, previewImage.title)}
+                        className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-600/20 transition-all cursor-pointer inline-flex items-center space-x-1.5"
+                      >
+                        <Sparkles className="w-4 h-4 text-purple-200" />
+                        <span>Yapay Zeka Çözümünü Al</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
