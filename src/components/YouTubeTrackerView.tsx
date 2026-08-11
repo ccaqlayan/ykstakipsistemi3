@@ -96,6 +96,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [editingTopicName, setEditingTopicName] = useState<string>('');
   const [editingChannelName, setEditingChannelName] = useState<string>('');
+  const [editingSubject, setEditingSubject] = useState<string>('');
   const [editingNotesText, setEditingNotesText] = useState<string>('');
 
   // Inline Note Only Editing State
@@ -126,12 +127,14 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
     setEditingCardId(vid.id);
     setEditingTopicName(vid.topicName || '');
     setEditingChannelName(vid.channelName || '');
+    setEditingSubject(vid.subject || YKS_SUBJECTS.AYT[0]);
     setEditingNotesText(vid.notes || '');
   };
 
   const handleSaveCard = (vid: YouTubeVideoItem) => {
     onUpdateVideo({
       ...vid,
+      subject: editingSubject || vid.subject,
       topicName: editingTopicName.trim() || vid.topicName,
       channelName: editingChannelName.trim() || vid.channelName,
       notes: editingNotesText.trim()
@@ -144,7 +147,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
   };
 
   // Form State
-  const [subject, setSubject] = useState(YKS_SUBJECTS.AYT[0]);
+  const [subject, setSubject] = useState('');
   const [channelName, setChannelName] = useState('');
   const [topicName, setTopicName] = useState('');
   const [playlistTitle, setPlaylistTitle] = useState('');
@@ -152,12 +155,33 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
   const [notes, setNotes] = useState('');
 
   const resetForm = () => {
+    setSubject('');
     setChannelName('');
     setTopicName('');
     setPlaylistTitle('');
     setVideoUrl('');
     setNotes('');
     setShowAddModal(false);
+  };
+
+  const predictSubjectClient = (t: string, c: string, u: string): string => {
+    const combined = `${t} ${c} ${u}`.toLowerCase();
+    if (combined.includes('geometri') || combined.includes('üçgen') || combined.includes('çember')) return 'AYT Geometri';
+    if (combined.includes('ayt mat') || combined.includes('türev') || combined.includes('integral') || combined.includes('limit') || combined.includes('trigonometri') || combined.includes('eyüp b') || combined.includes('mert hoca') || combined.includes('bıyıklı mat')) return 'AYT Matematik';
+    if (combined.includes('tyt mat') || combined.includes('problemler') || combined.includes('rehber matematik')) return 'TYT Matematik';
+    if (combined.includes('ayt fizik') || combined.includes('vip fizik') || combined.includes('özcan aykın') || combined.includes('ertan sinan') || combined.includes('vektör')) return 'AYT Fizik';
+    if (combined.includes('tyt fizik') || combined.includes('optik') || combined.includes('basınç')) return 'TYT Fizik';
+    if (combined.includes('ayt kimya') || combined.includes('görkem şahin') || combined.includes('ferrum') || combined.includes('organik')) return 'AYT Kimya';
+    if (combined.includes('tyt kimya') || combined.includes('kimya adası') || combined.includes('periyodik')) return 'TYT Kimya';
+    if (combined.includes('ayt biyoloji') || combined.includes('dr. biyoloji') || combined.includes('biosem') || combined.includes('sistemler')) return 'AYT Biyoloji';
+    if (combined.includes('tyt biyoloji') || combined.includes('funda mentals') || combined.includes('hücre')) return 'TYT Biyoloji';
+    if (combined.includes('edebiyat') || combined.includes('kadir gümüş') || combined.includes('deniz hoca')) return 'AYT Edebiyat';
+    if (combined.includes('türkçe') || combined.includes('paragraf') || combined.includes('rüştü hoca')) return 'TYT Türkçe';
+    if (combined.includes('tarih') || combined.includes('ramazan yetgin')) return 'AYT Tarih';
+    if (combined.includes('coğrafya') || combined.includes('bayram meral') || combined.includes('yavuz tuna')) return 'AYT Coğrafya';
+    if (combined.includes('felsefe')) return 'TYT Felsefe';
+    if (combined.includes('din')) return 'TYT Din Kültürü';
+    return 'AYT Matematik';
   };
 
   const handleFetchAutoInfo = async () => {
@@ -177,7 +201,11 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
       if (data.success) {
         if (data.channelName) setChannelName(data.channelName);
         if (data.title) setTopicName(data.title);
-        if (data.subject) setSubject(data.subject);
+        if (data.subject) {
+          setSubject(data.subject);
+        } else {
+          setSubject(predictSubjectClient(data.title || '', data.channelName || '', videoUrl.trim()));
+        }
       } else {
         alert('Video bilgileri çekilemedi: ' + (data.error || 'Bilinmeyen hata'));
       }
@@ -194,6 +222,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
 
     const trimmedUrl = videoUrl.trim();
     const isPlaylistUrl = trimmedUrl && (trimmedUrl.includes('list=') || trimmedUrl.includes('playlist?list='));
+    const finalSubject = subject || predictSubjectClient(topicName, channelName, trimmedUrl);
 
     if (isPlaylistUrl) {
       setIsLoadingPlaylist(true);
@@ -203,7 +232,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             url: trimmedUrl,
-            subject,
+            subject: finalSubject,
             channelName: channelName.trim(),
             topicName: topicName.trim()
           })
@@ -212,7 +241,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
         
         if (data.success) {
            onAddVideo({
-             subject,
+             subject: finalSubject,
              channelName: data.channelName || channelName.trim() || 'YouTube',
              topicName: topicName.trim() || data.title,
              playlistTitle: data.title,
@@ -235,7 +264,6 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
        let finalChannel = channelName.trim();
        let finalTopic = topicName.trim();
        let finalNotes = notes.trim();
-       let finalSubject = subject;
 
        if (trimmedUrl && (!finalChannel || !finalTopic)) {
          setIsLoadingInfo(true);
@@ -243,13 +271,12 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
            const res = await fetch('/api/youtube/video-info', {
              method: 'POST',
              headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ url: trimmedUrl, subject })
+             body: JSON.stringify({ url: trimmedUrl, subject: finalSubject })
            });
            const data = await res.json();
            if (data.success) {
              if (!finalChannel && data.channelName) finalChannel = data.channelName;
              if (!finalTopic && data.title) finalTopic = data.title;
-             if (data.subject) finalSubject = data.subject;
            }
          } catch (err) {
            console.error('Auto video info fetch error:', err);
@@ -598,7 +625,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                           </div>
 
                           {/* Dark Vignette Gradient */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-black/30 pointer-events-none" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent pointer-events-none" />
 
                           {/* Top-Left Watch Status Glass Badge */}
                           <div className="absolute top-2.5 left-2.5 z-10">
@@ -639,7 +666,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                               href={vid.videoUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20"
+                              className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20"
                               title="YouTube'da İzle"
                             >
                               <div className="p-3 bg-red-600 hover:bg-red-500 text-white rounded-full shadow-2xl scale-90 group-hover:scale-100 transition-all">
@@ -718,15 +745,32 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                                   className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-xs rounded-xl px-3 py-2 outline-none font-medium"
                                 />
                               </div>
-                              <div>
-                                <label className="block text-xs font-bold text-amber-300 mb-1">Kanal / Hoca Adı</label>
-                                <input
-                                  type="text"
-                                  value={editingChannelName}
-                                  onChange={(e) => setEditingChannelName(e.target.value)}
-                                  className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-xs rounded-xl px-3 py-2 outline-none font-medium"
-                                />
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <div>
+                                  <label className="block text-xs font-bold text-amber-300 mb-1">İlişkili Ders</label>
+                                  <select
+                                    value={editingSubject}
+                                    onChange={(e) => setEditingSubject(e.target.value)}
+                                    className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-xs rounded-xl px-3 py-2 outline-none font-medium cursor-pointer"
+                                  >
+                                    {YKS_SUBJECTS.AYT.concat(YKS_SUBJECTS.TYT).map((s) => (
+                                      <option key={s} value={s}>{s}</option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-bold text-amber-300 mb-1">Kanal / Hoca Adı</label>
+                                  <input
+                                    type="text"
+                                    value={editingChannelName}
+                                    onChange={(e) => setEditingChannelName(e.target.value)}
+                                    className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-xs rounded-xl px-3 py-2 outline-none font-medium"
+                                  />
+                                </div>
                               </div>
+
                               <div>
                                 <label className="block text-xs font-bold text-amber-300 mb-1">Açıklama / Notlar</label>
                                 <textarea
@@ -1086,15 +1130,26 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
 
               {/* Subject */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">İlişkili Ders *</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+                  <span>İlişkili Ders</span>
+                  <span className="text-[10px] text-amber-400 font-normal">✨ Otomatik Doldur ile belirlenebilir</span>
+                </label>
                 <select
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-red-500 font-bold cursor-pointer shadow-inner"
                 >
-                  {YKS_SUBJECTS.AYT.concat(YKS_SUBJECTS.TYT).map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
+                  <option value="">Ders Seçiniz (Veya Otomatik Doldur'a Basın)...</option>
+                  <optgroup label="AYT Dersleri">
+                    {YKS_SUBJECTS.AYT.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="TYT Dersleri">
+                    {YKS_SUBJECTS.TYT.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
 

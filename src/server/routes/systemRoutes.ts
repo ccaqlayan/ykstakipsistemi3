@@ -492,6 +492,33 @@ router.post('/youtube/playlist', async (req, res) => {
   }
 });
 
+function predictYKSSubject(title: string = '', channelName: string = '', text: string = ''): string {
+  const combined = `${title} ${channelName} ${text}`.toLowerCase();
+
+  if (combined.includes('geometri') || combined.includes('üçgen') || combined.includes('dörtgen') || combined.includes('çember') || combined.includes('analitik')) return 'AYT Geometri';
+  if (combined.includes('ayt mat') || combined.includes('türev') || combined.includes('integral') || combined.includes('limit') || combined.includes('trigonometri') || combined.includes('logaritma') || combined.includes('dizi') || combined.includes('polinom') || combined.includes('parabol') || combined.includes('eyüp b') || combined.includes('mert hoca') || combined.includes('bıyıklı mat') || combined.includes('sml hoca') || combined.includes('tunç kurt')) return 'AYT Matematik';
+  if (combined.includes('tyt mat') || combined.includes('problemler') || combined.includes('rehber matematik') || combined.includes('temel kavramlar') || combined.includes('rasyonel') || combined.includes('bölünebilme')) return 'TYT Matematik';
+  if (combined.includes('ayt fizik') || combined.includes('vip fizik') || combined.includes('özcan aykın') || combined.includes('ertan sinan') || combined.includes('altuğ güneş') || combined.includes('vektör') || combined.includes('bağıl hareket') || combined.includes('atışlar') || combined.includes('tork') || combined.includes('elektrik') || combined.includes('manyetizma') || combined.includes('dalgalar')) return 'AYT Fizik';
+  if (combined.includes('tyt fizik') || combined.includes('fizik bilimine giriş') || combined.includes('madde ve özellikleri') || combined.includes('basınç') || combined.includes('optik')) return 'TYT Fizik';
+  if (combined.includes('ayt kimya') || combined.includes('görkem şahin') || combined.includes('ferrum') || combined.includes('paraksilen') || combined.includes('gazlar') || combined.includes('sıvı çözeltiler') || combined.includes('kimyasal tepkimeler') || combined.includes('organik kimya') || combined.includes('entalpi') || combined.includes('denge')) return 'AYT Kimya';
+  if (combined.includes('tyt kimya') || combined.includes('kimya adası') || combined.includes('simya') || combined.includes('periyodik sistem') || combined.includes('kimyasal türler')) return 'TYT Kimya';
+  if (combined.includes('ayt biyoloji') || combined.includes('dr. biyoloji') || combined.includes('dr biyoloji') || combined.includes('biosem') || combined.includes('selin hoca') || combined.includes('sistemler') || combined.includes('genetik') || combined.includes('nükleik asit') || combined.includes('protein sentezi') || combined.includes('fotosentez') || combined.includes('kemosentez') || combined.includes('hücresel solunum')) return 'AYT Biyoloji';
+  if (combined.includes('tyt biyoloji') || combined.includes('funda mentals') || combined.includes('canlıların ortak özellikleri') || combined.includes('hücre') || combined.includes('kalıtım') || combined.includes('ekoloji')) return 'TYT Biyoloji';
+  if (combined.includes('edebiyat') || combined.includes('kadir gümüş') || combined.includes('deniz hoca') || combined.includes('şiir') || combined.includes('roman') || combined.includes('divan') || combined.includes('tanzimat') || combined.includes('servetifünun')) return 'AYT Edebiyat';
+  if (combined.includes('türkçe') || combined.includes('paragraf') || combined.includes('rüştü hoca') || combined.includes('aker kartal') || combined.includes('dil bilgisi') || combined.includes('yazım kuralları') || combined.includes('noktalama')) return 'TYT Türkçe';
+  if (combined.includes('tarih') || combined.includes('ramazan yetgin') || combined.includes('sadettin akyayla') || combined.includes('selami yalçın') || combined.includes('osmanlı') || combined.includes('inkılap')) return 'AYT Tarih';
+  if (combined.includes('coğrafya') || combined.includes('bayram meral') || combined.includes('yavuz tuna') || combined.includes('coğrafyanın kodları') || combined.includes('harita') || combined.includes('nüfus') || combined.includes('iklim')) return 'AYT Coğrafya';
+  if (combined.includes('felsefe')) return 'TYT Felsefe';
+  if (combined.includes('din') || combined.includes('din kültürü')) return 'TYT Din Kültürü';
+
+  if (combined.includes('matematik')) return 'AYT Matematik';
+  if (combined.includes('fizik')) return 'AYT Fizik';
+  if (combined.includes('kimya')) return 'AYT Kimya';
+  if (combined.includes('biyoloji')) return 'AYT Biyoloji';
+
+  return 'AYT Matematik';
+}
+
 // -------------------------------------------------------------
 // YouTube Single Video Metadata Scraper
 // -------------------------------------------------------------
@@ -575,6 +602,11 @@ router.post('/youtube/video-info', async (req, res) => {
       title = '';
     }
 
+    // Perform high-accuracy rule-based prediction from title/channel/URL
+    if (!detectedSubject || detectedSubject.trim() === '') {
+      detectedSubject = predictYKSSubject(title, channelName, targetUrl);
+    }
+
     const apiKey = process.env.GEMINI_API_KEY;
     if (apiKey && (!title || !channelName || !detectedSubject)) {
       try {
@@ -592,14 +624,13 @@ router.post('/youtube/video-info', async (req, res) => {
         - Subject: "${detectedSubject}"
 
         CRITICAL REQUIREMENT:
-        - Look at the URL structure. If there are any readable words or slugs in the URL, use them to infer.
-        - If the URL contains only an opaque video ID and you cannot determine the exact video details with 100% certainty, return generic values.
-
+        - Identify the exact YKS Subject (e.g., "AYT Matematik", "TYT Fizik", "AYT Kimya", "TYT Biyoloji", "AYT Edebiyat", "TYT Türkçe", "AYT Tarih", "AYT Coğrafya", "TYT Geometri", "AYT Geometri").
+        
         Output MUST be ONLY a valid JSON object matching this schema:
         {
           "title": "Clean, realistic Turkish video lesson title or playlist title",
           "channelName": "Channel name or hoca name",
-          "subject": "Most appropriate YKS Subject name from standard curriculum"
+          "subject": "Most appropriate YKS Subject name"
         }
         `;
 
@@ -613,7 +644,7 @@ router.post('/youtube/video-info', async (req, res) => {
         const parsed = JSON.parse(res.response.text || '{}');
         if (!title && parsed.title) title = parsed.title;
         if (!channelName && parsed.channelName) channelName = parsed.channelName;
-        if (!detectedSubject && parsed.subject) detectedSubject = parsed.subject;
+        if (parsed.subject) detectedSubject = parsed.subject;
       } catch (geminiErr) {
         console.error('Gemini video-info fallback error:', geminiErr);
       }
@@ -624,7 +655,7 @@ router.post('/youtube/video-info', async (req, res) => {
       title: title || 'YouTube Ders Videosu',
       channelName: channelName || 'YouTube',
       notes: '',
-      subject: detectedSubject || 'AYT Matematik'
+      subject: detectedSubject || predictYKSSubject(title, channelName, targetUrl)
     });
   } catch (err: any) {
     console.error('YouTube video-info route error:', err);
