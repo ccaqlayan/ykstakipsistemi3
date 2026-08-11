@@ -13,7 +13,9 @@ import {
   Check, 
   ExternalLink,
   Layers,
-  Sparkles
+  Sparkles,
+  Filter,
+  PlayCircle
 } from 'lucide-react';
 import { StudyPlanItem, DayOfWeek, YouTubeVideoItem } from '../../types';
 import { YKS_SUBJECTS } from '../../data/initialData';
@@ -32,9 +34,14 @@ const extractYouTubeVideoId = (url?: string): string | null => {
   if (!url) return null;
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|playlist\?list=.*[&?]v=))([\w-]{11})/);
   if (match && match[1]) return match[1];
-  const matchV = url.match(/[?&]v=([\w-]{11})/);
-  if (matchV && matchV[1]) return matchV[1];
+  const matchV = textMatch(url);
+  if (matchV) return matchV;
   return null;
+};
+
+const textMatch = (url: string): string | null => {
+  const matchV = url.match(/[?&]v=([\w-]{11})/);
+  return matchV && matchV[1] ? matchV[1] : null;
 };
 
 const getYouTubeThumbnail = (videoUrl?: string, firstSubVideoUrl?: string): string | null => {
@@ -57,6 +64,7 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
 
   // Tab 1 (Tracker Selection) states
   const [subjectFilter, setSubjectFilter] = useState<string>('Tümü');
+  const [watchStatusFilter, setWatchStatusFilter] = useState<'all' | 'unwatched' | 'watched'>('unwatched');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedItems, setSelectedItems] = useState<Record<string, { subject: string; title: string; channelName: string; videoUrl: string; duration?: number }>>({});
 
@@ -77,7 +85,15 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
       v.topicName.toLowerCase().includes(searchQuery.toLowerCase()) || 
       v.channelName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (v.playlistTitle && v.playlistTitle.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesSubject && matchesSearch;
+    
+    let matchesWatchStatus = true;
+    if (watchStatusFilter === 'unwatched') {
+      matchesWatchStatus = !v.isWatched;
+    } else if (watchStatusFilter === 'watched') {
+      matchesWatchStatus = v.isWatched;
+    }
+
+    return matchesSubject && matchesSearch && matchesWatchStatus;
   });
 
   const toggleSelectItem = (key: string, itemData: { subject: string; title: string; channelName: string; videoUrl: string; duration?: number }) => {
@@ -185,7 +201,7 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-black text-white tracking-tight">Plana YouTube Video Görevi Ekle</h3>
-              <p className="text-xs text-slate-400 font-medium">Haftalık ders programınıza izleme görevi atayın</p>
+              <p className="text-xs text-slate-400 font-medium">Sıradaki ders videolarınızı çalışma programınıza ekleyin</p>
             </div>
           </div>
           <button
@@ -256,33 +272,77 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
         {activeTab === 'tracker' && (
           <form onSubmit={handleAddSelectedFromTracker} className="space-y-4">
             
-            {/* Search & Subject Filter */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3 pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Video veya kanal adı ara..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white outline-none focus:border-red-500 font-medium"
-                />
+            {/* Watch Status & Subject Filter Row */}
+            <div className="space-y-2">
+              {/* Watch Status Pills */}
+              <div className="flex items-center space-x-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+                <span className="text-[11px] font-bold text-slate-400 px-2 flex items-center space-x-1 shrink-0">
+                  <Filter className="w-3 h-3 text-red-400" />
+                  <span>Durum:</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setWatchStatusFilter('unwatched')}
+                  className={`text-[11px] px-3 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    watchStatusFilter === 'unwatched'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  🎯 Sıradaki İzlenecekler
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWatchStatusFilter('watched')}
+                  className={`text-[11px] px-3 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    watchStatusFilter === 'watched'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  ✅ İzlendi Olanlar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWatchStatusFilter('all')}
+                  className={`text-[11px] px-3 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    watchStatusFilter === 'all'
+                      ? 'bg-red-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Tümü
+                </button>
               </div>
-              <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-0.5">
-                {subjectsList.map(sub => (
-                  <button
-                    key={sub}
-                    type="button"
-                    onClick={() => setSubjectFilter(sub)}
-                    className={`text-[11px] px-2.5 py-1.5 rounded-lg border font-bold whitespace-nowrap cursor-pointer transition-all ${
-                      subjectFilter === sub
-                        ? 'bg-red-950 border-red-500 text-red-300'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {sub}
-                  </button>
-                ))}
+
+              {/* Search & Subject Filter */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Video veya kanal adı ara..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white outline-none focus:border-red-500 font-medium"
+                  />
+                </div>
+                <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-0.5">
+                  {subjectsList.map(sub => (
+                    <button
+                      key={sub}
+                      type="button"
+                      onClick={() => setSubjectFilter(sub)}
+                      className={`text-[11px] px-2.5 py-1.5 rounded-lg border font-bold whitespace-nowrap cursor-pointer transition-all ${
+                        subjectFilter === sub
+                          ? 'bg-red-950 border-red-500 text-red-300'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {sub}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -311,6 +371,11 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
                   const thumb = getYouTubeThumbnail(vid.videoUrl, firstSubUrl);
                   const isMainSelected = Boolean(selectedItems[`main-${vid.id}`]);
 
+                  // Playlist watched count
+                  const totalSubCount = vid.playlistVideos?.length || 0;
+                  const watchedSubCount = vid.playlistVideos?.filter(s => s.isWatched).length || 0;
+                  let firstUnwatchedFound = false;
+
                   return (
                     <div 
                       key={vid.id}
@@ -330,11 +395,30 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
                           </div>
 
                           {/* Info */}
-                          <div className="min-w-0">
-                            <span className="text-[9px] font-black text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 uppercase tracking-wider">
-                              {vid.subject}
-                            </span>
-                            <h4 className="text-xs font-bold text-white truncate mt-0.5">{vid.topicName}</h4>
+                          <div className="min-w-0 space-y-0.5">
+                            <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                              <span className="text-[9px] font-black text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 uppercase tracking-wider">
+                                {vid.subject}
+                              </span>
+
+                              {/* Watch Status Badge */}
+                              {vid.isWatched ? (
+                                <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 flex items-center space-x-1">
+                                  <CheckCircle className="w-2.5 h-2.5" />
+                                  <span>İzlendi</span>
+                                </span>
+                              ) : isPlaylist ? (
+                                <span className="text-[9px] font-bold text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                  {watchedSubCount}/{totalSubCount} İzlendi
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-black text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-400/30">
+                                  🎯 Sıradaki İzlenecek
+                                </span>
+                              )}
+                            </div>
+
+                            <h4 className="text-xs font-bold text-white truncate">{vid.topicName}</h4>
                             <p className="text-[10px] text-slate-400 truncate">{vid.channelName}</p>
                           </div>
                         </div>
@@ -353,11 +437,13 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
                             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1 shrink-0 cursor-pointer ${
                               isMainSelected
                                 ? 'bg-emerald-600 text-white shadow-md'
-                                : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800'
+                                : vid.isWatched
+                                ? 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+                                : 'bg-red-600/90 text-white hover:bg-red-500 border border-red-500/40 shadow-sm'
                             }`}
                           >
                             <Check className="w-3.5 h-3.5" />
-                            <span>{isMainSelected ? 'Seçildi' : 'Seç'}</span>
+                            <span>{isMainSelected ? 'Seçildi' : vid.isWatched ? 'İzlendi (Tekrar Seç)' : 'Plana Seç'}</span>
                           </button>
                         )}
                       </div>
@@ -365,14 +451,22 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
                       {/* Sub-videos Checklist for Playlists */}
                       {isPlaylist && vid.playlistVideos && vid.playlistVideos.length > 0 && (
                         <div className="pt-2 border-t border-slate-900 space-y-1.5 pl-2">
-                          <span className="text-[10px] font-bold text-amber-400 flex items-center space-x-1">
-                            <ListVideo className="w-3 h-3" />
-                            <span>Kamp Videolarından Seç:</span>
-                          </span>
-                          <div className="max-h-36 overflow-y-auto custom-scrollbar space-y-1 pr-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-amber-400 flex items-center space-x-1">
+                              <ListVideo className="w-3 h-3" />
+                              <span>Kamp Videolarından Seç:</span>
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              İzlenen: {watchedSubCount} / {totalSubCount}
+                            </span>
+                          </div>
+                          <div className="max-h-40 overflow-y-auto custom-scrollbar space-y-1 pr-1">
                             {vid.playlistVideos.map((sub, idx) => {
                               const subKey = `sub-${vid.id}-${sub.id}`;
                               const isSubSelected = Boolean(selectedItems[subKey]);
+
+                              const isNextTarget = !sub.isWatched && !firstUnwatchedFound;
+                              if (isNextTarget) firstUnwatchedFound = true;
 
                               return (
                                 <div 
@@ -387,10 +481,26 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
                                   className={`flex items-center justify-between p-2 rounded-xl text-xs cursor-pointer border transition-all ${
                                     isSubSelected
                                       ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300 font-bold'
-                                      : 'bg-slate-900/60 border-slate-850 text-slate-300 hover:bg-slate-900'
+                                      : isNextTarget
+                                      ? 'bg-amber-950/40 border-amber-500/40 text-amber-200 font-bold shadow-sm'
+                                      : sub.isWatched
+                                      ? 'bg-slate-900/40 border-slate-850 text-slate-400 opacity-75'
+                                      : 'bg-slate-900/70 border-slate-800 text-slate-200 hover:bg-slate-900'
                                   }`}
                                 >
-                                  <span className="truncate pr-2">{idx + 1}. {sub.title}</span>
+                                  <div className="flex items-center space-x-2 truncate pr-2">
+                                    <span className="truncate">{idx + 1}. {sub.title}</span>
+                                    {sub.isWatched ? (
+                                      <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 shrink-0">
+                                        ✓ İzlendi
+                                      </span>
+                                    ) : isNextTarget ? (
+                                      <span className="text-[9px] font-extrabold text-amber-300 bg-amber-500/20 px-1.5 py-0.2 rounded border border-amber-400/40 shrink-0 animate-pulse">
+                                        🎯 Sıradaki
+                                      </span>
+                                    ) : null}
+                                  </div>
+
                                   <div className="flex items-center space-x-2 shrink-0">
                                     {sub.durationMinutes > 0 && (
                                       <span className="text-[10px] font-mono text-slate-400">{sub.durationMinutes} dk</span>
