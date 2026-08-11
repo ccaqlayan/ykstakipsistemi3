@@ -407,9 +407,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   }, [viewMode, activeSubTab]);
 
   const getOffsetDate = (offsetInWeeks: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() + offsetInWeeks * 7);
-    return d;
+    return addWeeks(selectedMondayDate, offsetInWeeks);
   };
 
   const getOffsetBadgeText = (offset: number) => {
@@ -609,39 +607,70 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   const executeArchiveAndReset = (choice: 'keep_template' | 'fresh_start', targetWeekLabel: string) => {
     if (!onUpdateAllPlans) return;
 
-    // Filter current active plans
-    const activePlansToArchive = studyPlans.filter(p => !p.archived);
+    const isTargetCurrentWeek = isSameWeekLabel(targetWeekLabel, currentWeekLabel);
 
-    // Archive current active plans with targetWeekLabel
-    const archivedPlans = activePlansToArchive.map(p => ({
-      ...p,
-      archived: true,
-      weekLabel: targetWeekLabel
-    }));
+    if (isTargetCurrentWeek) {
+      // Filter current active plans
+      const activePlansToArchive = studyPlans.filter(p => !p.archived);
 
-    // Keep existing archived plans EXCEPT those matching targetWeekLabel (which are overwritten)
-    const otherArchivedPlans = studyPlans.filter(p => !(p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, targetWeekLabel)));
-
-    // Create new active plans for next week
-    let newActivePlans: StudyPlanItem[] = [];
-    if (choice === 'keep_template') {
-      newActivePlans = activePlansToArchive.map(p => ({
+      // Archive current active plans with targetWeekLabel
+      const archivedPlans = activePlansToArchive.map(p => ({
         ...p,
-        id: 'plan-' + Math.random().toString(36).substr(2, 9),
-        completedMinutes: 0,
-        status: 'pending',
-        reflection: undefined,
-        archived: false,
-        weekLabel: undefined
+        archived: true,
+        weekLabel: targetWeekLabel
       }));
-    }
 
-    const updatedAllPlans = [...otherArchivedPlans, ...archivedPlans, ...newActivePlans];
-    
-    onUpdateAllPlans(
-      updatedAllPlans, 
-      `Çalışma planı "${targetWeekLabel}" haftasına arşivlendi ve yeni hafta başlatıldı.`
-    );
+      // Keep existing archived plans EXCEPT those matching targetWeekLabel (which are overwritten)
+      const otherArchivedPlans = studyPlans.filter(p => !(p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, targetWeekLabel)));
+
+      // Create new active plans for next week
+      let newActivePlans: StudyPlanItem[] = [];
+      if (choice === 'keep_template') {
+        newActivePlans = activePlansToArchive.map(p => ({
+          ...p,
+          id: 'plan-' + Math.random().toString(36).substr(2, 9),
+          completedMinutes: 0,
+          status: 'pending' as const,
+          reflection: undefined,
+          archived: false,
+          weekLabel: undefined,
+          date: undefined
+        }));
+      }
+
+      const updatedAllPlans = [...otherArchivedPlans, ...archivedPlans, ...newActivePlans];
+      
+      onUpdateAllPlans(
+        updatedAllPlans, 
+        `Çalışma planı "${targetWeekLabel}" haftasına arşivlendi ve yeni hafta başlatıldı.`
+      );
+    } else {
+      // Archiving a specific past/other week - preserve current active plans!
+      const currentActivePlans = studyPlans.filter(p => !p.archived);
+      const existingOtherArchived = studyPlans.filter(p => p.archived && !(p.weekLabel && isSameWeekLabel(p.weekLabel, targetWeekLabel)));
+
+      let plansForTargetWeek = studyPlans.filter(p => p.weekLabel && isSameWeekLabel(p.weekLabel, targetWeekLabel));
+      if (plansForTargetWeek.length === 0 && choice === 'keep_template') {
+        plansForTargetWeek = currentActivePlans.map(p => ({
+          ...p,
+          id: 'plan-' + Math.random().toString(36).substr(2, 9),
+          completedMinutes: p.plannedMinutes || 60,
+          status: 'completed' as const
+        }));
+      }
+
+      const archivedPlans = plansForTargetWeek.map(p => ({
+        ...p,
+        archived: true,
+        weekLabel: targetWeekLabel
+      }));
+
+      const updatedAllPlans = [...existingOtherArchived, ...archivedPlans, ...currentActivePlans];
+      onUpdateAllPlans(
+        updatedAllPlans,
+        `Geçmiş "${targetWeekLabel}" haftası arşivlendi.`
+      );
+    }
 
     setShowArchiveConfirm(false);
     setOverwriteStep(0);
