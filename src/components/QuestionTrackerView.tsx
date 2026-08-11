@@ -1046,18 +1046,22 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-400 font-semibold bg-slate-950/70">
-                  <th className="p-3.5 rounded-l-2xl">Tarih</th>
-                  <th className="p-3.5">Sınav</th>
-                  <th className="p-3.5">Ders</th>
-                  <th className="p-3.5 text-center">Hedef / Çözülen</th>
-                  <th className="p-3.5 text-center text-emerald-400">Doğru</th>
-                  <th className="p-3.5 text-center text-rose-400">Yanlış</th>
-                  <th className="p-3.5 text-center text-slate-400">Boş</th>
-                  <th className="p-3.5 text-center text-indigo-400 font-bold">Net</th>
-                  <th className="p-3.5 text-center text-amber-400">Süre & Hız</th>
-                  <th className="p-3.5">Not</th>
-                  <th className="p-3.5 text-right rounded-r-2xl">İşlem</th>
+                <tr className="border-b border-slate-800 text-slate-400 font-semibold bg-slate-950/70 text-[11px]">
+                  <th className="py-2.5 px-2 rounded-l-2xl whitespace-nowrap">Tarih</th>
+                  <th className="py-2.5 px-2 whitespace-nowrap">Ders</th>
+                  <th className="py-2.5 px-2 text-center whitespace-nowrap">Çözülen</th>
+                  <th className="py-2.5 px-2 text-center text-emerald-400 whitespace-nowrap">Doğru</th>
+                  <th className="py-2.5 px-2 text-center text-rose-400 whitespace-nowrap">Yanlış</th>
+                  <th className="py-2.5 px-2 text-center text-slate-400 whitespace-nowrap">Boş</th>
+                  <th className="py-2.5 px-2 text-center text-indigo-400 font-bold whitespace-nowrap">Net</th>
+                  <th className="py-2.5 px-2 text-center text-amber-400 whitespace-nowrap">
+                    <div className="inline-flex items-center justify-center space-x-1">
+                      <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Süre & Hız</span>
+                    </div>
+                  </th>
+                  <th className="py-2.5 px-2">Not</th>
+                  <th className="py-2.5 px-2 text-right rounded-r-2xl whitespace-nowrap">İşlem</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/40">
@@ -1071,7 +1075,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
                       const daysShort = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
                       const dayNameIndex = d.getDay();
-                      dateShort = `${dayNum} ${months[d.getMonth()]}, ${daysShort[dayNameIndex]}`;
+                      dateShort = `${dayNum} ${months[d.getMonth()]} ${daysShort[dayNameIndex]}`;
                       dateFull = `${dayNum} ${months[d.getMonth()]} ${d.getFullYear()}`;
                     }
                   }
@@ -1089,59 +1093,48 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                         index % 2 === 0 ? 'bg-slate-900/40' : 'bg-slate-950/40'
                       }`}
                     >
-                      <td className="p-3.5 font-mono text-slate-300 cursor-help whitespace-nowrap" title={dateFull}>
+                      <td className="py-2 px-2 font-mono text-slate-300 cursor-help whitespace-nowrap text-[11px]" title={dateFull}>
                         {dateShort}
                       </td>
-                      <td className="p-3.5">
-                        <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold ${
-                          log.examType === 'TYT' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                        }`}>
-                          {log.examType}
-                        </span>
-                      </td>
-                      <td className="p-3.5 font-semibold text-white">
-                        <div className="flex items-center space-x-2">
+                      <td className="py-2 px-2 font-semibold text-white text-[11px] whitespace-nowrap">
+                        <div className="flex items-center space-x-1.5">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getSubjectColor(log.subject) }} />
                           <span>{log.subject}</span>
                         </div>
                       </td>
-                      <td className="p-3.5 text-center font-mono font-bold text-slate-200">
-                        <span>{log.solvedCount}</span>
-                        {log.targetCount > 0 && (
-                          <span className="text-slate-500 text-[11px]"> / {log.targetCount}</span>
-                        )}
+                      <td className="py-2 px-2 text-center font-mono font-bold text-slate-200 text-xs">
+                        {log.solvedCount}
                       </td>
-                      <td className="p-3.5 text-center font-mono text-emerald-400 font-bold">{log.correctCount}</td>
-                      <td className="p-3.5 text-center font-mono text-rose-400 font-semibold">{log.wrongCount}</td>
-                      <td className="p-3.5 text-center font-mono text-slate-500">{log.emptyCount}</td>
-                      <td className="p-3.5 text-center font-mono text-indigo-300 font-extrabold text-sm">
+                      <td className="py-2 px-2 text-center font-mono text-emerald-400 font-bold text-xs">{log.correctCount}</td>
+                      <td className="py-2 px-2 text-center font-mono text-rose-400 font-semibold text-xs">{log.wrongCount}</td>
+                      <td className="py-2 px-2 text-center font-mono text-slate-500 text-xs">{log.emptyCount}</td>
+                      <td className="py-2 px-2 text-center font-mono text-indigo-300 font-extrabold text-xs">
                         {log.netScore}
                       </td>
-                      <td className="p-3.5 text-center font-mono text-amber-300 whitespace-nowrap">
-                        <span className="inline-flex items-center space-x-1 bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2 py-0.5 rounded-lg text-[11px] font-semibold" title={rowSpeed ? `Hız: ${rowSpeed} dk/soru` : ''}>
-                          <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                      <td className="py-2 px-2 text-center font-mono text-amber-300 whitespace-nowrap">
+                        <span className="inline-flex items-center space-x-1 bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2 py-0.5 rounded-lg text-[10px] font-semibold" title={rowSpeed ? `Hız: ${rowSpeed} dk/soru` : ''}>
                           <span>{logDuration} dk</span>
-                          {rowSpeed && <span className="text-[10px] text-amber-400/80 font-mono">({rowSpeed}m/q)</span>}
+                          {rowSpeed && <span className="text-[10px] text-amber-400/80 font-mono">({rowSpeed}dk/soru)</span>}
                         </span>
                       </td>
-                      <td className="p-3.5 text-slate-400 truncate max-w-[160px]" title={log.notes || ''}>
+                      <td className="py-2 px-2 text-slate-400 text-xs" title={log.notes || ''}>
                         {log.notes || '-'}
                       </td>
-                      <td className="p-3.5 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end space-x-1">
+                      <td className="py-2 px-2 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end space-x-0.5">
                           <button
                             onClick={() => handleOpenEditModal(log)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/20 transition-all cursor-pointer"
+                            className="p-1 rounded-md text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/20 transition-all cursor-pointer"
                             title="Kaydı Düzenle"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => setDeletingLog({ id: log.id, title: `${log.date} ${log.subject} (${log.solvedCount} Soru)` })}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-all cursor-pointer"
+                            className="p-1 rounded-md text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-all cursor-pointer"
                             title="Kaydı Sil"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
