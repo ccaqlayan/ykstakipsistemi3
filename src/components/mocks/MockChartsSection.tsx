@@ -356,7 +356,16 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                   tickFormatter={(id) => {
                     const m = generalMocks.find(x => x.id === id);
                     if (!m) return '';
-                    return m.title.length > 22 ? m.title.substring(0, 22) + '...' : m.title;
+                    let dStr = '';
+                    if (m.date) {
+                      const d = new Date(m.date + 'T00:00:00');
+                      if (!isNaN(d.getTime())) {
+                        const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+                        dStr = `${d.getDate()} ${months[d.getMonth()]}`;
+                      }
+                    }
+                    const t = m.title.length > 16 ? m.title.substring(0, 16) + '...' : m.title;
+                    return dStr ? `${dStr} (${t})` : t;
                   }} 
                   stroke="var(--chart-axis)" 
                   fontSize={10} 

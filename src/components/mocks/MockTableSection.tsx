@@ -20,6 +20,20 @@ interface MockTableSectionProps {
   setDeletingMock: (mock: { id: string; title: string } | null) => void;
 }
 
+const formatMockDate = (dateStr?: string) => {
+  if (!dateStr) return { short: '-', full: '-' };
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) return { short: dateStr, full: dateStr };
+  const dayNum = d.getDate();
+  const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+  const daysShort = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+  const dayNameIndex = d.getDay();
+  return {
+    short: `${dayNum} ${months[d.getMonth()]} ${daysShort[dayNameIndex]}`,
+    full: `${dayNum} ${months[d.getMonth()]} ${d.getFullYear()}`
+  };
+};
+
 export const MockTableSection: React.FC<MockTableSectionProps> = ({
   mockListTab,
   setMockListTab,
@@ -38,17 +52,17 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
   setDeletingMock
 }) => {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5">
+    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5 shadow-2xl backdrop-blur-md">
       {/* Controls bar */}
-      <div className="flex flex-wrap items-center gap-3 border-b border-slate-800 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
         <button
           type="button"
           onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-          className="flex items-center space-x-1.5 text-xs font-bold text-slate-300 hover:text-white transition-colors cursor-pointer bg-slate-950 px-3 py-2 rounded-xl border border-slate-800"
+          className="flex items-center space-x-1.5 text-xs font-bold text-slate-300 hover:text-white transition-colors cursor-pointer bg-slate-950 px-3 py-2 rounded-2xl border border-slate-800 shadow-sm"
         >
           <span>Sıralama:</span>
           <span className="text-indigo-400">
-            {sortOrder === 'desc' ? 'Yeni' : 'Eski'}
+            {sortOrder === 'desc' ? 'Yeni -> Eski' : 'Eski -> Yeni'}
           </span>
           {sortOrder === 'desc' ? (
             <ArrowDown className="w-3.5 h-3.5 text-indigo-400" />
@@ -58,7 +72,7 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
         </button>
 
         {mockListTab === 'individual' && generalMocks.length > 0 && (
-          <div className="flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl text-xs text-emerald-300 font-semibold">
+          <div className="flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1.5 rounded-2xl text-xs text-emerald-300 font-semibold shadow-sm">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
             <span>{generalMocks.filter(m => m.isAnalyzed).length} / {generalMocks.length} Analiz Edildi</span>
           </div>
@@ -74,12 +88,14 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
           });
 
           return sortedInstitutionalMocks.length === 0 ? (
-            <div className="text-center py-10 border border-dashed border-slate-800 rounded-xl">
-              <p className="text-xs text-slate-400">Okul tarafından yüklenmiş kurumsal deneme karneniz bulunmuyor.</p>
+            <div className="text-center py-12 border border-dashed border-slate-800 rounded-3xl space-y-2">
+              <GraduationCap className="w-8 h-8 text-slate-600 mx-auto" />
+              <p className="text-xs text-slate-400 font-medium">Okul tarafından yüklenmiş kurumsal deneme karneniz bulunmuyor.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {sortedInstitutionalMocks.map((exam) => {
+                const dateInfo = formatMockDate(exam.examDate);
                 const displayScores = [];
                 if (exam.scores.sayScore !== undefined) {
                   displayScores.push({ label: 'SAY', score: exam.scores.sayScore, rank: exam.scores.sayClassRank, total: exam.scores.sayClassTotal });
@@ -94,24 +110,24 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
                 return (
                   <div
                     key={exam.id}
-                    className="bg-slate-950 border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition-all flex flex-col justify-between space-y-4 animate-fade-in relative group"
+                    className="bg-slate-950/80 border border-slate-800/80 rounded-3xl p-5 hover:border-slate-700 transition-all flex flex-col justify-between space-y-4 animate-fade-in relative group shadow-sm hover:shadow-lg"
                   >
                     <div>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-mono font-bold text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                          {exam.examDate}
+                        <span className="text-xs font-mono font-bold text-slate-300 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 cursor-help" title={dateInfo.full}>
+                          {dateInfo.short}
                         </span>
-                        <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 uppercase">
+                        <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-xl border border-indigo-500/20 uppercase">
                           {exam.examType || 'Kurumsal'}
                         </span>
                       </div>
 
-                      <h3 className="text-sm font-extrabold text-white mt-3 line-clamp-2 font-bold">
+                      <h3 className="text-sm font-black text-white mt-3 line-clamp-2">
                         {exam.examTitle}
                       </h3>
 
                       {exam.scores.classParticipantCount && (
-                        <p className="text-[11px] text-slate-400 font-semibold mt-1.5 flex items-center space-x-1">
+                        <p className="text-[11px] text-slate-400 font-semibold mt-1.5 flex items-center space-x-1 font-mono">
                           <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
                           <span>Katılımcı Sayısı: {exam.scores.classParticipantCount} Öğrenci</span>
                         </p>
@@ -120,7 +136,7 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
                       {displayScores.length > 0 && (
                         <div className="grid grid-cols-3 gap-2 mt-4">
                           {displayScores.map((sc, idx) => (
-                            <div key={idx} className="bg-slate-900 border border-slate-800/60 rounded-xl p-2.5 text-center">
+                            <div key={idx} className="bg-slate-900/80 border border-slate-800/60 rounded-2xl p-2.5 text-center">
                               <span className="text-[10px] text-slate-400 font-bold block">{sc.label} Puanı</span>
                               <strong className="text-indigo-300 text-sm font-mono block mt-0.5">{sc.score}</strong>
                               {sc.rank && (
@@ -133,14 +149,14 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
                     </div>
 
                     <div className="pt-3 border-t border-slate-900/60 flex items-center justify-between gap-2">
-                      <div className="text-[11px] text-slate-500 font-medium">
+                      <div className="text-[11px] text-slate-500 font-medium truncate">
                         {exam.studentName} {exam.schoolNumber ? `(#${exam.schoolNumber})` : ''}
                       </div>
 
                       <button
                         type="button"
                         onClick={() => setSelectedInstitutionalExam(exam)}
-                        className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-1.5"
+                        className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-bold px-4 py-2 rounded-2xl transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm"
                       >
                         <GraduationCap className="w-4 h-4" />
                         <span>Karnemi Görüntüle</span>
@@ -153,53 +169,55 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
           );
         })()
       ) : sortedGeneralMocks.length === 0 ? (
-        <div className="text-center py-10 border border-dashed border-slate-800 rounded-xl">
-          <p className="text-xs text-slate-400">Henüz genel deneme kaydı bulunmuyor.</p>
+        <div className="text-center py-12 border border-dashed border-slate-800 rounded-3xl">
+          <p className="text-xs text-slate-400 font-medium">Henüz genel deneme kaydı bulunmuyor.</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {sortedGeneralMocks.map((mock) => (
-            <div
-              key={mock.id}
-              className="bg-slate-950 border border-slate-800 rounded-xl p-4 hover:border-slate-700 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 animate-fade-in"
-            >
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-mono text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
-                    {mock.date}
-                  </span>
-                  <h3 
-                    onClick={() => handleStartEdit(mock)}
-                    className="text-sm font-bold text-white cursor-pointer hover:text-indigo-400 flex items-center gap-1.5 transition-colors group/mock-title"
-                    title="Düzenlemek için tıklayın"
-                  >
-                    <span>{mock.title}</span>
-                    <Pencil className="w-3 h-3 text-slate-500 opacity-0 group-hover/mock-title:opacity-100 transition-opacity" />
-                  </h3>
+          {sortedGeneralMocks.map((mock) => {
+            const dateInfo = formatMockDate(mock.date);
+            return (
+              <div
+                key={mock.id}
+                className="bg-slate-950/80 border border-slate-800/80 rounded-3xl p-4 hover:border-slate-700 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 animate-fade-in shadow-sm hover:shadow-lg"
+              >
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-mono text-slate-300 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 cursor-help" title={dateInfo.full}>
+                      {dateInfo.short}
+                    </span>
+                    <h3 
+                      onClick={() => handleStartEdit(mock)}
+                      className="text-sm font-bold text-white cursor-pointer hover:text-indigo-400 flex items-center gap-1.5 transition-colors group/mock-title"
+                      title="Düzenlemek için tıklayın"
+                    >
+                      <span>{mock.title}</span>
+                      <Pencil className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover/mock-title:opacity-100 transition-opacity" />
+                    </h3>
 
-                  <button
-                    type="button"
-                    onClick={() => onUpdateMock({ ...mock, isAnalyzed: !mock.isAnalyzed })}
-                    className={`px-2.5 py-0.5 rounded-lg text-[11px] font-bold transition-all inline-flex items-center space-x-1 cursor-pointer border ${
-                      mock.isAnalyzed
-                        ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
-                        : 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
-                    }`}
-                    title="Soru ve hata analiz durumunu değiştirmek için tıklayın"
-                  >
-                    {mock.isAnalyzed ? (
-                      <>
-                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                        <span>Analiz Edildi</span>
-                      </>
-                    ) : (
-                      <>
-                        <Clock className="w-3 h-3 text-amber-400" />
-                        <span>Analiz Bekliyor</span>
-                      </>
-                    )}
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => onUpdateMock({ ...mock, isAnalyzed: !mock.isAnalyzed })}
+                      className={`px-2.5 py-0.5 rounded-xl text-[11px] font-bold transition-all inline-flex items-center space-x-1 cursor-pointer border ${
+                        mock.isAnalyzed
+                          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
+                          : 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
+                      }`}
+                      title="Soru ve hata analiz durumunu değiştirmek için tıklayın"
+                    >
+                      {mock.isAnalyzed ? (
+                        <>
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          <span>Analiz Edildi</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="w-3 h-3 text-amber-400" />
+                          <span>Bekliyor</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
 
                 {mock.notes && (
                   <p className="text-xs text-slate-400 mt-1 italic">{mock.notes}</p>
@@ -440,9 +458,9 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
                   </button>
                 </div>
               </div>
-
             </div>
-          ))}
+          );
+        })}
         </div>
       )}
     </div>
