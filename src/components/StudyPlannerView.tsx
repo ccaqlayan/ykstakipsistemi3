@@ -952,9 +952,16 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         })
       });
 
-      const data = await res.json();
+      const responseText = await res.text();
+      let data: any = {};
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        throw new Error('Yapay zeka servisi geçersiz yanıt döndürdü. Lütfen sunucuyu yeniden başlatıp tekrar deneyiniz.');
+      }
+
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Yapay zeka görev önerisi alınamadı.');
+        throw new Error(data.error || 'Yapay zeka görev önerisi şu an alınamadı.');
       }
 
       const { subject: sugSubject, topic: sugTopic, taskType: sugTaskType, plannedMinutes: sugMins, targetQuestionCount: sugCount, notes: sugNotes, reason: sugReason } = data.suggestion || {};
