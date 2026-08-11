@@ -950,83 +950,203 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
     );
   }
 
+  // Compute KPI summary metrics for General Mock Exams
+  const totalMockCount = generalMocks.length;
+  const analyzedMockCount = generalMocks.filter(m => m.isAnalyzed).length;
+  const analyzedMockPercentage = totalMockCount > 0 ? Math.round((analyzedMockCount / totalMockCount) * 100) : 0;
+
+  const tytNets = generalMocks.map(m => parseNetVal(m.tyt.totalNet));
+  const aytNets = generalMocks.map(m => parseNetVal(m.ayt.totalNet));
+  const maxTytNet = tytNets.length > 0 ? Math.max(...tytNets) : 0;
+  const maxAytNet = aytNets.length > 0 ? Math.max(...aytNets) : 0;
+  const avgTytNetVal = tytNets.length > 0 ? (tytNets.reduce((a, b) => a + b, 0) / tytNets.length).toFixed(2).replace('.', ',') : '0,00';
+  const avgAytNetVal = aytNets.length > 0 ? (aytNets.reduce((a, b) => a + b, 0) / aytNets.length).toFixed(2).replace('.', ',') : '0,00';
+
+  const latestExam = generalMocks.length > 0 ? [...generalMocks].sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0] : null;
+  const latestEstRank = latestExam?.estimatedRank ? latestExam.estimatedRank : null;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       
-      {/* Title Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
-        <div>
-          <h1 className="text-xl font-bold text-white flex items-center space-x-2">
-            <TrendingUp className="w-5 h-5 text-indigo-400 shrink-0" />
+      {/* ── HERO HEADER BANNER ── */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 p-6 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-md relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1.5 z-10">
+          <div className="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full text-xs font-bold text-indigo-300">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <span>YKS Genel Deneme Analiz Paneli</span>
+          </div>
+          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center space-x-2">
             <span>Genel Deneme Analizi & Net Yükseliş Grafiği</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Türkiye geneli ve kurum içi <span className="text-indigo-400 font-bold">TYT</span> & <span className="text-emerald-400 font-bold">AYT</span> genel deneme sonuçlarınızı girin, derece hedefinize adım adım yaklaşın.
+          <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+            Türkiye geneli ve kurum içi <strong className="text-indigo-400 font-mono">TYT</strong> & <strong className="text-emerald-400 font-mono">AYT</strong> genel deneme sonuçlarınızı girin, net ivmenizi ve tahmini YKS sıralamanızı adım adım takip edin.
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            resetAddForm();
-            setShowAddModal(true);
-          }}
-          id="add-general-mock-btn"
-          className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center space-x-2 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Genel Deneme Sonucu Gir</span>
-        </button>
+        <div className="flex items-center space-x-2 shrink-0 z-10">
+          <button
+            onClick={() => {
+              resetAddForm();
+              setShowAddModal(true);
+            }}
+            id="add-general-mock-btn"
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold px-5 py-3 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer border border-indigo-400/30 group"
+          >
+            <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <span>Genel Deneme Sonucu Gir</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── 4 TOP HERO KPI METRIC CARDS ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        {/* Card 1: Toplam Genel Deneme */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Toplam Genel Deneme</span>
+            <div className="w-8 h-8 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+              <Award className="w-4 h-4 text-indigo-400" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <div className="flex items-baseline space-x-2">
+              <span className="text-3xl font-black text-white font-mono">{totalMockCount}</span>
+              <span className="text-xs text-slate-400 font-medium">Deneme</span>
+            </div>
+            <span className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
+              %{analyzedMockPercentage} Analiz Edildi
+            </span>
+          </div>
+          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Bireysel: <strong className="text-indigo-300 font-mono">{generalMocks.length}</strong></span>
+            <span>Kurumsal: <strong className="text-emerald-300 font-mono">{institutionalMocks.length}</strong></span>
+          </div>
+        </div>
+
+        {/* Card 2: TYT Net Ortalaması & Rekor */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">TYT Net Ortalaması</span>
+            <div className="w-8 h-8 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-indigo-400" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-3xl font-black text-indigo-400 font-mono">{avgTytNetVal}</span>
+            {maxTytNet > 0 && (
+              <span className="text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
+                Rekor: {maxTytNet.toFixed(2).replace('.', ',')}
+              </span>
+            )}
+          </div>
+          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+            <span>En Son TYT Net:</span>
+            <span className="text-indigo-300 font-bold font-mono">
+              {latestExam ? String(latestExam.tyt.totalNet).replace('.', ',') : '-'} Net
+            </span>
+          </div>
+        </div>
+
+        {/* Card 3: AYT Net Ortalaması & Rekor */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">AYT Net Ortalaması</span>
+            <div className="w-8 h-8 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-emerald-400" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-3xl font-black text-emerald-400 font-mono">{avgAytNetVal}</span>
+            {maxAytNet > 0 && (
+              <span className="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
+                Rekor: {maxAytNet.toFixed(2).replace('.', ',')}
+              </span>
+            )}
+          </div>
+          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+            <span>En Son AYT Net:</span>
+            <span className="text-emerald-300 font-bold font-mono">
+              {latestExam ? String(latestExam.ayt.totalNet).replace('.', ',') : '-'} Net
+            </span>
+          </div>
+        </div>
+
+        {/* Card 4: Tahmini YKS Sıralaması */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Tahmini YKS Sıralaması</span>
+            <div className="w-8 h-8 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+              <GraduationCap className="w-4 h-4 text-amber-400" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-2xl font-black text-amber-300 font-mono">
+              {latestEstRank ? `#${latestEstRank}` : 'Simüle Edilmedi'}
+            </span>
+            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
+              En Son Deneme
+            </span>
+          </div>
+          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Hedef Üniversite:</span>
+            <span className="text-slate-300 font-bold truncate max-w-[120px]" title={displayUniversity}>
+              {displayUniversity.split(' ')[0]}
+            </span>
+          </div>
+        </div>
+
       </div>
 
       {/* === TOP TAB SWITCHER: Bireysel / Kurumsal === */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <button
           type="button"
           onClick={() => setMockListTab('individual')}
-          className={`relative flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer group ${
+          className={`relative flex items-center space-x-3 p-4 rounded-3xl border-2 transition-all duration-200 cursor-pointer group ${
             mockListTab === 'individual'
-              ? 'bg-indigo-600/20 border-indigo-500 shadow-lg shadow-indigo-600/20'
-              : 'bg-slate-900 border-slate-800 hover:border-slate-600 hover:bg-slate-800/60'
+              ? 'bg-indigo-600/15 border-indigo-500 shadow-xl shadow-indigo-600/20 ring-1 ring-indigo-500/30'
+              : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
           }`}
         >
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-            mockListTab === 'individual' ? 'bg-indigo-600 shadow-md shadow-indigo-600/40' : 'bg-slate-800 group-hover:bg-slate-700'
+          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
+            mockListTab === 'individual' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/40' : 'bg-slate-800 text-slate-400 group-hover:text-white'
           }`}>
-            <Award className={`w-5 h-5 ${mockListTab === 'individual' ? 'text-white' : 'text-slate-400 group-hover:text-white'}`} />
+            <Award className="w-5 h-5" />
           </div>
-          <div className="text-center">
-            <div className={`text-sm font-bold ${mockListTab === 'individual' ? 'text-white' : 'text-slate-300'}`}>Bireysel Denemelerim</div>
-            <div className={`text-xs mt-0.5 font-semibold ${mockListTab === 'individual' ? 'text-indigo-300' : 'text-slate-500'}`}>
-              {generalMocks.length} deneme
+          <div className="text-left">
+            <div className={`text-sm font-extrabold ${mockListTab === 'individual' ? 'text-white' : 'text-slate-300'}`}>Bireysel Genel Denemelerim</div>
+            <div className={`text-xs mt-0.5 font-semibold font-mono ${mockListTab === 'individual' ? 'text-indigo-300' : 'text-slate-500'}`}>
+              {generalMocks.length} Kayıtlı Deneme
             </div>
           </div>
           {mockListTab === 'individual' && (
-            <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-indigo-400 shadow-sm shadow-indigo-400/60" />
+            <div className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-indigo-400 shadow-sm shadow-indigo-400/60" />
           )}
         </button>
 
         <button
           type="button"
           onClick={() => setMockListTab('institutional')}
-          className={`relative flex flex-col items-center justify-center gap-2 p-5 rounded-2xl border-2 transition-all duration-200 cursor-pointer group ${
+          className={`relative flex items-center space-x-3 p-4 rounded-3xl border-2 transition-all duration-200 cursor-pointer group ${
             mockListTab === 'institutional'
-              ? 'bg-emerald-600/20 border-emerald-500 shadow-lg shadow-emerald-600/20'
-              : 'bg-slate-900 border-slate-800 hover:border-slate-600 hover:bg-slate-800/60'
+              ? 'bg-emerald-600/15 border-emerald-500 shadow-xl shadow-emerald-600/20 ring-1 ring-emerald-500/30'
+              : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
           }`}
         >
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-            mockListTab === 'institutional' ? 'bg-emerald-600 shadow-md shadow-emerald-600/40' : 'bg-slate-800 group-hover:bg-slate-700'
+          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
+            mockListTab === 'institutional' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/40' : 'bg-slate-800 text-slate-400 group-hover:text-white'
           }`}>
-            <GraduationCap className={`w-5 h-5 ${mockListTab === 'institutional' ? 'text-white' : 'text-slate-400 group-hover:text-white'}`} />
+            <GraduationCap className="w-5 h-5" />
           </div>
-          <div className="text-center">
-            <div className={`text-sm font-bold ${mockListTab === 'institutional' ? 'text-white' : 'text-slate-300'}`}>Kurumsal Deneme Karnelerim</div>
-            <div className={`text-xs mt-0.5 font-semibold ${mockListTab === 'institutional' ? 'text-emerald-300' : 'text-slate-500'}`}>
-              {institutionalMocks.length} karne
+          <div className="text-left">
+            <div className={`text-sm font-extrabold ${mockListTab === 'institutional' ? 'text-white' : 'text-slate-300'}`}>Kurumsal Deneme Karnelerim</div>
+            <div className={`text-xs mt-0.5 font-semibold font-mono ${mockListTab === 'institutional' ? 'text-emerald-300' : 'text-slate-500'}`}>
+              {institutionalMocks.length} Okul Karnesi
             </div>
           </div>
           {mockListTab === 'institutional' && (
-            <div className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/60" />
+            <div className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/60" />
           )}
         </button>
       </div>

@@ -1,5 +1,5 @@
-import React from 'react';
-import { GraduationCap, ArrowDown, ArrowUp, CheckCircle2, Pencil, Clock, SlidersHorizontal, ChevronDown, Calculator, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { GraduationCap, ArrowDown, ArrowUp, CheckCircle2, Pencil, Clock, SlidersHorizontal, ChevronDown, Calculator, Trash2, Search } from 'lucide-react';
 import { GeneralMockExam, InstitutionalMockExam } from '../../types';
 
 interface MockTableSectionProps {
@@ -51,25 +51,51 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
   setShowAllFields,
   setDeletingMock
 }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredGeneralMocks = sortedGeneralMocks.filter(m => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      m.title.toLowerCase().includes(q) ||
+      (m.notes && m.notes.toLowerCase().includes(q)) ||
+      (m.date && m.date.includes(q))
+    );
+  });
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5 shadow-2xl backdrop-blur-md">
       {/* Controls bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
-        <button
-          type="button"
-          onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-          className="flex items-center space-x-1.5 text-xs font-bold text-slate-300 hover:text-white transition-colors cursor-pointer bg-slate-950 px-3 py-2 rounded-2xl border border-slate-800 shadow-sm"
-        >
-          <span>Sıralama:</span>
-          <span className="text-indigo-400">
-            {sortOrder === 'desc' ? 'Yeni -> Eski' : 'Eski -> Yeni'}
-          </span>
-          {sortOrder === 'desc' ? (
-            <ArrowDown className="w-3.5 h-3.5 text-indigo-400" />
-          ) : (
-            <ArrowUp className="w-3.5 h-3.5 text-indigo-400" />
-          )}
-        </button>
+        <div className="flex flex-wrap items-center gap-3 flex-1">
+          <button
+            type="button"
+            onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+            className="flex items-center space-x-1.5 text-xs font-bold text-slate-300 hover:text-white transition-colors cursor-pointer bg-slate-950 px-3.5 py-2 rounded-2xl border border-slate-800 shadow-sm shrink-0"
+          >
+            <span>Sıralama:</span>
+            <span className="text-indigo-400 font-mono">
+              {sortOrder === 'desc' ? 'Yeni -> Eski' : 'Eski -> Yeni'}
+            </span>
+            {sortOrder === 'desc' ? (
+              <ArrowDown className="w-3.5 h-3.5 text-indigo-400" />
+            ) : (
+              <ArrowUp className="w-3.5 h-3.5 text-indigo-400" />
+            )}
+          </button>
+
+          {/* Live Search Input */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Deneme adı, yayın veya notlarda ara..."
+              className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-10 pr-4 py-2 text-xs font-semibold text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/80 transition-all shadow-sm"
+            />
+          </div>
+        </div>
 
         {mockListTab === 'individual' && generalMocks.length > 0 && (
           <div className="flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1.5 rounded-2xl text-xs text-emerald-300 font-semibold shadow-sm">
@@ -168,13 +194,21 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
             </div>
           );
         })()
-      ) : sortedGeneralMocks.length === 0 ? (
-        <div className="text-center py-12 border border-dashed border-slate-800 rounded-3xl">
-          <p className="text-xs text-slate-400 font-medium">Henüz genel deneme kaydı bulunmuyor.</p>
+      ) : filteredGeneralMocks.length === 0 ? (
+        <div className="text-center py-12 border border-dashed border-slate-800 rounded-3xl space-y-1">
+          <p className="text-xs text-slate-400 font-medium">Arama kriterlerine veya kayıtlara uygun genel deneme bulunamadı.</p>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="text-[11px] font-bold text-indigo-400 hover:underline cursor-pointer"
+            >
+              Aramayı Temizle
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
-          {sortedGeneralMocks.map((mock) => {
+          {filteredGeneralMocks.map((mock) => {
             const dateInfo = formatMockDate(mock.date);
             return (
               <div

@@ -120,25 +120,29 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
   return (
     <>
       {/* Chart Count Filter & Graph Selection Bar */}
-      <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-sm space-y-3">
+      <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-3xl shadow-2xl backdrop-blur-md space-y-4">
         {/* 1. Satır: Deneme Filtresi */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
           <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-indigo-400" />
-            <span className="text-xs font-bold text-slate-200">Grafik Deneme Filtresi:</span>
-            <span className="text-[11px] text-slate-400 font-medium">
-              ({filteredByCountMocks.length} / {generalMocks.length} deneme gösteriliyor)
-            </span>
+            <div className="p-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+              <Filter className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-xs font-bold text-slate-200 block">Grafik Deneme Filtresi</span>
+              <span className="text-[11px] text-slate-400 font-mono">
+                ({filteredByCountMocks.length} / {generalMocks.length} deneme gösteriliyor)
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
+          <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800 self-start sm:self-auto">
             <button
               type="button"
               onClick={() => setMockCountFilter('7')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                 mockCountFilter === '7'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
               }`}
             >
               Son 7 Deneme
@@ -146,10 +150,10 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
             <button
               type="button"
               onClick={() => setMockCountFilter('30')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                 mockCountFilter === '30'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
               }`}
             >
               Son 30 Deneme
@@ -157,10 +161,10 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
             <button
               type="button"
               onClick={() => setMockCountFilter('all')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                 mockCountFilter === 'all'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
               }`}
             >
               Tüm Denemeler
@@ -169,21 +173,23 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
         </div>
 
         {/* 2. Satır: Grafik Seçimi & Kişiselleştirme */}
-        <div className="pt-3 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
-            <BarChart2 className="w-4 h-4 text-emerald-400" />
-            <span className="text-xs font-bold text-slate-200">Gösterilecek Grafik:</span>
+            <div className="p-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              <BarChart2 className="w-4 h-4" />
+            </div>
+            <span className="text-xs font-bold text-slate-200">Gösterilecek Grafik Modu:</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex flex-wrap items-center bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1">
+            <div className="flex flex-wrap items-center bg-slate-950 p-1 rounded-2xl border border-slate-800 gap-1">
               <button
                 type="button"
                 onClick={() => setActiveChartTab('net')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   activeChartTab === 'net'
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30 font-bold'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
                 }`}
               >
                 TYT & AYT Net
@@ -191,10 +197,10 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveChartTab('subject')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   activeChartTab === 'subject'
-                    ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30 font-bold'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                    ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
                 }`}
               >
                 Ders Bazlı Netler
@@ -202,10 +208,10 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveChartTab('detailed')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   activeChartTab === 'detailed'
-                    ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30 font-bold'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                    ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
                 }`}
               >
                 Detaylı Ders Analizi
@@ -213,10 +219,10 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveChartTab('rank')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   activeChartTab === 'rank'
-                    ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30 font-bold'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                    ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
                 }`}
               >
                 Sıralama Trendi
@@ -224,10 +230,10 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveChartTab('all')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   activeChartTab === 'all'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
                 }`}
               >
                 Tüm Grafikler
@@ -235,10 +241,10 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveChartTab('custom')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center space-x-1 ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center space-x-1 ${
                   activeChartTab === 'custom'
-                    ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30 font-bold'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/80'
+                    ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -247,7 +253,7 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setShowCustomizeModal(true)}
-                className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 transition-all cursor-pointer shadow-sm shrink-0 ml-1"
+                className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 transition-all cursor-pointer shadow-sm shrink-0 ml-1"
                 title="Sayfa grafiklerini düzenle ve sabitle"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" />
@@ -329,20 +335,20 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
 
       {/* Recharts Net Trend Graph */}
       {visibleCharts.netTrend && chartData.length > 0 && (activeChartTab === 'all' || activeChartTab === 'net' || activeChartTab === 'custom') && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-5 shadow-sm space-y-3 transition-all duration-300 hover:scale-[1.015] hover:shadow-xl hover:shadow-indigo-500/5 hover:border-slate-700/80">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800">
             <h2 className="text-sm font-bold text-white flex items-center space-x-2">
               <BarChart2 className="w-4 h-4 text-emerald-400" />
-              <span><span className="text-indigo-400">TYT</span> & <span className="text-emerald-400">AYT</span> Net Gelişim Trendi</span>
+              <span><span className="text-indigo-400 font-bold">TYT</span> & <span className="text-emerald-400 font-bold">AYT</span> Net Gelişim Trendi</span>
             </h2>
             <div className="flex items-center space-x-3 text-xs font-mono">
-              <span className="flex items-center space-x-1.5">
-                <span className="w-3 h-3 rounded-full bg-indigo-500 inline-block" />
-                <span className="text-indigo-400 font-bold">TYT Net</span>
+              <span className="flex items-center space-x-1.5 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-xl">
+                <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" />
+                <span className="text-indigo-300 font-bold">TYT Net</span>
               </span>
-              <span className="flex items-center space-x-1.5">
-                <span className="w-3 h-3 rounded-full bg-emerald-400 inline-block" />
-                <span className="text-emerald-400 font-bold">AYT Net</span>
+              <span className="flex items-center space-x-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-xl">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />
+                <span className="text-emerald-300 font-bold">AYT Net</span>
               </span>
             </div>
           </div>
