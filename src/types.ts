@@ -11,6 +11,7 @@ export interface UserAccount {
   className?: string; // For student, e.g. '12-A SAY'
   assignedClassNames?: string[]; // For teacher, e.g. ['12-A SAY', '12-B EA']
   title?: string;
+  subject?: string; // For branch teacher (e.g., 'Matematik', 'Fizik')
   avatarUrl?: string;
   status?: 'active' | 'pending' | 'rejected';
   isOnline?: boolean;

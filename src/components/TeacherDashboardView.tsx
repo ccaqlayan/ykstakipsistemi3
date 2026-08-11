@@ -85,7 +85,7 @@ import { TeacherSummaryTab } from './teacher/TeacherSummaryTab';
 import { TeacherStudentsTab } from './teacher/TeacherStudentsTab';
 import { TeacherTemplatesTab } from './teacher/TeacherTemplatesTab';
 import { TeacherTeachersTab } from './teacher/TeacherTeachersTab';
-import { TeacherStudentInspectModal } from './teacher/TeacherStudentInspectModal';
+import { TeacherStudentInspectView } from './teacher/TeacherStudentInspectView';
 import { subscribeToPresence } from '../services/firebase';
 
 
@@ -211,8 +211,9 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   const [newTeacherName, setNewTeacherName] = useState('');
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
   const [newTeacherPassword, setNewTeacherPassword] = useState('123456');
-  const [newTeacherTitle, setNewTeacherTitle] = useState('Sınıf Rehber Öğretmeni');
-  const [newTeacherRole, setNewTeacherRole] = useState<'class_teacher' | 'teacher' | 'school_counselor'>('class_teacher');
+  const [newTeacherTitle, setNewTeacherTitle] = useState('Branş Öğretmeni');
+  const [newTeacherRole, setNewTeacherRole] = useState<'class_teacher' | 'teacher' | 'school_counselor'>('teacher');
+  const [newTeacherSubject, setNewTeacherSubject] = useState('Matematik');
   const [newTeacherAssignedClasses, setNewTeacherAssignedClasses] = useState<string[]>([]);
   const [teacherSearchTerm, setTeacherSearchTerm] = useState('');
 
@@ -222,7 +223,8 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   const [editTeacherName, setEditTeacherName] = useState('');
   const [editTeacherEmail, setEditTeacherEmail] = useState('');
   const [editTeacherTitle, setEditTeacherTitle] = useState('');
-  const [editTeacherRole, setEditTeacherRole] = useState<'class_teacher' | 'teacher' | 'school_counselor'>('class_teacher');
+  const [editTeacherRole, setEditTeacherRole] = useState<'class_teacher' | 'teacher' | 'school_counselor'>('teacher');
+  const [editTeacherSubject, setEditTeacherSubject] = useState('');
   const [editTeacherPassword, setEditTeacherPassword] = useState('');
   const [newStudentPassword, setNewStudentPassword] = useState('123456');
 
@@ -728,6 +730,217 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
     setDragOverDay(null);
   };
 
+  if (selectedStudentUser) {
+    return (
+      <div className="space-y-6 font-sans">
+        <TeacherStudentInspectView
+          selectedStudentUser={selectedStudentUser}
+          onBack={() => setSelectedStudentUser(null)}
+          studentsData={studentsData}
+          teacher={teacher}
+          editingCoachNotes={editingCoachNotes}
+          setEditingCoachNotes={setEditingCoachNotes}
+          handleSaveCoachNotes={handleSaveCoachNotes}
+          setShowSaveTemplateModal={setShowSaveTemplateModal}
+          setShowAddTaskToStudentModal={setShowAddTaskToStudentModal}
+          isBranchTeacher={isBranchTeacher}
+          handleDeleteTaskFromStudent={handleDeleteTaskFromStudent}
+          handleToggleTaskStatusFromTeacher={handleToggleTaskStatusFromTeacher}
+          classes={classes}
+          allUsers={allUsers}
+          auditLogs={auditLogs}
+          OfflineStatusDisplay={OfflineStatusDisplay}
+        />
+
+        {/* MODAL: SAVE STUDENT PROGRAM AS TEMPLATE */}
+        {showSaveTemplateModal && (
+          <div 
+            className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={(e) => { if (e.target === e.currentTarget) setShowSaveTemplateModal(false); }}
+          >
+            <div className="bg-slate-900/95 backdrop-blur-2xl border border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                  <Bookmark className="w-5 h-5 text-amber-400" />
+                  <span>Programı Şablon Olarak Kaydet</span>
+                </h3>
+                <button onClick={() => setShowSaveTemplateModal(false)} className="text-slate-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveCurrentStudentPlanAsTemplateSubmit} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Şablon Başlığı</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ör: 12. Sınıf Derece Haftalık Programı"
+                    value={newTemplateTitle}
+                    onChange={(e) => setNewTemplateTitle(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Açıklama (Opsiyonel)</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Programın odak noktası ve tavsiyeler..."
+                    value={newTemplateDesc}
+                    onChange={(e) => setNewTemplateDesc(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Hedef Alan</label>
+                  <select
+                    value={newTemplateField}
+                    onChange={(e) => setNewTemplateField(e.target.value as any)}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-white font-bold focus:outline-none"
+                  >
+                    <option value="TÜMÜ">Tüm Alanlar</option>
+                    <option value="SAY">SAY (Sayısal)</option>
+                    <option value="EA">EA (Eşit Ağırlık)</option>
+                    <option value="SÖZ">SÖZ (Sözel)</option>
+                    <option value="DİL">DİL (Yabancı Dil)</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-end space-x-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowSaveTemplateModal(false)}
+                    className="px-4 py-2 text-slate-400 hover:text-white"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-amber-600/30"
+                  >
+                    Kütüphaneye Kaydet
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL: ADD TASK TO STUDENT */}
+        {showAddTaskToStudentModal && (
+          <div 
+            className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={(e) => { if (e.target === e.currentTarget) setShowAddTaskToStudentModal(false); }}
+          >
+            <div className="bg-slate-900/95 backdrop-blur-2xl border border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                  <Plus className="w-5 h-5 text-indigo-400" />
+                  <span>Öğrenciye Yeni Görev / Çalışma Ekle</span>
+                </h3>
+                <button onClick={() => setShowAddTaskToStudentModal(false)} className="text-slate-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddTaskToStudentSubmit} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Gün</label>
+                  <select
+                    value={newTaskDay}
+                    onChange={(e) => setNewTaskDay(e.target.value as any)}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-white font-bold focus:outline-none"
+                  >
+                    {['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'].map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Ders</label>
+                  <select
+                    value={newTaskSubject}
+                    onChange={(e) => {
+                      setNewTaskSubject(e.target.value);
+                      const subTopics = YKS_CURRICULUM_TOPICS[e.target.value] || [];
+                      if (subTopics.length > 0) setNewTaskTopic(subTopics[0]);
+                      else setNewTaskTopic('');
+                    }}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-white font-bold focus:outline-none"
+                  >
+                    {isBranchTeacher && teacher.subject ? (
+                      <option value={teacher.subject}>{teacher.subject} (Kendi Branşınız)</option>
+                    ) : (
+                      ALL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Konu / Açıklama</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ör: Türev - İkinci Türev Test 3"
+                    value={newTaskTopic}
+                    onChange={(e) => setNewTaskTopic(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-400"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">Çalışma Tipi</label>
+                    <select
+                      value={newTaskType}
+                      onChange={(e) => setNewTaskType(e.target.value)}
+                      className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-white font-bold focus:outline-none"
+                    >
+                      {DEFAULT_TASK_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 font-semibold mb-1">Planlanan Süre (Dk)</label>
+                    <input
+                      type="number"
+                      required
+                      min={10}
+                      max={300}
+                      step={5}
+                      value={newTaskMinutes}
+                      onChange={(e) => setNewTaskMinutes(Number(e.target.value))}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-400 font-mono font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end space-x-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddTaskToStudentModal(false)}
+                    className="px-4 py-2 text-slate-400 hover:text-white"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-600/30"
+                  >
+                    Görevi Ekle
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 font-sans">
       
@@ -953,6 +1166,9 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           setNewTeacherEmail={setNewTeacherEmail}
           setNewTeacherPassword={setNewTeacherPassword}
           setNewTeacherTitle={setNewTeacherTitle}
+          setNewTeacherRole={setNewTeacherRole}
+          newTeacherSubject={newTeacherSubject}
+          setNewTeacherSubject={setNewTeacherSubject}
           setNewTeacherAssignedClasses={setNewTeacherAssignedClasses}
           setShowCreateTeacherModal={setShowCreateTeacherModal}
           setEditingTeacherId={setEditingTeacherId}
@@ -960,6 +1176,8 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           setEditTeacherEmail={setEditTeacherEmail}
           setEditTeacherTitle={setEditTeacherTitle}
           setEditTeacherRole={setEditTeacherRole}
+          editTeacherSubject={editTeacherSubject}
+          setEditTeacherSubject={setEditTeacherSubject}
           setShowEditTeacherModal={setShowEditTeacherModal}
           setSelectedTeacherForAssignment={setSelectedTeacherForAssignment}
           setAssignedClassesForSelectedTeacher={setAssignedClassesForSelectedTeacher}
@@ -972,28 +1190,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
         />
       )}
 
-      {selectedStudentUser && (
-        <TeacherStudentInspectModal
-          selectedStudentUser={selectedStudentUser}
-          setSelectedStudentUser={setSelectedStudentUser}
-          inspectModalTab={inspectModalTab}
-          setInspectModalTab={setInspectModalTab}
-          studentsData={studentsData}
-          teacher={teacher}
-          editingCoachNotes={editingCoachNotes}
-          setEditingCoachNotes={setEditingCoachNotes}
-          handleSaveCoachNotes={handleSaveCoachNotes}
-          setShowSaveTemplateModal={setShowSaveTemplateModal}
-          setShowAddTaskToStudentModal={setShowAddTaskToStudentModal}
-          isBranchTeacher={isBranchTeacher}
-          handleDeleteTaskFromStudent={handleDeleteTaskFromStudent}
-          handleToggleTaskStatusFromTeacher={handleToggleTaskStatusFromTeacher}
-          classes={classes}
-          allUsers={allUsers}
-          auditLogs={auditLogs}
-          OfflineStatusDisplay={OfflineStatusDisplay}
-        />
-      )}
+
 
       {/* MODAL: SAVE STUDENT PROGRAM AS TEMPLATE */}
       {showSaveTemplateModal && (
@@ -1869,7 +2066,8 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
                     email: newTeacherEmail.trim(),
                     password: newTeacherPassword || '123456',
                     role: newTeacherRole,
-                    title: newTeacherTitle.trim(),
+                    title: newTeacherTitle.trim() || (newTeacherRole === 'teacher' ? `${newTeacherSubject} Öğretmeni` : 'Sınıf Rehber Öğretmeni'),
+                    subject: newTeacherRole === 'teacher' ? newTeacherSubject : undefined,
                     assignedClassNames: newTeacherAssignedClasses,
                     mustChangePassword: true
                   });
@@ -1904,10 +2102,10 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Unvan / Branş</label>
+                <label className="block text-slate-300 font-semibold mb-1">Unvan / Açıklama</label>
                 <input
                   type="text"
-                  placeholder="Ör: Matematik Öğretmeni & 12-A Rehber Öğretmeni"
+                  placeholder="Ör: Matematik Zümre Başkanı & 12-A Rehber Öğretmeni"
                   value={newTeacherTitle}
                   onChange={(e) => setNewTeacherTitle(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-400"
@@ -1915,7 +2113,9 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Giriş Şifresi</label>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  Giriş Şifresi <span className="text-[11px] text-amber-400 font-normal ml-1">(İlk girişte değiştirilecektir)</span>
+                </label>
                 <input
                   type="text"
                   required
@@ -1931,12 +2131,35 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
                 <select
                   value={newTeacherRole}
                   onChange={(e) => setNewTeacherRole(e.target.value as any)}
-                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none"
+                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-400 font-bold"
                 >
+                  <option value="teacher">Branş Öğretmeni</option>
                   <option value="class_teacher">Sınıf Rehber Öğretmeni</option>
-                  <option value="school_counselor">Okul Rehber Öğretmeni / Danışman</option>
+                  <option value="school_counselor">Okul Rehber Öğretmeni</option>
                 </select>
               </div>
+
+              {newTeacherRole === 'teacher' && (
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Öğretmen Branşı / Dersi</label>
+                  <select
+                    value={newTeacherSubject}
+                    onChange={(e) => setNewTeacherSubject(e.target.value)}
+                    className="w-full bg-slate-950 border border-purple-500/40 rounded-xl px-3 py-2 text-purple-200 font-bold focus:outline-none"
+                  >
+                    <option value="Matematik">Matematik</option>
+                    <option value="Fizik">Fizik</option>
+                    <option value="Kimya">Kimya</option>
+                    <option value="Biyoloji">Biyoloji</option>
+                    <option value="Türkçe">Türkçe / Türk Dili ve Edebiyatı</option>
+                    <option value="Tarih">Tarih</option>
+                    <option value="Coğrafya">Coğrafya</option>
+                    <option value="Felsefe">Felsefe</option>
+                    <option value="Din Kültürü">Din Kültürü ve Ahlak Bilgisi</option>
+                    <option value="İngilizce">İngilizce / Yabancı Dil</option>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">Atanacak Sınıflar</label>
@@ -2127,7 +2350,8 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
                     name: editTeacherName.trim(),
                     email: editTeacherEmail.trim(),
                     title: editTeacherTitle.trim(),
-                    role: editTeacherRole
+                    role: editTeacherRole,
+                    subject: editTeacherRole === 'teacher' ? editTeacherSubject : undefined
                   };
 
                   if (editTeacherPassword.trim()) {
@@ -2186,13 +2410,35 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
                 <select
                   value={editTeacherRole}
                   onChange={(e) => setEditTeacherRole(e.target.value as any)}
-                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-400"
+                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-400 font-bold"
                 >
-                  <option value="teacher">Branş / Ders Öğretmeni (Düşük Yetki)</option>
-                  <option value="class_teacher">Sınıf Rehber Öğretmeni (Kendi Sınıfını Görür)</option>
-                  <option value="school_counselor">Okul Rehber Öğretmeni (Tüm Sınıfları Görür ve Yönetir)</option>
+                  <option value="teacher">Branş Öğretmeni</option>
+                  <option value="class_teacher">Sınıf Rehber Öğretmeni</option>
+                  <option value="school_counselor">Okul Rehber Öğretmeni</option>
                 </select>
               </div>
+
+              {editTeacherRole === 'teacher' && (
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Öğretmen Branşı / Dersi</label>
+                  <select
+                    value={editTeacherSubject || 'Matematik'}
+                    onChange={(e) => setEditTeacherSubject(e.target.value)}
+                    className="w-full bg-slate-950 border border-purple-500/40 rounded-xl px-3 py-2 text-purple-200 font-bold focus:outline-none"
+                  >
+                    <option value="Matematik">Matematik</option>
+                    <option value="Fizik">Fizik</option>
+                    <option value="Kimya">Kimya</option>
+                    <option value="Biyoloji">Biyoloji</option>
+                    <option value="Türkçe">Türkçe / Türk Dili ve Edebiyatı</option>
+                    <option value="Tarih">Tarih</option>
+                    <option value="Coğrafya">Coğrafya</option>
+                    <option value="Felsefe">Felsefe</option>
+                    <option value="Din Kültürü">Din Kültürü ve Ahlak Bilgisi</option>
+                    <option value="İngilizce">İngilizce / Yabancı Dil</option>
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-slate-300 font-semibold mb-1">
@@ -2293,7 +2539,9 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Giriş Şifresi</label>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  Giriş Şifresi <span className="text-[11px] text-amber-400 font-normal ml-1">(İlk girişte değiştirilecektir)</span>
+                </label>
                 <input
                   type="text"
                   required

@@ -53,11 +53,21 @@ interface TeacherTeachersTabProps {
   setTypedTeacherConfirmName: (name: string) => void;
   onUnlockUserAccount?: (userId: string) => void;
   setEditTeacherPassword?: (pwd: string) => void;
+  setNewTeacherRole?: (role: any) => void;
+  newTeacherSubject?: string;
+  setNewTeacherSubject?: (subj: string) => void;
+  editTeacherSubject?: string;
+  setEditTeacherSubject?: (subj: string) => void;
 }
 
 export const TeacherTeachersTab: React.FC<TeacherTeachersTabProps> = ({
   onUnlockUserAccount,
   setEditTeacherPassword,
+  setNewTeacherRole,
+  newTeacherSubject,
+  setNewTeacherSubject,
+  editTeacherSubject,
+  setEditTeacherSubject,
   allUsers,
   classes,
   teacher,
@@ -285,7 +295,9 @@ export const TeacherTeachersTab: React.FC<TeacherTeachersTabProps> = ({
                 setNewTeacherName('');
                 setNewTeacherEmail('');
                 setNewTeacherPassword('123456');
-                setNewTeacherTitle('Sınıf Rehber Öğretmeni');
+                setNewTeacherTitle('Branş Öğretmeni');
+                if (setNewTeacherRole) setNewTeacherRole('teacher');
+                if (setNewTeacherSubject) setNewTeacherSubject('Matematik');
                 setNewTeacherAssignedClasses([]);
                 setShowCreateTeacherModal(true);
               }}
@@ -338,6 +350,16 @@ export const TeacherTeachersTab: React.FC<TeacherTeachersTabProps> = ({
                         >
                           {tUser.name}
                         </h3>
+                        {tUser.role === 'teacher' && (
+                          <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded-md border border-amber-400/30 font-semibold whitespace-nowrap">
+                            Branş: {tUser.subject || 'Genel'}
+                          </span>
+                        )}
+                        {tUser.role === 'class_teacher' && (
+                          <span className="text-[9px] bg-indigo-500/30 text-indigo-200 px-1.5 py-0.5 rounded-md border border-indigo-400/30 font-semibold whitespace-nowrap">
+                            Sınıf Rehber Öğretmeni
+                          </span>
+                        )}
                         {tUser.role === 'school_counselor' && (
                           <span className="text-[9px] bg-purple-500/30 text-purple-200 px-1.5 py-0.5 rounded-md border border-purple-400/30 font-semibold whitespace-nowrap">
                             Okul Rehberlik Yetkilisi

@@ -98,20 +98,17 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
       >
         
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
           <div className="flex items-center space-x-4">
-            <div className="relative shrink-0">
+            <div className="relative">
               <img 
                 src={selectedStudentUser.avatarUrl || DEFAULT_AVATAR} 
                 alt={selectedStudentUser.name}
-                className="w-14 h-14 rounded-2xl object-cover border-2 border-indigo-400 shadow-xl shrink-0"
+                className="w-14 h-14 rounded-2xl object-cover border-2 border-indigo-500/40 shadow-lg"
               />
-              {isUserOnline(selectedStudentUser) && (
-                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5" title="Sistemde Çevrimiçi">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 ring-2 ring-slate-900"></span>
-                </span>
-              )}
+              <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 ${
+                isUserOnline(selectedStudentUser) ? 'bg-emerald-500' : 'bg-slate-500'
+              }`} />
             </div>
             <div>
               <div className="flex items-center space-x-2">
@@ -258,13 +255,22 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                 subjectMap[subj].wrong += (q.wrongCount || 0);
               });
 
+              const teacherSubj = (teacher.role === 'teacher' && teacher.subject) ? teacher.subject.toLowerCase() : '';
               const subjectData = Object.entries(subjectMap).map(([subject, stats]) => ({
                 subject,
                 count: stats.solved,
                 correct: stats.correct,
                 wrong: stats.wrong,
                 accuracy: stats.solved > 0 ? Math.round((stats.correct / stats.solved) * 100) : 0
-              })).sort((a, b) => b.count - a.count);
+              })).sort((a, b) => {
+                if (teacherSubj) {
+                  const aMatch = a.subject.toLowerCase().includes(teacherSubj) || teacherSubj.includes(a.subject.toLowerCase());
+                  const bMatch = b.subject.toLowerCase().includes(teacherSubj) || teacherSubj.includes(b.subject.toLowerCase());
+                  if (aMatch && !bMatch) return -1;
+                  if (!aMatch && bMatch) return 1;
+                }
+                return b.count - a.count;
+              });
 
               const dateMap: Record<string, { date: string; solved: number; correct: number }> = {};
               questionLogs.forEach(q => {
@@ -515,6 +521,16 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
             {(() => {
               const stData = studentsData[selectedStudentUser.id];
               const logs = stData?.questionLogs || [];
+              const teacherSubj = (teacher.role === 'teacher' && teacher.subject) ? teacher.subject.toLowerCase() : '';
+              const sortedLogs = [...logs].sort((a, b) => {
+                if (teacherSubj) {
+                  const aMatch = (a.subject || '').toLowerCase().includes(teacherSubj) || teacherSubj.includes((a.subject || '').toLowerCase());
+                  const bMatch = (b.subject || '').toLowerCase().includes(teacherSubj) || teacherSubj.includes((b.subject || '').toLowerCase());
+                  if (aMatch && !bMatch) return -1;
+                  if (!aMatch && bMatch) return 1;
+                }
+                return 0;
+              });
 
               return (
                 <div className="space-y-4">
@@ -523,7 +539,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                     <span>Öğrencinin Soru Çözüm Kayıtları ({logs.length})</span>
                   </h3>
 
-                  {logs.length === 0 ? (
+                  {sortedLogs.length === 0 ? (
                     <p className="text-xs text-slate-400 italic py-8 text-center">Soru çözme kaydı bulunmuyor.</p>
                   ) : (
                     <div className="overflow-x-auto rounded-2xl border border-white/10">
@@ -539,16 +555,23 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/10 text-slate-200 font-mono">
-                          {logs.map((log) => (
-                            <tr key={log.id} className="hover:bg-white/5">
-                              <td className="p-3 text-slate-400">{log.date}</td>
-                              <td className="p-3 font-bold text-white">{log.subject} <span className="text-slate-400 font-normal">({log.topic})</span></td>
-                              <td className="p-3 text-center font-bold text-indigo-300">{log.solvedCount}</td>
-                              <td className="p-3 text-center text-emerald-400 font-bold">{log.correctCount}</td>
-                              <td className="p-3 text-center text-rose-400 font-bold">{log.wrongCount}</td>
-                              <td className="p-3 text-center text-slate-400">{log.emptyCount || 0}</td>
-                            </tr>
-                          ))}
+                          {sortedLogs.map((log) => {
+                            const isMyBranch = teacherSubj && (log.subject || '').toLowerCase().includes(teacherSubj);
+                            return (
+                              <tr key={log.id} className={isMyBranch ? 'bg-amber-500/10 border-l-4 border-l-amber-400 hover:bg-amber-500/15' : 'hover:bg-white/5'}>
+                                <td className="p-3 text-slate-400">{log.date}</td>
+                                <td className="p-3 font-bold text-white flex items-center gap-1.5">
+                                  <span>{log.subject}</span>
+                                  {isMyBranch && <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded border border-amber-400/40">Branşınız ⭐</span>}
+                                  <span className="text-slate-400 font-normal">({log.topic})</span>
+                                </td>
+                                <td className="p-3 text-center font-bold text-indigo-300">{log.solvedCount}</td>
+                                <td className="p-3 text-center text-emerald-400 font-bold">{log.correctCount}</td>
+                                <td className="p-3 text-center text-rose-400 font-bold">{log.wrongCount}</td>
+                                <td className="p-3 text-center text-slate-400">{log.emptyCount || 0}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -670,30 +693,52 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                       <p className="text-xs text-slate-400 italic py-4 text-center">Branş denemesi kaydı bulunmuyor.</p>
                     ) : (
                       <div className="overflow-x-auto rounded-xl border border-white/10">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-white/10 text-slate-300 font-bold">
-                            <tr>
-                              <th className="p-3">Tarih</th>
-                              <th className="p-3">Ders & Yayınevi</th>
-                              <th className="p-3 text-center text-emerald-400">Doğru</th>
-                              <th className="p-3 text-center text-rose-400">Yanlış</th>
-                              <th className="p-3 text-center text-slate-400">Boş</th>
-                              <th className="p-3 text-center text-indigo-400 font-bold">Net</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-white/10 text-slate-200 font-mono">
-                            {branchExams.map((ex) => (
-                              <tr key={ex.id} className="hover:bg-white/5">
-                                <td className="p-3 text-slate-400">{ex.date}</td>
-                                <td className="p-3 font-bold text-white">{ex.subject} <span className="text-slate-400 font-normal">({ex.publisher})</span></td>
-                                <td className="p-3 text-center text-emerald-400 font-bold">{ex.correct}</td>
-                                <td className="p-3 text-center text-rose-400 font-bold">{ex.wrong}</td>
-                                <td className="p-3 text-center text-slate-400">{ex.empty}</td>
-                                <td className="p-3 text-center text-indigo-400 font-bold">{ex.net} Net</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                        {(() => {
+                          const teacherSubj = (teacher.role === 'teacher' && teacher.subject) ? teacher.subject.toLowerCase() : '';
+                          const sortedBranchExams = [...branchExams].sort((a, b) => {
+                            if (teacherSubj) {
+                              const aMatch = (a.subject || '').toLowerCase().includes(teacherSubj) || teacherSubj.includes((a.subject || '').toLowerCase());
+                              const bMatch = (b.subject || '').toLowerCase().includes(teacherSubj) || teacherSubj.includes((b.subject || '').toLowerCase());
+                              if (aMatch && !bMatch) return -1;
+                              if (!aMatch && bMatch) return 1;
+                            }
+                            return 0;
+                          });
+
+                          return (
+                            <table className="w-full text-left text-xs">
+                              <thead className="bg-white/10 text-slate-300 font-bold">
+                                <tr>
+                                  <th className="p-3">Tarih</th>
+                                  <th className="p-3">Ders & Yayınevi</th>
+                                  <th className="p-3 text-center text-emerald-400">Doğru</th>
+                                  <th className="p-3 text-center text-rose-400">Yanlış</th>
+                                  <th className="p-3 text-center text-slate-400">Boş</th>
+                                  <th className="p-3 text-center text-indigo-400 font-bold">Net</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/10 text-slate-200 font-mono">
+                                {sortedBranchExams.map((ex) => {
+                                  const isMyBranch = teacherSubj && (ex.subject || '').toLowerCase().includes(teacherSubj);
+                                  return (
+                                    <tr key={ex.id} className={isMyBranch ? 'bg-amber-500/10 border-l-4 border-l-amber-400 hover:bg-amber-500/15' : 'hover:bg-white/5'}>
+                                      <td className="p-3 text-slate-400">{ex.date}</td>
+                                      <td className="p-3 font-bold text-white flex items-center gap-1.5">
+                                        <span>{ex.subject}</span>
+                                        {isMyBranch && <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded border border-amber-400/40">Branşınız ⭐</span>}
+                                        <span className="text-slate-400 font-normal">({ex.publisher})</span>
+                                      </td>
+                                      <td className="p-3 text-center text-emerald-400 font-bold">{ex.correct}</td>
+                                      <td className="p-3 text-center text-rose-400 font-bold">{ex.wrong}</td>
+                                      <td className="p-3 text-center text-slate-400">{ex.empty}</td>
+                                      <td className="p-3 text-center text-indigo-400 font-bold">{ex.net} Net</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
