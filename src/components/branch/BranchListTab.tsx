@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Target, 
   CheckCircle2, 
@@ -6,9 +6,61 @@ import {
   Edit2, 
   Trash2, 
   ChevronLeft, 
-  ChevronRight 
+  ChevronRight,
+  Search,
+  X,
+  FileText,
+  Filter,
+  HelpCircle,
+  Sparkles
 } from 'lucide-react';
 import { BranchExam } from '../../types';
+import { YKS_SUBJECTS } from '../../data/initialData';
+
+const SUBJECT_COLORS: Record<string, string> = {
+  'TYT Türkçe': '#2563eb',
+  'TYT Matematik': '#10b981',
+  'TYT Geometri': '#f97316',
+  'TYT Fizik': '#ef4444',
+  'TYT Kimya': '#06b6d4',
+  'TYT Biyoloji': '#84cc16',
+  'TYT Tarih': '#b45309',
+  'TYT Coğrafya': '#3b82f6',
+  'TYT Felsefe': '#64748b',
+  'TYT Din Kültürü': '#14b8a6',
+  'Paragraf': '#db2777',
+  'AYT Matematik': '#6366f1',
+  'AYT Geometri': '#eab308',
+  'AYT Fizik': '#dc2626',
+  'AYT Kimya': '#0d9488',
+  'AYT Biyoloji': '#22c55e',
+  'AYT Edebiyat': '#f43f5e',
+  'AYT Tarih-1': '#7c3aed',
+  'AYT Tarih-2': '#9333ea',
+  'AYT Coğrafya-1': '#0284c7',
+  'AYT Coğrafya-2': '#0284c7',
+  'AYT Felsefe Grubu': '#c026d3',
+};
+
+const DEFAULT_PALETTE = ['#2563eb', '#10b981', '#f97316', '#ef4444', '#06b6d4', '#6366f1', '#eab308', '#dc2626'];
+
+const getSubjectColor = (subj: string) => {
+  return SUBJECT_COLORS[subj] || DEFAULT_PALETTE[0];
+};
+
+const formatBranchDate = (dateStr?: string) => {
+  if (!dateStr) return { short: '-', full: '-' };
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) return { short: dateStr, full: dateStr };
+  const dayNum = d.getDate();
+  const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+  const daysShort = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+  const dayNameIndex = d.getDay();
+  return {
+    short: `${dayNum} ${months[d.getMonth()]} ${daysShort[dayNameIndex]}`,
+    full: `${dayNum} ${months[d.getMonth()]} ${d.getFullYear()}`
+  };
+};
 
 interface BranchListTabProps {
   branchExams: BranchExam[];
@@ -31,15 +83,34 @@ export const BranchListTab: React.FC<BranchListTabProps> = ({
   handleOpenEditExamModal,
   setDeletingItem,
 }) => {
-  // Compute unique subjects present in branchExams
+  const [filterExamType, setFilterExamType] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [pageSize, setPageSize] = useState<number>(20);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setListCurrentPage(1);
+  }, [listSubjectFilter, filterExamType, searchQuery, pageSize, setListCurrentPage]);
+
+  // Compute unique subjects
   const enteredSubjects = Array.from(new Set(branchExams.map(ex => ex.subject)))
     .filter((s): s is string => Boolean(s))
     .sort((a, b) => a.localeCompare(b, 'tr'));
 
-  // Filter branch exams based on selected subject filter
-  const filteredExams = listSubjectFilter === 'ALL'
-    ? branchExams
-    : branchExams.filter(ex => ex.subject === listSubjectFilter);
+  // Filter exams
+  const filteredExams = branchExams.filter((ex) => {
+    if (filterExamType !== 'ALL' && ex.examType !== filterExamType) return false;
+    if (listSubjectFilter !== 'ALL' && ex.subject !== listSubjectFilter) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchSubj = (ex.subject || '').toLowerCase().includes(q);
+      const matchPub = (ex.publisher || '').toLowerCase().includes(q);
+      const matchNotes = (ex.notes || '').toLowerCase().includes(q);
+      const matchDate = (ex.date || '').toLowerCase().includes(q);
+      if (!matchSubj && !matchPub && !matchNotes && !matchDate) return false;
+    }
+    return true;
+  });
 
   // Sort descending by date
   const sortedExams = [...filteredExams].sort((a, b) => 
@@ -47,238 +118,285 @@ export const BranchListTab: React.FC<BranchListTabProps> = ({
   );
 
   // Pagination calculations
-  const ITEMS_PER_PAGE = 20;
-  const totalPages = Math.ceil(sortedExams.length / ITEMS_PER_PAGE) || 1;
-  const safePage = Math.min(listCurrentPage, totalPages);
-  const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
-  const paginatedExams = sortedExams.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const totalLogs = sortedExams.length;
+  const totalPages = Math.ceil(totalLogs / pageSize) || 1;
+  const safePage = Math.min(Math.max(1, listCurrentPage), totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalLogs);
+  const paginatedExams = sortedExams.slice(startIndex, endIndex);
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+    <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-4">
       
-      {/* Header & Subject Filter Buttons */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
-        <div>
-          <h2 className="text-sm font-bold text-white flex items-center space-x-2">
-            <Target className="w-4 h-4 text-indigo-400" />
-            <span>Çözülen Branş Denemeleri Geçmişi</span>
-          </h2>
-          <p className="text-[11px] text-slate-400 mt-0.5">
-            Sistemde toplam <span className="text-indigo-400 font-bold">{branchExams.length}</span> adet branş denemesi kayıtlıdır
-          </p>
+      {/* Table Header & Controls Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <div className="flex items-center space-x-2.5">
+          <div className="p-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+            <Target className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-white text-base">Çözülen Branş Denemeleri Geçmişi</h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Toplam <strong className="text-indigo-300 font-mono">{branchExams.length}</strong> branş denemesi kaydı bulunuyor
+            </p>
+          </div>
         </div>
 
-        {/* Subject Filter Buttons Bar */}
-        {enteredSubjects.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-1 lg:pt-0">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">
-              Ders Filtresi:
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setListSubjectFilter('ALL');
-                setListCurrentPage(1);
-              }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1 ${
-                listSubjectFilter === 'ALL'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 ring-1 ring-indigo-400'
-                  : 'bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
-              }`}
-            >
-              <span>Tümü</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${listSubjectFilter === 'ALL' ? 'bg-indigo-700 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                {branchExams.length}
-              </span>
-            </button>
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          {/* Live Search */}
+          <div className="relative flex-1 sm:flex-initial min-w-[200px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              placeholder="Yayın, ders veya not ara..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-2xl pl-9 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2.5 text-slate-500 hover:text-white">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
 
+          {/* Exam Type Filter */}
+          <select
+            value={filterExamType}
+            onChange={(e) => setFilterExamType(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3 py-1.5 focus:outline-none cursor-pointer"
+          >
+            <option value="ALL">Tüm Sınavlar</option>
+            <option value="TYT">Sadece TYT</option>
+            <option value="AYT">Sadece AYT</option>
+          </select>
+
+          {/* Subject Filter Dropdown */}
+          <select
+            value={listSubjectFilter}
+            onChange={(e) => setListSubjectFilter(e.target.value)}
+            className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3 py-1.5 focus:outline-none cursor-pointer"
+          >
+            <option value="ALL">Tüm Dersler ({branchExams.length})</option>
             {enteredSubjects.map((sub) => {
               const count = branchExams.filter(e => e.subject === sub).length;
-              const isSelected = listSubjectFilter === sub;
               return (
-                <button
-                  key={sub}
-                  type="button"
-                  onClick={() => {
-                    setListSubjectFilter(sub);
-                    setListCurrentPage(1);
-                  }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1 ${
-                    isSelected
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 ring-1 ring-indigo-400'
-                      : 'bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
-                  }`}
-                >
-                  <span>{sub}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-indigo-700 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                    {count}
-                  </span>
-                </button>
+                <option key={sub} value={sub}>{sub} ({count})</option>
               );
             })}
-          </div>
-        )}
+          </select>
+
+          {/* Page Size Dropdown */}
+          <select
+            value={pageSize}
+            onChange={(e) => setPageSize(Number(e.target.value))}
+            className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3 py-1.5 focus:outline-none cursor-pointer"
+          >
+            <option value={10}>10 Kayıt</option>
+            <option value={20}>20 Kayıt</option>
+            <option value={50}>50 Kayıt</option>
+            <option value={100}>100 Kayıt</option>
+          </select>
+        </div>
       </div>
 
-      {/* Table or Empty State */}
+      {/* Table Body or Empty State */}
       {sortedExams.length === 0 ? (
-        <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl space-y-2">
-          <Target className="w-8 h-8 text-slate-600 mx-auto" />
-          <p className="text-xs text-slate-400">
-            {listSubjectFilter === 'ALL'
-              ? 'Henüz branş denemesi kaydedilmedi.'
-              : `"${listSubjectFilter}" dersine ait kaydedilmiş branş denemesi bulunamadı.`}
-          </p>
-          {listSubjectFilter !== 'ALL' && (
+        <div className="text-center py-12 border border-dashed border-slate-800 rounded-2xl space-y-2">
+          <HelpCircle className="w-8 h-8 text-slate-600 mx-auto" />
+          <p className="text-xs text-slate-400 font-medium">Arama kriterlerine uygun branş denemesi kaydı bulunamadı.</p>
+          {(listSubjectFilter !== 'ALL' || filterExamType !== 'ALL' || searchQuery) && (
             <button
               onClick={() => {
                 setListSubjectFilter('ALL');
-                setListCurrentPage(1);
+                setFilterExamType('ALL');
+                setSearchQuery('');
               }}
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer underline"
+              className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer underline inline-block"
             >
-              Tüm Denemeleri Göster
+              Filtreleri Temizle
             </button>
           )}
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border border-slate-800/80">
+          <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-400 font-semibold bg-slate-950">
-                  <th className="p-3">Tarih</th>
-                  <th className="p-3">Sınav</th>
-                  <th className="p-3">Ders</th>
-                  <th className="p-3">Yayınevi / Yayın Adı</th>
-                  <th className="p-3 text-center text-emerald-400">Doğru</th>
-                  <th className="p-3 text-center text-rose-400">Yanlış</th>
-                  <th className="p-3 text-center text-slate-400">Boş</th>
-                  <th className="p-3 text-center text-indigo-400 font-bold">Net</th>
-                  <th className="p-3 text-center">Süre</th>
-                  <th className="p-3 text-center">Analiz Durumu</th>
-                  <th className="p-3 text-right">İşlem</th>
+                <tr className="border-b border-slate-800 text-slate-400 font-semibold bg-slate-950/70 text-[11px]">
+                  <th className="py-2.5 px-2 rounded-l-2xl whitespace-nowrap">Tarih</th>
+                  <th className="py-2.5 px-2 whitespace-nowrap">Ders</th>
+                  <th className="py-2.5 px-2">Yayınevi / Yayın Adı</th>
+                  <th className="py-2.5 px-2 text-center text-emerald-400 whitespace-nowrap">Doğru</th>
+                  <th className="py-2.5 px-2 text-center text-rose-400 whitespace-nowrap">Yanlış</th>
+                  <th className="py-2.5 px-2 text-center text-slate-400 whitespace-nowrap">Boş</th>
+                  <th className="py-2.5 px-2 text-center text-indigo-400 font-bold whitespace-nowrap">Net</th>
+                  <th className="py-2.5 px-2 text-center text-amber-400 whitespace-nowrap">
+                    <div className="inline-flex items-center justify-center space-x-1">
+                      <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Süre & Hız</span>
+                    </div>
+                  </th>
+                  <th className="py-2.5 px-2 text-center whitespace-nowrap">Analiz</th>
+                  <th className="py-2.5 px-2 text-right rounded-r-2xl whitespace-nowrap">İşlem</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 bg-slate-900/40">
-                {paginatedExams.map((ex) => (
-                  <tr key={ex.id} className="hover:bg-slate-800/60 transition-colors">
-                    <td className="p-3 font-mono text-slate-300 whitespace-nowrap">{ex.date}</td>
-                    <td className="p-3 font-bold text-indigo-400 whitespace-nowrap">{ex.examType}</td>
-                    <td className="p-3 font-semibold text-white whitespace-nowrap">{ex.subject}</td>
-                    <td className="p-3 text-slate-300 font-medium">
-                      {ex.publisher}
-                      {ex.notes && <span className="block text-[10px] text-slate-500 italic mt-0.5">{ex.notes}</span>}
-                    </td>
-                    <td className="p-3 text-center font-mono text-emerald-400 font-bold">{String(ex.correct).replace('.', ',')}</td>
-                    <td className="p-3 text-center font-mono text-rose-400">{String(ex.wrong).replace('.', ',')}</td>
-                    <td className="p-3 text-center font-mono text-slate-400">{String(ex.empty).replace('.', ',')}</td>
-                    <td className="p-3 text-center font-mono text-indigo-400 font-extrabold text-sm">{String(ex.net).replace('.', ',')}</td>
-                    <td className="p-3 text-center font-mono text-slate-400 whitespace-nowrap">{ex.durationMinutes ? `${ex.durationMinutes} dk` : '-'}</td>
-                    <td className="p-3 text-center whitespace-nowrap">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (onUpdateBranchExam) {
-                            onUpdateBranchExam({
-                              ...ex,
-                              isAnalyzed: !ex.isAnalyzed
-                            });
-                          }
-                        }}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all inline-flex items-center space-x-1 cursor-pointer border ${
-                          ex.isAnalyzed
-                            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
-                            : 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
-                        }`}
-                        title="Analiz durumunu değiştirmek için tıklayın"
-                      >
-                        {ex.isAnalyzed ? (
-                          <>
-                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                            <span>Analiz Edildi</span>
-                          </>
-                        ) : (
-                          <>
-                            <Clock className="w-3 h-3 text-amber-400" />
-                            <span>Analiz Bekliyor</span>
-                          </>
+              <tbody className="divide-y divide-slate-800/40">
+                {paginatedExams.map((ex, index) => {
+                  const dateInfo = formatBranchDate(ex.date);
+                  const numCorrect = Number(String(ex.correct).replace(',', '.'));
+                  const numWrong = Number(String(ex.wrong).replace(',', '.'));
+                  const numEmpty = Number(String(ex.empty).replace(',', '.'));
+                  const totalSolved = (numCorrect || 0) + (numWrong || 0) + (numEmpty || 0);
+                  const durMinutes = ex.durationMinutes || 0;
+                  const rowSpeed = (durMinutes > 0 && totalSolved > 0) 
+                    ? (durMinutes / totalSolved).toFixed(1) 
+                    : null;
+
+                  return (
+                    <tr 
+                      key={ex.id} 
+                      className={`transition-colors hover:bg-slate-800/60 ${
+                        index % 2 === 0 ? 'bg-slate-900/40' : 'bg-slate-950/40'
+                      }`}
+                    >
+                      {/* Tarih */}
+                      <td className="py-2 px-2 font-mono text-slate-300 cursor-help whitespace-nowrap text-[11px]" title={dateInfo.full}>
+                        {dateInfo.short}
+                      </td>
+
+                      {/* Ders */}
+                      <td className="py-2 px-2 font-semibold text-white text-[11px] whitespace-nowrap">
+                        <div className="flex items-center space-x-1.5">
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getSubjectColor(ex.subject) }} />
+                          <span>{ex.subject}</span>
+                        </div>
+                      </td>
+
+                      {/* Yayınevi & Not */}
+                      <td className="py-2 px-2 text-slate-200 text-xs">
+                        <div className="font-semibold text-slate-200">{ex.publisher || 'Branş Denemesi'}</div>
+                        {ex.notes && (
+                          <div className="text-[10px] text-slate-400 italic truncate max-w-[220px]" title={ex.notes}>
+                            {ex.notes}
+                          </div>
                         )}
-                      </button>
-                    </td>
-                    <td className="p-3 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end space-x-1">
+                      </td>
+
+                      {/* Doğru / Yanlış / Boş / Net */}
+                      <td className="py-2 px-2 text-center font-mono text-emerald-400 font-bold text-xs">{String(ex.correct).replace('.', ',')}</td>
+                      <td className="py-2 px-2 text-center font-mono text-rose-400 font-semibold text-xs">{String(ex.wrong).replace('.', ',')}</td>
+                      <td className="py-2 px-2 text-center font-mono text-slate-500 text-xs">{String(ex.empty).replace('.', ',')}</td>
+                      <td className="py-2 px-2 text-center font-mono text-indigo-300 font-extrabold text-xs">{String(ex.net).replace('.', ',')}</td>
+
+                      {/* Süre & Hız */}
+                      <td className="py-2 px-2 text-center font-mono text-amber-300 whitespace-nowrap">
+                        {durMinutes > 0 ? (
+                          <span className="inline-flex items-center space-x-1 bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2 py-0.5 rounded-lg text-[10px] font-semibold" title={rowSpeed ? `Hız: ${rowSpeed} dk/soru` : ''}>
+                            <span>{durMinutes} dk</span>
+                            {rowSpeed && <span className="text-[10px] text-amber-400/80 font-mono">({rowSpeed}dk/soru)</span>}
+                          </span>
+                        ) : (
+                          <span className="text-slate-600">-</span>
+                        )}
+                      </td>
+
+                      {/* Analiz Durumu */}
+                      <td className="py-2 px-2 text-center whitespace-nowrap">
                         <button
-                          onClick={() => handleOpenEditExamModal(ex)}
-                          className="text-slate-500 hover:text-indigo-400 p-1.5 transition-colors rounded-lg hover:bg-slate-800 cursor-pointer"
-                          title="Denemeyi Düzenle"
+                          type="button"
+                          onClick={() => {
+                            if (onUpdateBranchExam) {
+                              onUpdateBranchExam({
+                                ...ex,
+                                isAnalyzed: !ex.isAnalyzed
+                              });
+                            }
+                          }}
+                          className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all inline-flex items-center space-x-1 cursor-pointer border ${
+                            ex.isAnalyzed
+                              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
+                              : 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
+                          }`}
+                          title="Analiz durumunu değiştirmek için tıklayın"
                         >
-                          <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          {ex.isAnalyzed ? (
+                            <>
+                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                              <span>Analiz Edildi</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3 h-3 text-amber-400" />
+                              <span>Bekliyor</span>
+                            </>
+                          )}
                         </button>
-                        <button
-                          onClick={() => setDeletingItem({ type: 'exam', id: ex.id, title: `${ex.date} ${ex.subject} (${ex.publisher || 'Branş Denemesi'})` })}
-                          className="text-slate-500 hover:text-rose-400 p-1.5 transition-colors rounded-lg hover:bg-slate-800 cursor-pointer"
-                          title="Denemeyi Sil"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+
+                      {/* İşlem Butonları */}
+                      <td className="py-2 px-2 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end space-x-0.5">
+                          <button
+                            onClick={() => handleOpenEditExamModal(ex)}
+                            className="p-1 rounded-md text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/20 transition-all cursor-pointer"
+                            title="Denemeyi Düzenle"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setDeletingItem({ type: 'exam', id: ex.id, title: `${ex.date} ${ex.subject} (${ex.publisher || 'Branş Denemesi'})` })}
+                            className="p-1 rounded-md text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-all cursor-pointer"
+                            title="Denemeyi Sil"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
-          {/* Pagination controls when > 20 items or > 1 total page */}
-          {sortedExams.length > 20 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800/80 text-xs">
-              <div className="text-slate-400 font-medium">
-                Toplam <span className="font-bold text-slate-200">{sortedExams.length}</span> kayıttan{' '}
-                <span className="font-bold text-indigo-400">{startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, sortedExams.length)}</span> arası gösteriliyor (Sayfa {safePage} / {totalPages})
+          {/* Pagination Controls */}
+          {totalLogs > pageSize && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800 text-xs">
+              <div className="text-slate-400">
+                Toplam <strong className="text-slate-200">{totalLogs}</strong> kayıttan <strong className="text-indigo-400">{startIndex + 1}-{endIndex}</strong> arası gösteriliyor (Sayfa {safePage} / {totalPages})
               </div>
 
-              <div className="flex items-center space-x-1.5">
+              <div className="flex items-center space-x-1">
                 <button
-                  type="button"
                   disabled={safePage === 1}
-                  onClick={() => setListCurrentPage(prev => Math.max(prev - 1, 1))}
-                  className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1 ${
-                    safePage === 1
-                      ? 'bg-slate-950 text-slate-600 border border-slate-800/60 cursor-not-allowed opacity-50'
-                      : 'bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white border border-slate-700 cursor-pointer'
-                  }`}
+                  onClick={() => setListCurrentPage(p => Math.max(1, p - 1))}
+                  className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center space-x-1"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                   <span>Önceki</span>
                 </button>
 
-                <div className="flex items-center space-x-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <div className="flex items-center space-x-1 px-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pNum) => (
                     <button
-                      key={pageNum}
-                      type="button"
-                      onClick={() => setListCurrentPage(pageNum)}
-                      className={`w-8 h-8 rounded-xl font-bold text-xs transition-all cursor-pointer ${
-                        safePage === pageNum
+                      key={pNum}
+                      onClick={() => setListCurrentPage(pNum)}
+                      className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        safePage === pNum
                           ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                          : 'bg-slate-950 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800'
+                          : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                       }`}
                     >
-                      {pageNum}
+                      {pNum}
                     </button>
                   ))}
                 </div>
 
                 <button
-                  type="button"
                   disabled={safePage === totalPages}
-                  onClick={() => setListCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center space-x-1 ${
-                    safePage === totalPages
-                      ? 'bg-slate-950 text-slate-600 border border-slate-800/60 cursor-not-allowed opacity-50'
-                      : 'bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white border border-slate-700 cursor-pointer'
-                  }`}
+                  onClick={() => setListCurrentPage(p => Math.min(totalPages, p + 1))}
+                  className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center space-x-1"
                 >
                   <span>Sonraki</span>
                   <ChevronRight className="w-3.5 h-3.5" />
