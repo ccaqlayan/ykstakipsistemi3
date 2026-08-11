@@ -620,7 +620,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     }));
 
     // Keep existing archived plans EXCEPT those matching targetWeekLabel (which are overwritten)
-    const otherArchivedPlans = studyPlans.filter(p => !(p.archived && p.weekLabel === targetWeekLabel));
+    const otherArchivedPlans = studyPlans.filter(p => !(p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, targetWeekLabel)));
 
     // Create new active plans for next week
     let newActivePlans: StudyPlanItem[] = [];
@@ -1317,7 +1317,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         <div className="flex items-center shrink-0 pb-1.5 sm:pb-0">
           <button
             onClick={() => {
-              setArchiveWeekOffset(-1);
+              setArchiveWeekOffset(0);
               setOverwriteStep(0);
               setArchiveChoice(null);
               setShowArchiveConfirm(true);

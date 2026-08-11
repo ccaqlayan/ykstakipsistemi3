@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { StudyPlanItem, DayOfWeek, QuestionLog } from '../../types';
 import { YKS_SUBJECTS, YKS_CURRICULUM_TOPICS, DEFAULT_TASK_TYPES } from '../../data/initialData';
 import { ConfirmDeleteModal } from '../ConfirmDeleteModal';
+import { isSameWeekLabel } from '../../utils/dateUtils';
 
 interface StudyPlannerModalsProps {
   showAddModal: boolean;
@@ -1069,8 +1070,8 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
       {showArchiveConfirm && (
         (() => {
           const targetWeekLabel = getWeekLabel(getOffsetDate(archiveWeekOffset));
-          const existingArchivedCount = studyPlans.filter(p => p.archived && p.weekLabel === targetWeekLabel).length;
-          const isAlreadyArchived = existingArchivedCount > 0 || CHRONOLOGICAL_SEEDS.includes(targetWeekLabel);
+          const existingArchivedCount = studyPlans.filter(p => p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, targetWeekLabel)).length;
+          const isAlreadyArchived = existingArchivedCount > 0 || CHRONOLOGICAL_SEEDS.some(seed => isSameWeekLabel(seed, targetWeekLabel));
 
           const handleInitiateChoice = (choice: 'keep_template' | 'fresh_start') => {
             setArchiveChoice(choice);
