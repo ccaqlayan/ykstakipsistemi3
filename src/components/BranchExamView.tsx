@@ -1570,19 +1570,38 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     })
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
-  const trendChartDataAll = trendRawData.map((ex, idx) => ({
-    id: ex.id,
-    displayLabel: `${ex.date ? ex.date.slice(5) : ''} (${ex.subject ? ex.subject.replace('AYT ', '').replace('TYT ', '') : ''})`,
-    date: ex.date,
-    subject: ex.subject,
-    examType: ex.examType,
-    publisher: ex.publisher || 'Branş Denemesi',
-    net: parseNetVal(ex.net),
-    correct: parseNetVal(ex.correct),
-    wrong: parseNetVal(ex.wrong),
-    empty: parseNetVal(ex.empty),
-    durationMinutes: ex.durationMinutes || 0
-  }));
+  const trendChartDataAll = trendRawData.map((ex, idx) => {
+    let dateFormatted = ex.date || '';
+    if (ex.date) {
+      const d = new Date(ex.date + 'T00:00:00');
+      if (!isNaN(d.getTime())) {
+        const dayNum = d.getDate();
+        const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+        dateFormatted = `${dayNum} ${months[d.getMonth()]}`;
+      }
+    }
+    const subjClean = ex.subject ? ex.subject.replace('AYT ', '').replace('TYT ', '') : '';
+    const shortName = `${dateFormatted} (${subjClean})`;
+    const fullTitle = `${ex.subject || ''} - ${ex.publisher || 'Branş Denemesi'}`;
+    const dateStr = ex.date || '';
+
+    return {
+      id: ex.id,
+      shortName,
+      fullTitle,
+      dateStr,
+      displayLabel: shortName,
+      date: ex.date,
+      subject: ex.subject,
+      examType: ex.examType,
+      publisher: ex.publisher || 'Branş Denemesi',
+      net: parseNetVal(ex.net),
+      correct: parseNetVal(ex.correct),
+      wrong: parseNetVal(ex.wrong),
+      empty: parseNetVal(ex.empty),
+      durationMinutes: ex.durationMinutes || 0
+    };
+  });
 
   const trendChartData = chartLimit === '10'
     ? trendChartDataAll.slice(-10)

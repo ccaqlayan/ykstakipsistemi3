@@ -200,7 +200,7 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
         {netChartData.length > 0 ? (
           <div className="h-72 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={netChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <LineChart data={netChartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
                 <XAxis dataKey="shortName" stroke="#94a3b8" fontSize={11} tickLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} domain={[0, 'auto']} />
@@ -210,7 +210,9 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
                   labelFormatter={(label, items) => {
                     if (items && items.length > 0 && items[0].payload) {
                       const p = items[0].payload;
-                      return `${p.fullTitle} (${p.dateStr})`;
+                      const title = p.fullTitle || (p.subject ? `${p.subject} - ${p.publisher || 'Branş Denemesi'}` : label);
+                      const date = p.dateStr || p.date || '';
+                      return date ? `${title} (${date})` : title;
                     }
                     return label;
                   }}
