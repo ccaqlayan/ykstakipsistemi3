@@ -429,13 +429,22 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     let changed = false;
 
     const cleanedPlans = studyPlans.filter(p => {
-      if (p.archived && p.weekLabel) {
-        const norm = normalizeWeekLabel(p.weekLabel);
-        // If it's a duplicate or auto-archived plan for 20-26 Tem or 27 Tem - 2 Ağu, drop it
-        if ((norm === '20 - 26 Temmuz' || isSameWeekLabel(p.weekLabel, '27 Temmuz - 2 Ağustos')) && (p.id.startsWith('plan-') || p.id.startsWith('arch-'))) {
-          changed = true;
-          return false;
-        }
+      // Purge any residual auto-archived items for '27 Temmuz - 2 Ağustos' or old hardcoded July dates
+      if (p.weekLabel && isSameWeekLabel(p.weekLabel, '27 Temmuz - 2 Ağustos')) {
+        changed = true;
+        return false;
+      }
+      if (p.date && (p.date.startsWith('2026-07-2') || p.date.startsWith('2026-07-3') || p.date.startsWith('2026-08-01') || p.date.startsWith('2026-08-02'))) {
+        changed = true;
+        return false;
+      }
+      if (p.archived && p.id.startsWith('plan-')) {
+        changed = true;
+        return false;
+      }
+      if (p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, '20 - 26 Temmuz') && (p.id.startsWith('plan-') || p.id.startsWith('arch-'))) {
+        changed = true;
+        return false;
       }
       return true;
     }).map(p => {

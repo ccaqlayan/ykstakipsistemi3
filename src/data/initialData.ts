@@ -540,8 +540,7 @@ export const INITIAL_STATE: YKSDataState = {
       topic: 'Genel TYT Branş Denemesi Provası',
       plannedMinutes: 165,
       completedMinutes: 0,
-      status: 'pending',
-      date: '2026-08-02'
+      status: 'pending'
     }
   ],
   questionLogs: [
