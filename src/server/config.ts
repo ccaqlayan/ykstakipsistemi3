@@ -5,7 +5,7 @@ import { google } from 'googleapis';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc } from 'firebase/firestore';
 import { GoogleGenAI } from '@google/genai';
 
 export const PORT = process.env.PORT || 3000;
@@ -223,14 +223,30 @@ export function recordApiUsage(params: {
   }
 
   if (db) {
-    const colRef = collection(db, 'api_usage_logs');
-    const docRef = doc(colRef, record.id);
-    setDoc(docRef, record).catch(err => {
-      console.error('Error saving API usage log to Firestore:', err);
-    });
+    try {
+      setDoc(doc(db, 'api_usage_logs', record.id), record).catch(() => {});
+    } catch (e) {
+      console.warn('Failed to persist api log to firestore:', e);
+    }
   }
 
   return record;
+}
+
+export async function clearApiUsageLogs() {
+  apiUsageLogsStore.length = 0;
+  if (db) {
+    try {
+      const snap = await getDocs(collection(db, 'api_usage_logs'));
+      const promises: Promise<any>[] = [];
+      snap.forEach(d => {
+        promises.push(deleteDoc(doc(db, 'api_usage_logs', d.id)).catch(() => {}));
+      });
+      await Promise.all(promises);
+    } catch (e) {
+      console.warn('Failed to clear firestore api logs:', e);
+    }
+  }
 }
 
 export function mapToActualGeminiModel(modelId: string): string {

@@ -16,7 +16,8 @@ import {
   setCoachDataSettings,
   setFeatureModelConfig,
   savePromptLogs,
-  setSavePromptLogs
+  setSavePromptLogs,
+  clearApiUsageLogs
 } from '../config';
 
 const router = Router();
@@ -1032,6 +1033,11 @@ router.get('/usage-stats', (req, res) => {
     anomalyLimitTRY,
     recentLogs: apiUsageLogsStore
   });
+});
+
+router.post('/clear-usage-logs', async (req, res) => {
+  await clearApiUsageLogs();
+  res.json({ success: true, message: 'Yapay zeka günlüğü başarıyla temizlendi.' });
 });
 
 router.get('/model-settings', (req, res) => {

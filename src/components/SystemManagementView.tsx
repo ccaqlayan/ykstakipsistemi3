@@ -253,15 +253,14 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
     }
   };
 
-  const fetchUsageStats = async () => {
-    setLoading(true);
+  const fetchUsageStats = async (showLoadingSpinner = false) => {
+    if (showLoadingSpinner || !stats) {
+      setLoading(true);
+    }
     setError(null);
     try {
-      const res = await fetchWithRetry('/api/gemini/usage-stats');
-      if (!res.ok) {
-        console.warn('Usage stats response not ok:', res.status);
-        return;
-      }
+      const res = await fetch('/api/gemini/usage-stats');
+      if (!res.ok) return;
       const contentType = res.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
         const data = await res.json();
@@ -270,13 +269,10 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
           if (typeof data.anomalyLimitTRY === 'number') {
             setAnomalyLimitTRY(data.anomalyLimitTRY);
           }
-        } else {
-          setError('Kullanım istatistikleri alınamadı.');
         }
       }
     } catch (err: any) {
       console.error('Failed to load API usage stats:', err);
-      setError('Ağ hatası: İstatistikler yüklenemedi.');
     } finally {
       setLoading(false);
     }

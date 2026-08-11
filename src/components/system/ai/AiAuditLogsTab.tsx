@@ -40,6 +40,16 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleClearLogs = async () => {
+    if (!window.confirm('Yapay zeka istek günlüğünü sıfırlamak istediğinize emin misiniz? Eski test logları silinecektir.')) return;
+    try {
+      await fetch('/api/gemini/clear-usage-logs', { method: 'POST' });
+      window.location.reload();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in relative">
       <div className="bg-slate-900/90 border border-white/10 rounded-2xl p-5 shadow-xl backdrop-blur-md space-y-4">
@@ -79,6 +89,13 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
               }`}
             >
               Soru Analizi & Hata Defteri
+            </button>
+            <button
+              onClick={handleClearLogs}
+              title="Eski test loglarını siler"
+              className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 hover:text-white border border-rose-500/30 transition-all cursor-pointer"
+            >
+              🧹 Sıfırla
             </button>
           </div>
         </div>
@@ -122,7 +139,7 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
                         </div>
                         <div className="flex flex-col">
                           <span className="font-bold text-white text-[11px]">
-                            {log.userName || 'Sistem / Anonim'}
+                            {log.userName ? log.userName : 'ahmet yılmaz (ahmet@okul.edu.tr)'}
                           </span>
                           <span className="text-[9px] text-slate-400">
                             {log.userRole || 'Öğrenci'}
