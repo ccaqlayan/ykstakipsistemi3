@@ -1,4 +1,4 @@
-import { StudyPlanItem } from '../types';
+import { StudyPlanItem, YouTubeVideoItem } from '../types';
 
 export const extractYouTubeVideoId = (text?: string): string | null => {
   if (!text) return null;
@@ -27,4 +27,71 @@ export const getYouTubeThumbnailFromPlan = (plan: StudyPlanItem): string | null 
   const id = extractYouTubeVideoId(plan.notes) || extractYouTubeVideoId(plan.topic);
   if (id) return `https://i.ytimg.com/vi/${id}/mqdefault.jpg`;
   return null;
+};
+
+export const syncCompletedPlanToYoutubeVideos = (
+  completedPlan: StudyPlanItem,
+  youtubeVideos: YouTubeVideoItem[]
+): YouTubeVideoItem[] => {
+  if (completedPlan.status !== 'completed') return youtubeVideos;
+
+  const planYtId = extractYouTubeVideoId(completedPlan.notes) || extractYouTubeVideoId(completedPlan.topic);
+  const planNotesUrl = completedPlan.notes ? (completedPlan.notes.match(/(https?:\/\/[^\s]+)/)?.[1] || '') : '';
+  const planTopicClean = completedPlan.topic.replace(/^\[Video\]\s*/i, '').trim().toLowerCase();
+
+  let hasChanges = false;
+
+  const updatedVideos = youtubeVideos.map(vid => {
+    let videoChanged = false;
+    let newIsWatched = vid.isWatched;
+    let newPlaylistVideos = vid.playlistVideos;
+
+    const mainYtId = extractYouTubeVideoId(vid.videoUrl);
+
+    // 1. Direct single video match
+    if (!vid.isPlaylist) {
+      const matchById = Boolean(planYtId && mainYtId && planYtId === mainYtId);
+      const matchByUrl = Boolean(planNotesUrl && vid.videoUrl && (planNotesUrl.includes(vid.videoUrl) || vid.videoUrl.includes(planNotesUrl)));
+      const matchByTopic = Boolean(planTopicClean && vid.topicName && (planTopicClean.includes(vid.topicName.toLowerCase()) || vid.topicName.toLowerCase().includes(planTopicClean)));
+
+      if ((matchById || matchByUrl || matchByTopic) && !vid.isWatched) {
+        newIsWatched = true;
+        videoChanged = true;
+      }
+    } else if (vid.playlistVideos && vid.playlistVideos.length > 0) {
+      // 2. Playlist sub-videos match
+      newPlaylistVideos = vid.playlistVideos.map(sub => {
+        const subYtId = extractYouTubeVideoId(sub.videoUrl);
+        const matchSubId = Boolean(planYtId && subYtId && planYtId === subYtId);
+        const matchSubUrl = Boolean(planNotesUrl && sub.videoUrl && (planNotesUrl.includes(sub.videoUrl) || sub.videoUrl.includes(planNotesUrl)));
+        const matchSubTitle = Boolean(planTopicClean && sub.title && (planTopicClean.includes(sub.title.toLowerCase()) || sub.title.toLowerCase().includes(planTopicClean)));
+
+        if ((matchSubId || matchSubUrl || matchSubTitle) && !sub.isWatched) {
+          videoChanged = true;
+          return { ...sub, isWatched: true };
+        }
+        return sub;
+      });
+
+      // Check if all playlist sub-videos are now watched
+      const allWatched = newPlaylistVideos.every(s => s.isWatched);
+      if (allWatched && !newIsWatched) {
+        newIsWatched = true;
+        videoChanged = true;
+      }
+    }
+
+    if (videoChanged) {
+      hasChanges = true;
+      return {
+        ...vid,
+        isWatched: newIsWatched,
+        playlistVideos: newPlaylistVideos
+      };
+    }
+
+    return vid;
+  });
+
+  return hasChanges ? updatedVideos : youtubeVideos;
 };

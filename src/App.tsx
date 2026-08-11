@@ -38,6 +38,7 @@ import {
   flushPendingFirestoreWrites
 } from './services/firebase';
 import { INITIAL_STATE, createEmptyStudentData, DEFAULT_AVATAR } from './data/initialData';
+import { syncCompletedPlanToYoutubeVideos } from './utils/youtubeUtils';
 
 // Subcomponents
 import { UndoItem, getCachedUserIp, getDeviceType } from './components/app/AppTypes';
@@ -1672,9 +1673,17 @@ export default function App() {
 
   const handleUpdatePlan = (plan: any) => {
     const prevPlans = currentStudentData.studyPlans || [];
+    const prevVideos = currentStudentData.youtubeVideos || [];
+    let updatedVideos = prevVideos;
+
+    if (plan.status === 'completed') {
+      updatedVideos = syncCompletedPlanToYoutubeVideos(plan, prevVideos);
+    }
+
     updateCurrentStudentData((prev) => ({
       ...prev,
-      studyPlans: (prev.studyPlans || []).map((p) => (p.id === plan.id ? plan : p))
+      studyPlans: (prev.studyPlans || []).map((p) => (p.id === plan.id ? plan : p)),
+      youtubeVideos: updatedVideos
     }));
 
     addAuditAndUndo(
@@ -1682,7 +1691,7 @@ export default function App() {
       'study',
       'update_plan',
       () => {
-        updateCurrentStudentData((prev) => ({ ...prev, studyPlans: prevPlans }));
+        updateCurrentStudentData((prev) => ({ ...prev, studyPlans: prevPlans, youtubeVideos: prevVideos }));
       }
     );
   };
@@ -1707,9 +1716,19 @@ export default function App() {
 
   const handleUpdateAllPlans = (plans: any[], auditMessage?: string) => {
     const prevPlans = currentStudentData.studyPlans || [];
+    const prevVideos = currentStudentData.youtubeVideos || [];
+    let updatedVideos = prevVideos;
+
+    plans.forEach(plan => {
+      if (plan.status === 'completed') {
+        updatedVideos = syncCompletedPlanToYoutubeVideos(plan, updatedVideos);
+      }
+    });
+
     updateCurrentStudentData((prev) => ({
       ...prev,
-      studyPlans: plans
+      studyPlans: plans,
+      youtubeVideos: updatedVideos
     }));
 
     addAuditAndUndo(
@@ -1717,7 +1736,7 @@ export default function App() {
       'study',
       'update_all_plans',
       () => {
-        updateCurrentStudentData((prev) => ({ ...prev, studyPlans: prevPlans }));
+        updateCurrentStudentData((prev) => ({ ...prev, studyPlans: prevPlans, youtubeVideos: prevVideos }));
       }
     );
   };
