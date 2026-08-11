@@ -918,6 +918,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       setActiveSimilarIdx(0);
       setReportText(null);
     }
+    setAiModalTab('solution');
     setPreviewImage({ url, title });
   };
 
@@ -934,6 +935,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     setReportText(null);
     setReportLoading(false);
     setReportError(null);
+    setAiModalTab('solution');
   };
 
   const formatSolutionText = (text: string) => {
