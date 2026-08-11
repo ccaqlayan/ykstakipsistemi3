@@ -233,20 +233,40 @@ export function recordApiUsage(params: {
   return record;
 }
 
-export async function clearApiUsageLogs() {
+export async function clearApiUsageLogs(olderThanDays = 30) {
+  const cutoffTime = Date.now() - (olderThanDays * 24 * 60 * 60 * 1000);
+
+  const logsToDelete = apiUsageLogsStore.filter(log => {
+    const logTime = new Date(log.timestamp).getTime();
+    return isNaN(logTime) || logTime < cutoffTime;
+  });
+
+  const remainingLogs = apiUsageLogsStore.filter(log => {
+    const logTime = new Date(log.timestamp).getTime();
+    return !isNaN(logTime) && logTime >= cutoffTime;
+  });
+
   apiUsageLogsStore.length = 0;
+  apiUsageLogsStore.push(...remainingLogs);
+
   if (db) {
     try {
       const snap = await getDocs(collection(db, 'api_usage_logs'));
-      const promises: Promise<any>[] = [];
+      const deletePromises: Promise<any>[] = [];
       snap.forEach(d => {
-        promises.push(deleteDoc(doc(db, 'api_usage_logs', d.id)).catch(() => {}));
+        const data = d.data();
+        const t = data.timestamp ? new Date(data.timestamp).getTime() : 0;
+        if (isNaN(t) || t < cutoffTime) {
+          deletePromises.push(deleteDoc(doc(db, 'api_usage_logs', d.id)).catch(() => {}));
+        }
       });
-      await Promise.all(promises);
+      await Promise.all(deletePromises);
     } catch (e) {
       console.warn('Failed to clear firestore api logs:', e);
     }
   }
+
+  return { deletedCount: logsToDelete.length };
 }
 
 export function mapToActualGeminiModel(modelId: string): string {

@@ -1036,8 +1036,13 @@ router.get('/usage-stats', (req, res) => {
 });
 
 router.post('/clear-usage-logs', async (req, res) => {
-  await clearApiUsageLogs();
-  res.json({ success: true, message: 'Yapay zeka günlüğü başarıyla temizlendi.' });
+  const olderThanDays = typeof req.body.olderThanDays === 'number' ? req.body.olderThanDays : 30;
+  const result = await clearApiUsageLogs(olderThanDays);
+  res.json({
+    success: true,
+    message: `${olderThanDays} günden eski log kayıtları başarıyla temizlendi.`,
+    deletedCount: result.deletedCount
+  });
 });
 
 router.get('/model-settings', (req, res) => {
