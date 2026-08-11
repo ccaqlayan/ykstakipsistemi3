@@ -409,7 +409,8 @@ Lütfen bu verileri detaylıca analiz et ve sonucu YALNIZCA geçerli bir JSON ob
       category: 'QUESTION_ANALYSIS',
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4)
+      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      promptText: prompt
     });
 
     res.json({
@@ -479,7 +480,8 @@ Lütfen yanıtını doğrudan öğrenciye hitap eden bir tonda yaz ve YALNIZCA g
       category: 'QUESTION_ANALYSIS',
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4)
+      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      promptText: prompt
     });
 
     res.json({
@@ -580,13 +582,15 @@ ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, 
 
     const responseText = response.text || '';
 
+    const promptSummary = solutionText || existingAnalysis || `Hata Defteri Soru Görsel Çözüm Analizi (${subject || ''} - ${topicName || ''})`;
     const usageRecord = recordApiUsage({
       featureKey: 'SOLVE_QUESTION',
       featureName: 'Hata Defteri Soru Çözümü',
       category: 'QUESTION_ANALYSIS',
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || 2000,
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4)
+      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      promptText: promptSummary
     });
 
     res.json({
@@ -706,13 +710,15 @@ Kesinlikle selamlaşma, "İşte senin için soru", "Başarılar dilerim" gibi hi
       };
     }
 
+    const promptSummary = solutionText || existingAnalysis || `Benzer Soru Üretimi Promptu (${subject || ''} - ${topicName || ''})`;
     const usageRecord = recordApiUsage({
       featureKey: 'SIMILAR_QUESTION',
       featureName: 'Benzer Soru Üretimi',
       category: 'QUESTION_ANALYSIS',
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || 1800,
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4)
+      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      promptText: promptSummary
     });
 
     res.json({
@@ -829,13 +835,15 @@ BİÇİMLENDİRME:
 
     const responseText = response.text || '';
 
+    const promptSummary = solutionText || existingAnalysis || `Detaylı Soru & Çeldirici Analizi Promptu (${subject || ''} - ${topicName || ''})`;
     const usageRecord = recordApiUsage({
       featureKey: 'QUESTION_ANALYSIS',
       featureName: 'Detaylı Soru & Çeldirici Analizi',
       category: 'QUESTION_ANALYSIS',
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || 2100,
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4)
+      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      promptText: promptSummary
     });
 
     res.json({

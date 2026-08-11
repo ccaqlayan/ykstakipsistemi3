@@ -135,7 +135,9 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
                           <span>Prompt Metni</span>
                         </button>
                       ) : (
-                        <span className="text-[10px] text-slate-500 italic">Kayıtlı Değil</span>
+                        <span className="text-[10px] text-slate-500 italic px-2 py-0.5 rounded bg-slate-950 border border-slate-800/60" title="Bu istek yapılırken prompt loglama henüz aktif değildi. Ayarlardan aktif edildikten sonra atılan tüm yeni isteklerin promptları kaydedilir.">
+                          Ayar Kapalıyken Atıldı
+                        </span>
                       )}
                     </td>
                     <td className="py-2.5 text-right font-mono text-slate-400 text-[11px]">
