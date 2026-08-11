@@ -912,7 +912,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                                 }`}
                               >
                                 <CheckCircle className={`w-4 h-4 ${vid.isWatched ? 'text-emerald-400' : 'text-slate-500'}`} />
-                                <span>{vid.isWatched ? 'Tamamlandı (İzlendi)' : 'İzlenecek Olarak İşaretle'}</span>
+                                <span>{vid.isWatched ? 'Tamamlandı (İzlendi)' : 'İzlendi Olarak İşaretle'}</span>
                               </button>
 
                               {vid.videoUrl && (
