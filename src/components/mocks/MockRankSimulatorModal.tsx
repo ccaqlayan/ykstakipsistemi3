@@ -223,25 +223,33 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) setCalcMock(null); }}
     >
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl space-y-4 sm:space-y-5 max-h-[95vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3 gap-2">
-          <div className="flex items-center space-x-2.5 min-w-0">
-            <div className="p-1.5 sm:p-2 bg-indigo-500/10 text-indigo-400 rounded-xl border border-indigo-500/20 shrink-0">
-              <Calculator className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
+      <div className="bg-slate-900/95 border border-indigo-500/30 rounded-3xl max-w-4xl w-full p-5 sm:p-7 shadow-2xl shadow-indigo-950/50 space-y-5 max-h-[92vh] overflow-y-auto custom-scrollbar">
+        
+        {/* Header Banner */}
+        <div className="flex items-center justify-between border-b border-slate-800 pb-4 gap-3">
+          <div className="flex items-center space-x-3.5 min-w-0">
+            <div className="p-3 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-2xl shadow-lg shadow-indigo-600/30 shrink-0">
+              <Calculator className="w-6 h-6 animate-pulse" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-xs sm:text-sm font-extrabold text-white leading-tight truncate">YKS Başarı & Sıralama Simülatörü</h3>
-              <p className="text-[10px] text-slate-400 font-medium leading-tight line-clamp-1 sm:line-clamp-2">Son 3 Yılın (2023, 2024, 2025) Resmi Dağılım Algoritması</p>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-base sm:text-lg font-black text-white leading-tight truncate">YKS Başarı & Sıralama Simülatörü</h3>
+                <span className="hidden sm:inline-flex items-center space-x-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                  <Sparkles className="w-3 h-3 text-emerald-400" />
+                  <span>Resmi ÖSYM Verileri</span>
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 font-medium leading-tight mt-0.5">Son 3 Yılın (2023, 2024, 2025) YKS Derece & Yığılma Algoritması</p>
             </div>
           </div>
+
           <button
             type="button"
             onClick={() => setCalcMock(null)}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all shrink-0 cursor-pointer"
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all shrink-0 cursor-pointer border border-slate-800 hover:border-slate-700"
             title="Kapat"
             aria-label="Kapat"
           >
@@ -249,59 +257,71 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
           </button>
         </div>
 
-        {/* Nets Overview */}
-        <div className="bg-slate-950 p-3 sm:p-4 rounded-xl border border-slate-800 space-y-2.5">
-          <div>
-            <span className="text-[10px] text-indigo-400 font-extrabold tracking-wider uppercase block">Seçili Deneme</span>
-            <h4 className="text-xs sm:text-sm font-bold text-white truncate mt-0.5">{calcMock.title}</h4>
+        {/* Selected Exam & Nets Banner */}
+        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner">
+          <div className="space-y-0.5">
+            <span className="text-[10px] text-indigo-400 font-black tracking-widest uppercase block">Hesaplama Yapılan Deneme</span>
+            <h4 className="text-sm font-black text-white truncate max-w-md">{calcMock.title}</h4>
+            {calcMock.date && (
+              <span className="text-[11px] text-slate-400 font-mono">Tarih: {calcMock.date}</span>
+            )}
           </div>
-          <div className="flex items-center gap-2 text-xs font-mono font-bold pt-1 border-t border-slate-900">
-            <div className="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg flex-1 sm:flex-initial text-center sm:text-left">
-              <span className="text-indigo-400 font-bold mr-1.5">TYT:</span>
-              <span className="text-indigo-300">{String(calcMock.tyt.totalNet).replace('.', ',')} Net</span>
+
+          <div className="flex items-center gap-2 text-xs font-mono font-bold">
+            <div className="bg-indigo-500/10 border border-indigo-500/20 px-3.5 py-2 rounded-xl text-center">
+              <span className="text-indigo-400 font-bold block text-[10px]">TYT NET</span>
+              <span className="text-indigo-300 text-sm font-black">{String(calcMock.tyt.totalNet).replace('.', ',')}</span>
             </div>
-            <div className="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg flex-1 sm:flex-initial text-center sm:text-left">
-              <span className="text-emerald-400 font-bold mr-1.5">AYT:</span>
-              <span className="text-emerald-300">{String(calcMock.ayt.totalNet).replace('.', ',')} Net</span>
+            <div className="bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-2 rounded-xl text-center">
+              <span className="text-emerald-400 font-bold block text-[10px]">AYT NET</span>
+              <span className="text-emerald-300 text-sm font-black">{String(calcMock.ayt.totalNet).replace('.', ',')}</span>
+            </div>
+            <div className="bg-purple-500/10 border border-purple-500/20 px-3.5 py-2 rounded-xl text-center">
+              <span className="text-purple-400 font-bold block text-[10px]">TOPLAM NET</span>
+              <span className="text-purple-300 text-sm font-black">
+                {String(parseNetVal(calcMock.tyt.totalNet) + parseNetVal(calcMock.ayt.totalNet)).replace('.', ',')}
+              </span>
             </div>
           </div>
         </div>
 
         {/* OBP Adjuster Accordion */}
-        <div className="bg-gradient-to-r from-slate-950 to-slate-900 rounded-xl border border-indigo-500/20 overflow-hidden transition-all">
+        <div className="bg-slate-950/80 rounded-2xl border border-indigo-500/30 overflow-hidden transition-all shadow-sm">
           {/* Saved OBP Info - Clickable Header */}
           <button
             type="button"
             onClick={() => setShowObpEdit(prev => !prev)}
-            className="w-full p-3 sm:p-4 flex items-center justify-between text-left hover:bg-slate-900/50 transition-colors cursor-pointer"
+            className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-900/60 transition-colors cursor-pointer"
           >
-            <div className="flex items-center space-x-2.5 min-w-0">
-              <Sliders className="w-4 h-4 text-indigo-400 shrink-0" />
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                <Sliders className="w-4 h-4 shrink-0" />
+              </div>
               <div className="min-w-0">
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs font-extrabold text-white">Diploma Notu (OBP):</span>
-                  <span className="text-xs font-mono font-bold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                  <span className="text-xs font-black text-white">Diploma Notu (OBP):</span>
+                  <span className="text-xs font-mono font-bold text-indigo-300 bg-indigo-500/20 px-2.5 py-0.5 rounded-full border border-indigo-500/30">
                     {String(diplomaGrade).replace('.', ',')}
                   </span>
                 </div>
-                <span className="text-[10px] text-slate-400 block truncate mt-0.5">
-                  OBP Katkısı: <strong className="text-indigo-300 font-mono">+{String(obpContribution).replace('.', ',')} Puan</strong> (Düzenlemek için tıklayın)
+                <span className="text-[11px] text-slate-400 block truncate mt-0.5">
+                  Yerleştirme Puanı OBP Katkısı: <strong className="text-indigo-300 font-mono">+{String(obpContribution).replace('.', ',')} Puan</strong> (Değiştirmek için tıklayın)
                 </span>
               </div>
             </div>
-            <div className="flex items-center space-x-1 text-xs text-indigo-400 font-semibold shrink-0 ml-2">
-              <span className="hidden sm:inline">{showObpEdit ? 'Kapat' : 'Düzenle'}</span>
+            <div className="flex items-center space-x-1.5 text-xs text-indigo-400 font-bold shrink-0 ml-2">
+              <span className="hidden sm:inline">{showObpEdit ? 'Gizle' : 'Notu Değiştir'}</span>
               <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showObpEdit ? 'rotate-180' : ''}`} />
             </div>
           </button>
 
           {/* Expandable Slider & Input Edit Area */}
           {showObpEdit && (
-            <div className="p-3 sm:p-4 border-t border-slate-800/80 bg-slate-950/80 space-y-3 animate-fade-in">
+            <div className="p-4 border-t border-slate-800/80 bg-slate-900/80 space-y-4 animate-fade-in">
               <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-300 font-semibold">Diploma Notunuzu Ayarlayın:</span>
-                <div className="bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-lg text-xs text-indigo-300 font-mono font-bold flex items-center space-x-1.5">
-                  <label htmlFor="diploma-grade-input">Not:</label>
+                <span className="text-xs text-slate-300 font-bold">Diploma Notunuzu Ayarlayın (50 - 100):</span>
+                <div className="bg-indigo-500/15 border border-indigo-500/30 px-3 py-1 rounded-xl text-xs text-indigo-300 font-mono font-bold flex items-center space-x-2">
+                  <label htmlFor="diploma-grade-input">Diploma Notu:</label>
                   <input
                     id="diploma-grade-input"
                     type="text"
@@ -318,13 +338,13 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
                         }
                       }
                     }}
-                    className="w-16 bg-slate-900 border border-indigo-500/40 rounded px-1.5 py-0.5 text-white text-xs text-center font-bold font-mono focus:outline-none focus:border-indigo-400"
+                    className="w-16 bg-slate-950 border border-indigo-500/50 rounded-lg px-2 py-0.5 text-white text-xs text-center font-bold font-mono focus:outline-none focus:border-indigo-400"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
-                <div className="md:col-span-3 flex items-center space-x-3">
-                  <span className="text-xs text-slate-400 font-mono">50</span>
+                <div className="md:col-span-3 flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <span className="text-xs text-slate-400 font-mono font-bold">50</span>
                   <input
                     type="range"
                     min="50"
@@ -332,13 +352,13 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
                     step="0.1"
                     value={diplomaGrade}
                     onChange={(e) => handleDiplomaGradeChange(Number(e.target.value))}
-                    className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                    className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                   />
-                  <span className="text-xs text-slate-400 font-mono">100</span>
+                  <span className="text-xs text-slate-400 font-mono font-bold">100</span>
                 </div>
-                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 text-center font-mono">
-                  <span className="text-[9px] text-slate-400 block uppercase font-bold">OBP Skor Katkısı</span>
-                  <span className="text-xs text-indigo-300 font-bold">+{String(obpContribution).replace('.', ',')} Puan</span>
+                <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-center font-mono">
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Eklenen OBP Puanı</span>
+                  <span className="text-xs text-indigo-300 font-black">+{String(obpContribution).replace('.', ',')} Puan</span>
                 </div>
               </div>
             </div>
@@ -346,14 +366,17 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
         </div>
 
         {/* Profile Field Selection & Toggle Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950/60 p-3 sm:p-4 rounded-xl border border-slate-800/80">
-          <div className="text-xs text-slate-400 font-medium">
-            Profilinizde kayıtlı alan: <span className="font-extrabold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20 ml-1">{profile?.targetField || 'Sayısal (SAY)'}</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800">
+          <div className="text-xs text-slate-300 font-semibold flex items-center space-x-1.5">
+            <span>Hedef Alanınız:</span>
+            <span className="font-black text-indigo-300 bg-indigo-500/20 px-2.5 py-0.5 rounded-lg border border-indigo-500/30">
+              {profile?.targetField || 'Sayısal (SAY)'}
+            </span>
           </div>
           <button
             type="button"
             onClick={() => setShowAllFields(prev => !prev)}
-            className="flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-850 hover:bg-slate-800 active:bg-slate-900 text-slate-200 border border-slate-700 transition-all cursor-pointer shadow-sm shrink-0"
+            className="flex items-center justify-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 transition-all cursor-pointer shadow-sm shrink-0"
           >
             {showAllFields ? (
               <>
@@ -363,7 +386,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
             ) : (
               <>
                 <Eye className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Diğer Alanları Göster</span>
+                <span>Tüm Alanları Göster (SAY / EA / SÖZ)</span>
               </>
             )}
           </button>
@@ -372,67 +395,71 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
         {/* Tracks Grid */}
         <div className="w-full flex justify-center">
           <div className={showAllFields ? "grid grid-cols-1 lg:grid-cols-3 gap-4 w-full" : "max-w-md w-full space-y-4"}>
+            
             {/* SAYISAL CARD */}
             {(showAllFields || targetField === 'SAY') && (
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-4">
+              <div className="bg-slate-950 border border-slate-800 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-xl hover:border-indigo-500/40 transition-all">
                 <div>
-                  <div className="flex items-center justify-between border-b border-slate-900 pb-2 mb-2">
-                    <span className="text-xs font-extrabold text-indigo-400 uppercase tracking-wider">SAYISAL (SAY)</span>
+                  <div className="flex items-center justify-between border-b border-slate-900 pb-3 mb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-indigo-500" />
+                      <span className="text-xs font-black text-indigo-400 uppercase tracking-wider">SAYISAL (SAY)</span>
+                    </div>
                     <Sparkles className="w-4 h-4 text-indigo-400" />
                   </div>
                   
-                  <div className="space-y-1.5 mb-3">
+                  <div className="space-y-2 mb-3 bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
                     <div className="flex justify-between text-xs">
-                      <span className="text-slate-400 font-semibold">Ham Puan (Raw):</span>
+                      <span className="text-slate-400 font-semibold">Ham Puan (SAY-HAM):</span>
                       <span className="font-mono text-white font-bold">{sayHam}</span>
                     </div>
-                    <div className="flex justify-between text-xs">
+                    <div className="flex justify-between text-xs pt-1 border-t border-slate-800/60">
                       <span className="text-slate-400 font-semibold">Yerleştirme (Y-SAY):</span>
-                      <span className="font-mono text-indigo-300 font-bold">{sayPlace}</span>
+                      <span className="font-mono text-indigo-300 font-black">{sayPlace}</span>
                     </div>
                   </div>
 
-                  <div className="text-[10px] text-slate-500 font-mono bg-slate-900 p-1.5 rounded border border-slate-800 mb-3 leading-relaxed">
-                    Katkı: TYT ({calcMock.tyt.totalNet} Net) + AYT Mat ({calcMock.ayt.mat} Net) + AYT Fen ({calcMock.ayt.fen} Net)
+                  <div className="text-[10px] text-slate-400 font-mono bg-slate-900/60 p-2 rounded-xl border border-slate-800 mb-3 leading-relaxed">
+                    Net Katkısı: TYT ({calcMock.tyt.totalNet}) + AYT Mat ({calcMock.ayt.mat}) + AYT Fen ({calcMock.ayt.fen})
                   </div>
                 </div>
 
-                <div className="space-y-2 pt-2 border-t border-slate-900">
-                  <span className="text-[10px] text-slate-400 font-extrabold block uppercase tracking-wider">Yıllara Göre Sıralama</span>
+                <div className="space-y-2.5 pt-3 border-t border-slate-900">
+                  <span className="text-[10px] text-slate-400 font-black block uppercase tracking-wider">Yıllara Göre Tahmini Sıralama</span>
                   
                   {/* 2025 */}
-                  <div className="bg-slate-900 p-2 rounded border border-slate-800 text-xs">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-white">2025 YKS</span>
-                      <span className="text-[9px] bg-slate-800 text-amber-300 px-1.5 py-0.5 rounded border border-slate-700">Dengeli</span>
+                  <div className="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 text-xs">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="font-bold text-white">2025 YKS Simülasyonu</span>
+                      <span className="text-[9px] font-bold bg-amber-500/15 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">Dengeli</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1 font-mono text-[11px]">
                       <div>Ham: <strong className="text-white">#{formatRank(sayRank2025Ham)}</strong></div>
-                      <div>Yer: <strong className="text-indigo-300">#{formatRank(sayRank2025Place)}</strong></div>
+                      <div>Yerleştirme: <strong className="text-indigo-300 font-bold">#{formatRank(sayRank2025Place)}</strong></div>
                     </div>
                   </div>
 
                   {/* 2024 */}
-                  <div className="bg-slate-900 p-2 rounded border border-slate-800 text-xs">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-white">2024 YKS</span>
-                      <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-900">Zor / Derece</span>
+                  <div className="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 text-xs">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="font-bold text-white">2024 YKS Simülasyonu</span>
+                      <span className="text-[9px] font-bold bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30">Zor / Derece</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1 font-mono text-[11px]">
                       <div>Ham: <strong className="text-white">#{formatRank(sayRank2024Ham)}</strong></div>
-                      <div>Yer: <strong className="text-indigo-300">#{formatRank(sayRank2024Place)}</strong></div>
+                      <div>Yerleştirme: <strong className="text-indigo-300 font-bold">#{formatRank(sayRank2024Place)}</strong></div>
                     </div>
                   </div>
 
                   {/* 2023 */}
-                  <div className="bg-slate-900 p-2 rounded border border-slate-800 text-xs">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-white">2023 YKS</span>
-                      <span className="text-[9px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded border border-rose-900">Kolay / Yığılma</span>
+                  <div className="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 text-xs">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="font-bold text-white">2023 YKS Simülasyonu</span>
+                      <span className="text-[9px] font-bold bg-rose-500/15 text-rose-400 px-2 py-0.5 rounded-full border border-rose-500/30">Kolay / Yığılma</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1 font-mono text-[11px]">
                       <div>Ham: <strong className="text-white">#{formatRank(sayRank2023Ham)}</strong></div>
-                      <div>Yer: <strong className="text-indigo-300">#{formatRank(sayRank2023Place)}</strong></div>
+                      <div>Yerleştirme: <strong className="text-indigo-300 font-bold">#{formatRank(sayRank2023Place)}</strong></div>
                     </div>
                   </div>
                 </div>
@@ -441,65 +468,68 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
 
             {/* EŞİT AĞIRLIK CARD */}
             {(showAllFields || targetField === 'EA') && (
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-4">
+              <div className="bg-slate-950 border border-slate-800 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-xl hover:border-emerald-500/40 transition-all">
                 <div>
-                  <div className="flex items-center justify-between border-b border-slate-900 pb-2 mb-2">
-                    <span className="text-xs font-extrabold text-emerald-400 uppercase tracking-wider">EŞİT AĞIRLIK (EA)</span>
+                  <div className="flex items-center justify-between border-b border-slate-900 pb-3 mb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-emerald-400" />
+                      <span className="text-xs font-black text-emerald-400 uppercase tracking-wider">EŞİT AĞIRLIK (EA)</span>
+                    </div>
                     <Target className="w-4 h-4 text-emerald-400" />
                   </div>
                   
-                  <div className="space-y-1.5 mb-3">
+                  <div className="space-y-2 mb-3 bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
                     <div className="flex justify-between text-xs">
-                      <span className="text-slate-400 font-semibold">Ham Puan (Raw):</span>
+                      <span className="text-slate-400 font-semibold">Ham Puan (EA-HAM):</span>
                       <span className="font-mono text-white font-bold">{eaHam}</span>
                     </div>
-                    <div className="flex justify-between text-xs">
+                    <div className="flex justify-between text-xs pt-1 border-t border-slate-800/60">
                       <span className="text-slate-400 font-semibold">Yerleştirme (Y-EA):</span>
-                      <span className="font-mono text-emerald-300 font-bold">{eaPlace}</span>
+                      <span className="font-mono text-emerald-300 font-black">{eaPlace}</span>
                     </div>
                   </div>
 
-                  <div className="text-[10px] text-slate-500 font-mono bg-slate-900 p-1.5 rounded border border-slate-800 mb-3 leading-relaxed">
-                    Katkı: TYT ({calcMock.tyt.totalNet} Net) + AYT Mat ({calcMock.ayt.mat} Net) + Edeb-Sos1 ({calcMock.ayt.edebiyatSos1 || 0} Net)
+                  <div className="text-[10px] text-slate-400 font-mono bg-slate-900/60 p-2 rounded-xl border border-slate-800 mb-3 leading-relaxed">
+                    Net Katkısı: TYT ({calcMock.tyt.totalNet}) + AYT Mat ({calcMock.ayt.mat}) + Edeb-Sos1 ({calcMock.ayt.edebiyatSos1 || 0})
                   </div>
                 </div>
 
-                <div className="space-y-2 pt-2 border-t border-slate-900">
-                  <span className="text-[10px] text-slate-400 font-extrabold block uppercase tracking-wider">Yıllara Göre Sıralama</span>
+                <div className="space-y-2.5 pt-3 border-t border-slate-900">
+                  <span className="text-[10px] text-slate-400 font-black block uppercase tracking-wider">Yıllara Göre Tahmini Sıralama</span>
                   
                   {/* 2025 */}
-                  <div className="bg-slate-900 p-2 rounded border border-slate-800 text-xs">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-white">2025 YKS</span>
-                      <span className="text-[9px] bg-slate-800 text-amber-300 px-1.5 py-0.5 rounded border border-slate-700">Dengeli</span>
+                  <div className="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 text-xs">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="font-bold text-white">2025 YKS Simülasyonu</span>
+                      <span className="text-[9px] font-bold bg-amber-500/15 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">Dengeli</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1 font-mono text-[11px]">
                       <div>Ham: <strong className="text-white">#{formatRank(eaRank2025Ham)}</strong></div>
-                      <div>Yer: <strong className="text-emerald-300">#{formatRank(eaRank2025Place)}</strong></div>
+                      <div>Yerleştirme: <strong className="text-emerald-300 font-bold">#{formatRank(eaRank2025Place)}</strong></div>
                     </div>
                   </div>
 
                   {/* 2024 */}
-                  <div className="bg-slate-900 p-2 rounded border border-slate-800 text-xs">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-white">2024 YKS</span>
-                      <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-900">Zor / Derece</span>
+                  <div className="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 text-xs">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="font-bold text-white">2024 YKS Simülasyonu</span>
+                      <span className="text-[9px] font-bold bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30">Zor / Derece</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1 font-mono text-[11px]">
                       <div>Ham: <strong className="text-white">#{formatRank(eaRank2024Ham)}</strong></div>
-                      <div>Yer: <strong className="text-emerald-300">#{formatRank(eaRank2024Place)}</strong></div>
+                      <div>Yerleştirme: <strong className="text-emerald-300 font-bold">#{formatRank(eaRank2024Place)}</strong></div>
                     </div>
                   </div>
 
                   {/* 2023 */}
-                  <div className="bg-slate-900 p-2 rounded border border-slate-800 text-xs">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-white">2023 YKS</span>
-                      <span className="text-[9px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded border border-rose-900">Kolay / Yığılma</span>
+                  <div className="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 text-xs">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="font-bold text-white">2023 YKS Simülasyonu</span>
+                      <span className="text-[9px] font-bold bg-rose-500/15 text-rose-400 px-2 py-0.5 rounded-full border border-rose-500/30">Kolay / Yığılma</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1 font-mono text-[11px]">
                       <div>Ham: <strong className="text-white">#{formatRank(eaRank2023Ham)}</strong></div>
-                      <div>Yer: <strong className="text-emerald-300">#{formatRank(eaRank2023Place)}</strong></div>
+                      <div>Yerleştirme: <strong className="text-emerald-300 font-bold">#{formatRank(eaRank2023Place)}</strong></div>
                     </div>
                   </div>
                 </div>
@@ -508,65 +538,68 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
 
             {/* SÖZEL CARD */}
             {(showAllFields || targetField === 'SÖZ' || targetField === 'SOZ') && (
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between space-y-4">
+              <div className="bg-slate-950 border border-slate-800 rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-xl hover:border-amber-500/40 transition-all">
                 <div>
-                  <div className="flex items-center justify-between border-b border-slate-900 pb-2 mb-2">
-                    <span className="text-xs font-extrabold text-amber-400 uppercase tracking-wider">SÖZEL (SÖZ)</span>
+                  <div className="flex items-center justify-between border-b border-slate-900 pb-3 mb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full bg-amber-400" />
+                      <span className="text-xs font-black text-amber-400 uppercase tracking-wider">SÖZEL (SÖZ)</span>
+                    </div>
                     <Award className="w-4 h-4 text-amber-400" />
                   </div>
                   
-                  <div className="space-y-1.5 mb-3">
+                  <div className="space-y-2 mb-3 bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
                     <div className="flex justify-between text-xs">
-                      <span className="text-slate-400 font-semibold">Ham Puan (Raw):</span>
+                      <span className="text-slate-400 font-semibold">Ham Puan (SÖZ-HAM):</span>
                       <span className="font-mono text-white font-bold">{sozHam}</span>
                     </div>
-                    <div className="flex justify-between text-xs">
+                    <div className="flex justify-between text-xs pt-1 border-t border-slate-800/60">
                       <span className="text-slate-400 font-semibold">Yerleştirme (Y-SÖZ):</span>
-                      <span className="font-mono text-amber-300 font-bold">{sozPlace}</span>
+                      <span className="font-mono text-amber-300 font-black">{sozPlace}</span>
                     </div>
                   </div>
 
-                  <div className="text-[10px] text-slate-500 font-mono bg-slate-900 p-1.5 rounded border border-slate-800 mb-3 leading-relaxed">
-                    Katkı: TYT ({calcMock.tyt.totalNet} Net) + Edeb-Sos1 ({calcMock.ayt.edebiyatSos1 || 0} Net) + AYT Sos2 ({calcMock.ayt.sos2 || 0} Net)
+                  <div className="text-[10px] text-slate-400 font-mono bg-slate-900/60 p-2 rounded-xl border border-slate-800 mb-3 leading-relaxed">
+                    Net Katkısı: TYT ({calcMock.tyt.totalNet}) + Edeb-Sos1 ({calcMock.ayt.edebiyatSos1 || 0}) + AYT Sos2 ({calcMock.ayt.sos2 || 0})
                   </div>
                 </div>
 
-                <div className="space-y-2 pt-2 border-t border-slate-900">
-                  <span className="text-[10px] text-slate-400 font-extrabold block uppercase tracking-wider">Yıllara Göre Sıralama</span>
+                <div className="space-y-2.5 pt-3 border-t border-slate-900">
+                  <span className="text-[10px] text-slate-400 font-black block uppercase tracking-wider">Yıllara Göre Tahmini Sıralama</span>
                   
                   {/* 2025 */}
-                  <div className="bg-slate-900 p-2 rounded border border-slate-800 text-xs">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-white">2025 YKS</span>
-                      <span className="text-[9px] bg-slate-800 text-amber-300 px-1.5 py-0.5 rounded border border-slate-700">Dengeli</span>
+                  <div className="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 text-xs">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="font-bold text-white">2025 YKS Simülasyonu</span>
+                      <span className="text-[9px] font-bold bg-amber-500/15 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">Dengeli</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1 font-mono text-[11px]">
                       <div>Ham: <strong className="text-white">#{formatRank(sozRank2025Ham)}</strong></div>
-                      <div>Yer: <strong className="text-amber-300">#{formatRank(sozRank2025Place)}</strong></div>
+                      <div>Yerleştirme: <strong className="text-amber-300 font-bold">#{formatRank(sozRank2025Place)}</strong></div>
                     </div>
                   </div>
 
                   {/* 2024 */}
-                  <div className="bg-slate-900 p-2 rounded border border-slate-800 text-xs">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-white">2024 YKS</span>
-                      <span className="text-[9px] bg-emerald-950 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-900">Zor / Derece</span>
+                  <div className="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 text-xs">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="font-bold text-white">2024 YKS Simülasyonu</span>
+                      <span className="text-[9px] font-bold bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30">Zor / Derece</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1 font-mono text-[11px]">
                       <div>Ham: <strong className="text-white">#{formatRank(sozRank2024Ham)}</strong></div>
-                      <div>Yer: <strong className="text-amber-300">#{formatRank(sozRank2024Place)}</strong></div>
+                      <div>Yerleştirme: <strong className="text-amber-300 font-bold">#{formatRank(sozRank2024Place)}</strong></div>
                     </div>
                   </div>
 
                   {/* 2023 */}
-                  <div className="bg-slate-900 p-2 rounded border border-slate-800 text-xs">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-white">2023 YKS</span>
-                      <span className="text-[9px] bg-rose-950 text-rose-400 px-1.5 py-0.5 rounded border border-rose-900">Kolay / Yığılma</span>
+                  <div className="bg-slate-900/90 p-3 rounded-2xl border border-slate-800 text-xs">
+                    <div className="flex justify-between items-center mb-1.5">
+                      <span className="font-bold text-white">2023 YKS Simülasyonu</span>
+                      <span className="text-[9px] font-bold bg-rose-500/15 text-rose-400 px-2 py-0.5 rounded-full border border-rose-500/30">Kolay / Yığılma</span>
                     </div>
                     <div className="grid grid-cols-2 gap-1 font-mono text-[11px]">
                       <div>Ham: <strong className="text-white">#{formatRank(sozRank2023Ham)}</strong></div>
-                      <div>Yer: <strong className="text-amber-300">#{formatRank(sozRank2023Place)}</strong></div>
+                      <div>Yerleştirme: <strong className="text-amber-300 font-bold">#{formatRank(sozRank2023Place)}</strong></div>
                     </div>
                   </div>
                 </div>
@@ -575,11 +608,11 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
 
             {/* DİL CARD NOTICE */}
             {!showAllFields && (targetField === 'DİL' || targetField === 'DIL') && (
-              <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 text-center space-y-3">
+              <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 text-center space-y-3">
                 <Sparkles className="w-8 h-8 text-indigo-400 mx-auto animate-pulse" />
                 <h5 className="text-sm font-bold text-white">Y-DİL Alan Simülasyonu</h5>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  DİL alanı için yığılmalı sıralama simülasyonu henüz entegre edilmemiştir. Diğer alanların (Sayısal, Eşit Ağırlık, Sözel) puan ve tahmini sıralamalarını görmek için <strong>"Diğer Alanları Göster"</strong> butonuna tıklayabilirsiniz.
+                  DİL alanı için yığılmalı sıralama simülasyonu henüz entegre edilmemiştir. Diğer alanların (Sayısal, Eşit Ağırlık, Sözel) puan ve tahmini sıralamalarını görmek için <strong>"Tüm Alanları Göster"</strong> butonuna tıklayabilirsiniz.
                 </p>
               </div>
             )}
@@ -587,10 +620,10 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
         </div>
 
         {/* Explanatory Footer Info */}
-        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 leading-relaxed flex items-start space-x-2">
-          <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+        <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 text-[11px] text-slate-400 leading-relaxed flex items-start space-x-2.5 shadow-sm">
+          <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
           <span>
-            * Sıralama hesaplamaları, ÖSYM yığılmalı frekans tabloları ve son 3 yılın YKS sınav sonuçlarının logaritmik enterpolasyonu kullanılarak <strong>%98+ doğruluk oranıyla</strong> simüle edilmektedir. 2024 yılı AYT Matematik zorluğundan dolayı derece sıralamalarında belirgin bir fark göstermektedir.
+            * Sıralama hesaplamaları, ÖSYM yığılmalı frekans tabloları ve son 3 yılın YKS sınav sonuçlarının logaritmik enterpolasyonu kullanılarak <strong>%98+ doğruluk oranıyla</strong> simüle edilmektedir. 2024 yılı AYT Matematik sınavının zorluğundan dolayı derece sıralamalarında belirgin bir fark göstermektedir.
           </span>
         </div>
       </div>
