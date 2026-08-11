@@ -55,6 +55,8 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
   isArchivedWeek = false
 }) => {
   const [expandedQuickControls, setExpandedQuickControls] = useState<Record<string, boolean>>({});
+  const [inlineEditingNotesPlanId, setInlineEditingNotesPlanId] = useState<string | null>(null);
+  const [inlineNotesText, setInlineNotesText] = useState<string>('');
 
   const dayPlans = activePlans.filter(p => p.day === selectedDay);
 
