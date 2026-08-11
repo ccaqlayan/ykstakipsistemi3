@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Target, 
   TrendingUp, 
@@ -9,7 +9,12 @@ import {
   Sparkles, 
   PieChart as PieChartIcon, 
   Activity, 
-  BookOpen 
+  BookOpen,
+  Award,
+  Layers,
+  Zap,
+  CheckCircle2,
+  HelpCircle
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -79,101 +84,224 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
   DEFAULT_CHART_COLORS,
   SUBJECT_COLORS,
 }) => {
+  const [activeGraphType, setActiveGraphType] = useState<'net' | 'distribution' | 'time'>('net');
+
+  // Compute highest net in the current dataset
+  const maxNetRecord = React.useMemo(() => {
+    if (!netChartData || netChartData.length === 0) return 0;
+    return Math.max(...netChartData.map(d => Number(d.net) || 0));
+  }, [netChartData]);
+
+  // Compute TYT vs AYT exam counts
+  const tytExamCount = React.useMemo(() => {
+    return branchSubjectStats
+      .filter(s => s.examType === 'TYT')
+      .reduce((acc, s) => acc + (s.count || 0), 0);
+  }, [branchSubjectStats]);
+
+  const aytExamCount = React.useMemo(() => {
+    return branchSubjectStats
+      .filter(s => s.examType === 'AYT')
+      .reduce((acc, s) => acc + (s.count || 0), 0);
+  }, [branchSubjectStats]);
+
+  const formatHoursAndMinutes = (totalMins: number) => {
+    if (!totalMins || totalMins <= 0) return '0 dk';
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    if (h === 0) return `${m} dk`;
+    if (m === 0) return `${h} sa`;
+    return `${h} sa ${m} dk`;
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       
-      {/* Top KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold">Toplam Deneme</span>
-            <Target className="w-4 h-4 text-indigo-400" />
+      {/* ── 1. TOP KPI DASHBOARD CARDS ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        {/* Card 1: Toplam Branş Denemesi */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Toplam Branş Denemesi</span>
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+              <Target className="w-4 h-4 text-indigo-400" />
+            </div>
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-white">{totalBranchExamsCount}</span>
-            <span className="text-[10px] text-emerald-400 font-mono font-semibold" title={`${analyzedBranchExamsCount} / ${totalBranchExamsCount} Deneme Analiz Edildi`}>
+          <div className="mt-3 flex items-baseline justify-between">
+            <div className="flex items-baseline space-x-2">
+              <span className="text-3xl font-black text-white font-mono">{totalBranchExamsCount}</span>
+              <span className="text-xs text-slate-400 font-medium">Deneme</span>
+            </div>
+            <span className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
               %{analyzedBranchExamsPercentage} Analiz Edildi
             </span>
           </div>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold">Net Ortalaması</span>
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-emerald-400">{avgNetOverall}</span>
+          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+            <span>TYT: <strong className="text-indigo-300 font-mono">{tytExamCount}</strong></span>
+            <span>AYT: <strong className="text-purple-300 font-mono">{aytExamCount}</strong></span>
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold">Hata Defteri</span>
-            <AlertTriangle className="w-4 h-4 text-rose-400" />
+        {/* Card 2: Net Ortalaması & Rekor */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Genel Net Ortalaması</span>
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-emerald-400" />
+            </div>
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-rose-400">{unrevisedErrorsCount}</span>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-3xl font-black text-emerald-400 font-mono">{avgNetOverall}</span>
+            {maxNetRecord > 0 && (
+              <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-semibold font-mono flex items-center space-x-1">
+                <Award className="w-3 h-3 text-amber-400 inline" />
+                <span>Rekor: {maxNetRecord}</span>
+              </span>
+            )}
+          </div>
+          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Aktif Filtre Ortalama Net:</span>
+            <span className="text-emerald-300 font-bold font-mono">{avgNetOverall} Net</span>
+          </div>
+        </div>
+
+        {/* Card 3: Toplam Çözüm Süresi & Hız */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Toplam Çözüm Süresi</span>
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+              <Clock className="w-4 h-4 text-amber-400" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-2xl font-black text-amber-300 font-mono">
+              {formatHoursAndMinutes(totalDurationMinutes)}
+            </span>
             <span className="text-[10px] text-slate-400 font-mono">
-              {revisedErrorsCount} tekrar (%{revisionPercentage})
+              Ort. <strong className="text-amber-300">{avgDurationMinutes}</strong> dk/deneme
+            </span>
+          </div>
+          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Toplam Soru Pratiği:</span>
+            <span className="text-amber-400 font-bold font-mono">
+              {branchSubjectStats.reduce((acc, s) => acc + (s.count || 0), 0)} Oturum
             </span>
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between shadow-sm">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold">Toplam Süre</span>
-            <Clock className="w-4 h-4 text-amber-400" />
+        {/* Card 4: Hata Defteri & Tekrar Oranı */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Hata Defteri Durumu</span>
+            <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+              <AlertTriangle className="w-4 h-4 text-rose-400" />
+            </div>
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-xl font-bold text-amber-300">
-              {totalDurationMinutes > 0 ? `${Math.floor(totalDurationMinutes / 60)}s ${totalDurationMinutes % 60}dk` : '0dk'}
+          <div className="mt-3 flex items-baseline justify-between">
+            <div className="flex items-baseline space-x-1.5">
+              <span className="text-3xl font-black text-rose-400 font-mono">{unrevisedErrorsCount}</span>
+              <span className="text-xs text-slate-400 font-medium">Bekleyen Hata</span>
+            </div>
+            <span className="text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
+              %{revisionPercentage} Tekrar
             </span>
-            <span className="text-[10px] text-slate-400 font-mono">
-              Ort. {avgDurationMinutes} dk/deneme
-            </span>
+          </div>
+          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Tekrar Edilen:</span>
+            <span className="text-emerald-400 font-bold font-mono">{revisedErrorsCount} Soru</span>
           </div>
         </div>
+
       </div>
 
-      {/* Chart Section 1: Net Gelişim Trendi */}
-      <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/60">
-          <div className="flex items-center space-x-2">
-            <BarChart2 className="w-5 h-5 text-indigo-400 shrink-0" />
+      {/* ── 2. INTERACTIVE GRAPH ANALYTICS DASHBOARD ── */}
+      <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-5">
+        
+        {/* Header with Mode Switcher & Filters */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+              <BarChart2 className="w-5 h-5" />
+            </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Branş Denemeleri Net Gelişim Trendi</h3>
-              <p className="text-[11px] text-slate-400">Zaman içindeki başarı ivmenizi grafik üzerinde inceleyin</p>
+              <h3 className="text-base font-bold text-white">Branş Denemeleri Performans Analitiği</h3>
+              <p className="text-xs text-slate-400">Net ivmesini, doğru/yanlış dağılımını ve çözüm sürelerini inceleyin</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Graph Mode Buttons */}
+            <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800">
+              <button
+                onClick={() => setActiveGraphType('net')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  activeGraphType === 'net' 
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>Net Trendi</span>
+              </button>
+              <button
+                onClick={() => setActiveGraphType('distribution')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  activeGraphType === 'distribution' 
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>D / Y / B Dağılımı</span>
+              </button>
+              <button
+                onClick={() => setActiveGraphType('time')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  activeGraphType === 'time' 
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>Çözüm Süreleri</span>
+              </button>
+            </div>
+
+            {/* Exam Filter Buttons */}
+            <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800">
               <button
                 onClick={() => { setChartExamType('ALL'); setChartSubject('ALL'); }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${chartExamType === 'ALL' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                  chartExamType === 'ALL' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
+                }`}
               >
                 Tümü
               </button>
               <button
                 onClick={() => { setChartExamType('TYT'); setChartSubject('ALL'); }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${chartExamType === 'TYT' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                  chartExamType === 'TYT' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
               >
                 TYT
               </button>
               <button
                 onClick={() => { setChartExamType('AYT'); setChartSubject('ALL'); }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${chartExamType === 'AYT' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                  chartExamType === 'AYT' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
               >
                 AYT
               </button>
             </div>
 
+            {/* Subject Selector */}
             {chartExamType !== 'ALL' && (
               <select
                 value={chartSubject}
                 onChange={(e) => setChartSubject(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-300 rounded-2xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
               >
                 <option value="ALL">Tüm Dersler</option>
                 {branchSubjectStats
@@ -185,10 +313,11 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
               </select>
             )}
 
+            {/* Limit Selector */}
             <select
               value={chartLimit}
               onChange={(e) => setChartLimit(e.target.value as any)}
-              className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-300 rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
+              className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-300 rounded-2xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
             >
               <option value="10">Son 10 Deneme</option>
               <option value="30">Son 30 Deneme</option>
@@ -197,101 +326,234 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
           </div>
         </div>
 
+        {/* Render Chart according to activeGraphType */}
         {netChartData.length > 0 ? (
-          <div className="h-72 w-full pt-2">
+          <div className="h-80 w-full pt-3">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={netChartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="shortName" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} domain={[0, 'auto']} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', color: '#fff', fontSize: '12px' }}
-                  formatter={(value: any) => [`${value} Net`, 'Net']}
-                  labelFormatter={(label, items) => {
-                    if (items && items.length > 0 && items[0].payload) {
-                      const p = items[0].payload;
-                      const title = p.fullTitle || (p.subject ? `${p.subject} - ${p.publisher || 'Branş Denemesi'}` : label);
-                      const date = p.dateStr || p.date || '';
-                      return date ? `${title} (${date})` : title;
-                    }
-                    return label;
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="net"
-                  stroke="#6366f1"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#0f172a' }}
-                  activeDot={{ r: 6, fill: '#818cf8' }}
-                />
-              </LineChart>
+              {activeGraphType === 'net' ? (
+                /* Mode 1: Net Gelişim Trendi */
+                <LineChart data={netChartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                  <XAxis dataKey="shortName" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} domain={[0, 'auto']} />
+                  <Tooltip
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(15, 23, 42, 0.95)', 
+                      borderColor: '#334155', 
+                      borderRadius: '1rem', 
+                      color: '#fff', 
+                      fontSize: '12px',
+                      boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)'
+                    }}
+                    formatter={(value: any) => [`${value} Net`, 'Net Skoru']}
+                    labelFormatter={(label, items) => {
+                      if (items && items.length > 0 && items[0].payload) {
+                        const p = items[0].payload;
+                        const title = p.fullTitle || (p.subject ? `${p.subject} - ${p.publisher || 'Branş Denemesi'}` : label);
+                        const date = p.dateStr || p.date || '';
+                        return date ? `${title} (${date})` : title;
+                      }
+                      return label;
+                    }}
+                  />
+                  {avgNetOverall && Number(avgNetOverall.toString().replace(',', '.')) > 0 && (
+                    <ReferenceLine 
+                      y={Number(avgNetOverall.toString().replace(',', '.'))} 
+                      stroke="#10b981" 
+                      strokeDasharray="4 4" 
+                      label={{ value: `Ort. Net: ${avgNetOverall}`, fill: '#10b981', fontSize: 10, position: 'insideTopRight' }} 
+                    />
+                  )}
+                  <Line
+                    type="monotone"
+                    dataKey="net"
+                    stroke="#6366f1"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#0f172a' }}
+                    activeDot={{ r: 7, fill: '#818cf8', stroke: '#fff', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              ) : activeGraphType === 'distribution' ? (
+                /* Mode 2: D / Y / B Dağılımı (Stacked Bar) */
+                <BarChart data={netChartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                  <XAxis dataKey="shortName" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(15, 23, 42, 0.95)', 
+                      borderColor: '#334155', 
+                      borderRadius: '1rem', 
+                      color: '#fff', 
+                      fontSize: '12px' 
+                    }}
+                    labelFormatter={(label, items) => {
+                      if (items && items.length > 0 && items[0].payload) {
+                        const p = items[0].payload;
+                        return `${p.fullTitle || label} (${p.dateStr || p.date || ''})`;
+                      }
+                      return label;
+                    }}
+                  />
+                  <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '11px' }} />
+                  <Bar dataKey="correct" fill="#10b981" name="Doğru" stackId="a" radius={[0, 0, 0, 0]} maxBarSize={36} />
+                  <Bar dataKey="wrong" fill="#ef4444" name="Yanlış" stackId="a" radius={[0, 0, 0, 0]} maxBarSize={36} />
+                  <Bar dataKey="empty" fill="#64748b" name="Boş" stackId="a" radius={[6, 6, 0, 0]} maxBarSize={36} />
+                </BarChart>
+              ) : (
+                /* Mode 3: Çözüm Süreleri (Bar Chart) */
+                <BarChart data={netChartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                  <XAxis dataKey="shortName" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} unit=" dk" />
+                  <Tooltip
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(15, 23, 42, 0.95)', 
+                      borderColor: '#334155', 
+                      borderRadius: '1rem', 
+                      color: '#fff', 
+                      fontSize: '12px' 
+                    }}
+                    formatter={(val: any) => [`${val} dk`, 'Çözüm Süresi']}
+                    labelFormatter={(label, items) => {
+                      if (items && items.length > 0 && items[0].payload) {
+                        const p = items[0].payload;
+                        return `${p.fullTitle || label} (${p.dateStr || p.date || ''})`;
+                      }
+                      return label;
+                    }}
+                  />
+                  <Bar dataKey="durationMinutes" fill="#f59e0b" name="Çözüm Süresi (Dakika)" radius={[6, 6, 0, 0]} maxBarSize={36} />
+                </BarChart>
+              )}
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="py-12 text-center border border-dashed border-slate-800 rounded-xl">
-            <Filter className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-            <p className="text-xs text-slate-400 font-semibold">Seçili kriterlerde gösterilecek deneme verisi bulunamadı.</p>
+          <div className="py-16 text-center border border-dashed border-slate-800 rounded-3xl space-y-3">
+            <Filter className="w-10 h-10 text-slate-600 mx-auto" />
+            <h4 className="text-sm font-bold text-slate-300">Henüz Gösterilecek Branş Denemesi Yok</h4>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">Seçilen filtrelerde veya sisteme henüz girilmiş branş deneme verisi bulunmuyor.</p>
           </div>
         )}
       </div>
 
-      {/* Grid: Subject Performance & Error Reasons */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Left: Branch Subject Stats Cards & Net Averages */}
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800/60">
-            <div className="flex items-center space-x-2">
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <h3 className="text-sm font-bold text-white">Ders Bazlı Ortalamalar</h3>
+      {/* ── 3. DERS BAZLI DETAYLI PERFORMANS KARTLARI & İLERLEME ── */}
+      <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-5">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              <Sparkles className="w-4 h-4" />
             </div>
-            <span className="text-[10px] text-slate-400 font-mono">Doğru / Yanlış / Net</span>
+            <div>
+              <h3 className="text-base font-bold text-white">Ders Bazlı Branş Performans Ortalamaları</h3>
+              <p className="text-xs text-slate-400">Her ders için çözülen deneme sayıları, D/Y/B ve net başarı grafiği</p>
+            </div>
           </div>
+          <span className="text-xs bg-slate-800 text-slate-300 font-mono font-bold px-3 py-1 rounded-full border border-slate-700">
+            {branchSubjectStats.length} Ders
+          </span>
+        </div>
 
-          <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
-            {branchSubjectStats.length > 0 ? (
-              branchSubjectStats.map((stat) => (
-                <div key={stat.subject} className="bg-slate-950 border border-slate-800/80 p-3 rounded-xl flex items-center justify-between">
-                  <div className="flex items-center space-x-2.5 min-w-0">
-                    <span 
-                      className="w-2.5 h-2.5 rounded-full shrink-0" 
-                      style={{ backgroundColor: SUBJECT_COLORS[stat.subject] || '#6366f1' }}
-                    />
-                    <div className="min-w-0">
-                      <h4 className="text-xs font-bold text-white truncate">{stat.subject}</h4>
-                      <p className="text-[10px] text-slate-400">{stat.count} Deneme Ortalaması</p>
+        {branchSubjectStats.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {branchSubjectStats.map((stat, idx) => {
+              const color = SUBJECT_COLORS[stat.subject] || DEFAULT_CHART_COLORS[idx % DEFAULT_CHART_COLORS.length];
+              const totalQCount = (stat.avgCorrect || 0) + (stat.avgWrong || 0) + (stat.avgEmpty || 0);
+              const accuracyPct = totalQCount > 0 ? Math.round(((stat.avgCorrect || 0) / totalQCount) * 100) : 0;
+
+              return (
+                <div 
+                  key={stat.subject} 
+                  className="bg-slate-950/80 border border-slate-800/80 hover:border-slate-700 p-4 rounded-2xl space-y-3 transition-all group shadow-sm hover:shadow-md"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2.5 min-w-0">
+                      <span 
+                        className="w-3 h-3 rounded-full shrink-0 shadow-sm" 
+                        style={{ backgroundColor: color }} 
+                      />
+                      <h4 className="text-sm font-bold text-white truncate" title={stat.subject}>
+                        {stat.subject}
+                      </h4>
+                    </div>
+                    <span className="text-[10px] bg-slate-900 text-slate-400 border border-slate-800 px-2 py-0.5 rounded-full font-mono shrink-0">
+                      {stat.count} Deneme
+                    </span>
+                  </div>
+
+                  {/* Stat Metrics Grid */}
+                  <div className="grid grid-cols-4 gap-2 text-center py-2 bg-slate-900/60 rounded-xl border border-slate-800/40">
+                    <div>
+                      <div className="text-[10px] text-slate-500 font-semibold">Doğru</div>
+                      <div className="text-xs font-mono font-bold text-emerald-400">{stat.avgCorrect ?? '-'}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-500 font-semibold">Yanlış</div>
+                      <div className="text-xs font-mono font-semibold text-rose-400">{stat.avgWrong ?? '-'}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-500 font-semibold">Boş</div>
+                      <div className="text-xs font-mono text-slate-400">{stat.avgEmpty ?? '-'}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-500 font-semibold">Net</div>
+                      <div className="text-xs font-mono font-black text-indigo-300">{stat.avgNet ?? '0'}</div>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-4 shrink-0 text-right">
-                    <div className="text-[11px] font-mono text-slate-300">
-                      <span className="text-emerald-400 font-bold">{stat.avgCorrect}D</span> / <span className="text-rose-400 font-bold">{stat.avgWrong}Y</span>
+                  {/* Accuracy Bar & Peak Record */}
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-400 font-medium">Doğruluk Oranı</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-emerald-400 font-bold font-mono">%{accuracyPct}</span>
+                        {stat.maxNet > 0 && (
+                          <span className="text-[10px] text-amber-400/90 font-mono" title={`En Yüksek Net: ${stat.maxNet}`}>
+                            (Max: {stat.maxNet})
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-lg">
-                      <span className="text-xs font-black text-indigo-300 font-mono">{stat.avgNet} Net</span>
+                    <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full rounded-full transition-all duration-500" 
+                        style={{ width: `${Math.min(100, Math.max(0, accuracyPct))}%`, backgroundColor: color }}
+                      />
                     </div>
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-xs text-slate-500 text-center py-6">Henüz ders ortalaması verisi yok.</p>
-            )}
+              );
+            })}
           </div>
-        </div>
+        ) : (
+          <div className="py-10 text-center border border-dashed border-slate-800 rounded-2xl">
+            <p className="text-xs text-slate-500">Henüz ders ortalaması verisi bulunmuyor.</p>
+          </div>
+        )}
+      </div>
 
-        {/* Right: Error Reasons Distribution Pie Chart */}
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800/60">
-            <div className="flex items-center space-x-2">
-              <PieChartIcon className="w-4 h-4 text-rose-400" />
-              <h3 className="text-sm font-bold text-white">Hata Nedenleri Dağılımı</h3>
+      {/* ── 4. HATA REASON DAĞILIMI & TOP PROBLEMATİK KONULAR ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Left: Error Reasons Distribution Donut Chart */}
+        <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-1.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
+                <PieChartIcon className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Hata Nedenleri Dağılımı</h3>
+                <p className="text-[11px] text-slate-400">Yanlış yapılan soruların analiz nedenleri</p>
+              </div>
             </div>
-            <span className="text-[10px] text-slate-400">Tüm Hata Defteri</span>
+            <span className="text-[10px] bg-rose-500/10 text-rose-300 border border-rose-500/20 px-2.5 py-0.5 rounded-full font-mono font-bold">
+              {errorReasonStats.reduce((a, b) => a + (b.count || 0), 0)} Yanlış Kaydı
+            </span>
           </div>
 
           {errorReasonStats.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 items-center gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 items-center gap-4 pt-2">
               <div className="h-56 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -309,8 +571,14 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '0.75rem', color: '#fff', fontSize: '11px' }}
-                      formatter={(val: any) => [`${val} Soru`, 'Hata Sayısı']}
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)', 
+                        borderColor: '#334155', 
+                        borderRadius: '0.75rem', 
+                        color: '#fff', 
+                        fontSize: '11px' 
+                      }}
+                      formatter={(val: any) => [`${val} Soru`, 'Hata Adedi']}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -318,10 +586,10 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
 
               <div className="space-y-2">
                 {errorReasonStats.map((item) => (
-                  <div key={item.reason} className="flex items-center justify-between text-xs p-1.5 rounded-lg bg-slate-950/60 border border-slate-800/50">
+                  <div key={item.reason} className="flex items-center justify-between text-xs p-2 rounded-xl bg-slate-950/70 border border-slate-800/60">
                     <div className="flex items-center space-x-2 min-w-0">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                      <span className="text-slate-300 font-semibold truncate">{item.label}</span>
+                      <span className="text-slate-300 font-semibold truncate">{item.label || item.name}</span>
                     </div>
                     <span className="font-mono font-bold text-white shrink-0 ml-2">
                       {item.count} <span className="text-[10px] text-slate-400 font-normal">(%{item.percentage})</span>
@@ -331,42 +599,76 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
               </div>
             </div>
           ) : (
-            <div className="py-12 text-center">
-              <p className="text-xs text-slate-500">Hata nedenleri analizi için henüz kayıt girilmedi.</p>
+            <div className="py-12 text-center border border-dashed border-slate-800 rounded-2xl space-y-1">
+              <HelpCircle className="w-7 h-7 text-slate-600 mx-auto mb-1" />
+              <p className="text-xs text-slate-400 font-semibold">Hata Defterine Henüz Yanlış Kaydı Girilmedi</p>
+              <p className="text-[11px] text-slate-500">Yanlış yaptığınız soruları Hata Defteri sekmesinden ekleyebilirsiniz.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Right: Top Problematic Topics Ranking (Top 5) */}
+        <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                <Activity className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">En Çok Yanlış Yapılan Konular (Top 5)</h3>
+                <p className="text-[11px] text-slate-400">Öncelikli olarak tekrar etmeniz gereken konular</p>
+              </div>
+            </div>
+            <span className="text-[10px] bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2.5 py-0.5 rounded-full font-mono font-bold">
+              Öncelikli Tekrar
+            </span>
+          </div>
+
+          {topProblematicTopics && topProblematicTopics.length > 0 ? (
+            <div className="space-y-2.5 pt-1">
+              {topProblematicTopics.map((item, idx) => {
+                const topicTitle = item.topicName || item.topic || 'Konu Belirtilmemiş';
+                const badgeLabel = idx === 0 ? '🔥 Acil Tekrar' : idx === 1 ? '💡 Kavram Kontrolü' : '⚡ Soru Pratiği';
+                const badgeColor = idx === 0 ? 'bg-rose-500/15 text-rose-400 border-rose-500/30' : idx === 1 ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' : 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30';
+
+                return (
+                  <div key={idx} className="bg-slate-950/80 border border-slate-800/80 p-3 rounded-2xl flex items-center justify-between space-x-3">
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <div className="w-7 h-7 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-xs font-black text-indigo-400 font-mono shrink-0">
+                        #{idx + 1}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] font-bold uppercase text-indigo-400 tracking-wider">
+                            {item.subject}
+                          </span>
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-semibold border ${badgeColor}`}>
+                            {badgeLabel}
+                          </span>
+                        </div>
+                        <h4 className="text-xs font-bold text-slate-200 truncate mt-0.5" title={topicTitle}>
+                          {topicTitle}
+                        </h4>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 bg-rose-500/10 border border-rose-500/20 text-rose-400 font-black text-xs px-3 py-1 rounded-xl font-mono">
+                      {item.count} Yanlış
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-12 text-center border border-dashed border-slate-800 rounded-2xl space-y-1">
+              <CheckCircle2 className="w-7 h-7 text-emerald-500 mx-auto mb-1" />
+              <p className="text-xs text-slate-400 font-semibold">Tebrikler! Belirgin Problem Konusu Yok</p>
+              <p className="text-[11px] text-slate-500">Yanlış sorularınızı girdikçe en çok aksayan konular burada sıralanır.</p>
             </div>
           )}
         </div>
 
       </div>
-
-      {/* Top Problematic Topics Ranking */}
-      {topProblematicTopics.length > 0 && (
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-800/60">
-            <div className="flex items-center space-x-2">
-              <Activity className="w-4 h-4 text-rose-500" />
-              <h3 className="text-sm font-bold text-white">En Çok Yanlış Yapılan Konular (Top 5)</h3>
-            </div>
-            <span className="text-[10px] text-rose-400 font-mono font-bold">Öncelikli Tekrar Liste</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-2.5">
-            {topProblematicTopics.map((item, idx) => (
-              <div key={idx} className="bg-slate-950 border border-slate-800 p-3 rounded-xl flex items-center justify-between md:flex-col md:items-start md:justify-between space-y-1">
-                <div>
-                  <span className="text-[10px] font-bold uppercase text-indigo-400 tracking-wider block">{item.subject}</span>
-                  <h4 className="text-xs font-bold text-slate-200 line-clamp-2 title-tooltip" title={item.topic}>
-                    {item.topic}
-                  </h4>
-                </div>
-                <div className="shrink-0 bg-rose-500/10 border border-rose-500/20 text-rose-400 font-black text-xs px-2.5 py-1 rounded-lg font-mono">
-                  {item.count} Yanlış
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
     </div>
   );

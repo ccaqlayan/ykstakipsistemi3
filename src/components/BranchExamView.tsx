@@ -1614,21 +1614,41 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     : 0;
 
   // 2. Subject Average Net Bar Chart Dataset
-  const subjectStatsMap: Record<string, { subject: string; examType: string; count: number; totalNet: number; maxNet: number }> = {};
+  const subjectStatsMap: Record<string, { 
+    subject: string; 
+    examType: string; 
+    count: number; 
+    totalNet: number; 
+    totalCorrect: number; 
+    totalWrong: number; 
+    totalEmpty: number; 
+    maxNet: number 
+  }> = {};
+
   branchExams.forEach(ex => {
     const net = parseNetVal(ex.net);
+    const c = parseNetVal(ex.correct);
+    const w = parseNetVal(ex.wrong);
+    const emp = parseNetVal(ex.empty);
+
     if (!subjectStatsMap[ex.subject]) {
       subjectStatsMap[ex.subject] = {
         subject: ex.subject,
         examType: ex.examType,
         count: 0,
         totalNet: 0,
+        totalCorrect: 0,
+        totalWrong: 0,
+        totalEmpty: 0,
         maxNet: net
       };
     }
     const curr = subjectStatsMap[ex.subject];
     curr.count += 1;
     curr.totalNet += net;
+    curr.totalCorrect += c;
+    curr.totalWrong += w;
+    curr.totalEmpty += emp;
     curr.maxNet = Math.max(curr.maxNet, net);
   });
 
@@ -1637,6 +1657,9 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     examType: s.examType,
     count: s.count,
     avgNet: Math.round((s.totalNet / s.count) * 100) / 100,
+    avgCorrect: Math.round((s.totalCorrect / s.count) * 10) / 10,
+    avgWrong: Math.round((s.totalWrong / s.count) * 10) / 10,
+    avgEmpty: Math.round((s.totalEmpty / s.count) * 10) / 10,
     maxNet: s.maxNet,
     color: SUBJECT_COLORS[s.subject] || '#6366f1'
   })).sort((a, b) => b.avgNet - a.avgNet);
@@ -1648,13 +1671,17 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     errorReasonMap[reason] = (errorReasonMap[reason] || 0) + 1;
   });
 
-  const errorReasonChartData = Object.entries(errorReasonMap).map(([reason, count]) => ({
-    reason,
-    name: ERROR_REASON_LABELS[reason as ErrorReason] || reason,
-    count,
-    percentage: totalTopicErrorsCount > 0 ? Math.round((count / totalTopicErrorsCount) * 100) : 0,
-    color: ERROR_REASON_COLORS[reason] || '#64748b'
-  })).sort((a, b) => b.count - a.count);
+  const errorReasonChartData = Object.entries(errorReasonMap).map(([reason, count]) => {
+    const labelText = ERROR_REASON_LABELS[reason as ErrorReason] || reason;
+    return {
+      reason,
+      name: labelText,
+      label: labelText,
+      count,
+      percentage: totalTopicErrorsCount > 0 ? Math.round((count / totalTopicErrorsCount) * 100) : 0,
+      color: ERROR_REASON_COLORS[reason] || '#64748b'
+    };
+  }).sort((a, b) => b.count - a.count);
 
   // 4. Top Error Topics Dataset
   const topicErrorMap: Record<string, { topicName: string; subject: string; count: number }> = {};
@@ -1671,8 +1698,13 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   });
 
   const topErrorTopicsData = Object.values(topicErrorMap)
+    .map(item => ({
+      ...item,
+      topic: item.topicName,
+      topicName: item.topicName
+    }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 6);
+    .slice(0, 5);
 
   return (
     <div className="space-y-6">
