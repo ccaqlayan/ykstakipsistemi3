@@ -1236,13 +1236,13 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
       {/* ── 5. REDESIGNED MODAL: ADD / EDIT QUESTION LOG ── */}
       {showAddModal && (
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in overflow-y-auto"
+          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}
         >
-          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 my-8 relative overflow-hidden">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col relative overflow-hidden">
             
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3.5 shrink-0">
               <div className="flex items-center space-x-2.5">
                 <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl shadow-lg shadow-emerald-500/20">
                   <CheckSquare className="w-5 h-5" />
@@ -1255,6 +1255,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setShowAddModal(false)}
                 className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
               >
@@ -1262,12 +1263,13 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Modal Body - Scrollable Container */}
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
               
               {/* Row 1: Date & Exam Type */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Tarih</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Tarih *</label>
                   <input
                     type="date"
                     required
@@ -1278,7 +1280,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Sınav Türü</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Sınav Türü *</label>
                   <select
                     value={examType}
                     onChange={(e) => {
@@ -1296,7 +1298,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
 
               {/* Row 2: Subject */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Ders Seçimi</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Ders Seçimi *</label>
                 <select
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
@@ -1308,183 +1310,169 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                 </select>
               </div>
 
-              {/* Row 3: Target & Solved Question Counts */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Hedef Soru Sayısı</label>
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="Ör: 40"
-                    value={targetCount}
-                    onChange={(e) => {
-                      const val = e.target.value === '' ? '' : Number(e.target.value);
-                      setTargetCount(val);
-                      if (solvedCount === '') setSolvedCount(val);
-                    }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-mono"
-                  />
+              {/* Row 3: Solved, Correct, Wrong, Empty Counts - Side-by-side Grid */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-200">Soru Sayıları ve Sonuçlar *</label>
+                  {/* Quick Question Count Presets */}
+                  <div className="flex items-center space-x-1 text-[10px]">
+                    <span className="text-slate-400 font-medium hidden sm:inline">Hızlı:</span>
+                    {[20, 30, 40, 50, 100].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => {
+                          setTargetCount(num);
+                          setSolvedCount(num);
+                          if (correctCount === '' && wrongCount === '') {
+                            setCorrectCount(num);
+                            setWrongCount(0);
+                            setEmptyCount(0);
+                          }
+                        }}
+                        className="px-1.5 py-0.5 rounded-lg bg-slate-950 hover:bg-indigo-600 hover:text-white border border-slate-800 text-slate-300 font-mono font-bold transition-all cursor-pointer"
+                      >
+                        +{num}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Çözülen Soru Sayısı *</label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    placeholder="Ör: 40"
-                    value={solvedCount}
-                    onChange={(e) => {
-                      const val = e.target.value === '' ? '' : Number(e.target.value);
-                      setSolvedCount(val);
-                      if (val !== '' && wrongCount !== '') {
-                        const c = correctCount === '' ? 0 : Number(correctCount);
-                        const w = Number(wrongCount);
-                        setEmptyCount(Math.max(0, Number(val) - (c + w)));
-                      }
-                    }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-mono font-bold"
-                  />
-                </div>
-              </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-bold text-indigo-300 mb-1 truncate">Çözülen *</label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      placeholder="Ör: 40"
+                      value={solvedCount}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? '' : Number(e.target.value);
+                        setSolvedCount(val);
+                        setTargetCount(val);
+                        if (val !== '' && wrongCount !== '') {
+                          const c = correctCount === '' ? 0 : Number(correctCount);
+                          const w = Number(wrongCount);
+                          setEmptyCount(Math.max(0, Number(val) - (c + w)));
+                        }
+                      }}
+                      className="w-full bg-slate-950 border border-indigo-500/50 rounded-2xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-400 transition-all font-mono font-bold"
+                    />
+                  </div>
 
-              {/* Quick Question Count Presets */}
-              <div className="flex items-center space-x-1.5 text-[11px]">
-                <span className="text-slate-400 font-medium">Hızlı Soru Adedi:</span>
-                {[20, 30, 40, 50, 100].map((num) => (
-                  <button
-                    key={num}
-                    type="button"
-                    onClick={() => {
-                      setTargetCount(num);
-                      setSolvedCount(num);
-                      if (correctCount === '' && wrongCount === '') {
-                        setCorrectCount(num);
-                        setWrongCount(0);
-                        setEmptyCount(0);
-                      }
-                    }}
-                    className="px-2 py-0.5 rounded-lg bg-slate-950 hover:bg-indigo-600 hover:text-white border border-slate-800 text-slate-300 font-mono font-bold transition-all cursor-pointer"
-                  >
-                    +{num}
-                  </button>
-                ))}
-              </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-emerald-400 mb-1 truncate">Doğru</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={correctCount}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? '' : Number(e.target.value);
+                        setCorrectCount(val);
+                        if (solvedCount !== '' && wrongCount !== '') {
+                          const s = Number(solvedCount);
+                          const c = val === '' ? 0 : Number(val);
+                          const w = Number(wrongCount);
+                          setEmptyCount(Math.max(0, s - (c + w)));
+                        }
+                      }}
+                      className="w-full bg-slate-950 border border-emerald-500/40 rounded-2xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-400 transition-all font-mono font-bold"
+                    />
+                  </div>
 
-              {/* Row 4: Correct, Wrong, Empty Counts */}
-              <div className="grid grid-cols-3 gap-3 pt-1">
-                <div>
-                  <label className="block text-xs font-bold text-emerald-400 mb-1">Doğru Sayısı</label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={correctCount}
-                    onChange={(e) => {
-                      const val = e.target.value === '' ? '' : Number(e.target.value);
-                      setCorrectCount(val);
-                      if (solvedCount !== '' && wrongCount !== '') {
-                        const s = Number(solvedCount);
-                        const c = val === '' ? 0 : Number(val);
-                        const w = Number(wrongCount);
-                        setEmptyCount(Math.max(0, s - (c + w)));
-                      }
-                    }}
-                    className="w-full bg-slate-950 border border-emerald-500/40 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-400 font-mono font-bold"
-                  />
-                </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-rose-400 mb-1 truncate">Yanlış</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={wrongCount}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? '' : Number(e.target.value);
+                        setWrongCount(val);
+                        if (val !== '' && solvedCount !== '') {
+                          const s = Number(solvedCount);
+                          const c = correctCount === '' ? 0 : Number(correctCount);
+                          const w = Number(val);
+                          setEmptyCount(Math.max(0, s - (c + w)));
+                        } else if (val === '') {
+                          setEmptyCount('');
+                        }
+                      }}
+                      className="w-full bg-slate-950 border border-rose-500/40 rounded-2xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-rose-400 transition-all font-mono font-bold"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-rose-400 mb-1">Yanlış Sayısı</label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={wrongCount}
-                    onChange={(e) => {
-                      const val = e.target.value === '' ? '' : Number(e.target.value);
-                      setWrongCount(val);
-                      if (val !== '' && solvedCount !== '') {
-                        const s = Number(solvedCount);
-                        const c = correctCount === '' ? 0 : Number(correctCount);
-                        const w = Number(val);
-                        setEmptyCount(Math.max(0, s - (c + w)));
-                      } else if (val === '') {
-                        setEmptyCount('');
-                      }
-                    }}
-                    className="w-full bg-slate-950 border border-rose-500/40 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-400 font-mono font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Boş Sayısı</label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={emptyCount}
-                    onChange={(e) => setEmptyCount(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono font-bold"
-                  />
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-400 mb-1 truncate">Boş</label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={emptyCount}
+                      onChange={(e) => setEmptyCount(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-mono font-bold"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Row 5: Duration in Minutes (YENİ ALAN!) */}
+              {/* Row 4: Duration in Minutes */}
               <div className="space-y-1.5 pt-1">
-                <label className="block text-xs font-bold text-amber-300 flex items-center space-x-1">
-                  <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span>Çözme Süresi (Dakika)</span>
-                  <span className="text-[10px] text-slate-400 font-normal ml-1">(Opsiyonel - Hız Analizi İçin)</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-amber-300 flex items-center space-x-1">
+                    <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Çözme Süresi (Dakika)</span>
+                  </label>
+                  {/* Quick Duration Presets */}
+                  <div className="flex items-center space-x-1 text-[10px]">
+                    {[15, 30, 45, 60, 90].map((mins) => (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => setDurationMinutes(mins)}
+                        className="px-1.5 py-0.5 rounded-lg bg-slate-950 hover:bg-amber-600 hover:text-white border border-slate-800 text-amber-300 font-mono font-bold transition-all cursor-pointer"
+                      >
+                        {mins}dk
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <input
                   type="number"
                   min="1"
-                  placeholder="Ör: 45 dk"
+                  placeholder="Ör: 45 dk (Opsiyonel)"
                   value={durationMinutes}
                   onChange={(e) => setDurationMinutes(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-amber-500/40 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400 font-mono font-bold"
+                  className="w-full bg-slate-950 border border-amber-500/40 rounded-2xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-400 transition-all font-mono font-bold"
                 />
-
-                {/* Quick Duration Presets */}
-                <div className="flex items-center space-x-1.5 text-[11px] pt-1">
-                  <span className="text-slate-400 font-medium">Hızlı Süre:</span>
-                  {[15, 30, 45, 60, 90].map((mins) => (
-                    <button
-                      key={mins}
-                      type="button"
-                      onClick={() => setDurationMinutes(mins)}
-                      className="px-2 py-0.5 rounded-lg bg-slate-950 hover:bg-amber-600 hover:text-white border border-slate-800 text-amber-300 font-mono font-bold transition-all cursor-pointer"
-                    >
-                      {mins} dk
-                    </button>
-                  ))}
-                </div>
               </div>
 
               {/* Real-Time Live Preview Cards */}
-              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
+              <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 grid grid-cols-3 gap-2 text-center">
                 <div>
-                  <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block">Net Skor</span>
-                  <span className="text-base font-extrabold text-indigo-300 font-mono">
+                  <span className="text-[9px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-wider block">Net Skor</span>
+                  <span className="text-sm sm:text-base font-extrabold text-indigo-300 font-mono">
                     {liveCalculatedNet} Net
                   </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block">Çözüm Hızı</span>
-                  <span className="text-base font-extrabold text-amber-300 font-mono">
+                  <span className="text-[9px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-wider block">Çözüm Hızı</span>
+                  <span className="text-sm sm:text-base font-extrabold text-amber-300 font-mono">
                     {liveSpeed ? `${liveSpeed} dk/soru` : '-'}
                   </span>
                 </div>
-                <div className="col-span-2 sm:col-span-1">
-                  <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block">Doğruluk</span>
-                  <span className="text-base font-extrabold text-emerald-400 font-mono">
+                <div>
+                  <span className="text-[9px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-wider block">Doğruluk</span>
+                  <span className="text-sm sm:text-base font-extrabold text-emerald-400 font-mono">
                     %{liveSolvedCount > 0 ? Math.round((liveCorrectCount / liveSolvedCount) * 100) : 0}
                   </span>
                 </div>
               </div>
 
-              {/* Row 6: Notes */}
+              {/* Row 5: Notes */}
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">Not (Opsiyonel)</label>
                 <input
@@ -1492,16 +1480,16 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                   placeholder="Ör: Paragrafta süreye uyuldu, soru bankası sayfa 40."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all"
                 />
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
                 >
                   İptal
                 </button>
