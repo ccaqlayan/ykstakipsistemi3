@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { ResourceItem, PastExamItem } from '../types';
 import { YKS_SUBJECTS, YKS_CURRICULUM_TOPICS } from '../data/initialData';
+import { RECOMMENDED_BOOKS, RecommendedBook } from '../data/books';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 interface ResourceTrackerViewProps {
@@ -1790,33 +1791,35 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
           className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}
         >
-          <div className="bg-slate-900/95 border border-indigo-500/30 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl shadow-indigo-950/50 space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div className="bg-slate-900/95 border border-indigo-500/30 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl shadow-indigo-950/50 space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar relative">
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
               <div className="flex items-center space-x-3">
-                <div className="p-2.5 bg-gradient-to-br from-indigo-600 to-fuchsia-600 text-white rounded-2xl shadow-md">
+                <div className="p-3 bg-gradient-to-br from-indigo-600 via-purple-600 to-fuchsia-600 text-white rounded-2xl shadow-lg shadow-indigo-600/30">
                   <BookOpenCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-white">Yeni Kaynak Kitap Ekle</h3>
+                  <h3 className="text-base font-black text-white tracking-tight">Yeni Kaynak Kitap Ekle</h3>
                   <p className="text-xs text-slate-400 font-medium">Soru bankanızı veya fasikülünüzü sisteme kaydedin</p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-white p-2 rounded-xl border border-slate-800 hover:border-slate-700 transition-all cursor-pointer"
+                className="text-slate-400 hover:text-white p-2 rounded-2xl border border-slate-800 hover:border-slate-700 transition-all cursor-pointer"
               >
                 Kapat
               </button>
             </div>
 
             <form onSubmit={handleCreateResource} className="space-y-4">
+              {/* Sınav Türü & Ders Seçimi */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-200 mb-1.5">Sınav Türü</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">Sınav Türü</label>
                   <select
                     value={examType}
                     onChange={(e) => handleExamTypeChange(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-bold cursor-pointer shadow-inner"
                   >
                     <option value="TYT">TYT</option>
                     <option value="AYT">AYT</option>
@@ -1824,11 +1827,11 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-200 mb-1.5">Ders</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">Ders</label>
                   <select
                     value={subject}
                     onChange={(e) => handleSubjectChange(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-bold cursor-pointer shadow-inner"
                   >
                     {YKS_SUBJECTS[examType].map((s) => (
                       <option key={s} value={s}>{s}</option>
@@ -1837,26 +1840,123 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-200 mb-1.5">Kitap Adı</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ör: 3D AYT Matematik Soru Bankası"
-                  value={bookTitle}
-                  onChange={(e) => setBookTitle(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
-                />
+              {/* 🔥 Popüler Önerilen Kaynaklar Çipleri */}
+              {(() => {
+                const normSub = subject.toLowerCase();
+                const matchedRecs = RECOMMENDED_BOOKS.filter(b => {
+                  const bSub = b.subject.toLowerCase();
+                  const bCat = b.category.toLowerCase();
+                  return bSub === normSub || bCat.includes(normSub) || normSub.includes(bSub);
+                });
+                const popularRecs = matchedRecs.filter(b => b.isPopular).slice(0, 6);
+                const displayRecs = popularRecs.length > 0 ? popularRecs : matchedRecs.slice(0, 6);
+
+                if (displayRecs.length === 0) return null;
+
+                return (
+                  <div className="space-y-2 bg-slate-950/70 p-3.5 rounded-2xl border border-slate-850">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-indigo-400 flex items-center space-x-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                        <span>{subject} İçin Önerilen Popüler Kaynaklar:</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-medium">Hızlı Doldur</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {displayRecs.map((rec, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            setBookTitle(rec.name);
+                            setPublisher(rec.publisher);
+                          }}
+                          className="bg-indigo-950/50 hover:bg-indigo-600/30 text-indigo-200 hover:text-white border border-indigo-500/20 hover:border-indigo-500/40 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all cursor-pointer flex items-center space-x-1"
+                        >
+                          <span>📖 {rec.publisher} - {rec.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Kitap Adı Girişi & Canlı Otomatik Tamamlama Araması */}
+              <div className="relative">
+                <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+                  <span>Kitap Adı</span>
+                  <span className="text-[10px] text-slate-500 font-normal">Otomatik Tamamlama Destekli</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ör: 3D AYT Matematik Soru Bankası"
+                    value={bookTitle}
+                    onChange={(e) => setBookTitle(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-4 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium shadow-inner"
+                  />
+                  <Search className="w-4 h-4 text-slate-500 absolute right-3.5 top-3 pointer-events-none" />
+                </div>
+
+                {/* Auto-complete Dropdown Menu */}
+                {bookTitle.trim().length >= 2 && (() => {
+                  const normSub = subject.toLowerCase();
+                  const query = bookTitle.toLowerCase().trim();
+                  const matchedRecs = RECOMMENDED_BOOKS.filter(b => {
+                    const bSub = b.subject.toLowerCase();
+                    const bCat = b.category.toLowerCase();
+                    const isSubMatch = bSub === normSub || bCat.includes(normSub) || normSub.includes(bSub);
+                    const isQueryMatch = b.name.toLowerCase().includes(query) || 
+                                         b.publisher.toLowerCase().includes(query) || 
+                                         `${b.publisher} ${b.name}`.toLowerCase().includes(query);
+                    return isSubMatch && isQueryMatch;
+                  }).slice(0, 5);
+
+                  if (matchedRecs.length === 0) return null;
+
+                  return (
+                    <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-slate-900 border border-indigo-500/40 rounded-2xl p-2 shadow-2xl space-y-1 backdrop-blur-xl animate-fade-in">
+                      <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider flex items-center justify-between">
+                        <span>Arama Önerileri</span>
+                        <span className="text-indigo-400 font-mono">{matchedRecs.length} Sonuç</span>
+                      </div>
+                      {matchedRecs.map((rec, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => {
+                            setBookTitle(rec.name);
+                            setPublisher(rec.publisher);
+                          }}
+                          className="p-2 hover:bg-indigo-950/60 rounded-xl cursor-pointer transition-all border border-transparent hover:border-indigo-500/30 flex items-center justify-between gap-2"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-white truncate">
+                              <span className="text-indigo-400 font-extrabold">{rec.publisher}</span> - {rec.name}
+                            </div>
+                            {rec.reason && (
+                              <p className="text-[10px] text-slate-400 truncate max-w-sm">{rec.reason}</p>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md font-bold shrink-0">
+                            {rec.difficulty}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
 
+              {/* Yayınevi */}
               <div>
-                <label className="block text-xs font-bold text-slate-200 mb-1.5">Yayınevi</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">Yayınevi / Yayın Adı</label>
                 <input
                   type="text"
                   placeholder="Ör: 3D Yayınları, Bilgi Sarmal, Karekök"
                   value={publisher}
                   onChange={(e) => setPublisher(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium shadow-inner"
                 />
               </div>
 
@@ -1867,13 +1967,22 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                     <label className="block text-xs font-bold text-indigo-300">
                       Şu Ana Kadar Çözülen Konular ({selectedInitialTopics.length} / {YKS_CURRICULUM_TOPICS[subject].length})
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedInitialTopics([...YKS_CURRICULUM_TOPICS[subject]])}
-                      className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold bg-indigo-500/10 px-2.5 py-0.5 rounded-lg border border-indigo-500/20"
-                    >
-                      Tümünü Seç
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedInitialTopics([...YKS_CURRICULUM_TOPICS[subject]])}
+                        className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold bg-indigo-500/10 px-2.5 py-0.5 rounded-lg border border-indigo-500/20 cursor-pointer transition-all"
+                      >
+                        Tümünü Seç
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedInitialTopics([])}
+                        className="text-[11px] text-slate-400 hover:text-white font-bold bg-slate-900 px-2.5 py-0.5 rounded-lg border border-slate-800 cursor-pointer transition-all"
+                      >
+                        Temizle
+                      </button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                     {YKS_CURRICULUM_TOPICS[subject].map((topicName) => {
@@ -1903,13 +2012,13 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-200 mb-1.5">Notlar / Hızlı Değerlendirme (Opsiyonel)</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">Notlar / Hızlı Değerlendirme (Opsiyonel)</label>
                 <input
                   type="text"
-                  placeholder="Ör: Türev testleri çözülecek..."
+                  placeholder="Ör: Türev ve İntegral testleri öncelikli çözülecek..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium shadow-inner"
                 />
               </div>
 
@@ -1923,7 +2032,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white text-xs font-bold px-6 py-2.5 rounded-2xl transition-all shadow-lg shadow-indigo-600/30 cursor-pointer border border-indigo-400/30"
+                  className="bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white text-xs font-bold px-6 py-2.5 rounded-2xl transition-all shadow-lg shadow-indigo-600/30 cursor-pointer border border-indigo-400/30"
                 >
                   Kaydet & Başlat
                 </button>
