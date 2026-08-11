@@ -495,26 +495,56 @@ router.post('/youtube/playlist', async (req, res) => {
 function predictYKSSubject(title: string = '', channelName: string = '', text: string = ''): string {
   const combined = `${title} ${channelName} ${text}`.toLowerCase();
 
-  if (combined.includes('geometri') || combined.includes('üçgen') || combined.includes('dörtgen') || combined.includes('çember') || combined.includes('analitik')) return 'AYT Geometri';
-  if (combined.includes('ayt mat') || combined.includes('türev') || combined.includes('integral') || combined.includes('limit') || combined.includes('trigonometri') || combined.includes('logaritma') || combined.includes('dizi') || combined.includes('polinom') || combined.includes('parabol') || combined.includes('eyüp b') || combined.includes('mert hoca') || combined.includes('bıyıklı mat') || combined.includes('sml hoca') || combined.includes('tunç kurt')) return 'AYT Matematik';
-  if (combined.includes('tyt mat') || combined.includes('problemler') || combined.includes('rehber matematik') || combined.includes('temel kavramlar') || combined.includes('rasyonel') || combined.includes('bölünebilme')) return 'TYT Matematik';
-  if (combined.includes('ayt fizik') || combined.includes('vip fizik') || combined.includes('özcan aykın') || combined.includes('ertan sinan') || combined.includes('altuğ güneş') || combined.includes('vektör') || combined.includes('bağıl hareket') || combined.includes('atışlar') || combined.includes('tork') || combined.includes('elektrik') || combined.includes('manyetizma') || combined.includes('dalgalar')) return 'AYT Fizik';
-  if (combined.includes('tyt fizik') || combined.includes('fizik bilimine giriş') || combined.includes('madde ve özellikleri') || combined.includes('basınç') || combined.includes('optik')) return 'TYT Fizik';
-  if (combined.includes('ayt kimya') || combined.includes('görkem şahin') || combined.includes('ferrum') || combined.includes('paraksilen') || combined.includes('gazlar') || combined.includes('sıvı çözeltiler') || combined.includes('kimyasal tepkimeler') || combined.includes('organik kimya') || combined.includes('entalpi') || combined.includes('denge')) return 'AYT Kimya';
-  if (combined.includes('tyt kimya') || combined.includes('kimya adası') || combined.includes('simya') || combined.includes('periyodik sistem') || combined.includes('kimyasal türler')) return 'TYT Kimya';
-  if (combined.includes('ayt biyoloji') || combined.includes('dr. biyoloji') || combined.includes('dr biyoloji') || combined.includes('biosem') || combined.includes('selin hoca') || combined.includes('sistemler') || combined.includes('genetik') || combined.includes('nükleik asit') || combined.includes('protein sentezi') || combined.includes('fotosentez') || combined.includes('kemosentez') || combined.includes('hücresel solunum')) return 'AYT Biyoloji';
-  if (combined.includes('tyt biyoloji') || combined.includes('funda mentals') || combined.includes('canlıların ortak özellikleri') || combined.includes('hücre') || combined.includes('kalıtım') || combined.includes('ekoloji')) return 'TYT Biyoloji';
-  if (combined.includes('edebiyat') || combined.includes('kadir gümüş') || combined.includes('deniz hoca') || combined.includes('şiir') || combined.includes('roman') || combined.includes('divan') || combined.includes('tanzimat') || combined.includes('servetifünun')) return 'AYT Edebiyat';
-  if (combined.includes('türkçe') || combined.includes('paragraf') || combined.includes('rüştü hoca') || combined.includes('aker kartal') || combined.includes('dil bilgisi') || combined.includes('yazım kuralları') || combined.includes('noktalama')) return 'TYT Türkçe';
-  if (combined.includes('tarih') || combined.includes('ramazan yetgin') || combined.includes('sadettin akyayla') || combined.includes('selami yalçın') || combined.includes('osmanlı') || combined.includes('inkılap')) return 'AYT Tarih';
-  if (combined.includes('coğrafya') || combined.includes('bayram meral') || combined.includes('yavuz tuna') || combined.includes('coğrafyanın kodları') || combined.includes('harita') || combined.includes('nüfus') || combined.includes('iklim')) return 'AYT Coğrafya';
-  if (combined.includes('felsefe')) return 'TYT Felsefe';
-  if (combined.includes('din') || combined.includes('din kültürü')) return 'TYT Din Kültürü';
+  if (combined.includes('paragraf')) return 'Paragraf';
+  if (combined.includes('edebiyat') || combined.includes('kadir gümüş') || combined.includes('deniz hoca') || combined.includes('tanzimat') || combined.includes('divan') || combined.includes('servetifünun')) return 'AYT Edebiyat';
 
-  if (combined.includes('matematik')) return 'AYT Matematik';
-  if (combined.includes('fizik')) return 'AYT Fizik';
-  if (combined.includes('kimya')) return 'AYT Kimya';
-  if (combined.includes('biyoloji')) return 'AYT Biyoloji';
+  if (combined.includes('geometri') || combined.includes('üçgen') || combined.includes('dörtgen') || combined.includes('çember') || combined.includes('analitik')) {
+    return (combined.includes('tyt') || combined.includes('9. sınıf') || combined.includes('10. sınıf')) ? 'TYT Geometri' : 'AYT Geometri';
+  }
+
+  if (combined.includes('fizik') || combined.includes('vip fizik') || combined.includes('özcan aykın') || combined.includes('ertan sinan') || combined.includes('altuğ güneş')) {
+    return (combined.includes('tyt') || combined.includes('9. sınıf') || combined.includes('10. sınıf') || combined.includes('optik') || combined.includes('basınç')) ? 'TYT Fizik' : 'AYT Fizik';
+  }
+
+  if (combined.includes('kimya') || combined.includes('görkem şahin') || combined.includes('ferrum') || combined.includes('kimya adası') || combined.includes('paraksilen')) {
+    return (combined.includes('tyt') || combined.includes('9. sınıf') || combined.includes('10. sınıf') || combined.includes('simya') || combined.includes('periyodik')) ? 'TYT Kimya' : 'AYT Kimya';
+  }
+
+  if (combined.includes('biyoloji') || combined.includes('dr. biyoloji') || combined.includes('dr biyoloji') || combined.includes('biosem') || combined.includes('selin hoca') || combined.includes('funda mentals')) {
+    return (combined.includes('tyt') || combined.includes('9. sınıf') || combined.includes('10. sınıf') || combined.includes('hücre')) ? 'TYT Biyoloji' : 'AYT Biyoloji';
+  }
+
+  if (combined.includes('türkçe') || combined.includes('turkce') || combined.includes('rüştü hoca') || combined.includes('aker kartal') || combined.includes('dil bilgisi')) {
+    return 'TYT Türkçe';
+  }
+
+  if (combined.includes('tarih') || combined.includes('ramazan yetgin') || combined.includes('sadettin akyayla') || combined.includes('selami yalçın')) {
+    if (combined.includes('tyt')) return 'TYT Tarih';
+    if (combined.includes('tarih-2') || combined.includes('tarih 2')) return 'AYT Tarih-2';
+    return 'AYT Tarih-1';
+  }
+
+  if (combined.includes('coğrafya') || combined.includes('cografya') || combined.includes('bayram meral') || combined.includes('yavuz tuna') || combined.includes('coğrafyanın kodları')) {
+    if (combined.includes('tyt')) return 'TYT Coğrafya';
+    if (combined.includes('coğrafya-2') || combined.includes('coğrafya 2')) return 'AYT Coğrafya-2';
+    return 'AYT Coğrafya-1';
+  }
+
+  if (combined.includes('felsefe')) {
+    return combined.includes('ayt') ? 'AYT Felsefe Grubu' : 'TYT Felsefe';
+  }
+
+  if (combined.includes('din')) {
+    return 'TYT Din Kültürü';
+  }
+
+  if (combined.includes('dil') || combined.includes('ingilizce')) {
+    return 'AYT Yabancı Dil';
+  }
+
+  if (combined.includes('matematik') || combined.includes('mat') || combined.includes('eyüp b') || combined.includes('mert hoca') || combined.includes('bıyıklı mat') || combined.includes('rehber matematik') || combined.includes('sml hoca') || combined.includes('tunç kurt')) {
+    return (combined.includes('tyt') || combined.includes('problem') || combined.includes('temel kavram')) ? 'TYT Matematik' : 'AYT Matematik';
+  }
 
   return 'AYT Matematik';
 }
@@ -624,13 +654,13 @@ router.post('/youtube/video-info', async (req, res) => {
         - Subject: "${detectedSubject}"
 
         CRITICAL REQUIREMENT:
-        - Identify the exact YKS Subject (e.g., "AYT Matematik", "TYT Fizik", "AYT Kimya", "TYT Biyoloji", "AYT Edebiyat", "TYT Türkçe", "AYT Tarih", "AYT Coğrafya", "TYT Geometri", "AYT Geometri").
+        - Identify the exact YKS Subject from this list ONLY: ["TYT Türkçe", "TYT Matematik", "TYT Geometri", "TYT Fizik", "TYT Kimya", "TYT Biyoloji", "TYT Tarih", "TYT Coğrafya", "TYT Felsefe", "TYT Din Kültürü", "Paragraf", "AYT Matematik", "AYT Geometri", "AYT Fizik", "AYT Kimya", "AYT Biyoloji", "AYT Edebiyat", "AYT Tarih-1", "AYT Coğrafya-1", "AYT Tarih-2", "AYT Coğrafya-2", "AYT Felsefe Grubu", "AYT Yabancı Dil"]
         
         Output MUST be ONLY a valid JSON object matching this schema:
         {
           "title": "Clean, realistic Turkish video lesson title or playlist title",
           "channelName": "Channel name or hoca name",
-          "subject": "Most appropriate YKS Subject name"
+          "subject": "Exact YKS Subject name from the list"
         }
         `;
 
@@ -650,12 +680,14 @@ router.post('/youtube/video-info', async (req, res) => {
       }
     }
 
+    const finalSubject = predictYKSSubject(title, channelName, targetUrl + ' ' + (detectedSubject || ''));
+
     res.json({
       success: true,
       title: title || 'YouTube Ders Videosu',
       channelName: channelName || 'YouTube',
       notes: '',
-      subject: detectedSubject || predictYKSSubject(title, channelName, targetUrl)
+      subject: finalSubject
     });
   } catch (err: any) {
     console.error('YouTube video-info route error:', err);

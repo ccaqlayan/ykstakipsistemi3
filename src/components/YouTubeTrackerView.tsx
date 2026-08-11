@@ -166,21 +166,58 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
 
   const predictSubjectClient = (t: string, c: string, u: string): string => {
     const combined = `${t} ${c} ${u}`.toLowerCase();
-    if (combined.includes('geometri') || combined.includes('üçgen') || combined.includes('çember')) return 'AYT Geometri';
-    if (combined.includes('ayt mat') || combined.includes('türev') || combined.includes('integral') || combined.includes('limit') || combined.includes('trigonometri') || combined.includes('eyüp b') || combined.includes('mert hoca') || combined.includes('bıyıklı mat')) return 'AYT Matematik';
-    if (combined.includes('tyt mat') || combined.includes('problemler') || combined.includes('rehber matematik')) return 'TYT Matematik';
-    if (combined.includes('ayt fizik') || combined.includes('vip fizik') || combined.includes('özcan aykın') || combined.includes('ertan sinan') || combined.includes('vektör')) return 'AYT Fizik';
-    if (combined.includes('tyt fizik') || combined.includes('optik') || combined.includes('basınç')) return 'TYT Fizik';
-    if (combined.includes('ayt kimya') || combined.includes('görkem şahin') || combined.includes('ferrum') || combined.includes('organik')) return 'AYT Kimya';
-    if (combined.includes('tyt kimya') || combined.includes('kimya adası') || combined.includes('periyodik')) return 'TYT Kimya';
-    if (combined.includes('ayt biyoloji') || combined.includes('dr. biyoloji') || combined.includes('biosem') || combined.includes('sistemler')) return 'AYT Biyoloji';
-    if (combined.includes('tyt biyoloji') || combined.includes('funda mentals') || combined.includes('hücre')) return 'TYT Biyoloji';
-    if (combined.includes('edebiyat') || combined.includes('kadir gümüş') || combined.includes('deniz hoca')) return 'AYT Edebiyat';
-    if (combined.includes('türkçe') || combined.includes('paragraf') || combined.includes('rüştü hoca')) return 'TYT Türkçe';
-    if (combined.includes('tarih') || combined.includes('ramazan yetgin')) return 'AYT Tarih';
-    if (combined.includes('coğrafya') || combined.includes('bayram meral') || combined.includes('yavuz tuna')) return 'AYT Coğrafya';
-    if (combined.includes('felsefe')) return 'TYT Felsefe';
-    if (combined.includes('din')) return 'TYT Din Kültürü';
+
+    if (combined.includes('paragraf')) return 'Paragraf';
+    if (combined.includes('edebiyat') || combined.includes('kadir gümüş') || combined.includes('deniz hoca') || combined.includes('tanzimat') || combined.includes('divan') || combined.includes('servetifünun')) return 'AYT Edebiyat';
+
+    if (combined.includes('geometri') || combined.includes('üçgen') || combined.includes('dörtgen') || combined.includes('çember') || combined.includes('analitik')) {
+      return (combined.includes('tyt') || combined.includes('9. sınıf') || combined.includes('10. sınıf')) ? 'TYT Geometri' : 'AYT Geometri';
+    }
+
+    if (combined.includes('fizik') || combined.includes('vip fizik') || combined.includes('özcan aykın') || combined.includes('ertan sinan') || combined.includes('altuğ güneş')) {
+      return (combined.includes('tyt') || combined.includes('9. sınıf') || combined.includes('10. sınıf') || combined.includes('optik') || combined.includes('basınç')) ? 'TYT Fizik' : 'AYT Fizik';
+    }
+
+    if (combined.includes('kimya') || combined.includes('görkem şahin') || combined.includes('ferrum') || combined.includes('kimya adası') || combined.includes('paraksilen')) {
+      return (combined.includes('tyt') || combined.includes('9. sınıf') || combined.includes('10. sınıf') || combined.includes('simya') || combined.includes('periyodik')) ? 'TYT Kimya' : 'AYT Kimya';
+    }
+
+    if (combined.includes('biyoloji') || combined.includes('dr. biyoloji') || combined.includes('dr biyoloji') || combined.includes('biosem') || combined.includes('selin hoca') || combined.includes('funda mentals')) {
+      return (combined.includes('tyt') || combined.includes('9. sınıf') || combined.includes('10. sınıf') || combined.includes('hücre')) ? 'TYT Biyoloji' : 'AYT Biyoloji';
+    }
+
+    if (combined.includes('türkçe') || combined.includes('turkce') || combined.includes('rüştü hoca') || combined.includes('aker kartal') || combined.includes('dil bilgisi')) {
+      return 'TYT Türkçe';
+    }
+
+    if (combined.includes('tarih') || combined.includes('ramazan yetgin') || combined.includes('sadettin akyayla') || combined.includes('selami yalçın')) {
+      if (combined.includes('tyt')) return 'TYT Tarih';
+      if (combined.includes('tarih-2') || combined.includes('tarih 2')) return 'AYT Tarih-2';
+      return 'AYT Tarih-1';
+    }
+
+    if (combined.includes('coğrafya') || combined.includes('cografya') || combined.includes('bayram meral') || combined.includes('yavuz tuna') || combined.includes('coğrafyanın kodları')) {
+      if (combined.includes('tyt')) return 'TYT Coğrafya';
+      if (combined.includes('coğrafya-2') || combined.includes('coğrafya 2')) return 'AYT Coğrafya-2';
+      return 'AYT Coğrafya-1';
+    }
+
+    if (combined.includes('felsefe')) {
+      return combined.includes('ayt') ? 'AYT Felsefe Grubu' : 'TYT Felsefe';
+    }
+
+    if (combined.includes('din')) {
+      return 'TYT Din Kültürü';
+    }
+
+    if (combined.includes('dil') || combined.includes('ingilizce')) {
+      return 'AYT Yabancı Dil';
+    }
+
+    if (combined.includes('matematik') || combined.includes('mat') || combined.includes('eyüp b') || combined.includes('mert hoca') || combined.includes('bıyıklı mat') || combined.includes('rehber matematik') || combined.includes('sml hoca') || combined.includes('tunç kurt')) {
+      return (combined.includes('tyt') || combined.includes('problem') || combined.includes('temel kavram')) ? 'TYT Matematik' : 'AYT Matematik';
+    }
+
     return 'AYT Matematik';
   };
 
@@ -201,11 +238,9 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
       if (data.success) {
         if (data.channelName) setChannelName(data.channelName);
         if (data.title) setTopicName(data.title);
-        if (data.subject) {
-          setSubject(data.subject);
-        } else {
-          setSubject(predictSubjectClient(data.title || '', data.channelName || '', videoUrl.trim()));
-        }
+        
+        const predictedSubject = predictSubjectClient(data.title || '', data.channelName || '', videoUrl.trim() + ' ' + (data.subject || ''));
+        setSubject(predictedSubject);
       } else {
         alert('Video bilgileri çekilemedi: ' + (data.error || 'Bilinmeyen hata'));
       }
