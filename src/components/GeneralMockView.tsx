@@ -3,7 +3,8 @@ import {
   TrendingUp, 
   Plus,
   Award,
-  GraduationCap
+  GraduationCap,
+  Sparkles
 } from 'lucide-react';
 import { GeneralMockExam, StudentProfile, TytDetails, AytDetails, SubSubjectScore, InstitutionalMockExam } from '../types';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
