@@ -329,26 +329,6 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                       <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                       <span>Konu İpucu</span>
                     </button>
-                    {!item.imageUrl && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenSolveModal(item)}
-                          className="px-2.5 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1"
-                        >
-                          <Brain className="w-3.5 h-3.5 text-purple-400" />
-                          <span>Çözüm Rehberi</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenSimilarModal(item)}
-                          className="px-2.5 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1"
-                        >
-                          <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>Benzer Soru Oluştur</span>
-                        </button>
-                      </>
-                    )}
                   </div>
 
                   <button

@@ -1349,17 +1349,22 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
 
   const handleOpenSolveModal = (errorItem: TopicErrorItem) => {
     if (errorItem.imageUrl) {
-      setPreviewImage({ url: errorItem.imageUrl, title: `${errorItem.subject} - ${errorItem.topicName}` });
+      openImagePreview(errorItem.imageUrl, `${errorItem.subject} - ${errorItem.topicName}`);
       setAiModalTab('solution');
-      handleSolveQuestion(errorItem.imageUrl, `${errorItem.subject} - ${errorItem.topicName}`);
+      if (!errorItem.aiSolution) {
+        handleSolveQuestion(errorItem.imageUrl, `${errorItem.subject} - ${errorItem.topicName}`);
+      }
     }
   };
 
   const handleOpenSimilarModal = (errorItem: TopicErrorItem) => {
     if (errorItem.imageUrl) {
-      setPreviewImage({ url: errorItem.imageUrl, title: `${errorItem.subject} - ${errorItem.topicName}` });
+      openImagePreview(errorItem.imageUrl, `${errorItem.subject} - ${errorItem.topicName}`);
       setAiModalTab('similar');
-      handleGenerateSimilarQuestions(errorItem.imageUrl, `${errorItem.subject} - ${errorItem.topicName}`);
+      const existingList = errorItem.similarQuestionsList || [];
+      if (existingList.length === 0) {
+        handleGenerateSimilarQuestions(errorItem.imageUrl, `${errorItem.subject} - ${errorItem.topicName}`);
+      }
     }
   };
 
