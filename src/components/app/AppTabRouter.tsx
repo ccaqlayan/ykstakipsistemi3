@@ -318,6 +318,10 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           onUpdateTaskTypes={handleUpdateTaskTypes}
           isZenMode={isZenMode}
           onZenModeChange={setIsZenMode}
+          profile={currentStudentData.profile}
+          topicErrors={currentStudentData.topicErrors}
+          generalMocks={currentStudentData.generalMocks}
+          branchExams={currentStudentData.branchExams}
         />
       )}
 

@@ -1168,4 +1168,164 @@ router.post('/model-settings', (req, res) => {
   });
 });
 
+
+// -------------------------------------------------------------
+// Çalışma Planı Yapay Zeka Görev Önerisi
+// -------------------------------------------------------------
+router.post('/suggest-study-task', async (req, res) => {
+  if (!isAiEnabledOrRespond(res)) return;
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
+  }
+
+  const {
+    profile,
+    targetDay,
+    currentWeekPlans,
+    lastWeekPlans,
+    generalMocks,
+    branchExams,
+    topicErrors,
+    questionLogs,
+    taskTypes,
+    coachDataSettings: customSettings
+  } = req.body;
+
+  const settings = customSettings || coachDataSettings;
+  const plannerSettings = settings.studyPlannerTask || { enabled: true };
+
+  try {
+    const ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+    });
+
+    let prompt = `
+Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecinde uzman bir rehber öğretmen ve çalışma planı danışmanısın.
+
+ÖĞRENCİ BİLGİLERİ:
+- Öğrenci Adı: ${profile?.name || 'Öğrenci'}
+- Alan: ${profile?.targetField || 'SAY'}
+- Hedef Üniversite/Bölüm: ${profile?.targetUniversity || ''} ${profile?.targetDepartment || ''}
+- Hedef Sıralama: ${profile?.targetRank || 5000}
+- Hedef Netler: TYT ${profile?.targetTYTNet || 100} Net, AYT ${profile?.targetAYTNet || 70} Net
+- Okul: ${profile?.highSchool || 'Anadolu Lisesi'}
+
+HEDEF GÜN: ${targetDay || 'Belirtilmedi'}
+`;
+
+    // Bu hafta mevcut görevler
+    if (currentWeekPlans && currentWeekPlans.length > 0) {
+      const summary = currentWeekPlans.map((p: any) => ({
+        gün: p.day,
+        ders: p.subject,
+        konu: p.topic,
+        süre: `${p.plannedMinutes} dk`,
+        durum: p.status
+      }));
+      prompt += `\nBU HAFTA MEVCUT PLANLANMIŞ GÖREVLER:\n${JSON.stringify(summary)}\n`;
+    } else {
+      prompt += `\nBU HAFTA HENÜZ PLANLANMIŞ GÖREV YOK.\n`;
+    }
+
+    // Geçen hafta planı
+    if (lastWeekPlans && lastWeekPlans.length > 0) {
+      const lastWeekSummary = lastWeekPlans.slice(-10).map((p: any) => ({
+        ders: p.subject,
+        konu: p.topic,
+        süre: `${p.completedMinutes || 0}/${p.plannedMinutes} dk`,
+        durum: p.status
+      }));
+      prompt += `\nGEÇEN HAFTA TAMAMLANAN GÖREVLER (referans için):\n${JSON.stringify(lastWeekSummary)}\n`;
+    }
+
+    // Deneme netleri
+    if (plannerSettings.enabled !== false && settings.generalMocks?.enabled !== false) {
+      const limit = settings.generalMocks?.limit || 3;
+      prompt += `\nSON GENEL DENEME NETLERİ:\n${JSON.stringify(summarizeMocksForPrompt(generalMocks, limit))}\n`;
+    }
+
+    // Branş denemeleri
+    if (plannerSettings.enabled !== false && settings.branchExams?.enabled !== false) {
+      const limit = settings.branchExams?.limit || 3;
+      prompt += `\nSON BRANŞ DENEMELERİ:\n${JSON.stringify(summarizeBranchExamsForPrompt(branchExams, limit))}\n`;
+    }
+
+    // Hata defteri
+    if (plannerSettings.enabled !== false && settings.topicErrors?.enabled !== false) {
+      const limit = settings.topicErrors?.limit || 8;
+      prompt += `\nEKSİK / YANLIŞ YAPILAN KONULAR:\n${JSON.stringify(summarizeErrorsForPrompt(topicErrors, limit))}\n`;
+    }
+
+    // Soru logları
+    if (plannerSettings.enabled !== false && settings.questionLogs?.enabled !== false) {
+      const limit = settings.questionLogs?.limit || 5;
+      prompt += `\nSON SORU ÇÖZÜM VERİLERİ:\n${JSON.stringify(summarizeQuestionLogsForPrompt(questionLogs, limit))}\n`;
+    }
+
+    const taskTypesList = (taskTypes || ['Konu Tekrarı', 'Soru Çözme', 'Deneme', 'Video İzle', 'Diğer']).join(', ');
+    prompt += `
+MEVCUT GÖREV TİPLERİ: ${taskTypesList}
+
+GÖREV:
+Yukarıdaki verileri analiz ederek bu öğrencinin ${targetDay || 'bugün'} için çalışma planına eklemesi gereken EN UYGUN 1 (bir) görevi öner.
+
+Dikkat edilecekler:
+- Bu hafta zaten planlı olan derslerle çakışma olsa bile, gerçekten zayıf olan bir konu varsa önceliklendir.
+- Geçen haftanın planından tamamlanmamış görevler varsa önce onları tamamlamayı öner.
+- Hata defterindeki en kritik konuya odaklan.
+- Önerilen süre 30-120 dakika arasında olmalı, 15'in katı olmalı.
+- Soru sayısı hedefi varsa 10'un katı olmalı.
+- "reason" alanında 1-2 cümle ile NEDEN bu görevi önerdiğini açıkça belirt.
+
+Yanıtın YALNIZCA geçerli bir JSON objesi olmalıdır:
+{
+  "subject": "Ders adı (örn: Matematik)",
+  "topic": "Konu adı (örn: Türev)",
+  "taskType": "Görev tipi (mevcut görev tiplerinden biri)",
+  "plannedMinutes": 60,
+  "targetQuestionCount": 40,
+  "notes": "Kısa not veya kaynak önerisi (opsiyonel, boş olabilir)",
+  "reason": "Bu görevi neden önerdiğine dair 1-2 cümle açıklama"
+}
+`;
+
+    const targetModel = featureModelConfig['AI_COACH_STUDENT'] || 'gemini-3.1-flash-lite';
+    const { response, modelUsed } = await generateContentWithFallback(ai, {
+      model: targetModel,
+      contents: prompt,
+      config: { responseMimeType: 'application/json' }
+    });
+
+    const responseText = extractResponseText(response);
+    const parsedData = JSON.parse(responseText || '{}');
+
+    const { userName, userRole, userId } = resolveUserInfo(req.body);
+
+    const usageRecord = recordApiUsage({
+      featureKey: 'STUDY_TASK_SUGGEST',
+      featureName: 'Çalışma Planı Yapay Zeka Görev Önerisi',
+      category: 'AI_COACH',
+      modelUsed,
+      promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
+      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      promptText: prompt,
+      responseText,
+      userId,
+      userName,
+      userRole
+    });
+
+    res.json({
+      success: true,
+      suggestion: parsedData,
+      aiUsage: usageRecord
+    });
+  } catch (err: any) {
+    console.error('Suggest study task error:', err);
+    res.status(500).json({ error: err.message || 'Yapay zeka görev önerisi üretilemedi.' });
+  }
+});
+
 export default router;

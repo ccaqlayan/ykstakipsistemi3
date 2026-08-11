@@ -316,7 +316,8 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
     branchExams: { enabled: true, limit: 3 },
     institutionalMocks: { enabled: true, limit: 3 },
     youtubeTracker: { enabled: true },
-    pomodoroHistory: { enabled: true, limit: 3 }
+    pomodoroHistory: { enabled: true, limit: 3 },
+    studyPlannerTask: { enabled: true }
   };
 
   const handleCoachDataToggle = (key: string, enabled: boolean) => {

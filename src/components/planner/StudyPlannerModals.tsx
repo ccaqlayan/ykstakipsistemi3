@@ -112,10 +112,13 @@ interface StudyPlannerModalsProps {
   setDeletingStep: (step: 0 | 1 | 2) => void;
   newTaskTypeValue: string;
   setNewTaskTypeValue: (val: string) => void;
-  handleEditTaskType: (index: number) => void;
-  handleDeleteTaskType: (index: number) => void;
   handleAddTaskType: () => void;
   onUpdateTaskTypes?: (taskTypes: string[], actionText?: string) => void;
+  handleAiSuggestTask?: () => void;
+  aiSuggestLoading?: boolean;
+  aiSuggestError?: string | null;
+  aiSuggestReason?: string | null;
+  coachDataSettings?: any;
 }
 
 export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
@@ -202,7 +205,12 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
   handleEditTaskType,
   handleDeleteTaskType,
   handleAddTaskType,
-  onUpdateTaskTypes
+  onUpdateTaskTypes,
+  handleAiSuggestTask,
+  aiSuggestLoading = false,
+  aiSuggestError = null,
+  aiSuggestReason = null,
+  coachDataSettings
 }) => {
   return (
     <>
@@ -352,25 +360,67 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
                 </div>
               )}
 
-              <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-xs text-slate-400 hover:text-white"
-                >
-                  İptal
-                </button>
-                <button
-                  type="submit"
-                  disabled={!subject || !topic.trim()}
-                  className={`text-xs font-bold px-5 py-2.5 rounded-xl transition-all shadow-lg ${
-                    subject && topic.trim()
-                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 cursor-pointer'
-                      : 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                  }`}
-                >
-                  Kaydet ve Ekle
-                </button>
+              {aiSuggestReason && (
+                <div className="p-3 bg-gradient-to-r from-purple-950/70 to-indigo-950/70 border border-purple-500/30 rounded-2xl text-xs space-y-1 animate-fade-in shadow-lg">
+                  <div className="flex items-center space-x-1.5 font-bold text-purple-300">
+                    <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+                    <span>Yapay Zeka Görev Öneri Gerekçesi</span>
+                  </div>
+                  <p className="text-slate-300 leading-relaxed text-[11px]">
+                    {aiSuggestReason}
+                  </p>
+                </div>
+              )}
+
+              {aiSuggestError && (
+                <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-xs text-rose-300 flex items-center space-x-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{aiSuggestError}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-800 gap-2">
+                <div>
+                  {handleAiSuggestTask && (
+                    <button
+                      type="button"
+                      onClick={handleAiSuggestTask}
+                      disabled={aiSuggestLoading || coachDataSettings?.studyPlannerTask?.enabled === false}
+                      title={coachDataSettings?.studyPlannerTask?.enabled === false ? "Yapay Zeka Görev Önerisi sistem ayarlarından kapatılmıştır" : "Öğrenci verilerini analiz ederek en uygun görevi önerir"}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer shadow-md ${
+                        coachDataSettings?.studyPlannerTask?.enabled === false
+                          ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+                          : aiSuggestLoading
+                            ? 'bg-purple-900/60 text-purple-200 border border-purple-500/40 animate-pulse'
+                            : 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white border border-purple-400/30 shadow-purple-600/20'
+                      }`}
+                    >
+                      <Sparkles className={`w-3.5 h-3.5 ${aiSuggestLoading ? 'animate-spin text-purple-300' : 'text-purple-200'}`} />
+                      <span>{aiSuggestLoading ? 'Öneri Hazırlanıyor...' : 'Yapay Zeka Önersin'}</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-4 py-2 text-xs text-slate-400 hover:text-white"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!subject || !topic.trim()}
+                    className={`text-xs font-bold px-5 py-2.5 rounded-xl transition-all shadow-lg ${
+                      subject && topic.trim()
+                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 cursor-pointer'
+                        : 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                    }`}
+                  >
+                    Kaydet ve Ekle
+                  </button>
+                </div>
               </div>
             </form>
           </div>

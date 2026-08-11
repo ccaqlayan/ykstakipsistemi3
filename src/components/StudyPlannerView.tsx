@@ -79,6 +79,12 @@ interface StudyPlannerViewProps {
   onUpdateTaskTypes?: (taskTypes: string[], actionText?: string) => void;
   isZenMode?: boolean;
   onZenModeChange?: (isZen: boolean) => void;
+  // AI suggest props
+  profile?: any;
+  topicErrors?: any[];
+  generalMocks?: any[];
+  branchExams?: any[];
+  coachDataSettings?: any;
 }
 
 const DAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
@@ -320,7 +326,12 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   taskTypes,
   onUpdateTaskTypes,
   isZenMode = false,
-  onZenModeChange
+  onZenModeChange,
+  profile,
+  topicErrors,
+  generalMocks,
+  branchExams,
+  coachDataSettings
 }) => {
   const today = getTodayName();
   const [viewMode, setViewMode] = useState<'board' | 'daily' | 'stats'>('daily');
@@ -910,6 +921,59 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     setQuestionPromptNotes('');
   };
 
+  // AI Task Suggestion State
+  const [aiSuggestLoading, setAiSuggestLoading] = useState<boolean>(false);
+  const [aiSuggestError, setAiSuggestError] = useState<string | null>(null);
+  const [aiSuggestReason, setAiSuggestReason] = useState<string | null>(null);
+
+  const handleAiSuggestTask = async () => {
+    setAiSuggestLoading(true);
+    setAiSuggestError(null);
+    setAiSuggestReason(null);
+    try {
+      const currentWeekPlans = studyPlans.filter(p => !p.archived);
+      const lastWeekLabel = formatWeekLabelWithYear(addWeeks(selectedMondayDate, -1));
+      const lastWeekPlans = getPlansForWeek(lastWeekLabel);
+
+      const res = await fetch('/api/gemini/suggest-study-task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profile,
+          targetDay: targetDayForAdd,
+          currentWeekPlans,
+          lastWeekPlans,
+          generalMocks,
+          branchExams,
+          topicErrors,
+          questionLogs,
+          taskTypes: actualTaskTypes,
+          coachDataSettings
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Yapay zeka görev önerisi alınamadı.');
+      }
+
+      const { subject: sugSubject, topic: sugTopic, taskType: sugTaskType, plannedMinutes: sugMins, targetQuestionCount: sugCount, notes: sugNotes, reason: sugReason } = data.suggestion || {};
+
+      if (sugSubject) setSubject(sugSubject);
+      if (sugTopic) setTopic(sugTopic);
+      if (sugTaskType && actualTaskTypes.includes(sugTaskType)) setTaskType(sugTaskType);
+      if (sugMins) setPlannedMinutes(Number(sugMins) || 60);
+      if (sugCount !== undefined && sugCount !== '') setTargetQuestionCount(Number(sugCount) || '');
+      if (sugNotes) setNotes(sugNotes);
+      if (sugReason) setAiSuggestReason(sugReason);
+    } catch (err: any) {
+      console.error('AI Task Suggest error:', err);
+      setAiSuggestError(err.message || 'Görev önerisi alınırken bir hata oluştu.');
+    } finally {
+      setAiSuggestLoading(false);
+    }
+  };
+
   // Open add modal
   const openAddModal = (day?: DayOfWeek) => {
     if (day) setTargetDayForAdd(day);
@@ -920,6 +984,9 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     setPlannedMinutes(60);
     setTargetQuestionCount('');
     setTaskType(actualTaskTypes[0]);
+    setAiSuggestError(null);
+    setAiSuggestReason(null);
+    setAiSuggestLoading(false);
     setShowAddModal(true);
   };
 
@@ -948,6 +1015,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     setTopic('');
     setNotes('');
     setTargetQuestionCount('');
+    setAiSuggestError(null);
+    setAiSuggestReason(null);
     setShowAddModal(false);
   };
 
@@ -1845,6 +1914,11 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         handleEditTaskType={handleEditTaskType}
         handleDeleteTaskType={handleDeleteTaskType}
         handleAddTaskType={handleAddTaskType}
+        handleAiSuggestTask={handleAiSuggestTask}
+        aiSuggestLoading={aiSuggestLoading}
+        aiSuggestError={aiSuggestError}
+        aiSuggestReason={aiSuggestReason}
+        coachDataSettings={coachDataSettings}
       />
     </div>
   );
