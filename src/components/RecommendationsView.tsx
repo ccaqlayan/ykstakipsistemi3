@@ -165,7 +165,17 @@ const SUBJECT_COLORS: Record<string, { bg: string, text: string, border: string 
   'Biyoloji': { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20' },
   'Tarih': { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/20' },
   'Coğrafya': { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/20' },
-  'Felsefe': { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20' },
+};
+
+const getChannelAvatar = (channel: RecommendedChannel): string | null => {
+  if (channel.avatarUrl) return channel.avatarUrl;
+  if (channel.url) {
+    const handleMatch = channel.url.match(/@([\w.-]+)/);
+    if (handleMatch && handleMatch[1]) {
+      return `https://unavatar.io/youtube/${handleMatch[1]}`;
+    }
+  }
+  return null;
 };
 
 export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
@@ -786,9 +796,44 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                           </span>
                         </td>
                         <td className="py-3.5 px-4 font-semibold text-white group-hover:text-red-400 transition-colors">
-                          <div className="flex items-center space-x-2">
-                            <Youtube className="w-4 h-4 text-red-500 shrink-0" />
-                            <span>{channel.name}</span>
+                          <div className="flex items-center space-x-3">
+                            <a
+                              href={channel.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-9 h-9 rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shrink-0 relative flex items-center justify-center shadow-md group-hover:scale-105 transition-transform"
+                              title={`${channel.name} kanalına git`}
+                            >
+                              {(() => {
+                                const avatarSrc = getChannelAvatar(channel);
+                                return (
+                                  <>
+                                    {avatarSrc && (
+                                      <img
+                                        src={avatarSrc}
+                                        alt={channel.name}
+                                        referrerPolicy="no-referrer"
+                                        className="w-full h-full object-cover relative z-10"
+                                        onError={(e) => {
+                                          (e.currentTarget as HTMLElement).style.display = 'none';
+                                        }}
+                                      />
+                                    )}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-red-900/80 to-rose-950/90 flex items-center justify-center text-red-400 font-bold text-xs z-0">
+                                      <Youtube className="w-4 h-4 text-red-500" />
+                                    </div>
+                                  </>
+                                );
+                              })()}
+                            </a>
+                            <a
+                              href={channel.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-bold text-xs text-white hover:text-red-400 transition-colors truncate"
+                            >
+                              {channel.name}
+                            </a>
                           </div>
                         </td>
                         <td className="py-3.5 px-4 text-right font-medium text-slate-200">
