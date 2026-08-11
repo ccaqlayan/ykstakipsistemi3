@@ -244,6 +244,10 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
     const responseText = response.text || '{}';
     const parsedData = JSON.parse(responseText);
 
+    const userName = req.body.userName || req.body.profile?.name || 'Öğrenci';
+    const userRole = req.body.userRole || req.body.profile?.role || 'Öğrenci';
+    const userId = req.body.userId || req.body.profile?.id || '';
+
     const usageRecord = recordApiUsage({
       featureKey: 'AI_COACH_STUDENT',
       featureName: 'Öğrenci Bireysel Yapay Zeka Koç Tavsiyesi',
@@ -251,7 +255,11 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
       candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
-      promptText: prompt
+      promptText: prompt,
+      responseText,
+      userId,
+      userName,
+      userRole
     });
 
     res.json({
@@ -324,6 +332,10 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
     const responseText = response.text || '{}';
     const parsedData = JSON.parse(responseText);
 
+    const userName = req.body.userName || req.body.teacherName || 'Öğretmen / Rehberlik';
+    const userRole = req.body.userRole || 'Öğretmen';
+    const userId = req.body.userId || '';
+
     const usageRecord = recordApiUsage({
       featureKey: 'AI_COACH_CLASS',
       featureName: 'Sınıf / Okul Genel Koç Analizi',
@@ -331,7 +343,11 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
       candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
-      promptText: prompt
+      promptText: prompt,
+      responseText,
+      userId,
+      userName,
+      userRole
     });
 
     res.json({
@@ -403,6 +419,10 @@ Lütfen bu verileri detaylıca analiz et ve sonucu YALNIZCA geçerli bir JSON ob
     const responseText = response.text || '{}';
     const parsedData = JSON.parse(responseText);
 
+    const userName = req.body.userName || req.body.profile?.name || 'Sistem Kullanıcısı';
+    const userRole = req.body.userRole || 'Öğrenci';
+    const userId = req.body.userId || '';
+
     const usageRecord = recordApiUsage({
       featureKey: 'ERROR_PRIORITY',
       featureName: 'Öncelikli Hata Konuları Analizi',
@@ -410,7 +430,11 @@ Lütfen bu verileri detaylıca analiz et ve sonucu YALNIZCA geçerli bir JSON ob
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
       candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
-      promptText: prompt
+      promptText: prompt,
+      responseText,
+      userId,
+      userName,
+      userRole
     });
 
     res.json({
@@ -474,6 +498,10 @@ Lütfen yanıtını doğrudan öğrenciye hitap eden bir tonda yaz ve YALNIZCA g
     const responseText = response.text || '{}';
     const parsedData = JSON.parse(responseText);
 
+    const userName = req.body.userName || req.body.profile?.name || 'Sistem Kullanıcısı';
+    const userRole = req.body.userRole || 'Öğrenci';
+    const userId = req.body.userId || '';
+
     const usageRecord = recordApiUsage({
       featureKey: 'TOPIC_TIPS',
       featureName: 'Konu Bazlı Pratik Taktikler',
@@ -481,7 +509,11 @@ Lütfen yanıtını doğrudan öğrenciye hitap eden bir tonda yaz ve YALNIZCA g
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
       candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
-      promptText: prompt
+      promptText: prompt,
+      responseText,
+      userId,
+      userName,
+      userRole
     });
 
     res.json({
@@ -582,6 +614,10 @@ ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, 
 
     const responseText = response.text || '';
 
+    const userName = req.body.userName || req.body.profile?.name || 'Sistem Kullanıcısı';
+    const userRole = req.body.userRole || 'Öğrenci';
+    const userId = req.body.userId || '';
+
     const promptSummary = solutionText || existingAnalysis || `Hata Defteri Soru Görsel Çözüm Analizi (${subject || ''} - ${topicName || ''})`;
     const usageRecord = recordApiUsage({
       featureKey: 'SOLVE_QUESTION',
@@ -590,7 +626,11 @@ ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, 
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || 2000,
       candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
-      promptText: promptSummary
+      promptText: promptSummary,
+      responseText,
+      userId,
+      userName,
+      userRole
     });
 
     res.json({
@@ -710,6 +750,10 @@ Kesinlikle selamlaşma, "İşte senin için soru", "Başarılar dilerim" gibi hi
       };
     }
 
+    const userName = req.body.userName || req.body.profile?.name || 'Sistem Kullanıcısı';
+    const userRole = req.body.userRole || 'Öğrenci';
+    const userId = req.body.userId || '';
+
     const promptSummary = solutionText || existingAnalysis || `Benzer Soru Üretimi Promptu (${subject || ''} - ${topicName || ''})`;
     const usageRecord = recordApiUsage({
       featureKey: 'SIMILAR_QUESTION',
@@ -718,7 +762,11 @@ Kesinlikle selamlaşma, "İşte senin için soru", "Başarılar dilerim" gibi hi
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || 1800,
       candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
-      promptText: promptSummary
+      promptText: promptSummary,
+      responseText,
+      userId,
+      userName,
+      userRole
     });
 
     res.json({
@@ -835,6 +883,10 @@ BİÇİMLENDİRME:
 
     const responseText = response.text || '';
 
+    const userName = req.body.userName || req.body.profile?.name || 'Sistem Kullanıcısı';
+    const userRole = req.body.userRole || 'Öğrenci';
+    const userId = req.body.userId || '';
+
     const promptSummary = solutionText || existingAnalysis || `Detaylı Soru & Çeldirici Analizi Promptu (${subject || ''} - ${topicName || ''})`;
     const usageRecord = recordApiUsage({
       featureKey: 'QUESTION_ANALYSIS',
@@ -843,7 +895,11 @@ BİÇİMLENDİRME:
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || 2100,
       candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
-      promptText: promptSummary
+      promptText: promptSummary,
+      responseText,
+      userId,
+      userName,
+      userRole
     });
 
     res.json({

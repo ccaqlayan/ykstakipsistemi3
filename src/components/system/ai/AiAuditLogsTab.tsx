@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, FileText, Copy, Check, X, Eye } from 'lucide-react';
+import { Activity, FileText, Copy, Check, X, Eye, User, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { ApiUsageLog, UsageStatsResponse } from '../SystemTypes';
 
 interface AiAuditLogsTabProps {
@@ -20,6 +20,7 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
   itemsPerPage
 }) => {
   const [selectedLog, setSelectedLog] = useState<ApiUsageLog | null>(null);
+  const [modalTab, setModalTab] = useState<'input' | 'output'>('input');
   const [copied, setCopied] = useState<boolean>(false);
 
   const filteredLogs = (stats?.recentLogs || []).filter(log => {
@@ -32,7 +33,8 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentLogs = filteredLogs.slice(indexOfFirstItem, indexOfLastItem);
 
-  const handleCopyPrompt = (text: string) => {
+  const handleCopyText = (text?: string) => {
+    if (!text) return;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -86,9 +88,10 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
             <thead>
               <tr className="border-b border-white/10 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                 <th className="pb-2">Tarih / Saat</th>
+                <th className="pb-2">Kullanıcı / Rol</th>
                 <th className="pb-2">Özellik / Süreç</th>
-                <th className="pb-2">Kullanılan Model</th>
-                <th className="pb-2 text-center">Prompt Metni</th>
+                <th className="pb-2">Model</th>
+                <th className="pb-2 text-center">İçerik (Girdi / Çıktı)</th>
                 <th className="pb-2 text-right">Girdi / Çıktı Token</th>
                 <th className="pb-2 text-right">Toplam Token</th>
                 <th className="pb-2 text-right">Tahmini Tutar</th>
@@ -97,7 +100,7 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
             <tbody className="divide-y divide-white/5 font-medium">
               {currentLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500 italic">
+                  <td colSpan={8} className="py-8 text-center text-slate-500 italic">
                     Henüz seçilen kategoride kaydedilmiş bir işlem bulunmuyor.
                   </td>
                 </tr>
@@ -112,6 +115,21 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
                         minute: '2-digit'
                       })}
                     </td>
+                    <td className="py-2.5 whitespace-nowrap">
+                      <div className="flex items-center space-x-1.5">
+                        <div className="p-1 bg-slate-800 rounded text-slate-300">
+                          <User className="w-3 h-3 text-indigo-400" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-white text-[11px]">
+                            {log.userName || 'Sistem / Anonim'}
+                          </span>
+                          <span className="text-[9px] text-slate-400">
+                            {log.userRole || 'Öğrenci'}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
                     <td className="py-2.5 font-semibold text-white">
                       {log.featureName}
                     </td>
@@ -124,19 +142,19 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
                         {log.modelUsed}
                       </span>
                     </td>
-                    <td className="py-2.5 text-center">
-                      {log.promptText ? (
+                    <td className="py-2.5 text-center whitespace-nowrap">
+                      {log.promptText || log.responseText ? (
                         <button
                           type="button"
-                          onClick={() => setSelectedLog(log)}
+                          onClick={() => { setSelectedLog(log); setModalTab('input'); }}
                           className="px-2.5 py-1 bg-indigo-600/30 hover:bg-indigo-600/60 text-indigo-300 hover:text-white rounded-lg border border-indigo-500/40 text-[11px] font-bold transition-all cursor-pointer inline-flex items-center space-x-1 shadow-sm"
                         >
                           <Eye className="w-3 h-3 text-indigo-400" />
-                          <span>Prompt Metni</span>
+                          <span>Girdi / Çıktı Gör</span>
                         </button>
                       ) : (
-                        <span className="text-[10px] text-slate-500 italic px-2 py-0.5 rounded bg-slate-950 border border-slate-800/60" title="Bu istek yapılırken prompt loglama henüz aktif değildi. Ayarlardan aktif edildikten sonra atılan tüm yeni isteklerin promptları kaydedilir.">
-                          Ayar Kapalıyken Atıldı
+                        <span className="text-[10px] text-slate-500 italic px-2 py-0.5 rounded bg-slate-950 border border-slate-800/60" title="Bu istek yapılırken prompt loglama henüz aktif değildi.">
+                          Log Kapalıydı
                         </span>
                       )}
                     </td>
@@ -204,10 +222,10 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
         )}
       </div>
 
-      {/* PROMPT VIEW MODAL */}
-      {selectedLog && selectedLog.promptText && (
+      {/* PROMPT & RESPONSE VIEW MODAL WITH TABS & TOKEN STATS */}
+      {selectedLog && (selectedLog.promptText || selectedLog.responseText) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-          <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-3xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+          <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-4xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
               <div className="flex items-center space-x-3">
@@ -216,13 +234,13 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-base flex items-center gap-2">
-                    <span>Yapay Zekaya Gönderilen Ham Prompt Metni</span>
+                    <span>Yapay Zeka İstek & Yanıt Detayı</span>
                     <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded font-mono font-bold border border-indigo-500/30">
                       {selectedLog.modelUsed}
                     </span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    {selectedLog.featureName} • {new Date(selectedLog.timestamp).toLocaleString('tr-TR')}
+                    <strong className="text-indigo-300">{selectedLog.userName || 'Kullanıcı'}</strong> ({selectedLog.userRole || 'Öğrenci'}) • {selectedLog.featureName} • {new Date(selectedLog.timestamp).toLocaleString('tr-TR')}
                   </p>
                 </div>
               </div>
@@ -236,26 +254,104 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
               </button>
             </div>
 
-            {/* Modal Body: Code/Mono Text Container */}
-            <div className="flex-1 overflow-y-auto min-h-0 bg-slate-950 p-4 rounded-2xl border border-slate-800/80 space-y-2">
-              <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono pb-2 border-b border-slate-800">
-                <span>Girdi Token: {selectedLog.promptTokens} | Çıktı Token: {selectedLog.candidatesTokens}</span>
-                <span>Tutar: ₺{selectedLog.estimatedCostTRY.toFixed(4)}</span>
+            {/* Token & Cost Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-950 p-3 rounded-2xl border border-slate-800 text-xs shrink-0">
+              <div className="flex items-center space-x-2">
+                <ArrowDownLeft className="w-4 h-4 text-blue-400 shrink-0" />
+                <div>
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Girdi (Prompt)</div>
+                  <div className="font-mono font-bold text-blue-300">{selectedLog.promptTokens.toLocaleString('tr-TR')} Token</div>
+                </div>
               </div>
-              <pre className="text-xs font-mono text-indigo-200 whitespace-pre-wrap leading-relaxed select-all">
-                {selectedLog.promptText}
-              </pre>
+              <div className="flex items-center space-x-2">
+                <ArrowUpRight className="w-4 h-4 text-emerald-400 shrink-0" />
+                <div>
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Çıktı (AI Yanıtı)</div>
+                  <div className="font-mono font-bold text-emerald-300">{selectedLog.candidatesTokens.toLocaleString('tr-TR')} Token</div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Activity className="w-4 h-4 text-indigo-400 shrink-0" />
+                <div>
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Toplam Token</div>
+                  <div className="font-mono font-bold text-white">{selectedLog.totalTokens.toLocaleString('tr-TR')} Token</div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="text-emerald-400 font-bold text-sm shrink-0">₺</div>
+                <div>
+                  <div className="text-[10px] text-slate-400 uppercase font-bold">Tahmini Maliyet</div>
+                  <div className="font-mono font-bold text-emerald-400">₺{selectedLog.estimatedCostTRY.toFixed(4)}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tab Buttons: Input vs Output */}
+            <div className="flex items-center space-x-2 border-b border-slate-800 pb-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setModalTab('input')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
+                  modalTab === 'input'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 border border-blue-400/40'
+                    : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                <ArrowDownLeft className="w-3.5 h-3.5" />
+                <span>📥 Girdi (Gönderilen Prompt)</span>
+                <span className="text-[10px] font-mono opacity-80">({selectedLog.promptTokens} Token)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setModalTab('output')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
+                  modalTab === 'output'
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 border border-emerald-400/40'
+                    : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                <ArrowUpRight className="w-3.5 h-3.5" />
+                <span>📤 Çıktı (AI Yanıtı)</span>
+                <span className="text-[10px] font-mono opacity-80">({selectedLog.candidatesTokens} Token)</span>
+              </button>
+            </div>
+
+            {/* Modal Content Body */}
+            <div className="flex-1 overflow-y-auto min-h-0 bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
+              {modalTab === 'input' ? (
+                selectedLog.promptText ? (
+                  <pre className="text-xs font-mono text-blue-200 whitespace-pre-wrap leading-relaxed select-all">
+                    {selectedLog.promptText}
+                  </pre>
+                ) : (
+                  <div className="py-12 text-center text-slate-500 italic">
+                    Bu istek yapılırken prompt metni günlüğe kaydedilmemişti.
+                  </div>
+                )
+              ) : (
+                selectedLog.responseText ? (
+                  <pre className="text-xs font-mono text-emerald-200 whitespace-pre-wrap leading-relaxed select-all">
+                    {selectedLog.responseText}
+                  </pre>
+                ) : (
+                  <div className="py-12 text-center text-slate-500 italic">
+                    Bu istek yapılırken AI yanıt metni günlüğe kaydedilmemişti.
+                  </div>
+                )
+              )}
             </div>
 
             {/* Modal Footer */}
             <div className="flex items-center justify-between pt-2 shrink-0">
               <button
                 type="button"
-                onClick={() => handleCopyPrompt(selectedLog.promptText || '')}
-                className="px-4 py-2 bg-indigo-600/30 hover:bg-indigo-600/60 text-indigo-200 font-bold text-xs rounded-xl border border-indigo-500/40 transition-all flex items-center space-x-1.5 cursor-pointer"
+                onClick={() => handleCopyText(modalTab === 'input' ? selectedLog.promptText : selectedLog.responseText)}
+                disabled={modalTab === 'input' ? !selectedLog.promptText : !selectedLog.responseText}
+                className="px-4 py-2 bg-indigo-600/30 hover:bg-indigo-600/60 disabled:opacity-40 text-indigo-200 font-bold text-xs rounded-xl border border-indigo-500/40 transition-all flex items-center space-x-1.5 cursor-pointer"
               >
                 {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                <span>{copied ? 'Kopyalandı!' : 'Prompt Metnini Kopyala'}</span>
+                <span>{copied ? 'Kopyalandı!' : modalTab === 'input' ? 'Prompt Metnini Kopyala' : 'AI Yanıtını Kopyala'}</span>
               </button>
 
               <button

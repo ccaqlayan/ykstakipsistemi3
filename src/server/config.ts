@@ -70,6 +70,10 @@ export interface ApiUsageRecord {
   estimatedCostUSD: number;
   estimatedCostTRY: number;
   promptText?: string;
+  responseText?: string;
+  userId?: string;
+  userName?: string;
+  userRole?: string;
 }
 
 export let apiUsageLogsStore: ApiUsageRecord[] = [];
@@ -157,6 +161,10 @@ export function recordApiUsage(params: {
   promptTokens: number;
   candidatesTokens: number;
   promptText?: string;
+  responseText?: string;
+  userId?: string;
+  userName?: string;
+  userRole?: string;
 }) {
   const model = params.modelUsed.toLowerCase();
 
@@ -202,7 +210,11 @@ export function recordApiUsage(params: {
     totalTokens: params.promptTokens + params.candidatesTokens,
     estimatedCostUSD,
     estimatedCostTRY,
-    promptText: savePromptLogs ? (params.promptText || undefined) : undefined
+    promptText: savePromptLogs ? (params.promptText || undefined) : undefined,
+    responseText: savePromptLogs ? (params.responseText || undefined) : undefined,
+    userId: params.userId || undefined,
+    userName: params.userName || undefined,
+    userRole: params.userRole || undefined
   };
 
   apiUsageLogsStore.unshift(record);

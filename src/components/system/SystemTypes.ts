@@ -49,6 +49,10 @@ export interface ApiUsageLog {
   estimatedCostUSD: number;
   estimatedCostTRY: number;
   promptText?: string;
+  responseText?: string;
+  userId?: string;
+  userName?: string;
+  userRole?: string;
 }
 
 export interface UsageStatsResponse {
