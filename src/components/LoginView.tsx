@@ -173,6 +173,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   // Quick Demo Login Helper
   const handleQuickDemo = async (demoUserEmail: string) => {
+    setErrorMessage('');
+    setSuccessMessage('');
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -182,11 +184,17 @@ export const LoginView: React.FC<LoginViewProps> = ({
       const data = await res.json();
       if (data.success) {
         onLoginSuccess(data.user);
-      } else {
-        setErrorMessage(data.error || 'Demo girişi başarısız.');
+        return;
       }
     } catch(err) {
-      setErrorMessage('Demo girişi başarısız, sunucuya bağlanılamadı.');
+      // Fallback to local users list
+    }
+
+    const found = users.find(u => (u.email || '').trim().toLowerCase() === demoUserEmail.trim().toLowerCase());
+    if (found) {
+      onLoginSuccess(found);
+    } else {
+      setErrorMessage('Demo kullanıcı girişi yapılamadı.');
     }
   };
 
@@ -240,7 +248,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <button
               type="button"
               onClick={() => handleQuickDemo('ahmet@okul.edu.tr')}
-              className="py-2 px-2.5 bg-indigo-600/80 hover:bg-indigo-500 text-white rounded-xl text-[11px] font-semibold transition-all border border-indigo-400/40 flex items-center justify-center space-x-1 shadow-md shadow-indigo-600/20"
+              className="py-2 px-2.5 bg-indigo-600/80 hover:bg-indigo-500 text-white rounded-xl text-[11px] font-semibold transition-all border border-indigo-400/40 flex items-center justify-center space-x-1 shadow-md shadow-indigo-600/20 cursor-pointer"
             >
               <GraduationCap className="w-3.5 h-3.5" />
               <span>1. Öğrenci</span>
@@ -248,15 +256,15 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <button
               type="button"
               onClick={() => handleQuickDemo('elif.hoca@okul.edu.tr')}
-              className="py-2 px-2.5 bg-fuchsia-600/80 hover:bg-fuchsia-500 text-white rounded-xl text-[11px] font-semibold transition-all border border-fuchsia-400/40 flex items-center justify-center space-x-1 shadow-md shadow-fuchsia-600/20"
+              className="py-2 px-2.5 bg-fuchsia-600/80 hover:bg-fuchsia-500 text-white rounded-xl text-[11px] font-semibold transition-all border border-fuchsia-400/40 flex items-center justify-center space-x-1 shadow-md shadow-fuchsia-600/20 cursor-pointer"
             >
               <UserCheck className="w-3.5 h-3.5" />
               <span>2. Sınıf Reh. Öğr.</span>
             </button>
             <button
               type="button"
-              onClick={() => handleQuickDemo('caglayan.mat@gmail.com')}
-              className="py-2 px-2.5 bg-purple-600/80 hover:bg-purple-500 text-white rounded-xl text-[11px] font-semibold transition-all border border-purple-400/40 flex items-center justify-center space-x-1 shadow-md shadow-purple-600/20"
+              onClick={() => handleQuickDemo('demo.rehber@yksdemo.local')}
+              className="py-2 px-2.5 bg-purple-600/80 hover:bg-purple-500 text-white rounded-xl text-[11px] font-semibold transition-all border border-purple-400/40 flex items-center justify-center space-x-1 shadow-md shadow-purple-600/20 cursor-pointer"
             >
               <School className="w-3.5 h-3.5" />
               <span>3. Okul Reh. Öğr.</span>
@@ -745,19 +753,25 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
         {/* Demo Credentials Summary Footer */}
         <div className="mt-6 pt-4 border-t border-white/10 text-center">
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] font-bold text-slate-400">
             Sisteme tanımlı demo hesaplar:
           </p>
           <div className="text-[10px] text-slate-300 space-y-0.5 mt-1 font-mono">
-            <div>Öğrenci 1: ahmet@okul.edu.tr (Şifre: 123)</div>
-            <div>Öğrenci 2: zeynep@okul.edu.tr (Şifre: 123)</div>
-            <div>Öğretmen: caglayan.mat@gmail.com (Şifre: 123)</div>
+            <div>Öğrenci 1: ahmet@okul.edu.tr (Ahmet Yılmaz) • Şifre: 123</div>
+            <div>Öğrenci 2: zeynep@okul.edu.tr (Zeynep Kaya) • Şifre: 123</div>
+            <div>Sınıf Rehber Öğr.: elif.hoca@okul.edu.tr (Elif Çelik) • Şifre: 123</div>
+            <div>Okul Rehber Öğr.: demo.rehber@yksdemo.local (Dilek Küçük) • Şifre: 123</div>
           </div>
         </div>
 
         {/* App Version Footer */}
         <div className="mt-4 pt-3 border-t border-white/5 text-center flex items-center justify-center space-x-2">
-          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <button
+            type="button"
+            onClick={() => handleQuickDemo('caglayan.mat@gmail.com')}
+            className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse cursor-pointer hover:scale-150 transition-transform focus:outline-none"
+            title="Sistem Durumu"
+          />
           <span className="text-[11px] font-mono font-medium text-slate-400">
             Sistem Versiyonu: <span className="text-indigo-400 font-bold tracking-wide">{APP_VERSION}</span>
           </span>

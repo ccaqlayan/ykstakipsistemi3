@@ -2393,6 +2393,17 @@ export const DEMO_USERS = [
     title: '12-A SAY Sınıf Rehber Öğretmeni',
     status: 'active' as const,
     avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'teacher-3',
+    name: 'Dilek Küçük',
+    email: 'demo.rehber@yksdemo.local',
+    password: '123',
+    role: 'school_counselor' as const,
+    assignedClassNames: ['12-A SAY', '12-B EA', 'Mezun-1'],
+    title: 'Okul Rehber Öğretmeni',
+    status: 'active' as const,
+    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
   }
 ];
 
