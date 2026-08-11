@@ -431,8 +431,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     const cleanedPlans = studyPlans.filter(p => {
       if (p.archived && p.weekLabel) {
         const norm = normalizeWeekLabel(p.weekLabel);
-        // If it's a duplicate user-archived plan for 20 - 26 Temmuz, drop it
-        if (norm === '20 - 26 Temmuz' && (p.weekLabel !== '20 - 26 Temmuz' || p.id.startsWith('plan-') || p.id.startsWith('arch-'))) {
+        // If it's a duplicate or auto-archived plan for 20-26 Tem or 27 Tem - 2 Ağu, drop it
+        if ((norm === '20 - 26 Temmuz' || isSameWeekLabel(p.weekLabel, '27 Temmuz - 2 Ağustos')) && (p.id.startsWith('plan-') || p.id.startsWith('arch-'))) {
           changed = true;
           return false;
         }
@@ -1194,28 +1194,30 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
 
   // Active/Displayed Plans for the currently selected week (Past, Current, or Future)
   const activePlans = React.useMemo(() => {
-    // 1. Check if there are tasks explicitly matching weekLabel or dates of selected week
-    const matched = studyPlans.filter(p => {
-      if (p.weekLabel && isSameWeekLabel(p.weekLabel, currentWeekLabel)) return true;
-      if (p.date) return selectedWeekDays.some(d => d.isoDate === p.date);
-      if (!p.archived && isCurrentWeek && (!p.weekLabel || isSameWeekLabel(p.weekLabel, currentWeekLabel))) return true;
-      return false;
-    });
-
-    if (matched.length > 0) return matched;
-
-    // 2. If viewing current week and no specific matching plans, return all unarchived active plans
     if (isCurrentWeek) {
       return studyPlans.filter(p => !p.archived);
     }
 
-    // 3. If past week, load archived plans for that week from getPlansForWeek
     if (isPastWeek) {
+      const archivedMatched = studyPlans.filter(p => p.archived && (
+        (p.weekLabel && isSameWeekLabel(p.weekLabel, currentWeekLabel)) ||
+        (p.date && selectedWeekDays.some(d => d.isoDate === p.date))
+      ));
+      if (archivedMatched.length > 0) return archivedMatched;
+
       return getPlansForWeek(currentWeekLabel);
     }
 
+    if (isFutureWeek) {
+      const futureMatched = studyPlans.filter(p => !p.archived && (
+        (p.weekLabel && isSameWeekLabel(p.weekLabel, currentWeekLabel)) ||
+        (p.date && selectedWeekDays.some(d => d.isoDate === p.date))
+      ));
+      return futureMatched;
+    }
+
     return [];
-  }, [studyPlans, selectedMondayDate, currentWeekLabel, isCurrentWeek, isPastWeek, selectedWeekDays]);
+  }, [studyPlans, selectedMondayDate, currentWeekLabel, isCurrentWeek, isPastWeek, isFutureWeek, selectedWeekDays]);
 
   // Weekly Stats Calculation
   const totalWeeklyPlannedMins = activePlans.reduce((acc, curr) => acc + (curr.plannedMinutes || 0), 0);

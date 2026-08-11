@@ -383,7 +383,7 @@ export const YKS_CURRICULUM_TOPICS: Record<string, string[]> = {
     'Vocabulary & Phrasal Verbs',
     'Reading Comprehension & Paragraphs',
     'Sentence Completion & Restatement',
-    'Translation (English - Turkish)',
+'Translation (English - Turkish)',
     'Irrelevant Sentence & Paragraph Completion'
   ]
 };
@@ -407,12 +407,11 @@ export const INITIAL_STATE: YKSDataState = {
     {
       id: 'plan-1',
       day: 'Pazartesi',
-      subject: 'TYT Türkçe',
-      topic: 'Paragrafta Anlam & Yapı',
-      plannedMinutes: 90,
-      completedMinutes: 90,
+      subject: 'Paragraf',
+      topic: 'Paragraf Çözüm Teknikleri & Hızlandırma',
+      plannedMinutes: 45,
+      completedMinutes: 45,
       status: 'completed',
-      date: '2026-07-27',
       notes: '30 Paragraf sorusu zamana karşı çözüldü.'
     },
     {
@@ -423,7 +422,6 @@ export const INITIAL_STATE: YKSDataState = {
       plannedMinutes: 120,
       completedMinutes: 120,
       status: 'completed',
-      date: '2026-07-27',
       notes: 'İleri düzey 40 soru çözüldü.'
     },
     {
@@ -456,7 +454,6 @@ export const INITIAL_STATE: YKSDataState = {
       plannedMinutes: 90,
       completedMinutes: 90,
       status: 'completed',
-      date: '2026-07-28',
       notes: '3D Fizik kitabından testler tamamlandı.'
     },
     {
@@ -467,7 +464,6 @@ export const INITIAL_STATE: YKSDataState = {
       plannedMinutes: 120,
       completedMinutes: 120,
       status: 'completed',
-      date: '2026-07-28',
       notes: 'Değişken değiştirme kuralları çalışıldı.'
     },
     {
@@ -478,7 +474,6 @@ export const INITIAL_STATE: YKSDataState = {
       plannedMinutes: 90,
       completedMinutes: 90,
       status: 'completed',
-      date: '2026-07-29',
       notes: 'Aydın Yayınları test 4-5 bitti.'
     },
     {
@@ -489,7 +484,6 @@ export const INITIAL_STATE: YKSDataState = {
       plannedMinutes: 75,
       completedMinutes: 75,
       status: 'completed',
-      date: '2026-07-29',
       notes: 'Orijinal Geometri soru bankasından çözüldü.'
     },
     {
@@ -499,8 +493,7 @@ export const INITIAL_STATE: YKSDataState = {
       topic: 'Üçgende Açılar ve Benzerlik',
       plannedMinutes: 90,
       completedMinutes: 60,
-      status: 'in_progress',
-      date: '2026-07-30'
+      status: 'in_progress'
     },
     {
       id: 'plan-8',
@@ -509,8 +502,7 @@ export const INITIAL_STATE: YKSDataState = {
       topic: 'Trigonometrik Denklemler & Toplam-Fark',
       plannedMinutes: 105,
       completedMinutes: 0,
-      status: 'pending',
-      date: '2026-07-30'
+      status: 'pending'
     },
     {
       id: 'plan-9',
@@ -519,8 +511,7 @@ export const INITIAL_STATE: YKSDataState = {
       topic: 'Protein Sentezi ve DNA',
       plannedMinutes: 90,
       completedMinutes: 0,
-      status: 'pending',
-      date: '2026-07-31'
+      status: 'pending'
     },
     {
       id: 'plan-10',
