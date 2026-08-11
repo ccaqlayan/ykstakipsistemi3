@@ -614,48 +614,154 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   const activeSubjectButtons = [...standardSubjectButtons, ...customSubjectsNotInStandard];
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 font-sans animate-fade-in">
       
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-lg relative overflow-hidden">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-lg sm:text-xl font-bold text-white flex items-center space-x-2">
-            <BookOpenCheck className="w-5 h-5 text-amber-400 shrink-0" />
-            <span className="truncate">Kaynak Takibi (Konu Bazlı)</span>
+      {/* ── HERO HEADER BANNER ── */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 p-6 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-md relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1.5 z-10">
+          <div className="inline-flex items-center space-x-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full text-xs font-bold text-amber-300">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>YKS Konu & Kaynak Takip Sistemi</span>
+          </div>
+          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center space-x-2">
+            <BookOpenCheck className="w-6 h-6 text-amber-400 shrink-0" />
+            <span>Kaynak Takibi (Konu Bazlı)</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-            Her dersin müfredat konu listesinden çözdüğünüz konuları işaretleyerek tam çözülme oranını takip edin.
+          <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+            Müfredat konu listenizdeki konuları kaynak kitaplarınızla eşleştirerek soru çözme tamamlama oranınızı adım adım takip edin.
           </p>
         </div>
 
-        <div className="flex items-center space-x-2 w-full sm:w-auto justify-start sm:justify-end shrink-0 pt-1 sm:pt-0">
+        <div className="flex items-center space-x-3 shrink-0 z-10">
           <button
             onClick={() => setShowAddModal(true)}
             id="add-resource-book-btn"
-            className="bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center space-x-1.5 shrink-0 whitespace-nowrap cursor-pointer active:scale-95"
+            className="bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white text-xs font-bold px-5 py-3 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer border border-indigo-400/30 group"
           >
-            <Plus className="w-4 h-4 shrink-0" />
+            <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
             <span>Yeni Kitap Ekle</span>
           </button>
         </div>
       </div>
 
+      {/* ── 4 TOP KPI METRIC CARDS ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Kayıtlı Kaynak Kitaplar */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Kayıtlı Kaynak Kitaplar</span>
+            <div className="w-8 h-8 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+              <BookOpen className="w-4 h-4 text-indigo-400" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <div className="flex items-baseline space-x-2">
+              <span className="text-3xl font-black text-white font-mono">{totalBooks}</span>
+              <span className="text-xs text-slate-400 font-medium">Kitap</span>
+            </div>
+            <span className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
+              {completedBooks} Bitirildi
+            </span>
+          </div>
+          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Devam Eden: <strong className="text-indigo-300 font-mono">{inProgressBooks}</strong></span>
+            <span>Başlanmamış: <strong className="text-slate-400 font-mono">{totalBooks - completedBooks - inProgressBooks}</strong></span>
+          </div>
+        </div>
+
+        {/* Card 2: Toplam Çözülen Konular */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">Çözülen Müfredat Konuları</span>
+            <div className="w-8 h-8 rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center">
+              <ListChecks className="w-4 h-4 text-fuchsia-400" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <div className="flex items-baseline space-x-2">
+              <span className="text-3xl font-black text-fuchsia-400 font-mono">{grandCompletedTopics}</span>
+              <span className="text-xs text-slate-400 font-medium">/ {grandTotalTopics} Konu</span>
+            </div>
+            <span className="text-[10px] bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
+              %{overallPercent} Tamamlandı
+            </span>
+          </div>
+          {/* Progress bar */}
+          <div className="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div 
+              className="bg-gradient-to-r from-indigo-500 to-fuchsia-500 h-full rounded-full transition-all duration-500" 
+              style={{ width: `${overallPercent}%` }} 
+            />
+          </div>
+        </div>
+
+        {/* Card 3: TYT Kitap Sayısı */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">TYT Kaynak Kitapları</span>
+            <div className="w-8 h-8 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
+              <Layers className="w-4 h-4 text-sky-400" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <div className="flex items-baseline space-x-2">
+              <span className="text-3xl font-black text-sky-400 font-mono">{getExamTypeBookCount('TYT')}</span>
+              <span className="text-xs text-slate-400 font-medium">Kitap</span>
+            </div>
+            <span className="text-[10px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
+              TYT Müfredatı
+            </span>
+          </div>
+          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Aktif Kaynak Oranı:</span>
+            <span className="text-sky-300 font-bold font-mono">
+              %{totalBooks > 0 ? Math.round((getExamTypeBookCount('TYT') / totalBooks) * 100) : 0}
+            </span>
+          </div>
+        </div>
+
+        {/* Card 4: AYT Kitap Sayısı */}
+        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400">AYT Kaynak Kitapları</span>
+            <div className="w-8 h-8 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+              <Award className="w-4 h-4 text-amber-400" />
+            </div>
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <div className="flex items-baseline space-x-2">
+              <span className="text-3xl font-black text-amber-400 font-mono">{getExamTypeBookCount('AYT')}</span>
+              <span className="text-xs text-slate-400 font-medium">Kitap</span>
+            </div>
+            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
+              AYT Müfredatı
+            </span>
+          </div>
+          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+            <span>Aktif Kaynak Oranı:</span>
+            <span className="text-amber-300 font-bold font-mono">
+              %{totalBooks > 0 ? Math.round((getExamTypeBookCount('AYT') / totalBooks) * 100) : 0}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Main Persistent Top Navigation Tabs: Kaynaklarım / Konularım */}
-      <div className="flex bg-slate-950 p-1.5 rounded-2xl border border-slate-800 items-center gap-2 w-full shadow-md">
+      <div className="flex bg-slate-950 p-1.5 rounded-3xl border border-slate-800 items-center gap-2 w-full shadow-xl">
         <button
           onClick={() => {
             setTrackerTab('resources');
             setSelectedDersFilter('all');
             setSelectedExamTypeFilter('all');
           }}
-          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             trackerTab === 'resources'
-              ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/10 border border-indigo-500/30'
+              ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-600/20 border border-indigo-500/30 ring-1 ring-indigo-500/30'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent'
           }`}
         >
-          <BookOpen className="w-4 h-4" />
-          <span>Kaynaklarım</span>
+          <BookOpen className="w-4.5 h-4.5" />
+          <span>Kaynaklarım ({totalBooks})</span>
         </button>
         <button
           onClick={() => {
@@ -667,14 +773,14 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
               setSelectedDersFilter('none');
             }
           }}
-          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+          className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
             trackerTab === 'topics'
-              ? 'bg-gradient-to-r from-fuchsia-600 to-fuchsia-500 text-white shadow-lg shadow-fuchsia-500/10 border border-fuchsia-500/30'
+              ? 'bg-gradient-to-r from-fuchsia-600 to-fuchsia-500 text-white shadow-lg shadow-fuchsia-600/20 border border-fuchsia-500/30 ring-1 ring-fuchsia-500/30'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent'
           }`}
         >
-          <ListChecks className="w-4 h-4" />
-          <span>Konularım</span>
+          <ListChecks className="w-4.5 h-4.5" />
+          <span>Konularım & Matris</span>
         </button>
       </div>
 
@@ -1681,18 +1787,23 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
       {/* MODAL: ADD NEW RESOURCE BOOK WITH TOPIC SELECTION */}
       {showAddModal && (
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                <BookOpenCheck className="w-5 h-5 text-indigo-400" />
-                <span>Yeni Kaynak Kitap Ekle</span>
-              </h3>
+          <div className="bg-slate-900/95 border border-indigo-500/30 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl shadow-indigo-950/50 space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-gradient-to-br from-indigo-600 to-fuchsia-600 text-white rounded-2xl shadow-md">
+                  <BookOpenCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">Yeni Kaynak Kitap Ekle</h3>
+                  <p className="text-xs text-slate-400 font-medium">Soru bankanızı veya fasikülünüzü sisteme kaydedin</p>
+                </div>
+              </div>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-white text-xs font-semibold"
+                className="text-slate-400 hover:text-white p-2 rounded-xl border border-slate-800 hover:border-slate-700 transition-all cursor-pointer"
               >
                 Kapat
               </button>
@@ -1701,11 +1812,11 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
             <form onSubmit={handleCreateResource} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Sınav Türü</label>
+                  <label className="block text-xs font-bold text-slate-200 mb-1.5">Sınav Türü</label>
                   <select
                     value={examType}
                     onChange={(e) => handleExamTypeChange(e.target.value as any)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer"
                   >
                     <option value="TYT">TYT</option>
                     <option value="AYT">AYT</option>
@@ -1713,11 +1824,11 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Ders</label>
+                  <label className="block text-xs font-bold text-slate-200 mb-1.5">Ders</label>
                   <select
                     value={subject}
                     onChange={(e) => handleSubjectChange(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer"
                   >
                     {YKS_SUBJECTS[examType].map((s) => (
                       <option key={s} value={s}>{s}</option>
@@ -1727,31 +1838,31 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Kitap Adı</label>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">Kitap Adı</label>
                 <input
                   type="text"
                   required
                   placeholder="Ör: 3D AYT Matematik Soru Bankası"
                   value={bookTitle}
                   onChange={(e) => setBookTitle(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Yayınevi</label>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">Yayınevi</label>
                 <input
                   type="text"
                   placeholder="Ör: 3D Yayınları, Bilgi Sarmal, Karekök"
                   value={publisher}
                   onChange={(e) => setPublisher(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
                 />
               </div>
 
               {/* Initial Completed Topics Selector */}
               {YKS_CURRICULUM_TOPICS[subject] && YKS_CURRICULUM_TOPICS[subject].length > 0 && (
-                <div className="space-y-2 bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                <div className="space-y-2.5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-bold text-indigo-300">
                       Şu Ana Kadar Çözülen Konular ({selectedInitialTopics.length} / {YKS_CURRICULUM_TOPICS[subject].length})
@@ -1759,12 +1870,12 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedInitialTopics([...YKS_CURRICULUM_TOPICS[subject]])}
-                      className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold"
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold bg-indigo-500/10 px-2.5 py-0.5 rounded-lg border border-indigo-500/20"
                     >
                       Tümünü Seç
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                     {YKS_CURRICULUM_TOPICS[subject].map((topicName) => {
                       const isSel = selectedInitialTopics.includes(topicName);
                       return (
@@ -1772,18 +1883,18 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                           key={topicName}
                           type="button"
                           onClick={() => handleToggleInitialTopic(topicName)}
-                          className={`flex items-center space-x-2 p-2 rounded-lg text-left text-xs transition-all border ${
+                          className={`flex items-center space-x-2 p-2.5 rounded-xl text-left text-xs transition-all border cursor-pointer ${
                             isSel
                               ? 'bg-indigo-950/40 border-indigo-500/50 text-indigo-200'
-                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800'
+                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-850 hover:text-slate-200'
                           }`}
                         >
                           {isSel ? (
-                            <CheckSquare className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                            <CheckSquare className="w-4 h-4 text-indigo-400 shrink-0" />
                           ) : (
-                            <Square className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                            <Square className="w-4 h-4 text-slate-600 shrink-0" />
                           )}
-                          <span className="truncate">{topicName}</span>
+                          <span className="truncate font-medium">{topicName}</span>
                         </button>
                       );
                     })}
@@ -1792,27 +1903,27 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Notlar / Açıklama (Opsiyonel)</label>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">Notlar / Hızlı Değerlendirme (Opsiyonel)</label>
                 <input
                   type="text"
                   placeholder="Ör: Türev testleri çözülecek..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
                 />
               </div>
 
-              <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-xs text-slate-400 hover:text-white font-medium"
+                  className="px-5 py-2.5 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-5 py-2 rounded-xl transition-all shadow-md"
+                  className="bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white text-xs font-bold px-6 py-2.5 rounded-2xl transition-all shadow-lg shadow-indigo-600/30 cursor-pointer border border-indigo-400/30"
                 >
                   Kaydet & Başlat
                 </button>
@@ -1825,18 +1936,23 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
       {/* MODAL: EDIT RESOURCE BOOK */}
       {editingResource && (
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) setEditingResource(null); }}
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                <Pencil className="w-5 h-5 text-indigo-400" />
-                <span>Kitap Bilgilerini Düzenle</span>
-              </h3>
+          <div className="bg-slate-900/95 border border-indigo-500/30 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl shadow-indigo-950/50 space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-gradient-to-br from-indigo-600 to-fuchsia-600 text-white rounded-2xl shadow-md">
+                  <Pencil className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">Kitap Bilgilerini Düzenle</h3>
+                  <p className="text-xs text-slate-400 font-medium">Kitap detaylarını ve çözülen konuları güncelleyin</p>
+                </div>
+              </div>
               <button
                 onClick={() => setEditingResource(null)}
-                className="text-slate-400 hover:text-white text-xs font-semibold"
+                className="text-slate-400 hover:text-white p-2 rounded-xl border border-slate-800 hover:border-slate-700 transition-all cursor-pointer"
               >
                 Kapat
               </button>
@@ -1845,11 +1961,11 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
             <form onSubmit={handleUpdateResourceSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Sınav Türü</label>
+                  <label className="block text-xs font-bold text-slate-200 mb-1.5">Sınav Türü</label>
                   <select
                     value={editExamType}
                     onChange={(e) => handleEditExamTypeChange(e.target.value as any)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer"
                   >
                     <option value="TYT">TYT</option>
                     <option value="AYT">AYT</option>
@@ -1857,11 +1973,11 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Ders</label>
+                  <label className="block text-xs font-bold text-slate-200 mb-1.5">Ders</label>
                   <select
                     value={editSubject}
                     onChange={(e) => handleEditSubjectChange(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer"
                   >
                     {YKS_SUBJECTS[editExamType].map((s) => (
                       <option key={s} value={s}>{s}</option>
@@ -1871,31 +1987,31 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Kitap Adı</label>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">Kitap Adı</label>
                 <input
                   type="text"
                   required
                   placeholder="Ör: 3D AYT Matematik Soru Bankası"
                   value={editBookTitle}
                   onChange={(e) => setEditBookTitle(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-medium"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Yayınevi</label>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">Yayınevi</label>
                 <input
                   type="text"
                   placeholder="Ör: 3D Yayınları, Bilgi Sarmal, Karekök"
                   value={editPublisher}
                   onChange={(e) => setEditPublisher(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-medium"
                 />
               </div>
 
               {/* Completed Topics Selector in Edit Mode */}
               {YKS_CURRICULUM_TOPICS[editSubject] && YKS_CURRICULUM_TOPICS[editSubject].length > 0 && (
-                <div className="space-y-2 bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                <div className="space-y-2.5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-bold text-indigo-300">
                       Çözülen Konular ({editCompletedTopics.length} / {YKS_CURRICULUM_TOPICS[editSubject].length})
@@ -1903,12 +2019,12 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setEditCompletedTopics([...YKS_CURRICULUM_TOPICS[editSubject]])}
-                      className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold"
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold bg-indigo-500/10 px-2.5 py-0.5 rounded-lg border border-indigo-500/20"
                     >
                       Tümünü Seç
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                     {YKS_CURRICULUM_TOPICS[editSubject].map((topicName) => {
                       const isSel = editCompletedTopics.includes(topicName);
                       return (
@@ -1916,18 +2032,18 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                           key={topicName}
                           type="button"
                           onClick={() => handleToggleEditTopic(topicName)}
-                          className={`flex items-center space-x-2 p-2 rounded-lg text-left text-xs transition-all border ${
+                          className={`flex items-center space-x-2 p-2.5 rounded-xl text-left text-xs transition-all border cursor-pointer ${
                             isSel
                               ? 'bg-indigo-950/40 border-indigo-500/50 text-indigo-200'
-                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-800'
+                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-850 hover:text-slate-200'
                           }`}
                         >
                           {isSel ? (
-                            <CheckSquare className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                            <CheckSquare className="w-4 h-4 text-indigo-400 shrink-0" />
                           ) : (
-                            <Square className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                            <Square className="w-4 h-4 text-slate-600 shrink-0" />
                           )}
-                          <span className="truncate">{topicName}</span>
+                          <span className="truncate font-medium">{topicName}</span>
                         </button>
                       );
                     })}
@@ -1936,27 +2052,27 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
               )}
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Notlar / Açıklama (Opsiyonel)</label>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">Notlar / Açıklama (Opsiyonel)</label>
                 <input
                   type="text"
                   placeholder="Ör: Türev testleri çözülecek..."
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-medium"
                 />
               </div>
 
-              <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setEditingResource(null)}
-                  className="px-4 py-2 text-xs text-slate-400 hover:text-white font-medium"
+                  className="px-5 py-2.5 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-5 py-2 rounded-xl transition-all shadow-md"
+                  className="bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white text-xs font-bold px-6 py-2.5 rounded-2xl transition-all shadow-lg shadow-indigo-600/30 cursor-pointer border border-indigo-400/30"
                 >
                   Değişiklikleri Kaydet
                 </button>
