@@ -299,7 +299,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   // Form State: ADD
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [addEntryMode, setAddEntryMode] = useState<'quick' | 'detailed'>('detailed');
+  const [addEntryMode, setAddEntryMode] = useState<'quick' | 'detailed'>('quick');
   const [addInputMethod, setAddInputMethod] = useState<'net' | 'dyb'>('dyb');
 
   // Quick Nets (ADD)
@@ -323,7 +323,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   const resetAddForm = () => {
     setTitle('');
     setDate(new Date().toISOString().split('T')[0]);
-    setAddEntryMode('detailed');
+    setAddEntryMode('quick');
     setAddInputMethod('dyb');
     setTytTurkce('');
     setTytMat('');
