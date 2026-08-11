@@ -427,20 +427,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     let changed = false;
 
     const cleanedPlans = studyPlans.filter(p => {
-      // Purge any residual auto-archived items for '27 Temmuz - 2 Ağustos' or old hardcoded July dates
-      if (p.weekLabel && isSameWeekLabel(p.weekLabel, '27 Temmuz - 2 Ağustos')) {
-        changed = true;
-        return false;
-      }
-      if (p.date && (p.date.startsWith('2026-07-2') || p.date.startsWith('2026-07-3') || p.date.startsWith('2026-08-01') || p.date.startsWith('2026-08-02'))) {
-        changed = true;
-        return false;
-      }
-      if (p.archived && p.id.startsWith('plan-')) {
-        changed = true;
-        return false;
-      }
-      if (p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, '20 - 26 Temmuz') && (p.id.startsWith('plan-') || p.id.startsWith('arch-'))) {
+      // Purge old initial hardcoded seed entries (plan-1 .. plan-12) if improperly archived for 27 Temmuz - 2 Ağustos
+      if (p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, '27 Temmuz - 2 Ağustos') && /^plan-(?:[1-9]|1[0-2])$/.test(p.id)) {
         changed = true;
         return false;
       }
@@ -616,6 +604,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       // Archive current active plans with targetWeekLabel
       const archivedPlans = activePlansToArchive.map(p => ({
         ...p,
+        id: p.id.startsWith('arch-') ? p.id : 'arch-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
         archived: true,
         weekLabel: targetWeekLabel
       }));
@@ -628,7 +617,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       if (choice === 'keep_template') {
         newActivePlans = activePlansToArchive.map(p => ({
           ...p,
-          id: 'plan-' + Math.random().toString(36).substr(2, 9),
+          id: 'plan-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
           completedMinutes: 0,
           status: 'pending' as const,
           reflection: undefined,
@@ -650,17 +639,17 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       const existingOtherArchived = studyPlans.filter(p => p.archived && !(p.weekLabel && isSameWeekLabel(p.weekLabel, targetWeekLabel)));
 
       let plansForTargetWeek = studyPlans.filter(p => p.weekLabel && isSameWeekLabel(p.weekLabel, targetWeekLabel));
-      if (plansForTargetWeek.length === 0 && choice === 'keep_template') {
+      if (plansForTargetWeek.length === 0) {
         plansForTargetWeek = currentActivePlans.map(p => ({
           ...p,
-          id: 'plan-' + Math.random().toString(36).substr(2, 9),
-          completedMinutes: p.plannedMinutes || 60,
-          status: 'completed' as const
+          completedMinutes: choice === 'keep_template' ? (p.completedMinutes > 0 ? p.completedMinutes : (p.plannedMinutes || 60)) : 0,
+          status: choice === 'keep_template' ? (p.status === 'pending' ? 'completed' : p.status) : ('pending' as const)
         }));
       }
 
       const archivedPlans = plansForTargetWeek.map(p => ({
         ...p,
+        id: p.id.startsWith('arch-') ? p.id : 'arch-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
         archived: true,
         weekLabel: targetWeekLabel
       }));
