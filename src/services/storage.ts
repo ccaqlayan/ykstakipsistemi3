@@ -15,6 +15,23 @@ const STORAGE_KEY = 'yks_kocluk_global_data_v4';
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000; // 3 gün (72 saat)
 const LAST_ACTIVE_KEY = 'yks_last_active_time';
 
+const enrichLogsWithDuration = (logs: any[]) => {
+  if (!logs || logs.length === 0) return INITIAL_STATE.questionLogs;
+  return logs.map((log) => {
+    if (log.durationMinutes && log.durationMinutes > 0) return log;
+    const initialMatch = INITIAL_STATE.questionLogs.find(iLog => iLog.id === log.id);
+    if (initialMatch?.durationMinutes) {
+      return { ...log, durationMinutes: initialMatch.durationMinutes };
+    }
+    const solved = log.solvedCount || 30;
+    let factor = 1.2;
+    if (log.subject?.includes('Matematik')) factor = 1.4;
+    else if (log.subject?.includes('Paragraf') || log.subject?.includes('Türkçe')) factor = 0.8;
+    else if (log.subject?.includes('Fizik') || log.subject?.includes('Geometri')) factor = 1.3;
+    return { ...log, durationMinutes: Math.round(solved * factor) };
+  });
+};
+
 export const INITIAL_GLOBAL_STATE: AppGlobalState = {
   currentUser: null, // Site ilk açıldığında giriş yapma ekranının gösterilmesi için varsayılan null
   users: DEMO_USERS,
@@ -110,9 +127,11 @@ export function loadGlobalState(): AppGlobalState {
         'student-1': {
           ...INITIAL_STATE,
           ...(parsed.studentsData?.['student-1'] || {}),
-          questionLogs: (parsed.studentsData?.['student-1']?.questionLogs && parsed.studentsData['student-1'].questionLogs.length >= INITIAL_STATE.questionLogs.length)
-            ? parsed.studentsData['student-1'].questionLogs
-            : INITIAL_STATE.questionLogs,
+          questionLogs: enrichLogsWithDuration(
+            (parsed.studentsData?.['student-1']?.questionLogs && parsed.studentsData['student-1'].questionLogs.length >= INITIAL_STATE.questionLogs.length)
+              ? parsed.studentsData['student-1'].questionLogs
+              : INITIAL_STATE.questionLogs
+          ),
           branchExams: (parsed.studentsData?.['student-1']?.branchExams && parsed.studentsData['student-1'].branchExams.length >= INITIAL_STATE.branchExams.length)
             ? parsed.studentsData['student-1'].branchExams
             : INITIAL_STATE.branchExams,
@@ -128,11 +147,13 @@ export function loadGlobalState(): AppGlobalState {
             ...(parsed.studentsData?.['student-4']?.profile || parsed.studentsData?.['student-1']?.profile || INITIAL_STATE.profile),
             name: 'Burak ÇAKIR'
           },
-          questionLogs: parsed.studentsData?.['student-4']?.questionLogs 
-            ? parsed.studentsData['student-4'].questionLogs
-            : (parsed.studentsData?.['student-1']?.questionLogs && parsed.studentsData['student-1'].questionLogs.length >= INITIAL_STATE.questionLogs.length)
-              ? parsed.studentsData['student-1'].questionLogs
-              : INITIAL_STATE.questionLogs,
+          questionLogs: enrichLogsWithDuration(
+            parsed.studentsData?.['student-4']?.questionLogs 
+              ? parsed.studentsData['student-4'].questionLogs
+              : (parsed.studentsData?.['student-1']?.questionLogs && parsed.studentsData['student-1'].questionLogs.length >= INITIAL_STATE.questionLogs.length)
+                ? parsed.studentsData['student-1'].questionLogs
+                : INITIAL_STATE.questionLogs
+          ),
           branchExams: parsed.studentsData?.['student-4']?.branchExams
             ? parsed.studentsData['student-4'].branchExams
             : (parsed.studentsData?.['student-1']?.branchExams && parsed.studentsData['student-1'].branchExams.length >= INITIAL_STATE.branchExams.length)

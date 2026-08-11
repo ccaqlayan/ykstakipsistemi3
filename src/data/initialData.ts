@@ -555,6 +555,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 6,
       emptyCount: 2,
       netScore: 50.5,
+      durationMinutes: 75,
       notes: 'Problemler hızı arttı, 2 işlem hatası var.'
     },
     {
@@ -568,6 +569,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 3,
       emptyCount: 1,
       netScore: 40.25,
+      durationMinutes: 45,
       notes: 'Genden Proteine konusu sorunsuz.'
     },
     {
@@ -581,6 +583,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 3,
       emptyCount: 1,
       netScore: 35.25,
+      durationMinutes: 32,
       notes: 'Ana düşünce sorularında 2 yanlış çıktı.'
     },
     {
@@ -594,6 +597,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 4,
       emptyCount: 2,
       netScore: 43.0,
+      durationMinutes: 80,
       notes: 'Türev alma kuralları pekişti.'
     },
     {
@@ -607,6 +611,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 4,
       emptyCount: 2,
       netScore: 28.0,
+      durationMinutes: 45,
       notes: 'Elektrostatik formülleri tekrar edilmeli.'
     },
     {
@@ -620,6 +625,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 3,
       emptyCount: 1,
       netScore: 25.25,
+      durationMinutes: 35,
       notes: 'Analitik geometri soruları tamamlandı.'
     },
     {
@@ -633,6 +639,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 2,
       emptyCount: 0,
       netScore: 37.5,
+      durationMinutes: 45,
       notes: 'Organik bileşik adlandırmaları bitti.'
     },
     {
@@ -646,6 +653,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 4,
       emptyCount: 1,
       netScore: 49.0,
+      durationMinutes: 90,
       notes: 'İntegral alan hesabı kavrandı.'
     },
     {
@@ -659,6 +667,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 5,
       emptyCount: 2,
       netScore: 41.75,
+      durationMinutes: 45,
       notes: 'Ses bilgisi ve yazım kuralları soruları çözüldü.'
     },
     {
@@ -672,6 +681,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 6,
       emptyCount: 3,
       netScore: 49.5,
+      durationMinutes: 95,
       notes: 'Logaritma grafik ve denklem soruları.'
     },
     {
@@ -685,6 +695,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 4,
       emptyCount: 1,
       netScore: 29.0,
+      durationMinutes: 40,
       notes: 'Kaldırma kuvveti ve basınç testleri.'
     },
     {
@@ -698,6 +709,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 3,
       emptyCount: 1,
       netScore: 35.25,
+      durationMinutes: 45,
       notes: 'Gaz yasaları ve ideal gaz tepkimeleri.'
     },
     {
@@ -711,6 +723,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 2,
       emptyCount: 0,
       netScore: 27.5,
+      durationMinutes: 24,
       notes: 'Sabah paragraf rutini, süre: 24 dakika.'
     },
     {
@@ -724,6 +737,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 4,
       emptyCount: 2,
       netScore: 38.0,
+      durationMinutes: 45,
       notes: 'Sinir sistemi ve hormonlar pekiştirildi.'
     },
     {
@@ -737,6 +751,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 6,
       emptyCount: 2,
       netScore: 60.5,
+      durationMinutes: 95,
       notes: 'Hız ve yaş problemleri ağırlıklı çalışma.'
     },
     {
@@ -750,6 +765,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 5,
       emptyCount: 1,
       netScore: 30.75,
+      durationMinutes: 50,
       notes: 'Bağıl hareket ve Newton yasaları.'
     },
     {
@@ -763,6 +779,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 3,
       emptyCount: 1,
       netScore: 30.25,
+      durationMinutes: 45,
       notes: 'Dik üçgen ve açıortay-kenarortay.'
     },
     {
@@ -776,6 +793,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 5,
       emptyCount: 2,
       netScore: 41.75,
+      durationMinutes: 80,
       notes: 'Trigonometri toplam-fark ve yarım açı.'
     },
     {
@@ -789,6 +807,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 2,
       emptyCount: 0,
       netScore: 27.5,
+      durationMinutes: 30,
       notes: 'Asit, baz ve tuzlar soru taraması.'
     },
     {
@@ -802,6 +821,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 4,
       emptyCount: 1,
       netScore: 34.0,
+      durationMinutes: 35,
       notes: 'Paragraf bölme ve akışı bozan cümleler.'
     },
     {
@@ -815,6 +835,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 3,
       emptyCount: 1,
       netScore: 35.25,
+      durationMinutes: 40,
       notes: 'Dolaşım ve bağışıklık sistemi testleri.'
     },
     {
@@ -828,6 +849,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 4,
       emptyCount: 1,
       netScore: 39.0,
+      durationMinutes: 40,
       notes: 'Noktalama işaretleri ve karma dil bilgisi.'
     },
     {
@@ -841,6 +863,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 5,
       emptyCount: 2,
       netScore: 56.75,
+      durationMinutes: 105,
       notes: 'Diziler ve aritmetik-geometrik toplam.'
     },
     {
@@ -854,6 +877,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 4,
       emptyCount: 2,
       netScore: 28.0,
+      durationMinutes: 45,
       notes: 'Çembersel hareket ve tork dengesi.'
     },
     {
@@ -867,6 +891,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 4,
       emptyCount: 2,
       netScore: 43.0,
+      durationMinutes: 65,
       notes: 'Yüzde, kar-zarar ve karışım problemleri.'
     },
     {
@@ -880,6 +905,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 2,
       emptyCount: 1,
       netScore: 36.5,
+      durationMinutes: 45,
       notes: 'Tepkimelerde hız ve denge bağıntıları.'
     },
     {
@@ -893,6 +919,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 2,
       emptyCount: 1,
       netScore: 26.5,
+      durationMinutes: 25,
       notes: 'Yardımcı fikir soruları pratiği.'
     },
     {
@@ -906,6 +933,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 2,
       emptyCount: 1,
       netScore: 26.5,
+      durationMinutes: 28,
       notes: 'Hücre bölünmeleri ve kalıtım.'
     },
     {
@@ -919,6 +947,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 5,
       emptyCount: 2,
       netScore: 46.75,
+      durationMinutes: 85,
       notes: 'Limit ve süreklilik konsept testleri.'
     },
     {
@@ -932,6 +961,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 3,
       emptyCount: 2,
       netScore: 34.25,
+      durationMinutes: 40,
       notes: 'Solunum ve fotosentez denklemleri.'
     },
     {
@@ -945,6 +975,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 2,
       emptyCount: 1,
       netScore: 26.5,
+      durationMinutes: 38,
       notes: 'Çokgenler ve kare-dikdörtgen testleri.'
     },
     {
@@ -958,6 +989,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 3,
       emptyCount: 2,
       netScore: 29.25,
+      durationMinutes: 45,
       notes: 'Manyetik alan ve indüksiyon akımı.'
     },
     {
@@ -971,6 +1003,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 3,
       emptyCount: 1,
       netScore: 35.25,
+      durationMinutes: 35,
       notes: 'Cümlenin ögeleri ve anlatım bozuklukları.'
     },
     {
@@ -984,6 +1017,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 3,
       emptyCount: 1,
       netScore: 40.25,
+      durationMinutes: 50,
       notes: 'Elektrokimya ve pil tepkimeleri.'
     },
     {
@@ -997,6 +1031,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 5,
       emptyCount: 2,
       netScore: 51.75,
+      durationMinutes: 90,
       notes: 'Türevde artan-azalanlık ve maksimum-minimum.'
     },
     {
@@ -1010,6 +1045,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 2,
       emptyCount: 1,
       netScore: 31.5,
+      durationMinutes: 30,
       notes: 'Çoklu paragraf soruları serisi.'
     },
     {
@@ -1023,6 +1059,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 4,
       emptyCount: 1,
       netScore: 44.0,
+      durationMinutes: 65,
       notes: 'Kümeler, mantık ve temel kavramlar.'
     },
     {
@@ -1036,6 +1073,7 @@ export const INITIAL_STATE: YKSDataState = {
       wrongCount: 1,
       emptyCount: 1,
       netScore: 27.75,
+      durationMinutes: 30,
       notes: 'Bitki biyolojisi ve madde taşınması.'
     }
   ],
