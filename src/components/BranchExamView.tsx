@@ -362,6 +362,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   const [wrong, setWrong] = useState<number | string>('');
   const [empty, setEmpty] = useState<number | string>('');
   const [durationMinutes, setDurationMinutes] = useState<number | string>('');
+  const [examNotes, setExamNotes] = useState<string>('');
   const [isAnalyzed, setIsAnalyzed] = useState<boolean>(false);
 
   // Helper for input sanitization (convert dot to comma for display, remove leading zero like 015 -> 15)
@@ -1116,6 +1117,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     setWrong('');
     setEmpty('');
     setDurationMinutes('');
+    setExamNotes('');
     setIsAnalyzed(false);
     setShowAddExamModal(true);
   };
@@ -1130,6 +1132,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     setWrong(ex.wrong ?? '');
     setEmpty(ex.empty ?? '');
     setDurationMinutes(ex.durationMinutes ?? '');
+    setExamNotes(ex.notes ?? '');
     setIsAnalyzed(ex.isAnalyzed ?? false);
     setShowAddExamModal(true);
   };
@@ -1155,7 +1158,8 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
           empty: emp,
           net: Number(net.toFixed(2)),
           durationMinutes: dur,
-          isAnalyzed
+          isAnalyzed,
+          notes: examNotes.trim() || undefined
         });
       }
       setEditingExam(null);
@@ -1170,11 +1174,13 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         empty: emp,
         net: Number(net.toFixed(2)),
         durationMinutes: dur,
-        isAnalyzed
+        isAnalyzed,
+        notes: examNotes.trim() || undefined
       });
     }
 
     setPublisher('');
+    setExamNotes('');
     setShowAddExamModal(false);
   };
 
@@ -1946,6 +1952,8 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         setEmpty={setEmpty}
         durationMinutes={durationMinutes}
         setDurationMinutes={setDurationMinutes}
+        examNotes={examNotes}
+        setExamNotes={setExamNotes}
         isAnalyzed={isAnalyzed}
         setIsAnalyzed={setIsAnalyzed}
         handleCreateBranchExam={handleCreateBranchExam}
