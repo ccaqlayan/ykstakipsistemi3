@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   AlertTriangle, 
   BookOpen, 
@@ -9,7 +9,8 @@ import {
   HelpCircle, 
   Maximize2, 
   Image as ImageIcon,
-  Brain
+  Brain,
+  X
 } from 'lucide-react';
 import { TopicErrorItem, BranchExam, ResourceItem } from '../../types';
 
@@ -68,22 +69,23 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   ERROR_REASON_LABELS,
   ERROR_REASON_COLORS,
 }) => {
+  const [activeAiAnalysis, setActiveAiAnalysis] = useState<{ topicName: string; subject: string; text: string } | null>(null);
+
   const renderPriorityBar = (p: any) => {
     let val = parseInt(p, 10);
     if (isNaN(val)) {
       val = p === 'high' ? 8 : p === 'low' ? 3 : 5;
     }
     const pct = Math.min(100, Math.max(10, (val / 10) * 100));
-    const barColor = val >= 7 ? 'from-rose-500 to-amber-500' : val >= 4 ? 'from-amber-500 to-emerald-500' : 'from-indigo-500 to-emerald-400';
-    const textColor = val >= 7 ? 'text-rose-400' : val >= 4 ? 'text-amber-400' : 'text-emerald-400';
+    const solidBg = val >= 7 ? 'bg-rose-500' : val >= 4 ? 'bg-amber-500' : 'bg-indigo-500';
+    const textColor = val >= 7 ? 'text-rose-400' : val >= 4 ? 'text-amber-400' : 'text-indigo-400';
 
     return (
-      <div className="flex items-center space-x-1.5 bg-slate-900/90 px-2.5 py-1 rounded-full border border-slate-800 shrink-0">
-        <span className={`text-[10px] font-bold ${textColor}`}>Öncelik</span>
-        <div className="w-14 h-1.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-750">
-          <div className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-300`} style={{ width: `${pct}%` }} />
+      <div className="flex items-center space-x-2 shrink-0">
+        <span className={`text-xs font-bold ${textColor}`}>Öncelik: {val}/10</span>
+        <div className="w-16 h-2 bg-slate-800 rounded-full overflow-hidden shrink-0">
+          <div className={`h-full ${solidBg} rounded-full transition-all duration-300`} style={{ width: `${pct}%` }} />
         </div>
-        <span className="text-[10px] font-mono font-bold text-slate-300">{val}/10</span>
       </div>
     );
   };
@@ -321,6 +323,20 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                 {/* Alt Aksiyon Butonları */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-900">
                   <div className="flex flex-wrap items-center gap-1.5">
+                    {(item.aiFeedback || item.aiAnalysis) && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveAiAnalysis({
+                          subject: item.subject,
+                          topicName: item.topicName,
+                          text: item.aiFeedback || item.aiAnalysis || ''
+                        })}
+                        className="px-2.5 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Hata Analizi</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleOpenTipModal(item.subject, item.topicName)}
@@ -348,6 +364,49 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Modal: Kaydedilmiş Hata Analizi Görünümü */}
+      {activeAiAnalysis && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setActiveAiAnalysis(null); }}
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 md:p-6 shadow-2xl space-y-4 animate-fade-in max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center space-x-2">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+                <div>
+                  <h3 className="text-sm font-bold text-white">{activeAiAnalysis.topicName}</h3>
+                  <p className="text-[10px] text-purple-400 font-bold uppercase">{activeAiAnalysis.subject} - Kaydedilmiş Hata Analizi</p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setActiveAiAnalysis(null)}
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3.5 bg-indigo-950/40 border border-indigo-500/30 rounded-xl space-y-2 text-xs">
+              <p className="text-slate-200 leading-relaxed whitespace-pre-line font-medium">
+                {activeAiAnalysis.text}
+              </p>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setActiveAiAnalysis(null)}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Kapat
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
