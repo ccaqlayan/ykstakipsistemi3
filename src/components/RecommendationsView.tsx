@@ -145,15 +145,15 @@ const defaultBooksWithIds: RecommendedBook[] = RECOMMENDED_BOOKS.map(bk => ({
 }));
 
 const SUBJECTS = [
-  { value: 'Matematik', label: 'Matematik ✖️➕➖➗' },
-  { value: 'Geometri', label: 'Geometri 📐' },
-  { value: 'Türkçe', label: 'Türkçe 📚📝' },
-  { value: 'Fizik', label: 'Fizik 🔭🌡️🧲' },
-  { value: 'Kimya', label: 'Kimya 🧪⚗️🧫' },
-  { value: 'Biyoloji', label: 'Biyoloji 💉🧬💊' },
-  { value: 'Tarih', label: 'Tarih 📜' },
-  { value: 'Coğrafya', label: 'Coğrafya 🌍⛈️🌕' },
-  { value: 'Felsefe', label: 'Felsefe 🧠' }
+  { value: 'Matematik', label: 'Matematik' },
+  { value: 'Geometri', label: 'Geometri' },
+  { value: 'Türkçe', label: 'Türkçe' },
+  { value: 'Fizik', label: 'Fizik' },
+  { value: 'Kimya', label: 'Kimya' },
+  { value: 'Biyoloji', label: 'Biyoloji' },
+  { value: 'Tarih', label: 'Tarih' },
+  { value: 'Coğrafya', label: 'Coğrafya' },
+  { value: 'Felsefe', label: 'Felsefe' }
 ];
 
 const SUBJECT_COLORS: Record<string, { bg: string, text: string, border: string }> = {
@@ -632,36 +632,46 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
       </div>
 
       {/* Filter and Switch Row */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
-          <div className="relative w-full sm:w-64">
-            <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
+      <div className="flex flex-col gap-4 bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-2xl shadow-xl backdrop-blur-md">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-[10px] uppercase tracking-widest font-extrabold text-slate-400">
               Ders Seçimi
             </label>
-            <select
-              value={selectedSubject}
-              onChange={(e) => {
-                setSelectedSubject(e.target.value);
-                setShowOnlyFollowed(false);
-              }}
-              disabled={showOnlyFollowed}
-              className={`w-full bg-slate-800/80 border rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none transition-all ${
-                showOnlyFollowed 
-                  ? 'opacity-40 border-slate-800 cursor-not-allowed' 
-                  : `border-slate-700/60 hover:border-slate-600 ${activeTab === 'youtube' ? 'focus:border-red-500' : 'focus:border-indigo-500'}`
-              }`}
-            >
-              {SUBJECTS.map((sub) => (
-                <option key={sub.value} value={sub.value}>
-                  {sub.label}
-                </option>
-              ))}
-            </select>
+            <span className="text-[10px] text-slate-500 font-medium">Seçili Ders: <strong className="text-white font-bold">{selectedSubject}</strong></span>
           </div>
+          <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+            {SUBJECTS.map((sub) => {
+              const isSelected = selectedSubject === sub.value && !showOnlyFollowed;
+              return (
+                <button
+                  key={sub.value}
+                  disabled={showOnlyFollowed}
+                  onClick={() => {
+                    setSelectedSubject(sub.value);
+                    setShowOnlyFollowed(false);
+                  }}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border cursor-pointer shrink-0 ${
+                    isSelected
+                      ? activeTab === 'youtube'
+                        ? 'bg-red-600 border-red-400 text-white shadow-lg shadow-red-600/30 scale-[1.02]'
+                        : 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30 scale-[1.02]'
+                      : showOnlyFollowed
+                      ? 'bg-slate-950/40 border-slate-850 text-slate-600 cursor-not-allowed'
+                      : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                  }`}
+                >
+                  {sub.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-          <div className="flex flex-col w-full sm:w-auto">
-            <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">
-              Sınav Türü
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-slate-800/80">
+          <div className="flex items-center space-x-3 w-full sm:w-auto">
+            <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 shrink-0">
+              Sınav Türü:
             </label>
             <div className="grid grid-cols-3 p-1 bg-slate-950 rounded-xl border border-slate-800/80 w-full sm:w-56">
               {(['Tümü', 'TYT', 'AYT'] as const).map((type) => (
@@ -670,7 +680,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                   id={`exam-type-${type.toLowerCase()}-btn`}
                   disabled={showOnlyFollowed}
                   onClick={() => setSelectedExamType(type)}
-                  className={`py-1.5 px-3 rounded-lg text-[11px] font-bold transition-all ${
+                  className={`py-1.5 px-3 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
                     showOnlyFollowed
                       ? 'text-slate-600 cursor-not-allowed'
                       : selectedExamType === type
@@ -685,7 +695,6 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
               ))}
             </div>
           </div>
-        </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
           {activeTab === 'books' && (
@@ -731,6 +740,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
           </button>
         </div>
       </div>
+    </div>
 
       {/* Main Content Area */}
       <div className="space-y-4">
