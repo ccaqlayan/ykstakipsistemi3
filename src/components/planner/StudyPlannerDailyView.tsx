@@ -11,11 +11,13 @@ import {
   ChevronDown, 
   Sparkles, 
   Edit2,
-  Youtube 
+  Youtube,
+  ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StudyPlanItem, DayOfWeek, QuestionLog } from '../../types';
 import { SubjectTheme } from '../StudyPlannerView';
+import { getYouTubeThumbnailFromPlan, getYouTubeUrlFromPlan } from '../../utils/youtubeUtils';
 
 interface StudyPlannerDailyViewProps {
   activePlans: StudyPlanItem[];
@@ -213,6 +215,58 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
                       <h3 className={`text-base font-extrabold text-white ${plan.status === 'completed' ? 'line-through text-slate-400 font-medium' : ''} break-words`}>
                         {plan.topic}
                       </h3>
+
+                      {/* YouTube Video Thumbnail & Link Preview */}
+                      {(() => {
+                        const thumbUrl = getYouTubeThumbnailFromPlan(plan);
+                        const ytUrl = getYouTubeUrlFromPlan(plan);
+                        if (!thumbUrl && !ytUrl) return null;
+
+                        return (
+                          <div className="mt-3 p-3 bg-slate-900/90 rounded-2xl border border-red-500/30 flex flex-col sm:flex-row items-center gap-3">
+                            {thumbUrl && (
+                              <a
+                                href={ytUrl || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="relative w-full sm:w-44 h-24 shrink-0 rounded-xl overflow-hidden group bg-slate-950 border border-slate-800 shadow-md block"
+                                title="YouTube'da İzle"
+                              >
+                                <img
+                                  src={thumbUrl}
+                                  alt={plan.topic}
+                                  referrerPolicy="no-referrer"
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                                  <div className="p-2.5 bg-red-600 group-hover:bg-red-500 text-white rounded-full shadow-lg scale-90 group-hover:scale-100 transition-all">
+                                    <Youtube className="w-5 h-5 fill-current" />
+                                  </div>
+                                </div>
+                              </a>
+                            )}
+
+                            <div className="flex-1 min-w-0 space-y-1 w-full sm:w-auto">
+                              <div className="flex items-center space-x-1.5 text-xs text-red-400 font-bold">
+                                <Youtube className="w-4 h-4 text-red-500 shrink-0" />
+                                <span>YouTube Ders Videosu</span>
+                              </div>
+                              <p className="text-xs text-slate-300 font-medium line-clamp-2">{plan.topic}</p>
+                              {ytUrl && (
+                                <a
+                                  href={ytUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center space-x-1 text-xs font-bold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-xl border border-red-500/30 transition-all mt-1"
+                                >
+                                  <span>YouTube'da İzle</span>
+                                  <ExternalLink className="w-3.5 h-3.5 ml-0.5" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 text-xs font-mono bg-slate-900/90 px-4 py-2.5 rounded-xl border border-slate-800 w-full sm:w-auto self-start">

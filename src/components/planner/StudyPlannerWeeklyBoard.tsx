@@ -7,10 +7,13 @@ import {
   CalendarDays, 
   ArrowRightLeft, 
   Copy, 
-  Trash2 
+  Trash2,
+  Youtube,
+  ExternalLink
 } from 'lucide-react';
 import { StudyPlanItem, DayOfWeek } from '../../types';
 import { SubjectTheme } from '../StudyPlannerView';
+import { getYouTubeThumbnailFromPlan, getYouTubeUrlFromPlan } from '../../utils/youtubeUtils';
 
 interface StudyPlannerWeeklyBoardProps {
   activePlans: StudyPlanItem[];
@@ -35,6 +38,7 @@ interface StudyPlannerWeeklyBoardProps {
   handleQuickMoveDay: (plan: StudyPlanItem, targetDay: DayOfWeek) => void;
   handleDuplicatePlan: (e: React.MouseEvent, plan: StudyPlanItem) => void;
   openAddModal: (day?: DayOfWeek) => void;
+  openAddVideoModal?: (day?: DayOfWeek) => void;
   setEditingPlan: (plan: StudyPlanItem | null) => void;
   setDeletingPlan: (plan: { id: string; title: string } | null) => void;
   touchStartRef: any;
@@ -66,12 +70,13 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
   handleQuickMoveDay,
   handleDuplicatePlan,
   openAddModal,
+  openAddVideoModal,
   setEditingPlan,
   setDeletingPlan,
   touchStartRef,
   weekDaysMap,
-  isArchivedWeek,
-  isFutureWeek
+  isArchivedWeek = false,
+  isFutureWeek = false
 }) => {
   return (
     <div className="space-y-4">
@@ -322,6 +327,54 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                         }`}>
                           {plan.topic}
                         </h4>
+
+                        {/* YouTube Video Thumbnail & Link Preview */}
+                        {(() => {
+                          const thumbUrl = getYouTubeThumbnailFromPlan(plan);
+                          const ytUrl = getYouTubeUrlFromPlan(plan);
+                          if (!thumbUrl && !ytUrl) return null;
+
+                          return (
+                            <div className="mt-2 relative rounded-xl overflow-hidden border border-red-500/30 group/yt bg-slate-950">
+                              {thumbUrl ? (
+                                <a
+                                  href={ytUrl || '#'}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="block relative aspect-video w-full"
+                                  title="YouTube'da İzle"
+                                >
+                                  <img
+                                    src={thumbUrl}
+                                    alt={plan.topic}
+                                    referrerPolicy="no-referrer"
+                                    className="w-full h-full object-cover group-hover/yt:scale-105 transition-transform duration-300"
+                                  />
+                                  <div className="absolute inset-0 bg-black/20 group-hover/yt:bg-black/40 transition-colors flex items-center justify-center">
+                                    <div className="p-1.5 bg-red-600 text-white rounded-full shadow-md scale-90 group-hover/yt:scale-100 transition-all">
+                                      <Youtube className="w-3.5 h-3.5 fill-current ml-0.5" />
+                                    </div>
+                                  </div>
+                                </a>
+                              ) : ytUrl ? (
+                                <a
+                                  href={ytUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="p-1.5 text-[10px] font-bold text-red-400 hover:text-red-300 flex items-center justify-between bg-red-500/10 hover:bg-red-500/20 transition-all"
+                                >
+                                  <div className="flex items-center space-x-1 truncate">
+                                    <Youtube className="w-3 h-3 text-red-500 shrink-0" />
+                                    <span className="truncate">Videoyu İzle</span>
+                                  </div>
+                                  <ExternalLink className="w-3 h-3 shrink-0 ml-1" />
+                                </a>
+                              ) : null}
+                            </div>
+                          );
+                        })()}
 
                         {/* Target Duration & Question Count ONLY */}
                         <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-800/80 font-mono">
