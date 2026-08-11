@@ -42,6 +42,29 @@ function extractResponseText(response: any): string {
   return typeof response === 'string' ? response : JSON.stringify(response);
 }
 
+function resolveUserInfo(reqBody: any) {
+  const email = reqBody.userEmail || reqBody.profile?.email || reqBody.user?.email || '';
+  const rawName = reqBody.userName || reqBody.profile?.name || reqBody.user?.name || reqBody.teacherName || reqBody.studentName || 'Sistem Kullanıcısı';
+  const userName = email ? `${rawName} (${email})` : rawName;
+
+  let rawRole = reqBody.userRole || reqBody.profile?.role || reqBody.user?.role || reqBody.role || '';
+  let userRole = 'Öğrenci';
+  if (rawRole === 'admin' || rawRole.toLowerCase().includes('admin')) {
+    userRole = 'Sistem Yöneticisi (Admin)';
+  } else if (rawRole === 'school_counselor' || rawRole.toLowerCase().includes('rehber')) {
+    userRole = 'Okul Rehber Öğretmeni';
+  } else if (rawRole === 'class_teacher' || rawRole.toLowerCase().includes('sınıf')) {
+    userRole = 'Sınıf Öğretmeni';
+  } else if (rawRole === 'teacher' || rawRole.toLowerCase().includes('öğretmen')) {
+    userRole = 'Öğretmen';
+  } else if (typeof rawRole === 'string' && rawRole.trim()) {
+    userRole = rawRole;
+  }
+
+  const userId = reqBody.userId || reqBody.profile?.id || reqBody.user?.id || '';
+  return { userName, userRole, userId };
+}
+
 // Helper summarizers for AI prompts
 function summarizeMocksForPrompt(mocks: any[], limit: number = 3) {
   return (mocks || []).slice(-limit).map(m => ({
@@ -265,9 +288,7 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
     const responseText = extractResponseText(response);
     const parsedData = JSON.parse(responseText || '{}');
 
-    const userName = req.body.userName || req.body.profile?.name || 'Öğrenci';
-    const userRole = req.body.userRole || req.body.profile?.role || 'Öğrenci';
-    const userId = req.body.userId || req.body.profile?.id || '';
+    const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const usageRecord = recordApiUsage({
       featureKey: 'AI_COACH_STUDENT',
@@ -353,9 +374,7 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
     const responseText = extractResponseText(response);
     const parsedData = JSON.parse(responseText || '{}');
 
-    const userName = req.body.userName || req.body.teacherName || 'Öğretmen / Rehberlik';
-    const userRole = req.body.userRole || 'Öğretmen';
-    const userId = req.body.userId || '';
+    const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const usageRecord = recordApiUsage({
       featureKey: 'AI_COACH_CLASS',
@@ -440,9 +459,7 @@ Lütfen bu verileri detaylıca analiz et ve sonucu YALNIZCA geçerli bir JSON ob
     const responseText = extractResponseText(response);
     const parsedData = JSON.parse(responseText || '{}');
 
-    const userName = req.body.userName || req.body.profile?.name || 'Sistem Kullanıcısı';
-    const userRole = req.body.userRole || 'Öğrenci';
-    const userId = req.body.userId || '';
+    const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const usageRecord = recordApiUsage({
       featureKey: 'ERROR_PRIORITY',
@@ -519,9 +536,7 @@ Lütfen yanıtını doğrudan öğrenciye hitap eden bir tonda yaz ve YALNIZCA g
     const responseText = extractResponseText(response);
     const parsedData = JSON.parse(responseText || '{}');
 
-    const userName = req.body.userName || req.body.profile?.name || 'Sistem Kullanıcısı';
-    const userRole = req.body.userRole || 'Öğrenci';
-    const userId = req.body.userId || '';
+    const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const usageRecord = recordApiUsage({
       featureKey: 'TOPIC_TIPS',
@@ -635,9 +650,7 @@ ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, 
 
     const responseText = extractResponseText(response);
 
-    const userName = req.body.userName || req.body.profile?.name || 'Sistem Kullanıcısı';
-    const userRole = req.body.userRole || 'Öğrenci';
-    const userId = req.body.userId || '';
+    const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const promptSummary = solutionText || existingAnalysis || `Hata Defteri Soru Görsel Çözüm Analizi (${subject || ''} - ${topicName || ''})`;
     const usageRecord = recordApiUsage({
@@ -771,9 +784,7 @@ Kesinlikle selamlaşma, "İşte senin için soru", "Başarılar dilerim" gibi hi
       };
     }
 
-    const userName = req.body.userName || req.body.profile?.name || 'Sistem Kullanıcısı';
-    const userRole = req.body.userRole || 'Öğrenci';
-    const userId = req.body.userId || '';
+    const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const promptSummary = solutionText || existingAnalysis || `Benzer Soru Üretimi Promptu (${subject || ''} - ${topicName || ''})`;
     const usageRecord = recordApiUsage({
@@ -904,9 +915,7 @@ BİÇİMLENDİRME:
 
     const responseText = extractResponseText(response);
 
-    const userName = req.body.userName || req.body.profile?.name || 'Sistem Kullanıcısı';
-    const userRole = req.body.userRole || 'Öğrenci';
-    const userId = req.body.userId || '';
+    const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const promptSummary = solutionText || existingAnalysis || `Detaylı Soru & Çeldirici Analizi Promptu (${subject || ''} - ${topicName || ''})`;
     const usageRecord = recordApiUsage({

@@ -194,7 +194,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
     setLoading(true);
     setErrorMsg(null);
     try {
-      const result = await fetchAICoachAdvice(state);
+      const result = await fetchAICoachAdvice(state, currentUser);
       const advice = result.advice;
       onSaveAdvice({
         ...advice,

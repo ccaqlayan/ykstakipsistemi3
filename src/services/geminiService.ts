@@ -1,6 +1,6 @@
-import { YKSDataState, AICoachAdvice, ClassAICoachAdvice } from '../types';
+import { YKSDataState, AICoachAdvice, ClassAICoachAdvice, UserAccount } from '../types';
 
-export async function fetchAICoachAdvice(state: YKSDataState): Promise<{ advice: AICoachAdvice; aiUsage?: any }> {
+export async function fetchAICoachAdvice(state: YKSDataState, currentUser?: UserAccount | null): Promise<{ advice: AICoachAdvice; aiUsage?: any }> {
   let pomodoroHistory = (state as any).pomodoroHistory;
   if (!pomodoroHistory) {
     try {
@@ -14,6 +14,10 @@ export async function fetchAICoachAdvice(state: YKSDataState): Promise<{ advice:
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      userName: currentUser?.name || state.profile?.name || 'Öğrenci',
+      userEmail: currentUser?.email || (state.profile as any)?.email || '',
+      userRole: currentUser?.role || (state.profile as any)?.role || 'student',
+      userId: currentUser?.id || (state.profile as any)?.id || '',
       profile: state.profile,
       questionLogs: state.questionLogs,
       generalMocks: state.generalMocks,
@@ -48,19 +52,28 @@ export async function fetchAICoachAdvice(state: YKSDataState): Promise<{ advice:
   return { advice: data.advice, aiUsage: data.aiUsage };
 }
 
-export async function fetchClassAICoachAdvice(classSummaryData: {
-  className: string;
-  studentCount: number;
-  averageTYTNet: number;
-  averageAYTNet: number;
-  totalQuestionsSolved: number;
-  topStrugglingTopics: string[];
-  studentsSummary: { name: string; tytNet: number; aytNet: number; topWeakTopic: string }[];
-}): Promise<{ advice: ClassAICoachAdvice; aiUsage?: any }> {
+export async function fetchClassAICoachAdvice(
+  classSummaryData: {
+    className: string;
+    studentCount: number;
+    averageTYTNet: number;
+    averageAYTNet: number;
+    totalQuestionsSolved: number;
+    topStrugglingTopics: string[];
+    studentsSummary: { name: string; tytNet: number; aytNet: number; topWeakTopic: string }[];
+  },
+  currentUser?: UserAccount | null
+): Promise<{ advice: ClassAICoachAdvice; aiUsage?: any }> {
   const res = await fetch('/api/gemini/class-coach-advice', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(classSummaryData)
+    body: JSON.stringify({
+      userName: currentUser?.name || 'Öğretmen / Rehberlik',
+      userEmail: currentUser?.email || '',
+      userRole: currentUser?.role || 'class_teacher',
+      userId: currentUser?.id || '',
+      ...classSummaryData
+    })
   });
 
   if (!res.ok) {

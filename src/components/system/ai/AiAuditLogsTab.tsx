@@ -143,20 +143,14 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
                       </span>
                     </td>
                     <td className="py-2.5 text-center whitespace-nowrap">
-                      {log.promptText || log.responseText ? (
-                        <button
-                          type="button"
-                          onClick={() => { setSelectedLog(log); setModalTab('input'); }}
-                          className="px-2.5 py-1 bg-indigo-600/30 hover:bg-indigo-600/60 text-indigo-300 hover:text-white rounded-lg border border-indigo-500/40 text-[11px] font-bold transition-all cursor-pointer inline-flex items-center space-x-1 shadow-sm"
-                        >
-                          <Eye className="w-3 h-3 text-indigo-400" />
-                          <span>Girdi / Çıktı Gör</span>
-                        </button>
-                      ) : (
-                        <span className="text-[10px] text-slate-500 italic px-2 py-0.5 rounded bg-slate-950 border border-slate-800/60" title="Bu istek yapılırken prompt loglama henüz aktif değildi.">
-                          Log Kapalıydı
-                        </span>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => { setSelectedLog(log); setModalTab('input'); }}
+                        className="px-2.5 py-1 bg-indigo-600/30 hover:bg-indigo-600/60 text-indigo-300 hover:text-white rounded-lg border border-indigo-500/40 text-[11px] font-bold transition-all cursor-pointer inline-flex items-center space-x-1 shadow-sm"
+                      >
+                        <Eye className="w-3 h-3 text-indigo-400" />
+                        <span>Girdi / Çıktı Gör</span>
+                      </button>
                     </td>
                     <td className="py-2.5 text-right font-mono text-slate-400 text-[11px]">
                       {log.promptTokens} in / {log.candidatesTokens} out
