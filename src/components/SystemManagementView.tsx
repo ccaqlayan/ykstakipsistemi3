@@ -72,7 +72,11 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
         candidatesTokens,
         totalTokens,
         estimatedCostUSD,
-        estimatedCostTRY
+        estimatedCostTRY,
+        promptText: safeString(meta.promptText || ''),
+        responseText: safeString(meta.responseText || ''),
+        userName: safeString(meta.userName || log.userDisplayName || log.userName || '').replace(/\s*\(.*?\)\s*$/g, '').trim(),
+        userRole: safeString(meta.userRole || log.userRole || 'Öğrenci'),
       };
     });
 

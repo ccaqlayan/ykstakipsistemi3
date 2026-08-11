@@ -144,7 +144,7 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
                         </div>
                         <div className="flex flex-col">
                           <span className="font-bold text-white text-[11px]">
-                            {log.userName ? log.userName : 'ahmet yılmaz (ahmet@okul.edu.tr)'}
+                            {(log.userName ? log.userName : 'ahmet yılmaz').replace(/\s*\(.*?\)\s*$/g, '').trim()}
                           </span>
                           <span className="text-[9px] text-slate-400">
                             {log.userRole || 'Öğrenci'}
@@ -260,7 +260,7 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
                     </span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    <strong className="text-indigo-300">{selectedLog.userName || 'Kullanıcı'}</strong> ({selectedLog.userRole || 'Öğrenci'}) • {selectedLog.featureName} • {new Date(selectedLog.timestamp).toLocaleString('tr-TR')}
+                    <strong className="text-indigo-300">{(selectedLog.userName || 'Kullanıcı').replace(/\s*\(.*?\)\s*$/g, '').trim()}</strong> ({selectedLog.userRole || 'Öğrenci'}) • {selectedLog.featureName} • {new Date(selectedLog.timestamp).toLocaleString('tr-TR')}
                   </p>
                 </div>
               </div>
