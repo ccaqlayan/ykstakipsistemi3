@@ -53,6 +53,8 @@ export let coachDataSettings: Record<string, { enabled: boolean; limit?: number 
   youtubeTracker: { enabled: true },
   pomodoroHistory: { enabled: true, limit: 3 }
 };
+export let savePromptLogs = true;
+export function setSavePromptLogs(val: boolean) { savePromptLogs = val; }
 export function setCoachDataSettings(cfg: Record<string, { enabled: boolean; limit?: number }>) { coachDataSettings = cfg; }
 
 export interface ApiUsageRecord {
@@ -67,6 +69,7 @@ export interface ApiUsageRecord {
   totalTokens: number;
   estimatedCostUSD: number;
   estimatedCostTRY: number;
+  promptText?: string;
 }
 
 export let apiUsageLogsStore: ApiUsageRecord[] = [];
@@ -89,6 +92,9 @@ export async function initFirebaseAndLogs() {
           const sData = settingsDoc.data();
           if (typeof sData.aiFeaturesEnabled === 'boolean') {
             aiFeaturesEnabled = sData.aiFeaturesEnabled;
+          }
+          if (typeof sData.savePromptLogs === 'boolean') {
+            savePromptLogs = sData.savePromptLogs;
           }
           if (sData.featureModelConfig && typeof sData.featureModelConfig === 'object') {
             const sanitized: Record<string, string> = {};
@@ -150,6 +156,7 @@ export function recordApiUsage(params: {
   modelUsed: string;
   promptTokens: number;
   candidatesTokens: number;
+  promptText?: string;
 }) {
   const model = params.modelUsed.toLowerCase();
 
@@ -194,7 +201,8 @@ export function recordApiUsage(params: {
     candidatesTokens: params.candidatesTokens,
     totalTokens: params.promptTokens + params.candidatesTokens,
     estimatedCostUSD,
-    estimatedCostTRY
+    estimatedCostTRY,
+    promptText: savePromptLogs ? (params.promptText || undefined) : undefined
   };
 
   apiUsageLogsStore.unshift(record);

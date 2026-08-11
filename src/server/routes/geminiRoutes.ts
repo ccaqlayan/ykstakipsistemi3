@@ -14,7 +14,9 @@ import {
   setAiFeaturesEnabled,
   setAnomalyLimitTRY,
   setCoachDataSettings,
-  setFeatureModelConfig
+  setFeatureModelConfig,
+  savePromptLogs,
+  setSavePromptLogs
 } from '../config';
 
 const router = Router();
@@ -248,7 +250,8 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
       category: 'AI_COACH',
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4)
+      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      promptText: prompt
     });
 
     res.json({
@@ -327,7 +330,8 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
       category: 'AI_COACH',
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4)
+      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      promptText: prompt
     });
 
     res.json({
@@ -940,6 +944,7 @@ router.get('/model-settings', (req, res) => {
   res.json({
     success: true,
     aiFeaturesEnabled,
+    savePromptLogs,
     config: featureModelConfig,
     anomalyLimitTRY,
     coachDataSettings,
@@ -962,9 +967,12 @@ router.get('/model-settings', (req, res) => {
 });
 
 router.post('/model-settings', (req, res) => {
-  const { config, aiFeaturesEnabled: newEnabledState, anomalyLimitTRY: newAnomalyLimit, coachDataSettings: newCoachDataSettings } = req.body;
+  const { config, aiFeaturesEnabled: newEnabledState, savePromptLogs: newSavePromptLogs, anomalyLimitTRY: newAnomalyLimit, coachDataSettings: newCoachDataSettings } = req.body;
   if (typeof newEnabledState === 'boolean') {
     setAiFeaturesEnabled(newEnabledState);
+  }
+  if (typeof newSavePromptLogs === 'boolean') {
+    setSavePromptLogs(newSavePromptLogs);
   }
   if (typeof newAnomalyLimit === 'number') {
     setAnomalyLimitTRY(newAnomalyLimit);
@@ -983,6 +991,7 @@ router.post('/model-settings', (req, res) => {
   if (db) {
     setDoc(doc(db, 'system_config', 'gemini_settings'), {
       aiFeaturesEnabled,
+      savePromptLogs,
       featureModelConfig,
       anomalyLimitTRY,
       coachDataSettings
@@ -992,6 +1001,7 @@ router.post('/model-settings', (req, res) => {
   return res.json({ 
     success: true, 
     aiFeaturesEnabled,
+    savePromptLogs,
     config: featureModelConfig, 
     anomalyLimitTRY,
     coachDataSettings,

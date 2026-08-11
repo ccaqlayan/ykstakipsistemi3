@@ -1,5 +1,5 @@
-import React from 'react';
-import { Activity } from 'lucide-react';
+import React, { useState } from 'react';
+import { Activity, FileText, Copy, Check, X, Eye } from 'lucide-react';
 import { ApiUsageLog, UsageStatsResponse } from '../SystemTypes';
 
 interface AiAuditLogsTabProps {
@@ -19,6 +19,9 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
   setCurrentPage,
   itemsPerPage
 }) => {
+  const [selectedLog, setSelectedLog] = useState<ApiUsageLog | null>(null);
+  const [copied, setCopied] = useState<boolean>(false);
+
   const filteredLogs = (stats?.recentLogs || []).filter(log => {
     if (filterCategory === 'ALL') return true;
     return log.category === filterCategory;
@@ -29,8 +32,14 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentLogs = filteredLogs.slice(indexOfFirstItem, indexOfLastItem);
 
+  const handleCopyPrompt = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in relative">
       <div className="bg-slate-900/90 border border-white/10 rounded-2xl p-5 shadow-xl backdrop-blur-md space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
           <div className="flex items-center space-x-2">
@@ -79,6 +88,7 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
                 <th className="pb-2">Tarih / Saat</th>
                 <th className="pb-2">Özellik / Süreç</th>
                 <th className="pb-2">Kullanılan Model</th>
+                <th className="pb-2 text-center">Prompt Metni</th>
                 <th className="pb-2 text-right">Girdi / Çıktı Token</th>
                 <th className="pb-2 text-right">Toplam Token</th>
                 <th className="pb-2 text-right">Tahmini Tutar</th>
@@ -87,7 +97,7 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
             <tbody className="divide-y divide-white/5 font-medium">
               {currentLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-500 italic">
+                  <td colSpan={7} className="py-8 text-center text-slate-500 italic">
                     Henüz seçilen kategoride kaydedilmiş bir işlem bulunmuyor.
                   </td>
                 </tr>
@@ -113,6 +123,20 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
                       }`}>
                         {log.modelUsed}
                       </span>
+                    </td>
+                    <td className="py-2.5 text-center">
+                      {log.promptText ? (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedLog(log)}
+                          className="px-2.5 py-1 bg-indigo-600/30 hover:bg-indigo-600/60 text-indigo-300 hover:text-white rounded-lg border border-indigo-500/40 text-[11px] font-bold transition-all cursor-pointer inline-flex items-center space-x-1 shadow-sm"
+                        >
+                          <Eye className="w-3 h-3 text-indigo-400" />
+                          <span>Prompt Metni</span>
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-slate-500 italic">Kayıtlı Değil</span>
+                      )}
                     </td>
                     <td className="py-2.5 text-right font-mono text-slate-400 text-[11px]">
                       {log.promptTokens} in / {log.candidatesTokens} out
@@ -177,6 +201,72 @@ export const AiAuditLogsTab: React.FC<AiAuditLogsTabProps> = ({
           </div>
         )}
       </div>
+
+      {/* PROMPT VIEW MODAL */}
+      {selectedLog && selectedLog.promptText && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
+          <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl max-w-3xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-indigo-500/20 text-indigo-300 rounded-xl border border-indigo-500/30">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-base flex items-center gap-2">
+                    <span>Yapay Zekaya Gönderilen Ham Prompt Metni</span>
+                    <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded font-mono font-bold border border-indigo-500/30">
+                      {selectedLog.modelUsed}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {selectedLog.featureName} • {new Date(selectedLog.timestamp).toLocaleString('tr-TR')}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedLog(null)}
+                className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-xl transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body: Code/Mono Text Container */}
+            <div className="flex-1 overflow-y-auto min-h-0 bg-slate-950 p-4 rounded-2xl border border-slate-800/80 space-y-2">
+              <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono pb-2 border-b border-slate-800">
+                <span>Girdi Token: {selectedLog.promptTokens} | Çıktı Token: {selectedLog.candidatesTokens}</span>
+                <span>Tutar: ₺{selectedLog.estimatedCostTRY.toFixed(4)}</span>
+              </div>
+              <pre className="text-xs font-mono text-indigo-200 whitespace-pre-wrap leading-relaxed select-all">
+                {selectedLog.promptText}
+              </pre>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between pt-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleCopyPrompt(selectedLog.promptText || '')}
+                className="px-4 py-2 bg-indigo-600/30 hover:bg-indigo-600/60 text-indigo-200 font-bold text-xs rounded-xl border border-indigo-500/40 transition-all flex items-center space-x-1.5 cursor-pointer"
+              >
+                {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                <span>{copied ? 'Kopyalandı!' : 'Prompt Metnini Kopyala'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedLog(null)}
+                className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
+              >
+                Kapat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -45,6 +45,7 @@ interface SystemAiTabProps {
   savingCoachData: boolean;
   handleCoachDataToggle: (key: string, enabled: boolean) => void;
   handleCoachDataLimitChange: (key: string, limit: number) => void;
+  handleCoachDataPromptLogToggle?: (enabled: boolean) => void;
   handleSaveCoachDataSettings: () => Promise<void>;
   defaultCoachDataSettings: CoachDataSettingsMap;
   dateFilter: '7days' | 'thisMonth' | 'allTime';
@@ -78,6 +79,7 @@ export const SystemAiTab: React.FC<SystemAiTabProps> = ({
   savingCoachData,
   handleCoachDataToggle,
   handleCoachDataLimitChange,
+  handleCoachDataPromptLogToggle,
   handleSaveCoachDataSettings,
   defaultCoachDataSettings,
   dateFilter,
@@ -177,6 +179,7 @@ export const SystemAiTab: React.FC<SystemAiTabProps> = ({
           savingCoachData={savingCoachData}
           handleCoachDataToggle={handleCoachDataToggle}
           handleCoachDataLimitChange={handleCoachDataLimitChange}
+          handleCoachDataPromptLogToggle={handleCoachDataPromptLogToggle}
           handleSaveCoachDataSettings={handleSaveCoachDataSettings}
           defaultCoachDataSettings={defaultCoachDataSettings}
         />

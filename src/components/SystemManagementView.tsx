@@ -344,6 +344,11 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
     setModelSettings({ ...modelSettings, coachDataSettings: updated });
   };
 
+  const handleCoachDataPromptLogToggle = (enabled: boolean) => {
+    if (!modelSettings) return;
+    setModelSettings({ ...modelSettings, savePromptLogs: enabled });
+  };
+
   const handleSaveCoachDataSettings = async () => {
     if (!modelSettings) return;
     setSavingCoachData(true);
@@ -353,12 +358,13 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          coachDataSettings: modelSettings.coachDataSettings || defaultCoachDataSettings 
+          coachDataSettings: modelSettings.coachDataSettings || defaultCoachDataSettings,
+          savePromptLogs: modelSettings.savePromptLogs !== false
         })
       });
       const data = await res.json();
       if (data.success) {
-        setCoachDataSaveMessage('Koçluk veri izinleri ve limit ayarları başarıyla kaydedildi!');
+        setCoachDataSaveMessage('Sorgu ve veri izinleri ayarları başarıyla kaydedildi!');
         setTimeout(() => setCoachDataSaveMessage(null), 4000);
       }
     } catch (err) {
@@ -787,6 +793,7 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
           savingCoachData={savingCoachData}
           handleCoachDataToggle={handleCoachDataToggle}
           handleCoachDataLimitChange={handleCoachDataLimitChange}
+          handleCoachDataPromptLogToggle={handleCoachDataPromptLogToggle}
           handleSaveCoachDataSettings={handleSaveCoachDataSettings}
           defaultCoachDataSettings={defaultCoachDataSettings}
           dateFilter={dateFilter}

@@ -11,18 +11,21 @@ import {
   Target, 
   School, 
   Youtube, 
-  Timer 
+  Timer,
+  Database,
+  Eye
 } from 'lucide-react';
 import { ModelSettingsData, CoachDataSettingsMap } from '../SystemTypes';
 
 interface AiQuerySettingsTabProps {
   modelSettings: ModelSettingsData | null;
-  isCoachDataExpanded: boolean;
-  setIsCoachDataExpanded: (val: boolean) => void;
+  isCoachDataExpanded?: boolean;
+  setIsCoachDataExpanded?: (val: boolean) => void;
   coachDataSaveMessage: string | null;
   savingCoachData: boolean;
   handleCoachDataToggle: (key: string, enabled: boolean) => void;
   handleCoachDataLimitChange: (key: string, limit: number) => void;
+  handleCoachDataPromptLogToggle?: (enabled: boolean) => void;
   handleSaveCoachDataSettings: () => Promise<void>;
   defaultCoachDataSettings: CoachDataSettingsMap;
 }
@@ -33,9 +36,12 @@ export const AiQuerySettingsTab: React.FC<AiQuerySettingsTabProps> = ({
   savingCoachData,
   handleCoachDataToggle,
   handleCoachDataLimitChange,
+  handleCoachDataPromptLogToggle,
   handleSaveCoachDataSettings,
   defaultCoachDataSettings
 }) => {
+  const isPromptLogEnabled = modelSettings?.savePromptLogs !== false;
+
   const coachDataItems = [
     {
       key: 'generalMocks',
@@ -141,7 +147,7 @@ export const AiQuerySettingsTab: React.FC<AiQuerySettingsTabProps> = ({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="bg-slate-900/90 border border-indigo-500/40 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-4">
+      <div className="bg-slate-900/90 border border-indigo-500/40 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-5">
         {/* Header Title */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div className="flex items-start space-x-3">
@@ -156,7 +162,7 @@ export const AiQuerySettingsTab: React.FC<AiQuerySettingsTabProps> = ({
                 </span>
               </h3>
               <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                Öğrenci genel yapay zeka koçu tavsiyesi üretilirken prompta eklenecek veri türlerini ve gönderilecek kayıt limitlerini sürgüler ile özelleştirin.
+                Öğrenci ve öğretmen yapay zeka koçu tavsiyesi üretilirken prompta eklenecek veri türlerini ve gönderilecek kayıt limitlerini sürgüler ile özelleştirin.
               </p>
             </div>
           </div>
@@ -168,6 +174,57 @@ export const AiQuerySettingsTab: React.FC<AiQuerySettingsTabProps> = ({
                 <span className="font-semibold">{coachDataSaveMessage}</span>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* PROMPT LOGGING TOGGLE BANNER */}
+        <div className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 ${
+          isPromptLogEnabled
+            ? 'bg-purple-950/40 border-purple-500/40 text-purple-200'
+            : 'bg-slate-950/60 border-slate-800 text-slate-400'
+        }`}>
+          <div className="flex items-start space-x-3.5">
+            <div className={`p-2.5 rounded-xl border shrink-0 mt-0.5 ${
+              isPromptLogEnabled
+                ? 'bg-purple-500/20 border-purple-500/30 text-purple-300'
+                : 'bg-slate-800 border-slate-700 text-slate-500'
+            }`}>
+              <Database className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h4 className="font-bold text-sm text-white">Gönderilen Prompt Metinlerini Günlüğe Kaydet (Prompt Log Kaydı)</h4>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase border ${
+                  isPromptLogEnabled
+                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                    : 'bg-slate-800 text-slate-400 border-slate-700'
+                }`}>
+                  {isPromptLogEnabled ? 'KAYIT AKTİF' : 'KAYIT KAPALI'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                Bu seçenek açıldığında öğrenci veya öğretmen yapay zekaya bir sorgu gönderdiğinde, Gemini'ye iletilen ham **Prompt Metni** günlük kayıtlarına eklenir. Günlük sayfasındaki (Ayakizi) <span className="text-indigo-300 font-semibold font-mono inline-flex items-center gap-1"><Eye className="w-3 h-3 inline" /> Prompt</span> bağlantısına tıklayarak ham promptu inceleyebilirsiniz.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 shrink-0 self-end sm:self-center">
+            <span className="text-xs font-bold text-slate-300">
+              {isPromptLogEnabled ? 'Açık' : 'Kapalı'}
+            </span>
+            <button
+              type="button"
+              onClick={() => handleCoachDataPromptLogToggle && handleCoachDataPromptLogToggle(!isPromptLogEnabled)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                isPromptLogEnabled ? 'bg-purple-600' : 'bg-slate-800'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  isPromptLogEnabled ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
           </div>
         </div>
 

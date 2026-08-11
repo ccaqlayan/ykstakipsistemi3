@@ -48,6 +48,7 @@ export interface ApiUsageLog {
   totalTokens: number;
   estimatedCostUSD: number;
   estimatedCostTRY: number;
+  promptText?: string;
 }
 
 export interface UsageStatsResponse {
@@ -68,6 +69,7 @@ export type CoachDataSettingsMap = Record<string, CoachDataItemConfig>;
 export interface ModelSettingsData {
   success: boolean;
   aiFeaturesEnabled?: boolean;
+  savePromptLogs?: boolean;
   config: Record<string, string>;
   availableModels: { id: string; name: string; badge: string }[];
   features: { key: string; name: string; category: string; description: string }[];
