@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Sparkles, 
   Check, 
@@ -13,7 +13,11 @@ import {
   Youtube, 
   Timer,
   Database,
-  Eye
+  Eye,
+  ChevronDown,
+  ChevronUp,
+  Brain,
+  BookMarked
 } from 'lucide-react';
 import { ModelSettingsData, CoachDataSettingsMap } from '../SystemTypes';
 
@@ -30,6 +34,123 @@ interface AiQuerySettingsTabProps {
   defaultCoachDataSettings: CoachDataSettingsMap;
 }
 
+interface DataItemConfig {
+  key: string;
+  title: string;
+  description: string;
+  icon: React.FC<any>;
+  hasLimit: boolean;
+  min: number;
+  max: number;
+  defaultCfg: { enabled: boolean; limit?: number };
+}
+
+const coachDataItems: DataItemConfig[] = [
+  {
+    key: 'generalMocks',
+    title: 'Son Genel Deneme Sınavları',
+    description: 'Öğrencinin çözdüğü en son genel deneme sınavı netleri (TYT / AYT toplam ve ders netleri).',
+    icon: FileText,
+    hasLimit: true,
+    min: 1,
+    max: 15,
+    defaultCfg: { enabled: true, limit: 3 }
+  },
+  {
+    key: 'questionLogs',
+    title: 'Son Soru Çözüm Kayıtları',
+    description: 'Günlük çözülen ders ve konu bazlı soru sayıları, doğru/yanlış/boş oranları.',
+    icon: CheckCircle2,
+    hasLimit: true,
+    min: 1,
+    max: 25,
+    defaultCfg: { enabled: true, limit: 5 }
+  },
+  {
+    key: 'routines',
+    title: 'Son Rutin Verileri',
+    description: 'Öğrencinin günlük takip ettiği paragraf, problem, geometri vb. çalışma rutinleri.',
+    icon: Repeat,
+    hasLimit: true,
+    min: 1,
+    max: 15,
+    defaultCfg: { enabled: true, limit: 3 }
+  },
+  {
+    key: 'studyPlanSummary',
+    title: 'Haftalık Çalışma Planı Özeti',
+    description: 'Haftalık etüt ders çalışma programının tamamlama yüzdesi ve yapılan/kalan görevler.',
+    icon: Calendar,
+    hasLimit: false,
+    min: 1,
+    max: 10,
+    defaultCfg: { enabled: true }
+  },
+  {
+    key: 'resourceProgress',
+    title: 'Kaynak Takibi Çözülme Özetleri',
+    description: 'Soru bankaları ve konu anlatım kitaplarının ders bazlı çözülme durumu ve tamamlama oranları.',
+    icon: BookOpen,
+    hasLimit: false,
+    min: 1,
+    max: 10,
+    defaultCfg: { enabled: true }
+  },
+  {
+    key: 'branchExams',
+    title: 'Son Branş Denemeleri',
+    description: 'Matematik, Türkçe, Fen vb. ders bazlı branş denemesi netleri ve tarihleri.',
+    icon: Target,
+    hasLimit: true,
+    min: 1,
+    max: 20,
+    defaultCfg: { enabled: true, limit: 3 }
+  },
+  {
+    key: 'institutionalMocks',
+    title: 'Kurumsal / Türkiye Geneli Denemeler',
+    description: 'Okul bünyesinde uygulanan kurumsal deneme sonuçları ve başarı sıralamaları.',
+    icon: School,
+    hasLimit: true,
+    min: 1,
+    max: 15,
+    defaultCfg: { enabled: true, limit: 3 }
+  },
+  {
+    key: 'youtubeTracker',
+    title: 'YouTube / Video Ders İlerleme Durumu',
+    description: 'İzlenen YouTube oynatma listeleri, konu videoları ve ders tamamlama saatleri.',
+    icon: Youtube,
+    hasLimit: false,
+    min: 1,
+    max: 10,
+    defaultCfg: { enabled: true }
+  },
+  {
+    key: 'pomodoroHistory',
+    title: 'Pomodoro Odaklanma İstatistikleri',
+    description: 'Tamamlanan Pomodoro etüt oturumları ve odaklanma süresi kayıtları.',
+    icon: Timer,
+    hasLimit: true,
+    min: 1,
+    max: 20,
+    defaultCfg: { enabled: true, limit: 3 }
+  }
+];
+
+const errorBookDataItems: DataItemConfig[] = [
+  {
+    key: 'topicErrors',
+    title: 'Eksik / Yanlış Yapılan Konular (Hata Defteri)',
+    description: 'Hata defterinde biriken en çok yanlış yapılan konular ve soru hata nedenleri.',
+    icon: AlertTriangle,
+    hasLimit: true,
+    min: 1,
+    max: 30,
+    defaultCfg: { enabled: true, limit: 8 }
+  }
+];
+
 export const AiQuerySettingsTab: React.FC<AiQuerySettingsTabProps> = ({
   modelSettings,
   coachDataSaveMessage,
@@ -41,148 +162,123 @@ export const AiQuerySettingsTab: React.FC<AiQuerySettingsTabProps> = ({
   defaultCoachDataSettings
 }) => {
   const isPromptLogEnabled = modelSettings?.savePromptLogs !== false;
+  const [expandedSection, setExpandedSection] = useState<'coach' | 'errorbook' | null>(null);
+  const [sectionSaved, setSectionSaved] = useState<Record<string, boolean>>({});
 
-  const coachDataItems = [
-    {
-      key: 'generalMocks',
-      title: 'Son Genel Deneme Sınavları',
-      description: 'Öğrencinin çözdüğü en son genel deneme sınavı netleri (TYT / AYT toplam ve ders netleri).',
-      icon: FileText,
-      hasLimit: true,
-      min: 1,
-      max: 15,
-      defaultCfg: { enabled: true, limit: 3 }
-    },
-    {
-      key: 'topicErrors',
-      title: 'Eksik / Yanlış Yapılan Konular (Hata Defteri)',
-      description: 'Hata defterinde biriken en çok yanlış yapılan konular ve soru hata nedenleri.',
-      icon: AlertTriangle,
-      hasLimit: true,
-      min: 1,
-      max: 30,
-      defaultCfg: { enabled: true, limit: 8 }
-    },
-    {
-      key: 'questionLogs',
-      title: 'Son Soru Çözüm Kayıtları',
-      description: 'Günlük çözülen ders ve konu bazlı soru sayıları, doğru/yanlış/boş oranları.',
-      icon: CheckCircle2,
-      hasLimit: true,
-      min: 1,
-      max: 25,
-      defaultCfg: { enabled: true, limit: 5 }
-    },
-    {
-      key: 'routines',
-      title: 'Son Rutin Verileri',
-      description: 'Öğrencinin günlük takip ettiği paragraf, problem, geometri vb. çalışma rutinleri.',
-      icon: Repeat,
-      hasLimit: true,
-      min: 1,
-      max: 15,
-      defaultCfg: { enabled: true, limit: 3 }
-    },
-    {
-      key: 'studyPlanSummary',
-      title: 'Haftalık Çalışma Planı Özeti',
-      description: 'Haftalık etüt ders çalışma programının tamamlama yüzdesi ve yapılan/kalan görevler.',
-      icon: Calendar,
-      hasLimit: false,
-      min: 1,
-      max: 10,
-      defaultCfg: { enabled: true }
-    },
-    {
-      key: 'resourceProgress',
-      title: 'Kaynak Takibi Çözülme Özetleri',
-      description: 'Soru bankaları ve konu anlatım kitaplarının ders bazlı çözülme durumu ve tamamlama oranları.',
-      icon: BookOpen,
-      hasLimit: false,
-      min: 1,
-      max: 10,
-      defaultCfg: { enabled: true }
-    },
-    {
-      key: 'branchExams',
-      title: 'Son Branş Denemeleri',
-      description: 'Matematik, Türkçe, Fen vb. ders bazlı branş denemesi netleri ve tarihleri.',
-      icon: Target,
-      hasLimit: true,
-      min: 1,
-      max: 20,
-      defaultCfg: { enabled: true, limit: 3 }
-    },
-    {
-      key: 'institutionalMocks',
-      title: 'Kurumsal / Türkiye Geneli Denemeler',
-      description: 'Okul bünyesinde uygulanan kurumsal deneme sonuçları ve başarı sıralamaları.',
-      icon: School,
-      hasLimit: true,
-      min: 1,
-      max: 15,
-      defaultCfg: { enabled: true, limit: 3 }
-    },
-    {
-      key: 'youtubeTracker',
-      title: 'YouTube / Video Ders İlerleme Durumu',
-      description: 'İzlenen YouTube oynatma listeleri, konu videoları ve ders tamamlama saatleri.',
-      icon: Youtube,
-      hasLimit: false,
-      min: 1,
-      max: 10,
-      defaultCfg: { enabled: true }
-    },
-    {
-      key: 'pomodoroHistory',
-      title: 'Pomodoro Odaklanma İstatistikleri',
-      description: 'Tamamlanan Pomodoro etüt oturumları ve odaklanma süresi kayıtları.',
-      icon: Timer,
-      hasLimit: true,
-      min: 1,
-      max: 20,
-      defaultCfg: { enabled: true, limit: 3 }
-    }
-  ];
+  const toggleSection = (section: 'coach' | 'errorbook') => {
+    setExpandedSection(prev => prev === section ? null : section);
+  };
 
-  return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="bg-slate-900/90 border border-indigo-500/40 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-5">
-        {/* Header Title */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-          <div className="flex items-start space-x-3">
-            <div className="p-3 bg-gradient-to-br from-indigo-600 to-fuchsia-600 text-white rounded-2xl shadow-lg shadow-indigo-500/20 border border-indigo-400/30 shrink-0 mt-0.5">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-white text-base flex flex-wrap items-center gap-2">
-                <span>Yapay Zeka Koçunda Kullanılacak Veri İzinleri & Sorgu Limit Seçimi</span>
-                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-bold px-2.5 py-0.5 rounded-full border border-indigo-500/30">
-                  Prompt Optimizasyonu
-                </span>
-              </h3>
-              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                Öğrenci ve öğretmen yapay zeka koçu tavsiyesi üretilirken prompta eklenecek veri türlerini ve gönderilecek kayıt limitlerini sürgüler ile özelleştirin.
-              </p>
-            </div>
+  const handleSaveSection = async (section: string) => {
+    await handleSaveCoachDataSettings();
+    setSectionSaved(prev => ({ ...prev, [section]: true }));
+    setTimeout(() => setSectionSaved(prev => ({ ...prev, [section]: false })), 3000);
+  };
+
+  const renderDataItem = (item: DataItemConfig) => {
+    const cfg = (modelSettings?.coachDataSettings || defaultCoachDataSettings)[item.key] || item.defaultCfg;
+    const currentLimit = cfg.limit ?? item.defaultCfg.limit ?? 3;
+
+    return (
+      <div 
+        key={item.key} 
+        className={`p-4 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
+          cfg.enabled 
+            ? 'bg-slate-900/40 hover:bg-slate-900/70' 
+            : 'bg-slate-950/40 opacity-50'
+        }`}
+      >
+        {/* Left Info & Icon */}
+        <div className="flex items-start space-x-3.5 max-w-xl">
+          <div className={`p-2.5 rounded-xl border shrink-0 mt-0.5 ${
+            cfg.enabled 
+              ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300' 
+              : 'bg-slate-800 border-slate-700 text-slate-500'
+          }`}>
+            <item.icon className="w-4 h-4" />
           </div>
-
-          <div className="flex items-center space-x-3 shrink-0 self-end md:self-center">
-            {coachDataSaveMessage && (
-              <div className="flex items-center space-x-2 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs px-3 py-1.5 rounded-xl animate-fade-in">
-                <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="font-semibold">{coachDataSaveMessage}</span>
-              </div>
-            )}
+          <div>
+            <div className="flex items-center space-x-2">
+              <h4 className="font-bold text-xs text-white">{item.title}</h4>
+              {item.hasLimit && cfg.enabled && (
+                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded font-mono font-bold border border-indigo-500/30">
+                  Son {currentLimit} kayıt
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
+              {item.description}
+            </p>
           </div>
         </div>
 
-        {/* PROMPT LOGGING TOGGLE BANNER */}
-        <div className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 ${
-          isPromptLogEnabled
-            ? 'bg-purple-950/40 border-purple-500/40 text-purple-200'
-            : 'bg-slate-950/60 border-slate-800 text-slate-400'
-        }`}>
+        {/* Right Controls: Range Slider & Toggle Switch */}
+        <div className="flex flex-wrap items-center gap-4 shrink-0 self-start lg:self-center">
+          {/* Slider Control for Limit */}
+          {item.hasLimit && cfg.enabled && (
+            <div className="flex items-center space-x-3 bg-slate-900/90 border border-slate-800/80 px-3.5 py-2 rounded-xl shadow-md">
+              <span className="text-[11px] text-slate-400 font-semibold whitespace-nowrap">
+                Limit:
+              </span>
+              <input
+                type="range"
+                min={item.min}
+                max={item.max}
+                step="1"
+                value={currentLimit}
+                onChange={(e) => handleCoachDataLimitChange(item.key, parseInt(e.target.value) || 1)}
+                className="w-28 sm:w-36 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-400 transition-all"
+              />
+              <span className="text-xs font-mono font-bold text-indigo-300 w-14 text-right">
+                {currentLimit} Adet
+              </span>
+            </div>
+          )}
+
+          {/* Toggle Switch */}
+          <div className="flex items-center space-x-2.5 bg-slate-900/60 border border-slate-800/60 px-3 py-1.5 rounded-xl">
+            <span className="text-[11px] text-slate-400 font-semibold">
+              {cfg.enabled ? 'Aktif' : 'Pasif'}
+            </span>
+            <button
+              type="button"
+              onClick={() => handleCoachDataToggle(item.key, !cfg.enabled)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                cfg.enabled ? 'bg-indigo-600' : 'bg-slate-800'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  cfg.enabled ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const enabledCoachCount = coachDataItems.filter(item => {
+    const cfg = (modelSettings?.coachDataSettings || defaultCoachDataSettings)[item.key] || item.defaultCfg;
+    return cfg.enabled;
+  }).length;
+
+  const enabledErrorCount = errorBookDataItems.filter(item => {
+    const cfg = (modelSettings?.coachDataSettings || defaultCoachDataSettings)[item.key] || item.defaultCfg;
+    return cfg.enabled;
+  }).length;
+
+  return (
+    <div className="space-y-5 animate-fade-in">
+
+      {/* ── 1. PROMPT LOGGING TOGGLE (EN ÜSTTE) ── */}
+      <div className={`p-5 rounded-2xl border transition-all ${
+        isPromptLogEnabled
+          ? 'bg-purple-950/40 border-purple-500/40 text-purple-200'
+          : 'bg-slate-900/80 border-slate-800 text-slate-400'
+      }`}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-start space-x-3.5">
             <div className={`p-2.5 rounded-xl border shrink-0 mt-0.5 ${
               isPromptLogEnabled
@@ -203,7 +299,7 @@ export const AiQuerySettingsTab: React.FC<AiQuerySettingsTabProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                Bu seçenek açıldığında öğrenci veya öğretmen yapay zekaya bir sorgu gönderdiğinde, Gemini'ye iletilen ham **Prompt Metni** günlük kayıtlarına eklenir. Günlük sayfasındaki (Ayakizi) <span className="text-indigo-300 font-semibold font-mono inline-flex items-center gap-1"><Eye className="w-3 h-3 inline" /> Prompt</span> bağlantısına tıklayarak ham promptu inceleyebilirsiniz.
+                Bu seçenek açıldığında yapay zekaya gönderilen ham <span className="text-indigo-300 font-semibold font-mono inline-flex items-center gap-1"><Eye className="w-3 h-3 inline" /> Prompt</span> metni ve yanıtı günlük kayıtlarına eklenir. Ayakizi sayfasından "Promptu Gör" butonuyla inceleyebilirsiniz.
               </p>
             </div>
           </div>
@@ -227,118 +323,152 @@ export const AiQuerySettingsTab: React.FC<AiQuerySettingsTabProps> = ({
             </button>
           </div>
         </div>
+      </div>
 
-        {/* VERİ İZİNLERİ SEÇENEKLERİ LİSTESİ - ALT ALTA TEK LİSTE */}
-        <div className="pt-2 space-y-3">
-          <div className="bg-slate-950/60 border border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-800/80 shadow-inner">
-            {coachDataItems.map((item) => {
-              const cfg = (modelSettings?.coachDataSettings || defaultCoachDataSettings)[item.key] || item.defaultCfg;
-              const currentLimit = cfg.limit ?? item.defaultCfg.limit ?? 3;
-
-              return (
-                <div 
-                  key={item.key} 
-                  className={`p-4 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
-                    cfg.enabled 
-                      ? 'bg-slate-900/40 hover:bg-slate-900/70' 
-                      : 'bg-slate-950/40 opacity-50'
-                  }`}
-                >
-                  {/* Left Info & Icon */}
-                  <div className="flex items-start space-x-3.5 max-w-xl">
-                    <div className={`p-2.5 rounded-xl border shrink-0 mt-0.5 ${
-                      cfg.enabled 
-                        ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300' 
-                        : 'bg-slate-800 border-slate-700 text-slate-500'
-                    }`}>
-                      <item.icon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <h4 className="font-bold text-xs text-white">{item.title}</h4>
-                        {item.hasLimit && cfg.enabled && (
-                          <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded font-mono font-bold border border-indigo-500/30">
-                            Son {currentLimit} kayıt
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed mt-0.5">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Right Controls: Range Slider & Toggle Switch */}
-                  <div className="flex flex-wrap items-center gap-4 shrink-0 self-start lg:self-center">
-                    {/* Slider Control for Limit */}
-                    {item.hasLimit && cfg.enabled && (
-                      <div className="flex items-center space-x-3 bg-slate-900/90 border border-slate-800/80 px-3.5 py-2 rounded-xl shadow-md">
-                        <span className="text-[11px] text-slate-400 font-semibold whitespace-nowrap">
-                          Limit:
-                        </span>
-                        <input
-                          type="range"
-                          min={item.min}
-                          max={item.max}
-                          step="1"
-                          value={currentLimit}
-                          onChange={(e) => handleCoachDataLimitChange(item.key, parseInt(e.target.value) || 1)}
-                          className="w-28 sm:w-36 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 hover:accent-indigo-400 transition-all"
-                        />
-                        <span className="text-xs font-mono font-bold text-indigo-300 w-14 text-right">
-                          {currentLimit} Adet
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Toggle Switch */}
-                    <div className="flex items-center space-x-2.5 bg-slate-900/60 border border-slate-800/60 px-3 py-1.5 rounded-xl">
-                      <span className="text-[11px] text-slate-400 font-semibold">
-                        {cfg.enabled ? 'Aktif' : 'Pasif'}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleCoachDataToggle(item.key, !cfg.enabled)}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                          cfg.enabled ? 'bg-indigo-600' : 'bg-slate-800'
-                        }`}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                            cfg.enabled ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+      {/* ── 2. YAPAY ZEKA KOÇU ACCORDION ── */}
+      <div className="bg-slate-900/90 border border-indigo-500/30 rounded-2xl overflow-hidden shadow-xl backdrop-blur-md">
+        {/* Header */}
+        <div
+          className="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-800/50 transition-colors select-none"
+          onClick={() => toggleSection('coach')}
+        >
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 bg-gradient-to-br from-indigo-600 to-blue-600 text-white rounded-xl shadow-md border border-indigo-400/30">
+              <Brain className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-white text-sm">Yapay Zeka Koçu — Prompt Veri Ayarları</h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Yapay zeka koçunun tavsiye üretirken hangi öğrenci verilerini kullanacağını ve kayıt limitlerini belirleyin.
+              </p>
+            </div>
           </div>
-
-          {/* Bottom Save Button */}
-          <div className="flex justify-end pt-3">
-            <button
-              type="button"
-              onClick={handleSaveCoachDataSettings}
-              disabled={savingCoachData}
-              className="flex items-center space-x-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-            >
-              {savingCoachData ? (
-                <>
-                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Kaydediliyor...</span>
-                </>
-              ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  <span>Sorgu & Veri İzinleri Yapılandırmasını Kaydet</span>
-                </>
-              )}
-            </button>
+          <div className="flex items-center space-x-3 shrink-0">
+            <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-bold px-2.5 py-1 rounded-full border border-indigo-500/30">
+              {enabledCoachCount}/{coachDataItems.length} Aktif
+            </span>
+            {sectionSaved['coach'] && (
+              <div className="flex items-center space-x-1.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] px-2.5 py-1 rounded-lg animate-fade-in">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="font-semibold">Kaydedildi!</span>
+              </div>
+            )}
+            <div className={`p-1.5 rounded-lg transition-colors ${expandedSection === 'coach' ? 'bg-indigo-600/30 text-indigo-300' : 'bg-slate-800 text-slate-400'}`}>
+              {expandedSection === 'coach' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </div>
           </div>
         </div>
+
+        {/* Expandable Content */}
+        {expandedSection === 'coach' && (
+          <div className="border-t border-slate-800 animate-fade-in">
+            <div className="divide-y divide-slate-800/80">
+              {coachDataItems.map(renderDataItem)}
+            </div>
+            <div className="flex justify-end p-4 border-t border-slate-800">
+              <div className="flex items-center space-x-3">
+                {sectionSaved['coach'] && (
+                  <div className="flex items-center space-x-1.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] px-2.5 py-1 rounded-lg animate-fade-in">
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="font-semibold">Kaydedildi!</span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleSaveSection('coach')}
+                  disabled={savingCoachData}
+                  className="flex items-center space-x-2 px-5 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                >
+                  {savingCoachData ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Kaydediliyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Yapay Zeka Koçu Ayarlarını Kaydet</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ── 3. HATA DEFTERİ ACCORDION ── */}
+      <div className="bg-slate-900/90 border border-amber-500/30 rounded-2xl overflow-hidden shadow-xl backdrop-blur-md">
+        {/* Header */}
+        <div
+          className="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-800/50 transition-colors select-none"
+          onClick={() => toggleSection('errorbook')}
+        >
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 bg-gradient-to-br from-amber-600 to-orange-600 text-white rounded-xl shadow-md border border-amber-400/30">
+              <BookMarked className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-white text-sm">Hata Defteri — Prompt Veri Ayarları</h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                Hata defteri soru analizi ve öncelik puanlaması yapılırken kullanılacak veri izinleri ve kayıt limitlerini belirleyin.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3 shrink-0">
+            <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2.5 py-1 rounded-full border border-amber-500/30">
+              {enabledErrorCount}/{errorBookDataItems.length} Aktif
+            </span>
+            {sectionSaved['errorbook'] && (
+              <div className="flex items-center space-x-1.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] px-2.5 py-1 rounded-lg animate-fade-in">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="font-semibold">Kaydedildi!</span>
+              </div>
+            )}
+            <div className={`p-1.5 rounded-lg transition-colors ${expandedSection === 'errorbook' ? 'bg-amber-600/30 text-amber-300' : 'bg-slate-800 text-slate-400'}`}>
+              {expandedSection === 'errorbook' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </div>
+          </div>
+        </div>
+
+        {/* Expandable Content */}
+        {expandedSection === 'errorbook' && (
+          <div className="border-t border-slate-800 animate-fade-in">
+            <div className="divide-y divide-slate-800/80">
+              {errorBookDataItems.map(renderDataItem)}
+            </div>
+            <div className="flex justify-end p-4 border-t border-slate-800">
+              <div className="flex items-center space-x-3">
+                {sectionSaved['errorbook'] && (
+                  <div className="flex items-center space-x-1.5 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] px-2.5 py-1 rounded-lg animate-fade-in">
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="font-semibold">Kaydedildi!</span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleSaveSection('errorbook')}
+                  disabled={savingCoachData}
+                  className="flex items-center space-x-2 px-5 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-lg shadow-amber-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                >
+                  {savingCoachData ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Kaydediliyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Hata Defteri Ayarlarını Kaydet</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
     </div>
   );
 };
