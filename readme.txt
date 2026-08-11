@@ -105,7 +105,13 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - Main Orchestrator : src/components/SystemManagementView.tsx
 - Modüller (src/components/system/) :
   * SystemTypes.ts                : Sistem yönetimi tipleri
-  * SystemAiTab.tsx               : Gemini AI harcama ve model konfigürasyon alanı
+  * SystemAiTab.tsx               : Gemini AI yönetimi ana orchestrator ve 6 alt-tab yönlendiricisi
+  * ai/AiOverviewTab.tsx          : Yapay zeka özet paneli ve temel KPI kartları
+  * ai/AiCostTab.tsx              : Yapay zeka bütçe, maliyet alarmı (anomali) ve harcama tabloları
+  * ai/AiStatsTab.tsx             : Recharts grafikli günlük jeton harcama ve model kullanım istatistikleri
+  * ai/AiModelSettingsTab.tsx     : Gemini modelleri, modül model tercihleri ve sistem genel anahtarı
+  * ai/AiQuerySettingsTab.tsx     : Yapay zeka koçu prompt veri izinleri ve sorgu kayıt limitleri
+  * ai/AiAuditLogsTab.tsx         : Yapay zeka istek günlüğü ve ayakizi takibi
   * SystemSettingsTab.tsx         : Okul adı, veritabanı ve genel sistem ayarları
   * SystemStorageTab.tsx          : Disk kullanımı ve Firestore veritabanı kotası alanı
 
