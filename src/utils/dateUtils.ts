@@ -81,6 +81,22 @@ const MONTH_INDEX_MAP: Record<string, number> = {
 };
 
 /**
+ * Normalizes a week label by removing optional year suffix, month short names,
+ * and hyphen spacing for reliable comparison across views.
+ */
+export const cleanWeekLabelForComparison = (label?: string): string => {
+  if (!label) return '';
+  const norm = normalizeWeekLabel(label);
+  // Strip trailing 4-digit year if present (e.g., "20 - 26 Temmuz 2026" -> "20 - 26 Temmuz")
+  return norm.replace(/\s*20\d\d\s*$/, '').trim().toLowerCase();
+};
+
+export const isSameWeekLabel = (labelA?: string, labelB?: string): boolean => {
+  if (!labelA || !labelB) return false;
+  return cleanWeekLabelForComparison(labelA) === cleanWeekLabelForComparison(labelB);
+};
+
+/**
  * Parses the start timestamp of a week from its week label (e.g., "20 - 26 Temmuz", "3 - 6 Ağustos").
  * Used for chronological sorting.
  */
@@ -92,6 +108,10 @@ export const parseWeekStartTimestamp = (weekLabel: string): number => {
   const dayMatch = clean.match(/^(\d+)/);
   if (!dayMatch) return 0;
   const day = parseInt(dayMatch[1], 10);
+
+  // Extract year if present
+  const yearMatch = clean.match(/\b(20\d\d)\b/);
+  const year = yearMatch ? parseInt(yearMatch[1], 10) : 2026;
 
   // Find the first month name that appears
   let monthIndex = -1;
@@ -107,15 +127,15 @@ export const parseWeekStartTimestamp = (weekLabel: string): number => {
 
   if (monthIndex === -1) return 0;
 
-  const year = 2026; 
-  return new Date(year, monthIndex, day).getTime();
+  return new Date(year, monthIndex, day, 12, 0, 0, 0).getTime();
 };
 
 /**
  * Returns Monday Date object for the week containing the given date.
+ * Set to 12:00:00 to prevent timezone/DST boundary shifts.
  */
 export const getMonday = (date: Date = new Date()): Date => {
-  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0, 0);
   const dayIndex = d.getDay();
   const diff = dayIndex === 0 ? -6 : 1 - dayIndex;
   d.setDate(d.getDate() + diff);
@@ -140,8 +160,7 @@ export const getWeekDays = (mondayDate: Date) => {
   const shortMonths = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 
   return days.map((dayName, index) => {
-    const d = new Date(mondayDate);
-    d.setDate(mondayDate.getDate() + index);
+    const d = new Date(mondayDate.getFullYear(), mondayDate.getMonth(), mondayDate.getDate() + index, 12, 0, 0, 0);
     const isoDate = getIsoDateString(d);
     const displayDate = `${d.getDate()} ${shortMonths[d.getMonth()]}`;
     return {
@@ -157,8 +176,7 @@ export const getWeekDays = (mondayDate: Date) => {
  * Formats week label with optional year, e.g. "11 - 17 Ağustos 2026"
  */
 export const formatWeekLabelWithYear = (mondayDate: Date): string => {
-  const sunday = new Date(mondayDate);
-  sunday.setDate(mondayDate.getDate() + 6);
+  const sunday = new Date(mondayDate.getFullYear(), mondayDate.getMonth(), mondayDate.getDate() + 6, 12, 0, 0, 0);
 
   const mDay = mondayDate.getDate();
   const mMonth = TURKISH_MONTHS[mondayDate.getMonth()];
@@ -176,8 +194,7 @@ export const formatWeekLabelWithYear = (mondayDate: Date): string => {
  * Shifts Monday date by N weeks.
  */
 export const addWeeks = (mondayDate: Date, weeks: number): Date => {
-  const d = new Date(mondayDate);
-  d.setDate(d.getDate() + weeks * 7);
+  const d = new Date(mondayDate.getFullYear(), mondayDate.getMonth(), mondayDate.getDate() + weeks * 7, 12, 0, 0, 0);
   return d;
 };
 

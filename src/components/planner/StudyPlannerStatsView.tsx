@@ -25,6 +25,7 @@ import {
   Legend 
 } from 'recharts';
 import { StudyPlanItem, DayOfWeek } from '../../types';
+import { isSameWeekLabel } from '../../utils/dateUtils';
 
 interface StudyPlannerStatsViewProps {
   viewMode: 'board' | 'daily' | 'stats';
@@ -348,7 +349,7 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
                         const total = weekPlans.length;
                         const completed = weekPlans.filter(p => p.status === 'completed').length;
                         const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-                        const isSelected = activeHistoryWeek === weekLabel;
+                        const isSelected = isSameWeekLabel(activeHistoryWeek, weekLabel);
 
                         return (
                           <button

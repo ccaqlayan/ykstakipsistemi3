@@ -7,7 +7,9 @@ import {
   getIsoDateString,
   getWeekDays,
   formatWeekLabelWithYear,
-  addWeeks
+  addWeeks,
+  isSameWeekLabel,
+  cleanWeekLabelForComparison
 } from '../utils/dateUtils';
 import { 
   ChevronLeft,
@@ -472,42 +474,41 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   }, [studyPlans, onUpdateAllPlans, currentMonday]);
 
   const getPlansForWeek = (weekLabel: string): StudyPlanItem[] => {
-    const norm = normalizeWeekLabel(weekLabel);
-    const realArchived = studyPlans.filter(p => p.archived && p.weekLabel && normalizeWeekLabel(p.weekLabel) === norm);
+    const realArchived = studyPlans.filter(p => p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, weekLabel));
     if (realArchived.length > 0) return realArchived;
 
-    if (norm === '6 - 12 Temmuz') {
+    if (isSameWeekLabel(weekLabel, '6 - 12 Temmuz')) {
       return [
-        { id: 'seed-1-1', day: 'Pazartesi', subject: 'Matematik', topic: 'Temel Kavramlar', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 40, weekLabel: norm, archived: true },
-        { id: 'seed-1-2', day: 'Pazartesi', subject: 'Türkçe', topic: 'Paragrafta Yapı', plannedMinutes: 45, completedMinutes: 45, status: 'completed', targetQuestionCount: 30, weekLabel: norm, archived: true },
-        { id: 'seed-1-3', day: 'Salı', subject: 'Fizik', topic: 'Vektörler', plannedMinutes: 60, completedMinutes: 45, status: 'in_progress', targetQuestionCount: 25, weekLabel: norm, archived: true },
-        { id: 'seed-1-4', day: 'Çarşamba', subject: 'Matematik', topic: 'Sayı Basamakları', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 40, weekLabel: norm, archived: true },
-        { id: 'seed-1-5', day: 'Perşembe', subject: 'Kimya', topic: 'Kimya Bilimi', plannedMinutes: 60, completedMinutes: 60, status: 'completed', targetQuestionCount: 30, weekLabel: norm, archived: true },
-        { id: 'seed-1-6', day: 'Cuma', subject: 'Biyoloji', topic: 'Canlıların Ortak Özellikleri', plannedMinutes: 60, completedMinutes: 0, status: 'pending', targetQuestionCount: 30, weekLabel: norm, archived: true },
-        { id: 'seed-1-7', day: 'Cumartesi', subject: 'Tarih', topic: 'Tarih ve Zaman', plannedMinutes: 45, completedMinutes: 45, status: 'completed', targetQuestionCount: 20, weekLabel: norm, archived: true },
+        { id: 'seed-1-1', day: 'Pazartesi', subject: 'Matematik', topic: 'Temel Kavramlar', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 40, weekLabel: '6 - 12 Temmuz', archived: true },
+        { id: 'seed-1-2', day: 'Pazartesi', subject: 'Türkçe', topic: 'Paragrafta Yapı', plannedMinutes: 45, completedMinutes: 45, status: 'completed', targetQuestionCount: 30, weekLabel: '6 - 12 Temmuz', archived: true },
+        { id: 'seed-1-3', day: 'Salı', subject: 'Fizik', topic: 'Vektörler', plannedMinutes: 60, completedMinutes: 45, status: 'in_progress', targetQuestionCount: 25, weekLabel: '6 - 12 Temmuz', archived: true },
+        { id: 'seed-1-4', day: 'Çarşamba', subject: 'Matematik', topic: 'Sayı Basamakları', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 40, weekLabel: '6 - 12 Temmuz', archived: true },
+        { id: 'seed-1-5', day: 'Perşembe', subject: 'Kimya', topic: 'Kimya Bilimi', plannedMinutes: 60, completedMinutes: 60, status: 'completed', targetQuestionCount: 30, weekLabel: '6 - 12 Temmuz', archived: true },
+        { id: 'seed-1-6', day: 'Cuma', subject: 'Biyoloji', topic: 'Canlıların Ortak Özellikleri', plannedMinutes: 60, completedMinutes: 0, status: 'pending', targetQuestionCount: 30, weekLabel: '6 - 12 Temmuz', archived: true },
+        { id: 'seed-1-7', day: 'Cumartesi', subject: 'Tarih', topic: 'Tarih ve Zaman', plannedMinutes: 45, completedMinutes: 45, status: 'completed', targetQuestionCount: 20, weekLabel: '6 - 12 Temmuz', archived: true },
       ];
     }
-    if (norm === '13 - 19 Temmuz') {
+    if (isSameWeekLabel(weekLabel, '13 - 19 Temmuz')) {
       return [
-        { id: 'seed-2-1', day: 'Pazartesi', subject: 'Matematik', topic: 'Bölme-Bölünebilme', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 45, weekLabel: norm, archived: true },
-        { id: 'seed-2-2', day: 'Pazartesi', subject: 'Türkçe', topic: 'Paragrafta Ana Düşünce', plannedMinutes: 45, completedMinutes: 45, status: 'completed', targetQuestionCount: 30, weekLabel: norm, archived: true },
-        { id: 'seed-2-3', day: 'Salı', subject: 'Fizik', topic: 'Bağıl Hareket', plannedMinutes: 75, completedMinutes: 75, status: 'completed', targetQuestionCount: 30, weekLabel: norm, archived: true },
-        { id: 'seed-2-4', day: 'Çarşamba', subject: 'Matematik', topic: 'EBOB-EKOK', plannedMinutes: 120, completedMinutes: 120, status: 'completed', targetQuestionCount: 50, weekLabel: norm, archived: true },
-        { id: 'seed-2-5', day: 'Perşembe', subject: 'Kimya', topic: 'Atom ve Periyodik Sistem', plannedMinutes: 75, completedMinutes: 30, status: 'in_progress', targetQuestionCount: 30, weekLabel: norm, archived: true },
-        { id: 'seed-2-6', day: 'Cuma', subject: 'Biyoloji', topic: 'Canlıların Temel Bileşenleri', plannedMinutes: 60, completedMinutes: 60, status: 'completed', targetQuestionCount: 35, weekLabel: norm, archived: true },
-        { id: 'seed-2-7', day: 'Pazar', subject: 'Geometri', topic: 'Doğruda ve Üçgende Açılar', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 40, weekLabel: norm, archived: true },
+        { id: 'seed-2-1', day: 'Pazartesi', subject: 'Matematik', topic: 'Bölme-Bölünebilme', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 45, weekLabel: '13 - 19 Temmuz', archived: true },
+        { id: 'seed-2-2', day: 'Pazartesi', subject: 'Türkçe', topic: 'Paragrafta Ana Düşünce', plannedMinutes: 45, completedMinutes: 45, status: 'completed', targetQuestionCount: 30, weekLabel: '13 - 19 Temmuz', archived: true },
+        { id: 'seed-2-3', day: 'Salı', subject: 'Fizik', topic: 'Bağıl Hareket', plannedMinutes: 75, completedMinutes: 75, status: 'completed', targetQuestionCount: 30, weekLabel: '13 - 19 Temmuz', archived: true },
+        { id: 'seed-2-4', day: 'Çarşamba', subject: 'Matematik', topic: 'EBOB-EKOK', plannedMinutes: 120, completedMinutes: 120, status: 'completed', targetQuestionCount: 50, weekLabel: '13 - 19 Temmuz', archived: true },
+        { id: 'seed-2-5', day: 'Perşembe', subject: 'Kimya', topic: 'Atom ve Periyodik Sistem', plannedMinutes: 75, completedMinutes: 30, status: 'in_progress', targetQuestionCount: 30, weekLabel: '13 - 19 Temmuz', archived: true },
+        { id: 'seed-2-6', day: 'Cuma', subject: 'Biyoloji', topic: 'Canlıların Temel Bileşenleri', plannedMinutes: 60, completedMinutes: 60, status: 'completed', targetQuestionCount: 35, weekLabel: '13 - 19 Temmuz', archived: true },
+        { id: 'seed-2-7', day: 'Pazar', subject: 'Geometri', topic: 'Doğruda ve Üçgende Açılar', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 40, weekLabel: '13 - 19 Temmuz', archived: true },
       ];
     }
-    if (norm === '20 - 26 Temmuz') {
+    if (isSameWeekLabel(weekLabel, '20 - 26 Temmuz')) {
       return [
-        { id: 'seed-3-1', day: 'Pazartesi', subject: 'Matematik', topic: 'Rasyonel Sayılar', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 40, weekLabel: norm, archived: true },
-        { id: 'seed-3-2', day: 'Pazartesi', subject: 'Türkçe', topic: 'Anlatım Biçimleri', plannedMinutes: 45, completedMinutes: 45, status: 'completed', targetQuestionCount: 30, weekLabel: norm, archived: true },
-        { id: 'seed-3-3', day: 'Salı', subject: 'Fizik', topic: 'Newton’ın Hareket Yasaları', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 35, weekLabel: norm, archived: true },
-        { id: 'seed-3-4', day: 'Çarşamba', subject: 'Matematik', topic: 'Birinci Dereceden Denklemler', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 40, weekLabel: norm, archived: true },
-        { id: 'seed-3-5', day: 'Perşembe', subject: 'Kimya', topic: 'Kimyasal Türler Arası Etkileşimler', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 30, weekLabel: norm, archived: true },
-        { id: 'seed-3-6', day: 'Cuma', subject: 'Biyoloji', topic: 'Hücre Yapısı', plannedMinutes: 75, completedMinutes: 75, status: 'completed', targetQuestionCount: 30, weekLabel: norm, archived: true },
-        { id: 'seed-3-7', day: 'Cumartesi', subject: 'Coğrafya', topic: 'Doğa ve İnsan', plannedMinutes: 45, completedMinutes: 45, status: 'completed', targetQuestionCount: 20, weekLabel: norm, archived: true },
-        { id: 'seed-3-8', day: 'Pazar', subject: 'Geometri', topic: 'Özel Üçgenler', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 40, weekLabel: norm, archived: true },
+        { id: 'seed-3-1', day: 'Pazartesi', subject: 'Matematik', topic: 'Rasyonel Sayılar', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 40, weekLabel: '20 - 26 Temmuz', archived: true },
+        { id: 'seed-3-2', day: 'Pazartesi', subject: 'Türkçe', topic: 'Anlatım Biçimleri', plannedMinutes: 45, completedMinutes: 45, status: 'completed', targetQuestionCount: 30, weekLabel: '20 - 26 Temmuz', archived: true },
+        { id: 'seed-3-3', day: 'Salı', subject: 'Fizik', topic: 'Newton’ın Hareket Yasaları', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 35, weekLabel: '20 - 26 Temmuz', archived: true },
+        { id: 'seed-3-4', day: 'Çarşamba', subject: 'Matematik', topic: 'Birinci Dereceden Denklemler', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 40, weekLabel: '20 - 26 Temmuz', archived: true },
+        { id: 'seed-3-5', day: 'Perşembe', subject: 'Kimya', topic: 'Kimyasal Türler Arası Etkileşimler', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 30, weekLabel: '20 - 26 Temmuz', archived: true },
+        { id: 'seed-3-6', day: 'Cuma', subject: 'Biyoloji', topic: 'Hücre Yapısı', plannedMinutes: 75, completedMinutes: 75, status: 'completed', targetQuestionCount: 30, weekLabel: '20 - 26 Temmuz', archived: true },
+        { id: 'seed-3-7', day: 'Cumartesi', subject: 'Coğrafya', topic: 'Doğa ve İnsan', plannedMinutes: 45, completedMinutes: 45, status: 'completed', targetQuestionCount: 20, weekLabel: '20 - 26 Temmuz', archived: true },
+        { id: 'seed-3-8', day: 'Pazar', subject: 'Geometri', topic: 'Özel Üçgenler', plannedMinutes: 90, completedMinutes: 90, status: 'completed', targetQuestionCount: 40, weekLabel: '20 - 26 Temmuz', archived: true },
       ];
     }
 
@@ -519,8 +520,15 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       ...studyPlans.filter(p => p.archived && p.weekLabel).map(p => p.weekLabel as string),
       ...CHRONOLOGICAL_SEEDS
     ];
-    const normalized = rawLabels.filter(Boolean).map(l => normalizeWeekLabel(l));
-    const unique = Array.from(new Set<string>(normalized));
+    // Map by clean comparison label to deduplicate without year mismatches
+    const map = new Map<string, string>();
+    rawLabels.filter(Boolean).forEach(l => {
+      const clean = cleanWeekLabelForComparison(l);
+      if (!map.has(clean)) {
+        map.set(clean, l);
+      }
+    });
+    const unique = Array.from(map.values());
     unique.sort((a, b) => parseWeekStartTimestamp(b) - parseWeekStartTimestamp(a));
     return unique;
   };
@@ -1186,13 +1194,11 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
 
   // Active/Displayed Plans for the currently selected week (Past, Current, or Future)
   const activePlans = React.useMemo(() => {
-    const normLabel = normalizeWeekLabel(currentWeekLabel);
-
     // 1. Check if there are tasks explicitly matching weekLabel or dates of selected week
     const matched = studyPlans.filter(p => {
-      if (p.weekLabel && normalizeWeekLabel(p.weekLabel) === normLabel) return true;
+      if (p.weekLabel && isSameWeekLabel(p.weekLabel, currentWeekLabel)) return true;
       if (p.date) return selectedWeekDays.some(d => d.isoDate === p.date);
-      if (!p.archived && isCurrentWeek && (!p.weekLabel || p.weekLabel === normLabel)) return true;
+      if (!p.archived && isCurrentWeek && (!p.weekLabel || isSameWeekLabel(p.weekLabel, currentWeekLabel))) return true;
       return false;
     });
 
