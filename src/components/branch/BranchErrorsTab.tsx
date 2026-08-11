@@ -42,6 +42,7 @@ interface BranchErrorsTabProps {
   openImagePreview: (url: string, title: string) => void;
   ERROR_REASON_LABELS: Record<string, string>;
   ERROR_REASON_COLORS: Record<string, string>;
+  hideHeroHeader?: boolean;
 }
 
 export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
@@ -71,6 +72,7 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   openImagePreview,
   ERROR_REASON_LABELS,
   ERROR_REASON_COLORS,
+  hideHeroHeader = false,
 }) => {
   const [activeAiAnalysis, setActiveAiAnalysis] = useState<{ topicName: string; subject: string; text: string } | null>(null);
 
@@ -97,32 +99,34 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
     <div className="space-y-6 font-sans animate-fade-in">
       
       {/* ── HERO HEADER BANNER ── */}
-      <div className="bg-gradient-to-r from-slate-900 via-rose-950/30 to-slate-900 p-6 sm:p-7 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-md relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5">
-        <div className="space-y-2 z-10">
-          <div className="inline-flex items-center space-x-2 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full text-xs font-bold text-rose-300">
-            <Sparkles className="w-3.5 h-3.5 text-rose-400" />
-            <span>YKS Sıfır Hata & Yapay Zeka Çözüm Merkezi</span>
+      {!hideHeroHeader && (
+        <div className="bg-gradient-to-r from-slate-900 via-rose-950/30 to-slate-900 p-6 sm:p-7 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-md relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="space-y-2 z-10">
+            <div className="inline-flex items-center space-x-2 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full text-xs font-bold text-rose-300">
+              <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+              <span>YKS Sıfır Hata & Yapay Zeka Çözüm Merkezi</span>
+            </div>
+            <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center space-x-2.5">
+              <AlertTriangle className="w-6 h-6 text-rose-500 shrink-0 animate-pulse" />
+              <span>Hata Defteri & Yanlış Tablosu</span>
+            </h1>
+            <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+              Deneme sınavları ve soru bankalarında yanlış yaptığınız konuları analiz edin, yapay zeka ile adım adım çözümlerini inceleyin ve tekrar ederek tam hakimiyet sağlayın.
+            </p>
           </div>
-          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center space-x-2.5">
-            <AlertTriangle className="w-6 h-6 text-rose-500 shrink-0 animate-pulse" />
-            <span>Hata Defteri & Yanlış Tablosu</span>
-          </h1>
-          <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-            Deneme sınavları ve soru bankalarında yanlış yaptığınız konuları analiz edin, yapay zeka ile adım adım çözümlerini inceleyin ve tekrar ederek tam hakimiyet sağlayın.
-          </p>
-        </div>
 
-        <div className="flex items-center space-x-3 shrink-0 z-10">
-          <button
-            type="button"
-            onClick={() => openAddErrorModal()}
-            className="bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-xs font-bold px-5 py-3 rounded-2xl transition-all shadow-xl shadow-rose-600/30 flex items-center justify-center space-x-2 cursor-pointer border border-rose-400/30 group"
-          >
-            <AlertTriangle className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            <span>+ Yeni Hata Kaydı Ekle</span>
-          </button>
+          <div className="flex items-center space-x-3 shrink-0 z-10">
+            <button
+              type="button"
+              onClick={() => openAddErrorModal()}
+              className="bg-gradient-to-r from-rose-600 via-purple-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-white text-xs font-bold px-5 py-3 rounded-2xl transition-all shadow-xl shadow-rose-600/30 flex items-center justify-center space-x-2 cursor-pointer border border-rose-400/30 group"
+            >
+              <AlertTriangle className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              <span>+ Yeni Hata Kaydı Ekle</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── 4 KPI SUMMARY METRIC CARDS ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

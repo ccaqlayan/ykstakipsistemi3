@@ -1716,62 +1716,55 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     <div className="space-y-6">
       
       {/* Header & Section Selector */}
-      <div className="flex flex-col gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-white flex items-center space-x-2">
-              {mode === 'errors' ? (
-                <>
-                  <BookOpen className="w-5 h-5 text-rose-400" />
-                  <span>Hata Defteri (Yanlış Tablosu)</span>
-                </>
-              ) : mode === 'branches' ? (
-                <>
-                  <Target className="w-5 h-5 text-indigo-400" />
-                  <span>Branş Deneme Analizi</span>
-                </>
+      {mode !== 'errors' && (
+        <div className="flex flex-col gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-xl font-bold text-white flex items-center space-x-2">
+                {mode === 'branches' ? (
+                  <>
+                    <Target className="w-5 h-5 text-indigo-400" />
+                    <span>Branş Deneme Analizi</span>
+                  </>
+                ) : (
+                  <>
+                    <Target className="w-5 h-5 text-indigo-400" />
+                    <span>Branş Denemeleri Analizi & Yanlış Tablosu</span>
+                  </>
+                )}
+              </h1>
+              <p className="text-xs text-slate-400 mt-1">
+                {mode === 'branches'
+                  ? 'Ders bazlı branş denemelerinizi kaydedin, net analizlerinizi ve ilerlemenizi görün.'
+                  : 'Ders bazlı branş denemelerinizi kaydedin, yanlış yaptığınız eksik konuları tespit edip tekrar edin.'
+                }
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-2 shrink-0">
+              {activeSubTab === 'errors' ? (
+                <button
+                  onClick={handleOpenAddErrorModal}
+                  id="add-error-topic-btn"
+                  className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center space-x-1 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Hata Ekle</span>
+                </button>
               ) : (
-                <>
-                  <Target className="w-5 h-5 text-indigo-400" />
-                  <span>Branş Denemeleri Analizi & Yanlış Tablosu</span>
-                </>
+                <button
+                  onClick={handleOpenAddExamModal}
+                  id="add-branch-exam-btn"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center space-x-1 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Branş Denemesi Gir</span>
+                </button>
               )}
-            </h1>
-            <p className="text-xs text-slate-400 mt-1">
-              {mode === 'errors'
-                ? 'Yanlış yaptığınız eksik konuları kaydedin, YKS Yapay Zeka yorumlarını inceleyin ve çözüm takibini yapın.'
-                : mode === 'branches'
-                ? 'Ders bazlı branş denemelerinizi kaydedin, net analizlerinizi ve ilerlemenizi görün.'
-                : 'Ders bazlı branş denemelerinizi kaydedin, yanlış yaptığınız eksik konuları tespit edip tekrar edin.'
-              }
-            </p>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-2 shrink-0">
-            {activeSubTab === 'errors' ? (
-              <button
-                onClick={handleOpenAddErrorModal}
-                id="add-error-topic-btn"
-                className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center space-x-1 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Hata Ekle</span>
-              </button>
-            ) : (
-              <button
-                onClick={handleOpenAddExamModal}
-                id="add-branch-exam-btn"
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center space-x-1 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Branş Denemesi Gir</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Subtabs Selector Bar */}
-        {mode !== 'errors' && (
+          {/* Subtabs Selector Bar */}
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/60">
             <div className="bg-slate-950 p-1 rounded-xl border border-slate-800 flex flex-wrap gap-1">
               <button
@@ -1813,8 +1806,8 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
               )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* SUBTAB 0: GRAFİK & ANALİZ (CHARTS DASHBOARD) */}
       {activeSubTab === 'analytics' && (
@@ -1874,6 +1867,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
           openImagePreview={openImagePreview}
           ERROR_REASON_LABELS={ERROR_REASON_LABELS}
           ERROR_REASON_COLORS={ERROR_REASON_COLORS}
+          hideHeroHeader={mode !== 'errors'}
         />
       )}
 
