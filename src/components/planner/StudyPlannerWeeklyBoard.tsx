@@ -174,21 +174,23 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                   </div>
                 </div>
 
-                <button
-                  onClick={() => openAddModal(day)}
-                  className={`p-1.5 rounded-xl transition-all border shadow-sm day-header-add-btn ${
-                    isToday
-                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-400'
-                      : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-700/60'
-                  }`}
-                  title={`${day} gününe görev ekle`}
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+                {!isArchivedWeek && (
+                  <button
+                    onClick={() => openAddModal(day)}
+                    className={`p-1.5 rounded-xl transition-all border shadow-sm day-header-add-btn ${
+                      isToday
+                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-400'
+                        : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border-slate-700/60'
+                    }`}
+                    title={`${day} gününe görev ekle`}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
               {/* Drag Target Banner when hovering */}
-              {isDragTarget && (
+              {isDragTarget && !isArchivedWeek && (
                 <div className="m-2 p-2 bg-indigo-500/30 border border-indigo-400/60 rounded-xl text-[11px] font-bold text-indigo-100 text-center animate-pulse">
                   📥 {day.toUpperCase()} Gününe Bırak
                 </div>
@@ -199,12 +201,14 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                 {dayPlans.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center p-4 border border-dashed border-slate-800 rounded-xl text-center text-[11px] text-slate-500">
                     <span>Görev yok</span>
-                    <button
-                      onClick={() => openAddModal(day)}
-                      className="mt-2 text-[10px] font-bold text-indigo-400 hover:text-indigo-300"
-                    >
-                      + Görev Ekle
-                    </button>
+                    {!isArchivedWeek && (
+                      <button
+                        onClick={() => openAddModal(day)}
+                        className="mt-2 text-[10px] font-bold text-indigo-400 hover:text-indigo-300"
+                      >
+                        + Görev Ekle
+                      </button>
+                    )}
                   </div>
                 ) : (
                   dayPlans.map((plan) => {
@@ -214,15 +218,16 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                     return (
                       <div
                         key={plan.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, plan.id)}
+                        draggable={!isArchivedWeek}
+                        onDragStart={(e) => !isArchivedWeek && handleDragStart(e, plan.id)}
                         onDragEnd={handleDragEnd}
-                        onTouchStart={(e) => handleTouchStart(e, plan.id)}
+                        onTouchStart={(e) => !isArchivedWeek && handleTouchStart(e, plan.id)}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
                         onTouchCancel={handleTouchEnd}
                         onContextMenu={(e) => e.preventDefault()}
                         onClick={(e) => {
+                          if (isArchivedWeek) return;
                           if (touchStartRef.current?.moved) {
                             e.preventDefault();
                             e.stopPropagation();
@@ -230,7 +235,11 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                           }
                           setEditingPlan(plan);
                         }}
-                        className={`group p-3 rounded-xl border transition-all cursor-grab active:cursor-grabbing relative select-none ${
+                        className={`group p-3 rounded-xl border transition-all relative select-none ${
+                          isArchivedWeek 
+                            ? 'cursor-default' 
+                            : 'cursor-grab active:cursor-grabbing'
+                        } ${
                           touchDraggedPlanId === plan.id 
                             ? 'touch-none opacity-80 shadow-indigo-500/30 shadow-xl scale-[1.03] border-indigo-500/80 bg-slate-900' 
                             : 'touch-pan-y'
@@ -256,20 +265,32 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                           </div>
                           
                           <div className="flex items-center space-x-1">
-                            <GripVertical className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 flex-shrink-0" />
-                            
-                            <button
-                              type="button"
-                              onClick={(e) => handleCheckClick(e, plan)}
-                              className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                            {!isArchivedWeek && (
+                              <GripVertical className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 flex-shrink-0" />
+                            )}
+
+                            {isArchivedWeek ? (
+                              <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold ${
                                 plan.status === 'completed'
                                   ? 'bg-emerald-500 text-white'
-                                  : 'border border-slate-700 hover:border-emerald-400 text-transparent hover:text-emerald-400/40'
-                              }`}
-                              title={plan.status === 'completed' ? 'Tamamlanmadı yap' : 'Tamamla ve Süre Gir'}
-                            >
-                              <Check className="w-3 h-3 stroke-[3]" />
-                            </button>
+                                  : 'bg-slate-800 text-slate-500 border border-slate-700'
+                              }`}>
+                                {plan.status === 'completed' ? <Check className="w-3 h-3 stroke-[3]" /> : '•'}
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => handleCheckClick(e, plan)}
+                                className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                                  plan.status === 'completed'
+                                    ? 'bg-emerald-500 text-white'
+                                    : 'border border-slate-700 hover:border-emerald-400 text-transparent hover:text-emerald-400/40'
+                                }`}
+                                title={plan.status === 'completed' ? 'Tamamlanmadı yap' : 'Tamamla ve Süre Gir'}
+                              >
+                                <Check className="w-3 h-3 stroke-[3]" />
+                              </button>
+                            )}
                           </div>
                         </div>
 
@@ -290,74 +311,85 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                           )}
                         </div>
 
-                        {/* Quick Day Shift Popover Button (For Touch/Click Convenience) */}
-                        <div className="mt-2 pt-1 flex items-center justify-between opacity-90 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpenMoveMenuPlanId(openMoveMenuPlanId === plan.id ? null : plan.id);
-                              }}
-                              className={`p-1.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center ${
-                                openMoveMenuPlanId === plan.id
-                                  ? 'bg-indigo-600 text-white border-indigo-500 shadow-md'
-                                  : 'bg-slate-900/90 text-slate-300 hover:text-indigo-300 hover:bg-slate-800 border-slate-800'
-                              }`}
-                              title="Günü Değiştir"
-                            >
-                              <CalendarDays className="w-3.5 h-3.5 text-indigo-400" />
-                            </button>
+                        {isArchivedWeek ? (
+                          <div className="mt-2 pt-1.5 flex items-center justify-between text-[10px] border-t border-slate-800/80">
+                            <span className={plan.status === 'completed' ? 'text-emerald-400 font-bold flex items-center gap-1' : 'text-slate-500 font-medium'}>
+                              {plan.status === 'completed' ? '✅ Tamamlandı' : '⏳ Tamamlanmadı'}
+                            </span>
+                            <span className="text-slate-300 font-mono font-semibold">
+                              {plan.completedMinutes ? `${plan.completedMinutes} dk` : `${plan.plannedMinutes} dk`}
+                            </span>
+                          </div>
+                        ) : (
+                          /* Quick Day Shift Popover Button (For Touch/Click Convenience) */
+                          <div className="mt-2 pt-1 flex items-center justify-between opacity-90 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOpenMoveMenuPlanId(openMoveMenuPlanId === plan.id ? null : plan.id);
+                                }}
+                                className={`p-1.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center ${
+                                  openMoveMenuPlanId === plan.id
+                                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-md'
+                                    : 'bg-slate-900/90 text-slate-300 hover:text-indigo-300 hover:bg-slate-800 border-slate-800'
+                                }`}
+                                title="Günü Değiştir"
+                              >
+                                <CalendarDays className="w-3.5 h-3.5 text-indigo-400" />
+                              </button>
 
-                            {openMoveMenuPlanId === plan.id && (
-                              <div className="absolute left-0 bottom-full mb-1.5 z-40 w-36 bg-slate-900 border border-slate-700/90 rounded-xl shadow-2xl p-1.5 space-y-0.5 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-md">
-                                <div className="text-[9px] font-extrabold text-indigo-400 px-2 py-1 uppercase tracking-wider border-b border-slate-800 mb-1 flex items-center justify-between">
-                                  <span>Günü Seçin</span>
-                                  <ArrowRightLeft className="w-2.5 h-2.5 text-indigo-400" />
+                              {openMoveMenuPlanId === plan.id && (
+                                <div className="absolute left-0 bottom-full mb-1.5 z-40 w-36 bg-slate-900 border border-slate-700/90 rounded-xl shadow-2xl p-1.5 space-y-0.5 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-md">
+                                  <div className="text-[9px] font-extrabold text-indigo-400 px-2 py-1 uppercase tracking-wider border-b border-slate-800 mb-1 flex items-center justify-between">
+                                    <span>Günü Seçin</span>
+                                    <ArrowRightLeft className="w-2.5 h-2.5 text-indigo-400" />
+                                  </div>
+                                  {DAYS.map((d) => (
+                                    <button
+                                      key={d}
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleQuickMoveDay(plan, d);
+                                        setOpenMoveMenuPlanId(null);
+                                      }}
+                                      className={`w-full text-left text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors flex items-center justify-between cursor-pointer ${
+                                        plan.day === d
+                                          ? 'bg-indigo-600 text-white font-bold shadow-sm'
+                                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                                      }`}
+                                    >
+                                      <span>{d}</span>
+                                      {plan.day === d && <Check className="w-3 h-3 stroke-[3]" />}
+                                    </button>
+                                  ))}
                                 </div>
-                                {DAYS.map((d) => (
-                                  <button
-                                    key={d}
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleQuickMoveDay(plan, d);
-                                      setOpenMoveMenuPlanId(null);
-                                    }}
-                                    className={`w-full text-left text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors flex items-center justify-between cursor-pointer ${
-                                      plan.day === d
-                                        ? 'bg-indigo-600 text-white font-bold shadow-sm'
-                                        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                                    }`}
-                                  >
-                                    <span>{d}</span>
-                                    {plan.day === d && <Check className="w-3 h-3 stroke-[3]" />}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                              )}
+                            </div>
 
-                          <div className="flex items-center space-x-1">
-                            <button
-                              type="button"
-                              onClick={(e) => handleDuplicatePlan(e, plan)}
-                              className="text-[10px] text-slate-500 hover:text-indigo-400 p-0.5 rounded transition-colors cursor-pointer"
-                              title="Görevi Kopyala"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </button>
+                            <div className="flex items-center space-x-1">
+                              <button
+                                type="button"
+                                onClick={(e) => handleDuplicatePlan(e, plan)}
+                                className="text-[10px] text-slate-500 hover:text-indigo-400 p-0.5 rounded transition-colors cursor-pointer"
+                                title="Görevi Kopyala"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
 
-                            <button
-                              type="button"
-                              onClick={() => setDeletingPlan({ id: plan.id, title: `${plan.day} - ${plan.subject}: ${plan.topic}` })}
-                              className="text-[10px] text-slate-500 hover:text-rose-400 p-0.5 cursor-pointer"
-                              title="Sil"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeletingPlan({ id: plan.id, title: `${plan.day} - ${plan.subject}: ${plan.topic}` })}
+                                className="text-[10px] text-slate-500 hover:text-rose-400 p-0.5 cursor-pointer"
+                                title="Sil"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                       </div>
                     );

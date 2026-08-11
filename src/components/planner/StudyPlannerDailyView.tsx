@@ -31,6 +31,7 @@ interface StudyPlannerDailyViewProps {
   getLinkedQuestionLogs: (studyPlanId: string, planTopic?: string, planSubject?: string) => QuestionLog[];
   removeLinkedQuestionLog: (studyPlanId: string, planTopic?: string, planSubject?: string) => void;
   setUncompleteConfirm: (data: { plan: StudyPlanItem; targetStatus: 'pending' | 'in_progress'; linkedLogs: QuestionLog[] } | null) => void;
+  isArchivedWeek?: boolean;
 }
 
 export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
@@ -48,6 +49,7 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
   getLinkedQuestionLogs,
   removeLinkedQuestionLog,
   setUncompleteConfirm,
+  isArchivedWeek = false
 }) => {
   const [expandedQuickControls, setExpandedQuickControls] = useState<Record<string, boolean>>({});
   const [inlineEditingNotesPlanId, setInlineEditingNotesPlanId] = useState<string | null>(null);
@@ -75,13 +77,15 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
               <span className="font-bold mr-1">{dayPlans.length}</span> Görev
             </span>
 
-            <button
-              onClick={() => openAddModal(selectedDay)}
-              className="text-[11px] sm:text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl transition-all font-bold flex items-center space-x-1 sm:space-x-1.5 shadow-lg shadow-indigo-600/30 border border-indigo-400/30 shrink-0 cursor-pointer whitespace-nowrap"
-            >
-              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span>Görev Ekle</span>
-            </button>
+            {!isArchivedWeek && (
+              <button
+                onClick={() => openAddModal(selectedDay)}
+                className="text-[11px] sm:text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl transition-all font-bold flex items-center space-x-1 sm:space-x-1.5 shadow-lg shadow-indigo-600/30 border border-indigo-400/30 shrink-0 cursor-pointer whitespace-nowrap"
+              >
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span>Görev Ekle</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -89,12 +93,14 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
           <div className="text-center py-14 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950/40">
             <Calendar className="w-10 h-10 text-slate-600 mx-auto mb-3" />
             <p className="text-sm text-slate-300 font-bold">Bu gün için henüz bir ders görevi planlanmadı.</p>
-            <button
-              onClick={() => openAddModal(selectedDay)}
-              className="mt-4 text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-md"
-            >
-              + {selectedDay} Gününe Görev Ekle
-            </button>
+            {!isArchivedWeek && (
+              <button
+                onClick={() => openAddModal(selectedDay)}
+                className="mt-4 text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-md"
+              >
+                + {selectedDay} Gününe Görev Ekle
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
@@ -113,43 +119,57 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
                 >
                   {/* Top-Right Edit & Delete & Check Actions */}
                   <div className="absolute top-4 right-4 flex flex-col items-center gap-2 z-10">
-                    <div className="flex items-center space-x-1">
-                      <button
-                        onClick={() => setEditingPlan(plan)}
-                        className="p-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-800/80 opacity-50 hover:opacity-100 cursor-pointer shadow-sm"
-                        title="Görevi Düzenle"
-                      >
-                        <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
-                      </button>
+                    {!isArchivedWeek && (
+                      <div className="flex items-center space-x-1">
+                        <button
+                          onClick={() => setEditingPlan(plan)}
+                          className="p-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-all border border-slate-800/80 opacity-50 hover:opacity-100 cursor-pointer shadow-sm"
+                          title="Görevi Düzenle"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-indigo-400" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDuplicatePlan(e, plan)}
+                          className="p-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-indigo-400 rounded-xl transition-all border border-slate-800/80 opacity-50 hover:opacity-100 cursor-pointer shadow-sm"
+                          title="Görevi Kopyala"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeletingPlan({ id: plan.id, title: `${plan.day} - ${plan.subject}: ${plan.topic}` })}
+                          className="p-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-rose-400 rounded-xl transition-all border border-slate-800/80 opacity-50 hover:opacity-100 cursor-pointer shadow-sm"
+                          title="Sil"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+
+                    {isArchivedWeek ? (
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold border shadow-sm ${
+                        plan.status === 'completed'
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : plan.status === 'in_progress'
+                          ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+                          : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      }`}>
+                        {plan.status === 'completed' ? '✅ Tamamlandı' : plan.status === 'in_progress' ? '⚡ Devam Ediyor' : '⏳ Bekliyor'}
+                      </span>
+                    ) : (
                       <button
                         type="button"
-                        onClick={(e) => handleDuplicatePlan(e, plan)}
-                        className="p-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-indigo-400 rounded-xl transition-all border border-slate-800/80 opacity-50 hover:opacity-100 cursor-pointer shadow-sm"
-                        title="Görevi Kopyala"
+                        onClick={(e) => handleCheckClick(e, plan)}
+                        className={`flex items-center justify-center w-7 h-7 rounded-full border transition-all cursor-pointer shrink-0 shadow-md ${
+                          plan.status === 'completed'
+                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30 shadow-emerald-500/10'
+                            : 'bg-slate-950/60 text-slate-500 border-slate-800 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-emerald-500/5'
+                        }`}
+                        title={plan.status === 'completed' ? 'Görevi Tamamlanmadı Olarak İşaretle' : 'Görevi Tamamlandı Olarak İşaretle'}
                       >
-                        <Copy className="w-3.5 h-3.5" />
+                        <Check className={`w-4 h-4 ${plan.status === 'completed' ? 'stroke-[3]' : 'stroke-[2]'}`} />
                       </button>
-                      <button
-                        onClick={() => setDeletingPlan({ id: plan.id, title: `${plan.day} - ${plan.subject}: ${plan.topic}` })}
-                        className="p-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-rose-400 rounded-xl transition-all border border-slate-800/80 opacity-50 hover:opacity-100 cursor-pointer shadow-sm"
-                        title="Sil"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={(e) => handleCheckClick(e, plan)}
-                      className={`flex items-center justify-center w-7 h-7 rounded-full border transition-all cursor-pointer shrink-0 shadow-md ${
-                        plan.status === 'completed'
-                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30 shadow-emerald-500/10'
-                          : 'bg-slate-950/60 text-slate-500 border-slate-800 hover:text-emerald-400 hover:border-emerald-500/40 hover:bg-emerald-500/5'
-                      }`}
-                      title={plan.status === 'completed' ? 'Görevi Tamamlanmadı Olarak İşaretle' : 'Görevi Tamamlandı Olarak İşaretle'}
-                    >
-                      <Check className={`w-4 h-4 ${plan.status === 'completed' ? 'stroke-[3]' : 'stroke-[2]'}`} />
-                    </button>
+                    )}
                   </div>
 
                   {/* Header Row: Subject, Topic & Time */}
@@ -219,8 +239,10 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
                             <div className="flex items-center space-x-2">
                               <span className="text-xs font-bold text-slate-400 shrink-0">Hızlı Durum:</span>
                               <select
+                                disabled={isArchivedWeek}
                                 value={plan.status}
                                 onChange={(e) => {
+                                  if (isArchivedWeek) return;
                                   const newStatus = e.target.value as 'pending' | 'in_progress' | 'completed';
                                   if (newStatus === 'completed' && plan.status !== 'completed') {
                                     const updatedPlan: StudyPlanItem = {
@@ -255,7 +277,9 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
                                     });
                                   }
                                 }}
-                                className={`text-xs font-bold px-3 py-1.5 rounded-xl border focus:outline-none transition-all cursor-pointer ${
+                                className={`text-xs font-bold px-3 py-1.5 rounded-xl border focus:outline-none transition-all ${
+                                  isArchivedWeek ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'
+                                } ${
                                   plan.status === 'completed'
                                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                                     : plan.status === 'in_progress'
@@ -276,14 +300,18 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
                                 <span>Hızlı Yorum:</span>
                               </span>
                               <select
+                                disabled={isArchivedWeek}
                                 value={plan.reflection || ''}
                                 onChange={(e) => {
+                                  if (isArchivedWeek) return;
                                   onUpdatePlan({
                                     ...plan,
                                     reflection: e.target.value || undefined
                                   });
                                 }}
-                                className={`text-xs font-bold px-3 py-1.5 rounded-xl border focus:outline-none transition-all cursor-pointer ${
+                                className={`text-xs font-bold px-3 py-1.5 rounded-xl border focus:outline-none transition-all ${
+                                  isArchivedWeek ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'
+                                } ${
                                   plan.reflection
                                     ? 'bg-fuchsia-500/20 text-fuchsia-200 border-fuchsia-500/40'
                                     : 'bg-slate-900 text-slate-400 border-slate-800'

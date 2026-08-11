@@ -1184,8 +1184,32 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     });
   };
 
-  // Active Plans
-  const activePlans = studyPlans.filter(p => !p.archived);
+  // Active/Displayed Plans for the currently selected week (Past, Current, or Future)
+  const activePlans = React.useMemo(() => {
+    const normLabel = normalizeWeekLabel(currentWeekLabel);
+
+    // 1. Check if there are tasks explicitly matching weekLabel or dates of selected week
+    const matched = studyPlans.filter(p => {
+      if (p.weekLabel && normalizeWeekLabel(p.weekLabel) === normLabel) return true;
+      if (p.date) return selectedWeekDays.some(d => d.isoDate === p.date);
+      if (!p.archived && isCurrentWeek && (!p.weekLabel || p.weekLabel === normLabel)) return true;
+      return false;
+    });
+
+    if (matched.length > 0) return matched;
+
+    // 2. If viewing current week and no specific matching plans, return all unarchived active plans
+    if (isCurrentWeek) {
+      return studyPlans.filter(p => !p.archived);
+    }
+
+    // 3. If past week, load archived plans for that week from getPlansForWeek
+    if (isPastWeek) {
+      return getPlansForWeek(currentWeekLabel);
+    }
+
+    return [];
+  }, [studyPlans, selectedMondayDate, currentWeekLabel, isCurrentWeek, isPastWeek, selectedWeekDays]);
 
   // Weekly Stats Calculation
   const totalWeeklyPlannedMins = activePlans.reduce((acc, curr) => acc + (curr.plannedMinutes || 0), 0);
@@ -1674,6 +1698,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
           getLinkedQuestionLogs={getLinkedQuestionLogs}
           removeLinkedQuestionLog={removeLinkedQuestionLog}
           setUncompleteConfirm={setUncompleteConfirm}
+          isArchivedWeek={isPastWeek}
         />
       )}
 
