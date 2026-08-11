@@ -105,6 +105,7 @@ export interface QuestionLog {
   wrongCount: number;
   emptyCount: number;
   netScore: number;
+  durationMinutes?: number;
   notes?: string;
   studyPlanId?: string;
 }

@@ -16,7 +16,17 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  Clock,
+  Timer,
+  Zap,
+  TrendingUp,
+  Search,
+  Sparkles,
+  HelpCircle,
+  Activity,
+  Flame,
+  FileText
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -82,12 +92,21 @@ const getSubjectColor = (subjectName: string, index: number = 0) => {
   return SUBJECT_COLORS[subjectName] || DEFAULT_PALETTE[index % DEFAULT_PALETTE.length];
 };
 
+const formatMinutesToHours = (mins: number) => {
+  if (!mins || mins <= 0) return '0 dk';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h === 0) return `${m} dk`;
+  if (m === 0) return `${h} sa`;
+  return `${h} sa ${m} dk`;
+};
+
 const CustomBarTooltip = ({ active, payload, label, hiddenSubjects = [] }: any) => {
   if (active && payload && payload.length) {
     const validItems = payload.filter((item: any) => {
       if (item.value === undefined || item.value === null || Number(item.value) <= 0) return false;
       if (item.hide) return false;
-      const rawSubj = item.dataKey ? item.dataKey.replace('Net_', '') : '';
+      const rawSubj = item.dataKey ? item.dataKey.replace('Net_', '').replace('Time_', '') : '';
       if (hiddenSubjects.includes(rawSubj) || hiddenSubjects.includes(item.dataKey)) return false;
       return true;
     });
@@ -96,21 +115,21 @@ const CustomBarTooltip = ({ active, payload, label, hiddenSubjects = [] }: any) 
     const totalSolvedOnDay = validItems.reduce((acc: number, item: any) => acc + Number(item.value), 0);
 
     return (
-      <div className="bg-slate-900 border border-slate-700 p-3 rounded-xl shadow-2xl text-xs space-y-2 min-w-[150px] z-50">
+      <div className="bg-slate-900/95 border border-slate-700/80 p-3 rounded-2xl shadow-2xl backdrop-blur-md text-xs space-y-2 min-w-[170px] z-50 animate-fade-in">
         <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 space-x-2">
           <span className="font-bold text-slate-200">{label}</span>
-          <span className="text-[10px] bg-emerald-500/10 text-emerald-400 font-bold px-1.5 py-0.5 rounded">
+          <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
             Toplam: {totalSolvedOnDay}
           </span>
         </div>
-        <div className="space-y-1">
+        <div className="space-y-1 max-h-48 overflow-y-auto">
           {validItems.map((entry: any, index: number) => (
-            <div key={`bar-tooltip-${index}`} className="flex items-center justify-between space-x-3">
+            <div key={`bar-tooltip-${index}`} className="flex items-center justify-between space-x-3 text-[11px]">
               <div className="flex items-center space-x-1.5">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color || entry.fill }} />
+                <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: entry.color || entry.fill }} />
                 <span className="text-slate-300 font-medium">{entry.name}:</span>
               </div>
-              <span className="font-bold text-white">{entry.value} soru</span>
+              <span className="font-bold text-white font-mono">{entry.value} soru</span>
             </div>
           ))}
         </div>
@@ -125,27 +144,57 @@ const CustomLineTooltip = ({ active, payload, label, hiddenSubjects = [] }: any)
     const validItems = payload.filter((item: any) => {
       if (item.value === undefined || item.value === null || Number(item.value) <= 0) return false;
       if (item.hide) return false;
-      const rawSubj = item.dataKey ? item.dataKey.replace('Net_', '') : '';
+      const rawSubj = item.dataKey ? item.dataKey.replace('Net_', '').replace('Time_', '') : '';
       if (hiddenSubjects.includes(rawSubj) || hiddenSubjects.includes(item.dataKey)) return false;
       return true;
     });
     if (validItems.length === 0) return null;
 
     return (
-      <div className="bg-slate-900 border border-slate-700 p-3 rounded-xl shadow-2xl text-xs space-y-2 min-w-[150px] z-50">
+      <div className="bg-slate-900/95 border border-slate-700/80 p-3 rounded-2xl shadow-2xl backdrop-blur-md text-xs space-y-2 min-w-[170px] z-50 animate-fade-in">
         <div className="font-bold text-slate-200 border-b border-slate-800 pb-1.5">
           {label}
         </div>
         <div className="space-y-1">
           {validItems.map((entry: any, index: number) => (
-            <div key={`line-tooltip-${index}`} className="flex items-center justify-between space-x-3">
+            <div key={`line-tooltip-${index}`} className="flex items-center justify-between space-x-3 text-[11px]">
               <div className="flex items-center space-x-1.5">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color || entry.stroke }} />
+                <span className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: entry.color || entry.stroke }} />
                 <span className="text-slate-300 font-medium">{entry.name}:</span>
               </div>
-              <span className="font-bold text-indigo-300">{entry.value} Net</span>
+              <span className="font-bold text-indigo-300 font-mono">{entry.value} Net</span>
             </div>
           ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomTimeTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const timeVal = payload.find((p: any) => p.dataKey === 'Süre')?.value || 0;
+    const solvedVal = payload.find((p: any) => p.dataKey === 'Çözülen')?.value || 0;
+    const speedVal = solvedVal > 0 && timeVal > 0 ? (timeVal / solvedVal).toFixed(1) : '-';
+
+    return (
+      <div className="bg-slate-900/95 border border-slate-700/80 p-3 rounded-2xl shadow-2xl backdrop-blur-md text-xs space-y-2 min-w-[180px] z-50 animate-fade-in">
+        <div className="font-bold text-slate-200 border-b border-slate-800 pb-1.5 flex items-center justify-between">
+          <span>{label}</span>
+          <span className="text-[10px] text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded-full font-mono border border-amber-500/30">
+            ⏱️ {formatMinutesToHours(timeVal)}
+          </span>
+        </div>
+        <div className="space-y-1 text-[11px]">
+          <div className="flex items-center justify-between text-slate-300">
+            <span>Çözülen Toplam:</span>
+            <span className="font-bold text-white font-mono">{solvedVal} soru</span>
+          </div>
+          <div className="flex items-center justify-between text-amber-300 font-semibold">
+            <span>Ortalama Hız:</span>
+            <span className="font-bold font-mono">{speedVal} dk / soru</span>
+          </div>
         </div>
       </div>
     );
@@ -160,7 +209,7 @@ const renderInteractiveLegend = (props: any, hiddenSubjects: string[], onToggle:
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 pt-3 text-xs select-none">
       {payload.map((entry: any, index: number) => {
-        const rawSubj = (entry.dataKey || entry.value || '').replace('Net_', '').replace(' Net', '');
+        const rawSubj = (entry.dataKey || entry.value || '').replace('Net_', '').replace(' Net', '').replace('Time_', '');
         const isHidden = hiddenSubjects.includes(rawSubj);
         return (
           <button
@@ -168,14 +217,14 @@ const renderInteractiveLegend = (props: any, hiddenSubjects: string[], onToggle:
             type="button"
             onClick={() => onToggle(rawSubj)}
             title={isHidden ? `${rawSubj} dersini göster` : `${rawSubj} dersini gizle`}
-            className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+            className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-xl transition-all cursor-pointer ${
               isHidden 
-                ? 'opacity-35 line-through bg-slate-950 text-slate-500 border border-slate-800/80' 
-                : 'opacity-100 bg-slate-800/80 hover:bg-slate-800 text-slate-200 border border-slate-700/80 shadow-sm'
+                ? 'opacity-35 line-through bg-slate-950 text-slate-500 border border-slate-800' 
+                : 'opacity-100 bg-slate-800/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 shadow-sm'
             }`}
           >
             <span 
-              className="w-2.5 h-2.5 rounded-full shrink-0 transition-all" 
+              className="w-2.5 h-2.5 rounded-full shrink-0 transition-all shadow-sm" 
               style={{ backgroundColor: isHidden ? '#64748b' : entry.color }} 
             />
             <span className="font-semibold text-[11px]">{entry.value}</span>
@@ -221,23 +270,26 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
   const [correctCount, setCorrectCount] = useState<number | ''>('');
   const [wrongCount, setWrongCount] = useState<number | ''>('');
   const [emptyCount, setEmptyCount] = useState<number | ''>('');
+  const [durationMinutes, setDurationMinutes] = useState<number | ''>('');
   const [notes, setNotes] = useState('');
 
-  // Filters & Pagination
+  // Filters, Search & Pagination
   const [filterExamType, setFilterExamType] = useState<string>('ALL');
+  const [filterSubject, setFilterSubject] = useState<string>('ALL');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(20);
 
-  // Reset page when filter changes
+  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterExamType, pageSize]);
+  }, [filterExamType, filterSubject, searchQuery, pageSize]);
 
   // Chart Filters
   const [chartTimeRange, setChartTimeRange] = useState<'7days' | '30days' | '4weeks'>('7days');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>(['ALL']);
   const [hiddenSubjects, setHiddenSubjects] = useState<string[]>([]);
-  const [activeGraphType, setActiveGraphType] = useState<'soru' | 'net'>('soru');
+  const [activeGraphType, setActiveGraphType] = useState<'soru' | 'net' | 'sure'>('soru');
   const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -271,7 +323,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     }
   };
 
-  // Compute active subjects array for stacked chart series (Only subjects with > 0 solved questions in the current period)
+  // Active subjects array for chart series
   const activeSubjects = React.useMemo(() => {
     let candidateSubjects: string[] = [];
     if (selectedSubjects.includes('ALL')) {
@@ -295,7 +347,6 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
       candidateSubjects = selectedSubjects;
     }
 
-    // Determine cutoff date for chart time range
     const d = new Date();
     if (chartTimeRange === '7days') {
       d.setDate(d.getDate() - 6);
@@ -306,17 +357,12 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     }
     const cutoffDateStr = d.toISOString().split('T')[0];
 
-    // Filter candidate subjects to those with > 0 solved questions in the period
-    const nonZeroSubjects = candidateSubjects.filter(subj => {
+    return candidateSubjects.filter(subj => {
       const logsForSubj = questionLogs.filter(l => l.subject === subj && l.date >= cutoffDateStr);
-      const totalSolved = logsForSubj.reduce((sum, l) => sum + l.solvedCount, 0);
-      return totalSolved > 0;
+      return logsForSubj.reduce((sum, l) => sum + l.solvedCount, 0) > 0;
     });
-
-    return nonZeroSubjects;
   }, [selectedSubjects, questionLogs, chartTimeRange]);
 
-  // Reset hidden subjects when selectedSubjects, activeGraphType or activeSubjects changes
   useEffect(() => {
     if (activeGraphType === 'net') {
       setHiddenSubjects(activeSubjects);
@@ -332,6 +378,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     const correct = correctCount === '' ? 0 : Number(correctCount);
     const wrong = wrongCount === '' ? 0 : Number(wrongCount);
     const empty = emptyCount === '' ? 0 : Number(emptyCount);
+    const duration = durationMinutes === '' ? undefined : Number(durationMinutes);
     const net = Math.max(0, correct - wrong * 0.25);
 
     if (editingLogId) {
@@ -346,6 +393,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
         wrongCount: wrong,
         emptyCount: empty,
         netScore: Number(net.toFixed(2)),
+        durationMinutes: duration,
         notes
       });
     } else {
@@ -359,6 +407,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
         wrongCount: wrong,
         emptyCount: empty,
         netScore: Number(net.toFixed(2)),
+        durationMinutes: duration,
         notes
       });
     }
@@ -368,6 +417,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     setCorrectCount('');
     setWrongCount('');
     setEmptyCount('');
+    setDurationMinutes('');
     setNotes('');
     setEditingLogId(null);
     setShowAddModal(false);
@@ -382,6 +432,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     setCorrectCount('');
     setWrongCount('');
     setEmptyCount('');
+    setDurationMinutes('');
     setNotes('');
     setEditingLogId(null);
     setShowAddModal(true);
@@ -396,14 +447,24 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     setCorrectCount(log.correctCount);
     setWrongCount(log.wrongCount);
     setEmptyCount(log.emptyCount);
+    setDurationMinutes(log.durationMinutes !== undefined ? log.durationMinutes : '');
     setNotes(log.notes || '');
     setEditingLogId(log.id);
     setShowAddModal(true);
   };
 
+  // Filtered Logs for Table
   const filteredLogs = questionLogs.filter((log) => {
-    if (filterExamType === 'ALL') return true;
-    return log.examType === filterExamType;
+    if (filterExamType !== 'ALL' && log.examType !== filterExamType) return false;
+    if (filterSubject !== 'ALL' && log.subject !== filterSubject) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchSubject = log.subject.toLowerCase().includes(q);
+      const matchNotes = (log.notes || '').toLowerCase().includes(q);
+      const matchDate = log.date.includes(q);
+      if (!matchSubject && !matchNotes && !matchDate) return false;
+    }
+    return true;
   });
 
   const totalLogs = filteredLogs.length;
@@ -414,12 +475,27 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
   const endIndex = Math.min(startIndex + pageSize, totalLogs);
   const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
 
+  // Aggregated Overall KPI Statistics
   const totalSolved = questionLogs.reduce((acc, q) => acc + q.solvedCount, 0);
+  const tytSolved = questionLogs.filter(q => q.examType === 'TYT').reduce((acc, q) => acc + q.solvedCount, 0);
+  const aytSolved = questionLogs.filter(q => q.examType === 'AYT').reduce((acc, q) => acc + q.solvedCount, 0);
+  
   const totalCorrect = questionLogs.reduce((acc, q) => acc + q.correctCount, 0);
   const totalWrong = questionLogs.reduce((acc, q) => acc + q.wrongCount, 0);
+  const totalEmpty = questionLogs.reduce((acc, q) => acc + q.emptyCount, 0);
+  const totalNet = questionLogs.reduce((acc, q) => acc + q.netScore, 0);
   const overallAccuracy = totalSolved > 0 ? Math.round((totalCorrect / totalSolved) * 100) : 0;
 
-  // Chart Data Preparation (Supports Multi-Subject Stacked Breakdown)
+  const totalDurationMinutes = questionLogs.reduce((acc, q) => acc + (q.durationMinutes || 0), 0);
+  const questionsWithDuration = questionLogs.filter(q => q.durationMinutes && q.durationMinutes > 0);
+  const solvedWithDurationCount = questionsWithDuration.reduce((acc, q) => acc + q.solvedCount, 0);
+  const durationForSpeedCount = questionsWithDuration.reduce((acc, q) => acc + (q.durationMinutes || 0), 0);
+  const avgSpeedPerQuestion = solvedWithDurationCount > 0 ? (durationForSpeedCount / solvedWithDurationCount).toFixed(1) : null;
+
+  // Available subjects for dropdown filter
+  const availableSubjects = Array.from(new Set(questionLogs.map(l => l.subject))).sort();
+
+  // Chart Data Preparation
   const chartData = React.useMemo(() => {
     let baseLogs = questionLogs;
     if (selectedSubjects.includes('TYT_ALL')) {
@@ -441,20 +517,24 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     const buildBucketItem = (dateLabel: string, fullDate: string, logsForBucket: QuestionLog[]) => {
       const totalSolvedInBucket = logsForBucket.reduce((sum, l) => sum + l.solvedCount, 0);
       const totalNetInBucket = logsForBucket.reduce((sum, l) => sum + l.netScore, 0);
+      const totalTimeInBucket = logsForBucket.reduce((sum, l) => sum + (l.durationMinutes || 0), 0);
 
       const item: Record<string, any> = {
         date: dateLabel,
         fullDate,
         'Çözülen': totalSolvedInBucket,
-        'Net': Number(totalNetInBucket.toFixed(2))
+        'Net': Number(totalNetInBucket.toFixed(2)),
+        'Süre': totalTimeInBucket
       };
 
       activeSubjects.forEach(subj => {
         const logsForSubj = logsForBucket.filter(l => l.subject === subj);
         const solved = logsForSubj.reduce((sum, l) => sum + l.solvedCount, 0);
         const net = logsForSubj.reduce((sum, l) => sum + l.netScore, 0);
+        const time = logsForSubj.reduce((sum, l) => sum + (l.durationMinutes || 0), 0);
         item[subj] = solved;
         item[`Net_${subj}`] = Number(net.toFixed(2));
+        item[`Time_${subj}`] = time;
       });
 
       return item;
@@ -479,7 +559,6 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
         return buildBucketItem(`${day}/${month}`, dateStr, logsForDay);
       });
     } else {
-      // 4 weeks
       return Array.from({ length: 4 }).map((_, i) => {
         const dEnd = new Date();
         dEnd.setDate(dEnd.getDate() - (3 - i) * 7);
@@ -490,7 +569,6 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
         const startStr = dStart.toISOString().split('T')[0];
 
         const logsForWeek = baseLogs.filter(l => l.date >= startStr && l.date <= endStr);
-        
         const [, sMonth, sDay] = startStr.split('-');
         const [, eMonth, eDay] = endStr.split('-');
 
@@ -499,114 +577,241 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     }
   }, [questionLogs, chartTimeRange, selectedSubjects, activeSubjects]);
 
+  // Modal live speed preview
+  const liveSolvedCount = solvedCount === '' ? 0 : Number(solvedCount);
+  const liveCorrectCount = correctCount === '' ? 0 : Number(correctCount);
+  const liveWrongCount = wrongCount === '' ? 0 : Number(wrongCount);
+  const liveDurationMins = durationMinutes === '' ? 0 : Number(durationMinutes);
+  const liveCalculatedNet = Math.max(0, liveCorrectCount - liveWrongCount * 0.25).toFixed(2);
+  const liveSpeed = (liveSolvedCount > 0 && liveDurationMins > 0) ? (liveDurationMins / liveSolvedCount).toFixed(1) : null;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in pb-12">
       
-      {/* Title & Quick Stats */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
-        <div>
-          <h1 className="text-xl font-bold text-white flex items-center space-x-2">
-            <CheckSquare className="w-5 h-5 text-emerald-400" />
-            <span>Günlük Soru Takibi & Net İstatistikleri</span>
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Çözdüğünüz soru, doğru/yanlış/boş sayılarını ve net hesaplamasını ders ders kaydedin. Haftalık gelişiminizi takip edin.
-          </p>
-        </div>
+      {/* ── 1. STUNNING HEADER BANNER ── */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950/60 to-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
+        {/* Glow Effects */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <button
-          onClick={handleOpenAddModal}
-          id="add-question-log-btn"
-          className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center space-x-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Yeni Soru Kaydı Gir</span>
-        </button>
-      </div>
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Soru Takibi & Süre Analiz Paneli</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+              <CheckSquare className="w-7 h-7 text-emerald-400 shrink-0" />
+              <span>Günlük Soru Çözümü & İstatistikler</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Ders ders çözdüğünüz soru sayılarını, çalışma sürelerinizi ve net durumlarınızı kaydedin. Soru başı çözüm hızınızı ve konu gelişim grafiğinizi canlı takip edin.
+            </p>
+          </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
-          <div className="text-xs text-slate-400 font-medium">Toplam Çözülen Soru</div>
-          <div className="text-2xl font-bold text-white font-mono mt-1">{totalSolved}</div>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
-          <div className="text-xs text-slate-400 font-medium">Doğruluk Oranı (%)</div>
-          <div className="text-2xl font-bold text-emerald-400 font-mono mt-1">%{overallAccuracy}</div>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
-          <div className="text-xs text-slate-400 font-medium">Toplam Doğru / Yanlış</div>
-          <div className="text-2xl font-bold text-indigo-400 font-mono mt-1">
-            {totalCorrect} D / <span className="text-rose-400">{totalWrong} Y</span>
+          <div className="flex items-center space-x-3 shrink-0 w-full sm:w-auto">
+            <button
+              onClick={handleOpenAddModal}
+              id="add-question-log-btn"
+              className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs sm:text-sm px-6 py-3.5 rounded-2xl shadow-xl shadow-emerald-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center space-x-2 border border-emerald-400/30 cursor-pointer"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Yeni Soru Kaydı Gir</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Chart Filters Bar */}
-      <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-3">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center space-x-2">
-            <BarChart2 className="w-5 h-5 text-indigo-400" />
-            <span className="text-sm font-bold text-white">Grafik Görünümü & Ders Karşılaştırma</span>
+      {/* ── 2. KPI CARDS GRID (4 MODERN GLASS CARDS) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Total Solved Questions */}
+        <div className="bg-slate-900/80 border border-slate-800/90 hover:border-emerald-500/40 p-5 rounded-2xl shadow-xl backdrop-blur-md transition-all hover:translate-y-[-2px]">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Toplam Soru</span>
+            <div className="p-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl">
+              <CheckSquare className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="text-3xl font-extrabold text-white font-mono tracking-tight">{totalSolved.toLocaleString('tr-TR')}</div>
+            <div className="flex items-center space-x-2 mt-2 text-[11px] font-semibold text-slate-400">
+              <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-mono">TYT: {tytSolved}</span>
+              <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md font-mono">AYT: {aytSolved}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 2: Total Study Duration & Speed */}
+        <div className="bg-slate-900/80 border border-slate-800/90 hover:border-amber-500/40 p-5 rounded-2xl shadow-xl backdrop-blur-md transition-all hover:translate-y-[-2px]">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Çözüm Süresi & Hız</span>
+            <div className="p-2 bg-amber-500/20 border border-amber-500/30 text-amber-400 rounded-xl">
+              <Clock className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="text-3xl font-extrabold text-amber-300 font-mono tracking-tight">
+              {formatMinutesToHours(totalDurationMinutes)}
+            </div>
+            <div className="flex items-center space-x-2 mt-2 text-[11px]">
+              <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded-md font-semibold font-mono inline-flex items-center space-x-1">
+                <Zap className="w-3 h-3 inline text-amber-400" />
+                <span>{avgSpeedPerQuestion ? `${avgSpeedPerQuestion} dk/soru` : 'Süre girilmedi'}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Accuracy & Breakdown */}
+        <div className="bg-slate-900/80 border border-slate-800/90 hover:border-indigo-500/40 p-5 rounded-2xl shadow-xl backdrop-blur-md transition-all hover:translate-y-[-2px]">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Doğruluk Oranı</span>
+            <div className="p-2 bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 rounded-xl">
+              <Award className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-baseline space-x-2">
+              <span className="text-3xl font-extrabold text-indigo-300 font-mono tracking-tight">%{overallAccuracy}</span>
+              <span className="text-xs text-slate-400 font-medium">doğruluk</span>
+            </div>
+            <div className="flex items-center space-x-1.5 mt-2 text-[11px] font-mono font-semibold">
+              <span className="text-emerald-400">{totalCorrect} D</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-rose-400">{totalWrong} Y</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-slate-400">{totalEmpty} B</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 4: Net Score */}
+        <div className="bg-slate-900/80 border border-slate-800/90 hover:border-cyan-500/40 p-5 rounded-2xl shadow-xl backdrop-blur-md transition-all hover:translate-y-[-2px]">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Toplam Net Skoru</span>
+            <div className="p-2 bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-xl">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="text-3xl font-extrabold text-cyan-300 font-mono tracking-tight">{totalNet.toFixed(2)} Net</div>
+            <div className="mt-2 text-[11px] text-slate-400 font-medium truncate">
+              {questionLogs.length > 0 ? `Ortalama oturum: ${(totalNet / (questionLogs.length || 1)).toFixed(1)} net` : 'Henüz net kaydı yok'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 3. VISUAL ANALYTICS & CHARTS SECTION ── */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
+          
+          {/* Left: Section Title */}
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-xl shadow-md border border-indigo-400/30">
+              <BarChart2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-white text-base">Görsel İstatistikler & Grafik Analizleri</h3>
+              <p className="text-xs text-slate-400">Çözülen soruları, ders netlerini veya çözüm sürelerini zaman içinde karşılaştırın.</p>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          {/* Right Controls: Chart Type Selector & Filters */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Chart Mode Buttons */}
+            <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800">
+              <button
+                type="button"
+                onClick={() => setActiveGraphType('soru')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  activeGraphType === 'soru'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <CheckSquare className="w-3.5 h-3.5" />
+                <span>Soru Sayıları</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveGraphType('net')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  activeGraphType === 'net'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                <span>Ders Netleri</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveGraphType('sure')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  activeGraphType === 'sure'
+                    ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>Çözüm Süresi</span>
+              </button>
+            </div>
+
+            {/* Time Range Selector */}
             <select
               value={chartTimeRange}
               onChange={(e) => setChartTimeRange(e.target.value as any)}
-              className="bg-slate-950 border border-slate-700 text-slate-300 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500 w-full sm:w-auto"
+              className="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-2xl px-3.5 py-2 focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer"
             >
               <option value="7days">Son 7 Gün</option>
-              <option value="30days">Aylık (Son 30 Gün)</option>
-              <option value="4weeks">Hafta Hafta (Son 4 Hafta)</option>
+              <option value="30days">Son 30 Gün</option>
+              <option value="4weeks">Son 4 Hafta</option>
             </select>
 
             {/* Multi-Select Subject Dropdown */}
-            <div className="relative w-full sm:w-auto" ref={dropdownRef}>
+            <div className="relative" ref={dropdownRef}>
               <button
                 type="button"
                 onClick={() => setIsSubjectDropdownOpen(!isSubjectDropdownOpen)}
-                className="w-full sm:w-auto bg-slate-950 border border-slate-700 hover:border-indigo-500 text-slate-200 text-xs font-semibold rounded-xl px-3.5 py-2 flex items-center justify-between space-x-2 focus:outline-none transition-all shadow-sm"
+                className="bg-slate-950 border border-slate-800 hover:border-indigo-500 text-slate-200 text-xs font-bold rounded-2xl px-3.5 py-2 flex items-center justify-between space-x-2 focus:outline-none transition-all cursor-pointer shadow-sm"
               >
                 <div className="flex items-center space-x-2">
                   <Layers className="w-4 h-4 text-indigo-400" />
                   <span>
                     {selectedSubjects.includes('ALL') 
-                      ? 'Tüm Dersler (Yığılı)' 
+                      ? 'Tüm Dersler' 
                       : selectedSubjects.includes('TYT_ALL')
-                      ? 'Tüm TYT Dersleri'
+                      ? 'Tüm TYT'
                       : selectedSubjects.includes('AYT_ALL')
-                      ? 'Tüm AYT Dersleri'
+                      ? 'Tüm AYT'
                       : selectedSubjects.includes('TYT_FEN')
-                      ? 'TYT Fen Dersleri'
+                      ? 'TYT Fen'
                       : selectedSubjects.includes('TYT_SOSYAL')
-                      ? 'TYT Sosyal Dersleri'
+                      ? 'TYT Sosyal'
                       : selectedSubjects.includes('AYT_FEN')
-                      ? 'AYT Fen Dersleri'
+                      ? 'AYT Fen'
                       : selectedSubjects.includes('AYT_SOSYAL')
-                      ? 'AYT Sosyal Dersleri'
+                      ? 'AYT Sosyal'
                       : selectedSubjects.length === 1
                       ? selectedSubjects[0]
-                      : `${selectedSubjects.length} Ders Seçildi`}
+                      : `${selectedSubjects.length} Ders`}
                   </span>
                 </div>
                 <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isSubjectDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Multi-Select Menu */}
+              {/* Dropdown Menu */}
               {isSubjectDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl z-50 p-3 space-y-3 animate-in fade-in zoom-in-95 duration-150">
-                  
-                  {/* Preset Buttons */}
+                <div className="absolute right-0 mt-2 w-80 bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl z-50 p-4 space-y-3 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl">
                   <div className="space-y-1">
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Toplu Filtreler</div>
-                    <div className="grid grid-cols-2 gap-1">
+                    <div className="grid grid-cols-2 gap-1.5">
                       <button
                         type="button"
                         onClick={() => { setSelectedSubjects(['ALL']); setIsSubjectDropdownOpen(false); }}
-                        className={`col-span-2 w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${selectedSubjects.includes('ALL') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+                        className={`col-span-2 w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-between transition-colors ${selectedSubjects.includes('ALL') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
                       >
                         <span>Tüm Dersler (Yığılı)</span>
                         {selectedSubjects.includes('ALL') && <Check className="w-3.5 h-3.5" />}
@@ -615,7 +820,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       <button
                         type="button"
                         onClick={() => { setSelectedSubjects(['TYT_ALL']); setIsSubjectDropdownOpen(false); }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${selectedSubjects.includes('TYT_ALL') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+                        className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${selectedSubjects.includes('TYT_ALL') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
                       >
                         <span>Tüm TYT</span>
                         {selectedSubjects.includes('TYT_ALL') && <Check className="w-3.5 h-3.5" />}
@@ -623,88 +828,23 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       <button
                         type="button"
                         onClick={() => { setSelectedSubjects(['AYT_ALL']); setIsSubjectDropdownOpen(false); }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${selectedSubjects.includes('AYT_ALL') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+                        className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${selectedSubjects.includes('AYT_ALL') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
                       >
                         <span>Tüm AYT</span>
                         {selectedSubjects.includes('AYT_ALL') && <Check className="w-3.5 h-3.5" />}
                       </button>
-
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedSubjects(['TYT_FEN']); setIsSubjectDropdownOpen(false); }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${selectedSubjects.includes('TYT_FEN') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
-                      >
-                        <span>TYT Fen</span>
-                        {selectedSubjects.includes('TYT_FEN') && <Check className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedSubjects(['AYT_FEN']); setIsSubjectDropdownOpen(false); }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${selectedSubjects.includes('AYT_FEN') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
-                      >
-                        <span>AYT Fen</span>
-                        {selectedSubjects.includes('AYT_FEN') && <Check className="w-3.5 h-3.5" />}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedSubjects(['TYT_SOSYAL']); setIsSubjectDropdownOpen(false); }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${selectedSubjects.includes('TYT_SOSYAL') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
-                      >
-                        <span>TYT Sosyal</span>
-                        {selectedSubjects.includes('TYT_SOSYAL') && <Check className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedSubjects(['AYT_SOSYAL']); setIsSubjectDropdownOpen(false); }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${selectedSubjects.includes('AYT_SOSYAL') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
-                      >
-                        <span>AYT Sosyal</span>
-                        {selectedSubjects.includes('AYT_SOSYAL') && <Check className="w-3.5 h-3.5" />}
-                      </button>
                     </div>
                   </div>
 
-                  {/* Individual Checkbox Selection */}
                   <div className="border-t border-slate-800 pt-2 space-y-2 max-h-56 overflow-y-auto custom-scrollbar">
-                    <div className="flex items-center justify-between px-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ayrı Ders Seçimi (Çoklu)</span>
-                      {!selectedSubjects.some(s => PRESET_KEYS.includes(s)) && (
-                        <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-md">
-                          {selectedSubjects.length} seçili
-                        </span>
-                      )}
-                    </div>
-
-                    {/* TYT Group */}
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Ayrı Ders Seçimi</div>
+                    {/* TYT List */}
                     <div className="space-y-0.5">
                       <div className="text-[10px] font-bold text-sky-400 px-1 pt-1">TYT Dersleri</div>
                       {YKS_SUBJECTS.TYT.map((s, idx) => {
                         const isChecked = !selectedSubjects.some(key => PRESET_KEYS.includes(key)) && selectedSubjects.includes(s);
                         return (
-                          <label key={s} className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-slate-800 cursor-pointer text-xs">
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => toggleSubject(s)}
-                                className="rounded border-slate-700 bg-slate-950 text-indigo-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                              />
-                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: getSubjectColor(s, idx) }} />
-                              <span className={isChecked ? 'text-white font-bold' : 'text-slate-300'}>{s}</span>
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </div>
-
-                    {/* AYT Group */}
-                    <div className="space-y-0.5 pt-1.5 border-t border-slate-800/60">
-                      <div className="text-[10px] font-bold text-fuchsia-400 px-1">AYT Dersleri</div>
-                      {YKS_SUBJECTS.AYT.map((s, idx) => {
-                        const isChecked = !selectedSubjects.some(key => PRESET_KEYS.includes(key)) && selectedSubjects.includes(s);
-                        return (
-                          <label key={s} className="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-slate-800 cursor-pointer text-xs">
+                          <label key={s} className="flex items-center justify-between px-2 py-1 rounded-xl hover:bg-slate-800 cursor-pointer text-xs">
                             <div className="flex items-center space-x-2">
                               <input
                                 type="checkbox"
@@ -720,236 +860,196 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       })}
                     </div>
                   </div>
-
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Grafik Türü Seçeneği */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-slate-800/60">
-          <div className="flex items-center space-x-2">
-            <span className="text-xs font-bold text-slate-300">Grafik Türü:</span>
-          </div>
-          <div className="flex items-center space-x-1 bg-slate-950 p-1 rounded-xl border border-slate-800 w-full sm:w-auto">
-            <button
-              type="button"
-              onClick={() => setActiveGraphType('soru')}
-              className={`flex-1 sm:flex-initial text-center px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeGraphType === 'soru'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/10 font-bold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-            >
-              Günlük Soru Sayıları
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveGraphType('net')}
-              className={`flex-1 sm:flex-initial text-center px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeGraphType === 'net'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/10 font-bold'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-            >
-              Ders Net Sayıları
-            </button>
-          </div>
+        {/* Dynamic Chart Display */}
+        <div className="h-80 w-full pt-2">
+          {activeGraphType === 'soru' ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <Tooltip content={<CustomBarTooltip hiddenSubjects={hiddenSubjects} />} />
+                <Legend content={(props) => renderInteractiveLegend(props, hiddenSubjects, toggleHiddenSubject)} />
+                {activeSubjects.length === 0 ? (
+                  <Bar dataKey="Çözülen" fill="#334155" maxBarSize={40} name="Veri Yok" />
+                ) : (
+                  activeSubjects.map((subj, idx) => (
+                    <Bar 
+                      key={subj} 
+                      dataKey={subj} 
+                      stackId="a" 
+                      fill={getSubjectColor(subj, idx)} 
+                      name={subj} 
+                      maxBarSize={44}
+                      radius={[4, 4, 0, 0]}
+                      hide={hiddenSubjects.includes(subj)}
+                    />
+                  ))
+                )}
+              </BarChart>
+            </ResponsiveContainer>
+          ) : activeGraphType === 'net' ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <Tooltip content={<CustomLineTooltip hiddenSubjects={hiddenSubjects} />} />
+                <Legend content={(props) => renderInteractiveLegend(props, hiddenSubjects, toggleHiddenSubject)} />
+                {activeSubjects.length === 0 ? (
+                  <Line type="monotone" dataKey="Net" stroke="#334155" strokeWidth={2} name="Net Verisi Yok" dot={false} />
+                ) : activeSubjects.length === 1 ? (
+                  <Line 
+                    type="monotone" 
+                    dataKey={`Net_${activeSubjects[0]}`} 
+                    stroke={getSubjectColor(activeSubjects[0], 0)} 
+                    strokeWidth={3} 
+                    name={`${activeSubjects[0]}`}
+                    dot={{ fill: getSubjectColor(activeSubjects[0], 0), strokeWidth: 2 }} 
+                    activeDot={{ r: 6 }} 
+                    hide={hiddenSubjects.includes(activeSubjects[0])}
+                  />
+                ) : (
+                  <>
+                    {activeSubjects.map((subj, idx) => (
+                      <Line 
+                        key={subj}
+                        type="monotone" 
+                        dataKey={`Net_${subj}`} 
+                        stroke={getSubjectColor(subj, idx)} 
+                        strokeWidth={2.5} 
+                        name={`${subj}`}
+                        dot={{ fill: getSubjectColor(subj, idx), strokeWidth: 1.5 }} 
+                        activeDot={{ r: 5 }} 
+                        hide={hiddenSubjects.includes(subj)}
+                      />
+                    ))}
+                    <Line 
+                      type="monotone" 
+                      dataKey="Net" 
+                      stroke="#f59e0b" 
+                      strokeWidth={2.5} 
+                      strokeDasharray="4 4"
+                      name="Toplam Net" 
+                      dot={false}
+                      hide={hiddenSubjects.includes('Net') || hiddenSubjects.includes('Toplam Net')}
+                    />
+                  </>
+                )}
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            /* Çözüm Süresi & Hız Analizi Chart */
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} unit=" dk" />
+                <Tooltip content={<CustomTimeTooltip />} />
+                <Bar dataKey="Süre" fill="#f59e0b" maxBarSize={44} name="Toplam Çalışma Süresi (Dakika)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
-        {/* Selected Subjects Badges */}
-        {!selectedSubjects.some(s => PRESET_KEYS.includes(s)) && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-800/80">
-            <span className="text-xs text-slate-400 font-medium mr-1">Karşılaştırılan Dersler:</span>
-            {selectedSubjects.map((s, idx) => (
-              <span key={s} className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs bg-slate-800 border border-slate-700 text-slate-200">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getSubjectColor(s, idx) }} />
-                <span className="font-semibold">{s}</span>
-                <button onClick={() => toggleSubject(s)} className="text-slate-400 hover:text-rose-400 transition-colors">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-            <button
-              onClick={() => setSelectedSubjects(['ALL'])}
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold underline ml-1"
-            >
-              Temizle
-            </button>
-          </div>
-        )}
+        <p className="text-[11px] text-slate-400 italic text-center pt-2 border-t border-slate-800/80 flex items-center justify-center space-x-1.5">
+          <Sparkles className="w-3.5 h-3.5 text-amber-400 inline shrink-0" />
+          <span>
+            <strong className="text-slate-300 not-italic">İpucu:</strong> Grafiğin altındaki renkli ders isimlerine basarak istediğiniz dersi gizleyebilir veya açabilirsiniz.
+          </span>
+        </p>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 gap-4">
-        {activeGraphType === 'soru' ? (
-          /* Stacked Bar Chart - Solved Questions */
-          <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-                  <BarChart2 className="w-4 h-4 text-emerald-400" />
-                  <span>Çözülen Soru Sayısı (Yığılı Sütun)</span>
-                </h3>
-                <span className="text-[11px] text-slate-400 font-medium bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
-                  {activeSubjects.length} Ders Yığılı
-                </span>
-              </div>
-
-              <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
-                    <XAxis dataKey="date" stroke="var(--chart-axis)" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis stroke="var(--chart-axis)" fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip content={<CustomBarTooltip hiddenSubjects={hiddenSubjects} />} />
-                    <Legend content={(props) => renderInteractiveLegend(props, hiddenSubjects, toggleHiddenSubject)} />
-                    {activeSubjects.length === 0 ? (
-                      <Bar dataKey="Çözülen" fill="#334155" maxBarSize={40} name="Veri Yok" />
-                    ) : (
-                      activeSubjects.map((subj, idx) => (
-                        <Bar 
-                          key={subj} 
-                          dataKey={subj} 
-                          stackId="a" 
-                          fill={getSubjectColor(subj, idx)} 
-                          name={subj} 
-                          maxBarSize={40} 
-                          hide={hiddenSubjects.includes(subj)}
-                        />
-                      ))
-                    )}
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-slate-400 italic text-center mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-center space-x-1.5">
-              <span>💡</span>
-              <span>
-                <strong className="text-slate-300 not-italic">İpucu:</strong> Grafiğin altındaki ders isimlerine basarak istediğiniz dersi gizleyebilir veya açabilirsiniz.
-              </span>
-            </p>
-          </div>
-        ) : (
-          /* Line Chart - Net Score */
-          <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-                  <BarChart2 className="w-4 h-4 text-indigo-400" />
-                  <span>Ders Bazlı Net Karşılaştırması</span>
-                </h3>
-              </div>
-
-              <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
-                    <XAxis dataKey="date" stroke="var(--chart-axis)" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis stroke="var(--chart-axis)" fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip content={<CustomLineTooltip hiddenSubjects={hiddenSubjects} />} />
-                    <Legend content={(props) => renderInteractiveLegend(props, hiddenSubjects, toggleHiddenSubject)} />
-                    {activeSubjects.length === 0 ? (
-                      <Line type="monotone" dataKey="Net" stroke="#334155" strokeWidth={2} name="Net Verisi Yok" dot={false} />
-                    ) : activeSubjects.length === 1 ? (
-                      <Line 
-                        type="monotone" 
-                        dataKey={`Net_${activeSubjects[0]}`} 
-                        stroke={getSubjectColor(activeSubjects[0], 0)} 
-                        strokeWidth={3} 
-                        name={`${activeSubjects[0]}`}
-                        dot={{ fill: getSubjectColor(activeSubjects[0], 0), strokeWidth: 2 }} 
-                        activeDot={{ r: 6 }} 
-                        hide={hiddenSubjects.includes(activeSubjects[0])}
-                      />
-                    ) : (
-                      <>
-                        {activeSubjects.map((subj, idx) => (
-                          <Line 
-                            key={subj}
-                            type="monotone" 
-                            dataKey={`Net_${subj}`} 
-                            stroke={getSubjectColor(subj, idx)} 
-                            strokeWidth={2.5} 
-                            name={`${subj}`}
-                            dot={{ fill: getSubjectColor(subj, idx), strokeWidth: 1.5 }} 
-                            activeDot={{ r: 5 }} 
-                            hide={hiddenSubjects.includes(subj)}
-                          />
-                        ))}
-                        <Line 
-                          type="monotone" 
-                          dataKey="Net" 
-                          stroke={theme === 'light' ? '#000000' : '#e2e8f0'} 
-                          strokeWidth={2} 
-                          strokeDasharray="4 4"
-                          name="Toplam Net" 
-                          dot={false}
-                          hide={hiddenSubjects.includes('Net') || hiddenSubjects.includes('Toplam Net')}
-                        />
-                      </>
-                    )}
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-slate-400 italic text-center mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-center space-x-1.5">
-              <span>💡</span>
-              <span>
-                <strong className="text-slate-300 not-italic">İpucu:</strong> Grafiğin altındaki renkli ders isimlerine basarak istediğiniz dersi gizleyebilir veya açabilirsiniz.
-              </span>
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Logs Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+      {/* ── 4. LOGS TABLE WITH LIVE SEARCH & FILTERS ── */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-4">
         
-        {/* Table Filter */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-white">Soru Kayıt Geçmişi</span>
+        {/* Table Header Controls */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
           <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-slate-400" />
+            <FileText className="w-5 h-5 text-indigo-400" />
+            <h3 className="font-bold text-white text-base">Soru Çözüm Kayıt Geçmişi</h3>
+            <span className="text-xs bg-slate-800 text-slate-300 font-mono font-bold px-2.5 py-0.5 rounded-full border border-slate-700">
+              {filteredLogs.length} Kayıt
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            {/* Live Search Bar */}
+            <div className="relative flex-1 sm:flex-initial min-w-[200px]">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Ders, not veya tarih ara..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-2xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2.5 text-slate-500 hover:text-white">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Exam Type Filter */}
             <select
               value={filterExamType}
               onChange={(e) => setFilterExamType(e.target.value)}
-              className="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none"
+              className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3 py-1.5 focus:outline-none cursor-pointer"
             >
-              <option value="ALL">Tüm Sınavlar (TYT & AYT)</option>
+              <option value="ALL">Tüm Sınavlar</option>
               <option value="TYT">Sadece TYT</option>
               <option value="AYT">Sadece AYT</option>
             </select>
+
+            {/* Subject Filter */}
+            {availableSubjects.length > 0 && (
+              <select
+                value={filterSubject}
+                onChange={(e) => setFilterSubject(e.target.value)}
+                className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3 py-1.5 focus:outline-none cursor-pointer"
+              >
+                <option value="ALL">Tüm Dersler</option>
+                {availableSubjects.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
 
+        {/* Table Body */}
         {filteredLogs.length === 0 ? (
-          <div className="text-center py-10 border border-dashed border-slate-800 rounded-xl">
-            <p className="text-xs text-slate-400">Henüz soru kaydı bulunmuyor.</p>
+          <div className="text-center py-12 border border-dashed border-slate-800 rounded-2xl space-y-2">
+            <HelpCircle className="w-8 h-8 text-slate-600 mx-auto" />
+            <p className="text-xs text-slate-400 font-medium">Arama kriterlerine uygun soru kaydı bulunamadı.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-800 text-slate-400 font-semibold bg-slate-950/70">
-                  <th className="p-3 rounded-l-lg">Tarih</th>
-                  <th className="p-3">Sınav</th>
-                  <th className="p-3">Ders</th>
-                  <th className="p-3 text-center">Soru</th>
-                  <th className="p-3 text-center text-emerald-400">Doğru</th>
-                  <th className="p-3 text-center text-rose-400">Yanlış</th>
-                  <th className="p-3 text-center text-slate-400">Boş</th>
-                  <th className="p-3 text-center text-indigo-400 font-bold">Net</th>
-                  <th className="p-3">Not</th>
-                  <th className="p-3 text-right rounded-r-lg">İşlem</th>
+                  <th className="p-3.5 rounded-l-2xl">Tarih</th>
+                  <th className="p-3.5">Sınav</th>
+                  <th className="p-3.5">Ders</th>
+                  <th className="p-3.5 text-center">Hedef / Çözülen</th>
+                  <th className="p-3.5 text-center text-emerald-400">Doğru</th>
+                  <th className="p-3.5 text-center text-rose-400">Yanlış</th>
+                  <th className="p-3.5 text-center text-slate-400">Boş</th>
+                  <th className="p-3.5 text-center text-indigo-400 font-bold">Net</th>
+                  <th className="p-3.5 text-center text-amber-400">Süre & Hız</th>
+                  <th className="p-3.5">Not</th>
+                  <th className="p-3.5 text-right rounded-r-2xl">İşlem</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/40">
                 {paginatedLogs.map((log, index) => {
-                  // Format Date
                   let dateShort = log.date;
                   let dateFull = log.date;
                   if (log.date) {
@@ -958,59 +1058,78 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       const dayNum = d.getDate();
                       const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
                       const daysShort = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
-                      const daysFull = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
-                      const dayNameIndex = d.getDay(); // 0 is Sunday
-                      const dayNameFull = dayNameIndex === 0 ? 'Pazar' : daysFull[dayNameIndex - 1];
-
+                      const dayNameIndex = d.getDay();
                       dateShort = `${dayNum} ${months[d.getMonth()]}, ${daysShort[dayNameIndex]}`;
-                      const pad = (n: number) => n.toString().padStart(2, '0');
-                      dateFull = `${pad(dayNum)}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${dayNameFull}`;
+                      dateFull = `${dayNum} ${months[d.getMonth()]} ${d.getFullYear()}`;
                     }
                   }
+
+                  const rowAccuracy = log.solvedCount > 0 ? Math.round((log.correctCount / log.solvedCount) * 100) : 0;
+                  const rowSpeed = (log.durationMinutes && log.solvedCount > 0) 
+                    ? (log.durationMinutes / log.solvedCount).toFixed(1) 
+                    : null;
 
                   return (
                     <tr 
                       key={log.id} 
                       className={`transition-colors hover:bg-slate-800/60 ${
-                        index % 2 === 0 ? 'bg-slate-900/50' : 'bg-slate-950/40'
+                        index % 2 === 0 ? 'bg-slate-900/40' : 'bg-slate-950/40'
                       }`}
                     >
-                      <td className="p-3 font-mono text-slate-300 cursor-help whitespace-nowrap" title={dateFull}>
+                      <td className="p-3.5 font-mono text-slate-300 cursor-help whitespace-nowrap" title={dateFull}>
                         {dateShort}
                       </td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      <td className="p-3.5">
+                        <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold ${
                           log.examType === 'TYT' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                         }`}>
                           {log.examType}
                         </span>
                       </td>
-                      <td className="p-3 font-semibold text-white">{log.subject}</td>
-                      <td 
-                        className="p-3 text-center font-mono text-white font-bold cursor-help"
-                        title={`Hedef: ${log.targetCount} Çözülen: ${log.solvedCount}`}
-                      >
-                        {log.solvedCount}
+                      <td className="p-3.5 font-semibold text-white">
+                        <div className="flex items-center space-x-2">
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getSubjectColor(log.subject) }} />
+                          <span>{log.subject}</span>
+                        </div>
                       </td>
-                      <td className="p-3 text-center font-mono text-emerald-400 font-bold">{log.correctCount}</td>
-                      <td className="p-3 text-center font-mono text-rose-400">{log.wrongCount}</td>
-                      <td className="p-3 text-center font-mono text-slate-400">{log.emptyCount}</td>
-                      <td className="p-3 text-center font-mono text-indigo-400 font-extrabold text-sm">
+                      <td className="p-3.5 text-center font-mono font-bold text-slate-200">
+                        <span>{log.solvedCount}</span>
+                        {log.targetCount > 0 && (
+                          <span className="text-slate-500 text-[11px]"> / {log.targetCount}</span>
+                        )}
+                      </td>
+                      <td className="p-3.5 text-center font-mono text-emerald-400 font-bold">{log.correctCount}</td>
+                      <td className="p-3.5 text-center font-mono text-rose-400 font-semibold">{log.wrongCount}</td>
+                      <td className="p-3.5 text-center font-mono text-slate-500">{log.emptyCount}</td>
+                      <td className="p-3.5 text-center font-mono text-indigo-300 font-extrabold text-sm">
                         {log.netScore}
                       </td>
-                      <td className="p-3 text-slate-400 truncate max-w-[160px]" title={log.notes || ''}>{log.notes || '-'}</td>
-                      <td className="p-3 text-right">
-                        <div className="flex items-center justify-end space-x-2">
+                      <td className="p-3.5 text-center font-mono text-amber-300 whitespace-nowrap">
+                        {log.durationMinutes ? (
+                          <span className="inline-flex items-center space-x-1 bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2 py-0.5 rounded-lg text-[11px] font-semibold" title={rowSpeed ? `Hız: ${rowSpeed} dk/soru` : ''}>
+                            <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                            <span>{log.durationMinutes} dk</span>
+                            {rowSpeed && <span className="text-[10px] text-amber-400/80 font-mono">({rowSpeed}m/q)</span>}
+                          </span>
+                        ) : (
+                          <span className="text-slate-600">-</span>
+                        )}
+                      </td>
+                      <td className="p-3.5 text-slate-400 truncate max-w-[160px]" title={log.notes || ''}>
+                        {log.notes || '-'}
+                      </td>
+                      <td className="p-3.5 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end space-x-1">
                           <button
                             onClick={() => handleOpenEditModal(log)}
-                            className="text-slate-500 hover:text-indigo-400 transition-colors p-1 cursor-pointer"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/20 transition-all cursor-pointer"
                             title="Kaydı Düzenle"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setDeletingLog({ id: log.id, title: `${log.date} ${log.subject} (${log.solvedCount} Soru)` })}
-                            className="text-slate-500 hover:text-rose-400 transition-colors p-1 cursor-pointer"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-all cursor-pointer"
                             title="Kaydı Sil"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1039,7 +1158,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                 <select
                   value={pageSize}
                   onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="bg-slate-950 border border-slate-800 text-slate-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  className="bg-slate-950 border border-slate-800 text-slate-300 rounded-xl px-2.5 py-1 text-xs focus:outline-none cursor-pointer"
                 >
                   <option value={10}>10</option>
                   <option value={20}>20</option>
@@ -1050,27 +1169,23 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
             </div>
 
             <div className="flex items-center space-x-1">
-              {/* First Page */}
               <button
                 onClick={() => setCurrentPage(1)}
                 disabled={safeCurrentPage === 1}
-                className="p-1.5 rounded-lg border border-slate-800 bg-slate-950 hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-950 text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                className="p-1.5 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800 disabled:opacity-30 text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
                 title="İlk Sayfa"
               >
                 <ChevronsLeft className="w-4 h-4" />
               </button>
-
-              {/* Prev Page */}
               <button
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={safeCurrentPage === 1}
-                className="p-1.5 rounded-lg border border-slate-800 bg-slate-950 hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-950 text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                className="p-1.5 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800 disabled:opacity-30 text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
                 title="Önceki Sayfa"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
 
-              {/* Page Numbers */}
               <div className="flex items-center space-x-1 px-1">
                 {Array.from({ length: totalPages }, (_, i) => i + 1)
                   .filter(p => p === 1 || p === totalPages || Math.abs(p - safeCurrentPage) <= 1)
@@ -1082,9 +1197,9 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                         {showEllipsis && <span className="text-slate-600 px-1 font-mono">...</span>}
                         <button
                           onClick={() => setCurrentPage(p)}
-                          className={`px-3 py-1 rounded-lg font-mono font-bold text-xs transition-all cursor-pointer ${
+                          className={`px-3 py-1 rounded-xl font-mono font-bold text-xs transition-all cursor-pointer ${
                             p === safeCurrentPage
-                              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                               : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
                           }`}
                         >
@@ -1095,21 +1210,18 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                   })}
               </div>
 
-              {/* Next Page */}
               <button
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={safeCurrentPage === totalPages}
-                className="p-1.5 rounded-lg border border-slate-800 bg-slate-950 hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-950 text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                className="p-1.5 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800 disabled:opacity-30 text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
                 title="Sonraki Sayfa"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
-
-              {/* Last Page */}
               <button
                 onClick={() => setCurrentPage(totalPages)}
                 disabled={safeCurrentPage === totalPages}
-                className="p-1.5 rounded-lg border border-slate-800 bg-slate-950 hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-950 text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                className="p-1.5 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800 disabled:opacity-30 text-slate-300 transition-colors cursor-pointer disabled:cursor-not-allowed"
                 title="Son Sayfa"
               >
                 <ChevronsRight className="w-4 h-4" />
@@ -1117,33 +1229,54 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
             </div>
           </div>
         )}
-
       </div>
 
-      {/* Modal: Add Question Log */}
+      {/* ── 5. REDESIGNED MODAL: ADD / EDIT QUESTION LOG ── */}
       {showAddModal && (
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in overflow-y-auto"
           onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-white">{editingLogId ? 'Günlük Soru İstatistiğini Düzenle' : 'Günlük Soru İstatistiği Ekle'}</h3>
+          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 my-8 relative overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl shadow-lg shadow-emerald-500/20">
+                  <CheckSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-white">
+                    {editingLogId ? 'Soru Çözüm İstatistiğini Düzenle' : 'Yeni Soru Çözüm Kaydı Gir'}
+                  </h3>
+                  <p className="text-[11px] text-slate-400">Çözdüğünüz soruların net ve süre bilgilerini kaydedin.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              
+              {/* Row 1: Date & Exam Type */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Tarih</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Tarih</label>
                   <input
                     type="date"
                     required
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Sınav Türü</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Sınav Türü</label>
                   <select
                     value={examType}
                     onChange={(e) => {
@@ -1151,7 +1284,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       setExamType(val);
                       setSubject(YKS_SUBJECTS[val][0]);
                     }}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500 transition-all cursor-pointer"
                   >
                     <option value="TYT">TYT</option>
                     <option value="AYT">AYT</option>
@@ -1159,12 +1292,13 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                 </div>
               </div>
 
+              {/* Row 2: Subject */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Ders</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Ders Seçimi</label>
                 <select
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500 transition-all cursor-pointer"
                 >
                   {YKS_SUBJECTS[examType].map((s) => (
                     <option key={s} value={s}>{s}</option>
@@ -1172,32 +1306,31 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                 </select>
               </div>
 
+              {/* Row 3: Target & Solved Question Counts */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Hedef Soru</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Hedef Soru Sayısı</label>
                   <input
                     type="number"
                     min="1"
+                    placeholder="Ör: 40"
                     value={targetCount}
                     onChange={(e) => {
                       const val = e.target.value === '' ? '' : Number(e.target.value);
                       setTargetCount(val);
-                      setSolvedCount(val);
-                      if (val !== '' && wrongCount !== '') {
-                        const c = correctCount === '' ? 0 : Number(correctCount);
-                        const w = Number(wrongCount);
-                        setEmptyCount(Math.max(0, Number(val) - (c + w)));
-                      }
+                      if (solvedCount === '') setSolvedCount(val);
                     }}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-mono"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Çözülen Toplam</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Çözülen Soru Sayısı *</label>
                   <input
                     type="number"
                     min="1"
+                    required
+                    placeholder="Ör: 40"
                     value={solvedCount}
                     onChange={(e) => {
                       const val = e.target.value === '' ? '' : Number(e.target.value);
@@ -1208,17 +1341,42 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                         setEmptyCount(Math.max(0, Number(val) - (c + w)));
                       }
                     }}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-mono"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-mono font-bold"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              {/* Quick Question Count Presets */}
+              <div className="flex items-center space-x-1.5 text-[11px]">
+                <span className="text-slate-400 font-medium">Hızlı Soru Adedi:</span>
+                {[20, 30, 40, 50, 100].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => {
+                      setTargetCount(num);
+                      setSolvedCount(num);
+                      if (correctCount === '' && wrongCount === '') {
+                        setCorrectCount(num);
+                        setWrongCount(0);
+                        setEmptyCount(0);
+                      }
+                    }}
+                    className="px-2 py-0.5 rounded-lg bg-slate-950 hover:bg-indigo-600 hover:text-white border border-slate-800 text-slate-300 font-mono font-bold transition-all cursor-pointer"
+                  >
+                    +{num}
+                  </button>
+                ))}
+              </div>
+
+              {/* Row 4: Correct, Wrong, Empty Counts */}
+              <div className="grid grid-cols-3 gap-3 pt-1">
                 <div>
-                  <label className="block text-xs font-semibold text-emerald-400 mb-1">Doğru Sayısı</label>
+                  <label className="block text-xs font-bold text-emerald-400 mb-1">Doğru Sayısı</label>
                   <input
                     type="number"
                     min="0"
+                    placeholder="0"
                     value={correctCount}
                     onChange={(e) => {
                       const val = e.target.value === '' ? '' : Number(e.target.value);
@@ -1230,15 +1388,16 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                         setEmptyCount(Math.max(0, s - (c + w)));
                       }
                     }}
-                    className="w-full bg-slate-800 border border-emerald-500/40 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-mono"
+                    className="w-full bg-slate-950 border border-emerald-500/40 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-400 font-mono font-bold"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-rose-400 mb-1">Yanlış Sayısı</label>
+                  <label className="block text-xs font-bold text-rose-400 mb-1">Yanlış Sayısı</label>
                   <input
                     type="number"
                     min="0"
+                    placeholder="0"
                     value={wrongCount}
                     onChange={(e) => {
                       const val = e.target.value === '' ? '' : Number(e.target.value);
@@ -1252,54 +1411,103 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                         setEmptyCount('');
                       }
                     }}
-                    className="w-full bg-slate-800 border border-rose-500/40 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-mono"
+                    className="w-full bg-slate-950 border border-rose-500/40 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-rose-400 font-mono font-bold"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Boş Sayısı</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Boş Sayısı</label>
                   <input
                     type="number"
                     min="0"
+                    placeholder="0"
                     value={emptyCount}
                     onChange={(e) => setEmptyCount(e.target.value === '' ? '' : Number(e.target.value))}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-mono"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono font-bold"
                   />
                 </div>
               </div>
 
-              {/* Live Calculated Net Preview */}
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center">
-                <span className="text-xs text-slate-400">Hesaplanan Net Score: </span>
-                <span className="text-base font-extrabold text-indigo-400 font-mono ml-2">
-                  {(Math.max(0, (correctCount === '' ? 0 : Number(correctCount)) - (wrongCount === '' ? 0 : Number(wrongCount)) * 0.25)).toFixed(2)} Net
-                </span>
+              {/* Row 5: Duration in Minutes (YENİ ALAN!) */}
+              <div className="space-y-1.5 pt-1">
+                <label className="block text-xs font-bold text-amber-300 flex items-center space-x-1">
+                  <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>Çözme Süresi (Dakika)</span>
+                  <span className="text-[10px] text-slate-400 font-normal ml-1">(Opsiyonel - Hız Analizi İçin)</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="Ör: 45 dk"
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full bg-slate-950 border border-amber-500/40 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-amber-400 font-mono font-bold"
+                />
+
+                {/* Quick Duration Presets */}
+                <div className="flex items-center space-x-1.5 text-[11px] pt-1">
+                  <span className="text-slate-400 font-medium">Hızlı Süre:</span>
+                  {[15, 30, 45, 60, 90].map((mins) => (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => setDurationMinutes(mins)}
+                      className="px-2 py-0.5 rounded-lg bg-slate-950 hover:bg-amber-600 hover:text-white border border-slate-800 text-amber-300 font-mono font-bold transition-all cursor-pointer"
+                    >
+                      {mins} dk
+                    </button>
+                  ))}
+                </div>
               </div>
 
+              {/* Real-Time Live Preview Cards */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
+                <div>
+                  <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block">Net Skor</span>
+                  <span className="text-base font-extrabold text-indigo-300 font-mono">
+                    {liveCalculatedNet} Net
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block">Çözüm Hızı</span>
+                  <span className="text-base font-extrabold text-amber-300 font-mono">
+                    {liveSpeed ? `${liveSpeed} dk/soru` : '-'}
+                  </span>
+                </div>
+                <div className="col-span-2 sm:col-span-1">
+                  <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block">Doğruluk</span>
+                  <span className="text-base font-extrabold text-emerald-400 font-mono">
+                    %{liveSolvedCount > 0 ? Math.round((liveCorrectCount / liveSolvedCount) * 100) : 0}
+                  </span>
+                </div>
+              </div>
+
+              {/* Row 6: Notes */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Not (Opsiyonel)</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Not (Opsiyonel)</label>
                 <input
                   type="text"
-                  placeholder="Ör: Paragrafta süreye uyuldu."
+                  placeholder="Ör: Paragrafta süreye uyuldu, soru bankası sayfa 40."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all"
                 />
               </div>
 
-              <div className="flex items-center justify-end space-x-2 pt-2">
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-xs text-slate-400 hover:text-white"
+                  className="px-4 py-2.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-5 py-2 rounded-xl transition-all shadow-md shadow-emerald-600/30"
+                  className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold px-6 py-2.5 rounded-2xl transition-all shadow-lg shadow-emerald-500/25 border border-emerald-400/30 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  Kaydet
+                  {editingLogId ? 'Değişiklikleri Kaydet' : 'Soru Kaydını Ekle'}
                 </button>
               </div>
             </form>
