@@ -473,6 +473,23 @@ export function subscribeToAuditLogs(
   });
 }
 
+const enrichQuestionLogs = (logs: QuestionLog[]) => {
+  if (!logs) return INITIAL_STATE.questionLogs;
+  return logs.map((log) => {
+    if (log.durationMinutes && log.durationMinutes > 0) return log;
+    const initialMatch = INITIAL_STATE.questionLogs.find(iLog => iLog.id === log.id || (iLog.date === log.date && iLog.subject === log.subject));
+    if (initialMatch?.durationMinutes && initialMatch.durationMinutes > 0) {
+      return { ...log, durationMinutes: initialMatch.durationMinutes };
+    }
+    const solved = log.solvedCount || 30;
+    let factor = 1.2;
+    if (log.subject?.includes('Matematik')) factor = 1.4;
+    else if (log.subject?.includes('Paragraf') || log.subject?.includes('Türkçe')) factor = 0.8;
+    else if (log.subject?.includes('Fizik') || log.subject?.includes('Geometri')) factor = 1.3;
+    return { ...log, durationMinutes: Math.max(1, Math.round(solved * factor)) };
+  });
+};
+
 /**
  * Öğretmen/Rehber/Admin rolleri için: TÜM öğrencilerin verisini gerçek zamanlı dinler.
  * (Öğrenci rolü için KULLANILMAMALI — bkz. subscribeToSingleStudentData)
@@ -483,7 +500,11 @@ export function subscribeToAllStudentsData(
   return onSnapshot(collection(db, STUDENTS_DATA_COL), (snapshot) => {
     const dataMap: Record<string, YKSDataState> = {};
     snapshot.forEach((docSnap) => {
-      dataMap[docSnap.id] = reassembleDataFromFirestore(docSnap.data()) as YKSDataState;
+      const parsed = reassembleDataFromFirestore(docSnap.data()) as YKSDataState;
+      if (parsed) {
+        parsed.questionLogs = enrichQuestionLogs(parsed.questionLogs);
+      }
+      dataMap[docSnap.id] = parsed;
     });
 
     if (dataMap['student-1']) {
@@ -520,6 +541,13 @@ export function subscribeToSingleStudentData(
       return;
     }
     let data = reassembleDataFromFirestore(docSnap.data()) as YKSDataState;
+
+    if (data) {
+      data = {
+        ...data,
+        questionLogs: enrichQuestionLogs(data.questionLogs)
+      };
+    }
 
     if (studentId === 'student-1') {
       const needsBranch = !data.branchExams || data.branchExams.length < INITIAL_STATE.branchExams.length;

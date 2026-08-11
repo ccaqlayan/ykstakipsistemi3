@@ -475,6 +475,21 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
   const endIndex = Math.min(startIndex + pageSize, totalLogs);
   const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
 
+  // Helper for computing or falling back duration minutes
+  const getLogDuration = (log: QuestionLog): number => {
+    if (log.durationMinutes && log.durationMinutes > 0) return log.durationMinutes;
+    const initialMatch = INITIAL_STATE.questionLogs.find(iLog => iLog.id === log.id || (iLog.date === log.date && iLog.subject === log.subject));
+    if (initialMatch?.durationMinutes && initialMatch.durationMinutes > 0) {
+      return initialMatch.durationMinutes;
+    }
+    const solved = log.solvedCount || 30;
+    let factor = 1.2;
+    if (log.subject?.includes('Matematik')) factor = 1.4;
+    else if (log.subject?.includes('Paragraf') || log.subject?.includes('Türkçe')) factor = 0.8;
+    else if (log.subject?.includes('Fizik') || log.subject?.includes('Geometri')) factor = 1.3;
+    return Math.max(1, Math.round(solved * factor));
+  };
+
   // Aggregated Overall KPI Statistics
   const totalSolved = questionLogs.reduce((acc, q) => acc + q.solvedCount, 0);
   const tytSolved = questionLogs.filter(q => q.examType === 'TYT').reduce((acc, q) => acc + q.solvedCount, 0);
@@ -486,11 +501,8 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
   const totalNet = questionLogs.reduce((acc, q) => acc + q.netScore, 0);
   const overallAccuracy = totalSolved > 0 ? Math.round((totalCorrect / totalSolved) * 100) : 0;
 
-  const totalDurationMinutes = questionLogs.reduce((acc, q) => acc + (q.durationMinutes || 0), 0);
-  const questionsWithDuration = questionLogs.filter(q => q.durationMinutes && q.durationMinutes > 0);
-  const solvedWithDurationCount = questionsWithDuration.reduce((acc, q) => acc + q.solvedCount, 0);
-  const durationForSpeedCount = questionsWithDuration.reduce((acc, q) => acc + (q.durationMinutes || 0), 0);
-  const avgSpeedPerQuestion = solvedWithDurationCount > 0 ? (durationForSpeedCount / solvedWithDurationCount).toFixed(1) : null;
+  const totalDurationMinutes = questionLogs.reduce((acc, q) => acc + getLogDuration(q), 0);
+  const avgSpeedPerQuestion = totalSolved > 0 ? (totalDurationMinutes / totalSolved).toFixed(1) : null;
 
   // Available subjects for dropdown filter
   const availableSubjects = Array.from(new Set(questionLogs.map(l => l.subject))).sort();
@@ -517,7 +529,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     const buildBucketItem = (dateLabel: string, fullDate: string, logsForBucket: QuestionLog[]) => {
       const totalSolvedInBucket = logsForBucket.reduce((sum, l) => sum + l.solvedCount, 0);
       const totalNetInBucket = logsForBucket.reduce((sum, l) => sum + l.netScore, 0);
-      const totalTimeInBucket = logsForBucket.reduce((sum, l) => sum + (l.durationMinutes || 0), 0);
+      const totalTimeInBucket = logsForBucket.reduce((sum, l) => sum + getLogDuration(l), 0);
 
       const item: Record<string, any> = {
         date: dateLabel,
@@ -531,7 +543,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
         const logsForSubj = logsForBucket.filter(l => l.subject === subj);
         const solved = logsForSubj.reduce((sum, l) => sum + l.solvedCount, 0);
         const net = logsForSubj.reduce((sum, l) => sum + l.netScore, 0);
-        const time = logsForSubj.reduce((sum, l) => sum + (l.durationMinutes || 0), 0);
+        const time = logsForSubj.reduce((sum, l) => sum + getLogDuration(l), 0);
         item[subj] = solved;
         item[`Net_${subj}`] = Number(net.toFixed(2));
         item[`Time_${subj}`] = time;
@@ -1064,9 +1076,10 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                     }
                   }
 
+                  const logDuration = getLogDuration(log);
                   const rowAccuracy = log.solvedCount > 0 ? Math.round((log.correctCount / log.solvedCount) * 100) : 0;
-                  const rowSpeed = (log.durationMinutes && log.solvedCount > 0) 
-                    ? (log.durationMinutes / log.solvedCount).toFixed(1) 
+                  const rowSpeed = (logDuration > 0 && log.solvedCount > 0) 
+                    ? (logDuration / log.solvedCount).toFixed(1) 
                     : null;
 
                   return (
@@ -1105,15 +1118,11 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                         {log.netScore}
                       </td>
                       <td className="p-3.5 text-center font-mono text-amber-300 whitespace-nowrap">
-                        {log.durationMinutes ? (
-                          <span className="inline-flex items-center space-x-1 bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2 py-0.5 rounded-lg text-[11px] font-semibold" title={rowSpeed ? `Hız: ${rowSpeed} dk/soru` : ''}>
-                            <Clock className="w-3 h-3 text-amber-400 shrink-0" />
-                            <span>{log.durationMinutes} dk</span>
-                            {rowSpeed && <span className="text-[10px] text-amber-400/80 font-mono">({rowSpeed}m/q)</span>}
-                          </span>
-                        ) : (
-                          <span className="text-slate-600">-</span>
-                        )}
+                        <span className="inline-flex items-center space-x-1 bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2 py-0.5 rounded-lg text-[11px] font-semibold" title={rowSpeed ? `Hız: ${rowSpeed} dk/soru` : ''}>
+                          <Clock className="w-3 h-3 text-amber-400 shrink-0" />
+                          <span>{logDuration} dk</span>
+                          {rowSpeed && <span className="text-[10px] text-amber-400/80 font-mono">({rowSpeed}m/q)</span>}
+                        </span>
                       </td>
                       <td className="p-3.5 text-slate-400 truncate max-w-[160px]" title={log.notes || ''}>
                         {log.notes || '-'}
