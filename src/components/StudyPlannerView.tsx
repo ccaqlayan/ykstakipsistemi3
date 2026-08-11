@@ -1,5 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { getWeekLabel, normalizeWeekLabel, parseWeekStartTimestamp } from '../utils/dateUtils';
+import { 
+  getWeekLabel, 
+  normalizeWeekLabel, 
+  parseWeekStartTimestamp,
+  getMonday,
+  getIsoDateString,
+  getWeekDays,
+  formatWeekLabelWithYear,
+  addWeeks
+} from '../utils/dateUtils';
 import { 
   ChevronLeft,
   ChevronRight,
@@ -329,6 +338,50 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     const nextIndex = (currentIndex + 1) % DAYS.length;
     setSelectedDay(DAYS[nextIndex]);
   };
+
+  // Week navigation states
+  const currentMonday = React.useMemo(() => getMonday(new Date()), []);
+  const [selectedMondayDate, setSelectedMondayDate] = useState<Date>(currentMonday);
+  const [weekSlideDirection, setWeekSlideDirection] = useState<'next' | 'prev'>('next');
+
+  const selectedWeekDays = React.useMemo(() => getWeekDays(selectedMondayDate), [selectedMondayDate]);
+  const selectedWeekDaysMap = React.useMemo(() => {
+    const map: Record<string, { isoDate: string; displayDate: string }> = {};
+    selectedWeekDays.forEach(d => {
+      map[d.dayName] = { isoDate: d.isoDate, displayDate: d.displayDate };
+    });
+    return map;
+  }, [selectedWeekDays]);
+
+  const currentWeekLabel = React.useMemo(() => formatWeekLabelWithYear(selectedMondayDate), [selectedMondayDate]);
+  const isCurrentWeek = selectedMondayDate.getTime() === currentMonday.getTime();
+  const isPastWeek = selectedMondayDate.getTime() < currentMonday.getTime();
+  const isFutureWeek = selectedMondayDate.getTime() > currentMonday.getTime();
+
+  const handlePrevWeek = () => {
+    setWeekSlideDirection('prev');
+    setSelectedMondayDate(prev => addWeeks(prev, -1));
+  };
+
+  const handleNextWeek = () => {
+    setWeekSlideDirection('next');
+    setSelectedMondayDate(prev => addWeeks(prev, 1));
+  };
+
+  const handleGoToCurrentWeek = () => {
+    setWeekSlideDirection(selectedMondayDate.getTime() < currentMonday.getTime() ? 'next' : 'prev');
+    setSelectedMondayDate(currentMonday);
+  };
+
+  const getPlanDateAndWeekLabel = (targetDay: DayOfWeek) => {
+    const dayIndex = DAYS.indexOf(targetDay);
+    const targetDate = new Date(selectedMondayDate);
+    targetDate.setDate(selectedMondayDate.getDate() + (dayIndex >= 0 ? dayIndex : 0));
+    return {
+      date: getIsoDateString(targetDate),
+      weekLabel: currentWeekLabel
+    };
+  };
   
   const [activeSubTab, setActiveSubTab] = useState<'tracker' | 'history'>('tracker');
   const [selectedHistoryWeek, setSelectedHistoryWeek] = useState<string>('');
@@ -394,10 +447,29 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       return p;
     });
 
+    const currentMondayTime = currentMonday.getTime();
+
+    const updatedPlans = cleanedPlans.map(p => {
+      if (!p.archived && (p.weekLabel || p.date)) {
+        let pTimestamp = 0;
+        if (p.date) {
+          pTimestamp = new Date(p.date).getTime();
+        } else if (p.weekLabel) {
+          pTimestamp = parseWeekStartTimestamp(p.weekLabel);
+        }
+        // If task belongs to a week before current week, automatically archive it into history
+        if (pTimestamp > 0 && pTimestamp < currentMondayTime - 86400000 * 2) {
+          changed = true;
+          return { ...p, archived: true };
+        }
+      }
+      return p;
+    });
+
     if (changed) {
-      onUpdateAllPlans(cleanedPlans);
+      onUpdateAllPlans(updatedPlans);
     }
-  }, [studyPlans, onUpdateAllPlans]);
+  }, [studyPlans, onUpdateAllPlans, currentMonday]);
 
   const getPlansForWeek = (weekLabel: string): StudyPlanItem[] => {
     const norm = normalizeWeekLabel(weekLabel);
@@ -821,6 +893,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     e.preventDefault();
     if (!subject || !topic.trim()) return;
 
+    const { date, weekLabel } = getPlanDateAndWeekLabel(targetDayForAdd);
+
     onAddPlan({
       day: targetDayForAdd,
       subject,
@@ -830,7 +904,9 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       targetQuestionCount: targetQuestionCount !== '' && Number(targetQuestionCount) > 0 ? Number(targetQuestionCount) : undefined,
       completedMinutes: 0,
       status: 'pending',
-      notes
+      notes,
+      date,
+      weekLabel
     });
 
     setSubject('');
@@ -843,6 +919,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   // Duplicate Plan Handler
   const handleDuplicatePlan = (e: React.MouseEvent, plan: StudyPlanItem) => {
     e.stopPropagation();
+    const { date, weekLabel } = getPlanDateAndWeekLabel(plan.day);
+
     onAddPlan({
       day: plan.day,
       subject: plan.subject,
@@ -852,7 +930,9 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       targetQuestionCount: plan.targetQuestionCount,
       completedMinutes: 0,
       status: 'pending',
-      notes: plan.notes
+      notes: plan.notes,
+      date,
+      weekLabel
     });
   };
 
@@ -970,9 +1050,12 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
 
     const planToMove = studyPlans.find((p) => p.id === planId);
     if (planToMove && planToMove.day !== targetDay) {
+      const { date, weekLabel } = getPlanDateAndWeekLabel(targetDay);
       onUpdatePlan({
         ...planToMove,
-        day: targetDay
+        day: targetDay,
+        date,
+        weekLabel
       });
     }
     setDraggedPlanId(null);
@@ -1064,9 +1147,12 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     if (touchDraggedPlanId && dragOverDay) {
       const planToMove = studyPlans.find((p) => p.id === touchDraggedPlanId);
       if (planToMove && planToMove.day !== dragOverDay) {
+        const { date, weekLabel } = getPlanDateAndWeekLabel(dragOverDay);
         onUpdatePlan({
           ...planToMove,
-          day: dragOverDay
+          day: dragOverDay,
+          date,
+          weekLabel
         });
       }
     }
@@ -1089,9 +1175,12 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   // Move task via dropdown/button (For touch devices or quick click)
   const handleQuickMoveDay = (plan: StudyPlanItem, newDay: DayOfWeek) => {
     if (plan.day === newDay) return;
+    const { date, weekLabel } = getPlanDateAndWeekLabel(newDay);
     onUpdatePlan({
       ...plan,
-      day: newDay
+      day: newDay,
+      date,
+      weekLabel
     });
   };
 
@@ -1405,6 +1494,54 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       </div>
       )}
 
+      {/* CENTERED WEEK NAVIGATOR (< Hafta >) FOR HOURLY & WEEKLY BOARD */}
+      {viewMode === 'board' && (
+        <div className="flex flex-col items-center justify-center my-2 sm:my-3 space-y-2">
+          <div className="flex items-center justify-between bg-slate-900/90 border border-indigo-500/30 rounded-2xl p-1.5 sm:p-2 backdrop-blur-xl shadow-xl w-full max-w-sm sm:max-w-md md:max-w-lg">
+            <button
+              type="button"
+              onClick={handlePrevWeek}
+              className="p-2 sm:p-2.5 rounded-xl bg-slate-800/80 hover:bg-indigo-600 text-slate-300 hover:text-white border border-slate-700/80 transition-all shadow-md active:scale-95 cursor-pointer shrink-0 group"
+              title="Önceki Hafta"
+              aria-label="Önceki Hafta"
+            >
+              <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+            </button>
+
+            <div className="flex flex-col items-center justify-center text-center px-3 min-w-0 flex-1">
+              <span className="text-[10px] sm:text-xs font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-1">
+                <CalendarDays className="w-3.5 h-3.5" />
+                <span>Haftalık Çalışma Takvimi</span>
+              </span>
+              <h2 className="text-sm sm:text-base md:text-lg font-black text-white tracking-tight truncate max-w-full mt-0.5">
+                {currentWeekLabel}
+              </h2>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleNextWeek}
+              className="p-2 sm:p-2.5 rounded-xl bg-slate-800/80 hover:bg-indigo-600 text-slate-300 hover:text-white border border-slate-700/80 transition-all shadow-md active:scale-95 cursor-pointer shrink-0 group"
+              title="Sonraki Hafta"
+              aria-label="Sonraki Hafta"
+            >
+              <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+
+          {!isCurrentWeek && (
+            <button
+              type="button"
+              onClick={handleGoToCurrentWeek}
+              className="px-3 py-1 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Bu Haftaya Dön</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* CENTERED DAY NAVIGATOR (< Gün >) WITH SLIDE ANIMATION */}
       {viewMode === 'daily' && (
         <div className="flex items-center justify-center my-2 sm:my-3">
@@ -1464,35 +1601,60 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         </div>
       )}
 
-      {/* VIEW 1: DRAG & DROP WEEKLY BOARD */}
+      {/* VIEW 1: DRAG & DROP WEEKLY BOARD WITH SLIDE ANIMATION */}
       {viewMode === 'board' && (
-        <StudyPlannerWeeklyBoard
-          activePlans={activePlans}
-          today={today}
-          DAYS={DAYS}
-          getSubjectTheme={getSubjectTheme}
-          DAY_COLUMN_STYLES={DAY_COLUMN_STYLES}
-          dragOverDay={dragOverDay}
-          draggedPlanId={draggedPlanId}
-          touchDraggedPlanId={touchDraggedPlanId}
-          openMoveMenuPlanId={openMoveMenuPlanId}
-          setOpenMoveMenuPlanId={setOpenMoveMenuPlanId}
-          handleDragOver={handleDragOver}
-          handleDragLeave={handleDragLeave}
-          handleDrop={handleDrop}
-          handleDragStart={handleDragStart}
-          handleDragEnd={handleDragEnd}
-          handleTouchStart={handleTouchStart}
-          handleTouchMove={handleTouchMove}
-          handleTouchEnd={handleTouchEnd}
-          handleCheckClick={handleCheckClick}
-          handleQuickMoveDay={handleQuickMoveDay}
-          handleDuplicatePlan={handleDuplicatePlan}
-          openAddModal={openAddModal}
-          setEditingPlan={setEditingPlan}
-          setDeletingPlan={setDeletingPlan}
-          touchStartRef={touchStartRef}
-        />
+        <div className="relative overflow-hidden">
+          <AnimatePresence mode="wait" custom={weekSlideDirection}>
+            <motion.div
+              key={selectedMondayDate.getTime()}
+              custom={weekSlideDirection}
+              initial={((direction: any) => ({
+                x: direction === 'next' ? 60 : -60,
+                opacity: 0,
+              })) as any}
+              animate={{
+                x: 0,
+                opacity: 1,
+              }}
+              exit={((direction: any) => ({
+                x: direction === 'next' ? -60 : 60,
+                opacity: 0,
+              })) as any}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+            >
+              <StudyPlannerWeeklyBoard
+                activePlans={activePlans}
+                today={today}
+                DAYS={DAYS}
+                getSubjectTheme={getSubjectTheme}
+                DAY_COLUMN_STYLES={DAY_COLUMN_STYLES}
+                dragOverDay={dragOverDay}
+                draggedPlanId={draggedPlanId}
+                touchDraggedPlanId={touchDraggedPlanId}
+                openMoveMenuPlanId={openMoveMenuPlanId}
+                setOpenMoveMenuPlanId={setOpenMoveMenuPlanId}
+                handleDragOver={handleDragOver}
+                handleDragLeave={handleDragLeave}
+                handleDrop={handleDrop}
+                handleDragStart={handleDragStart}
+                handleDragEnd={handleDragEnd}
+                handleTouchStart={handleTouchStart}
+                handleTouchMove={handleTouchMove}
+                handleTouchEnd={handleTouchEnd}
+                handleCheckClick={handleCheckClick}
+                handleQuickMoveDay={handleQuickMoveDay}
+                handleDuplicatePlan={handleDuplicatePlan}
+                openAddModal={openAddModal}
+                setEditingPlan={setEditingPlan}
+                setDeletingPlan={setDeletingPlan}
+                touchStartRef={touchStartRef}
+                weekDaysMap={selectedWeekDaysMap}
+                isArchivedWeek={isPastWeek}
+                isFutureWeek={isFutureWeek}
+              />
+            </motion.div>
+          </AnimatePresence>
+        </div>
       )}
 
       {/* VIEW 2: SINGLE DAY FOCUS DETAIL VIEW */}

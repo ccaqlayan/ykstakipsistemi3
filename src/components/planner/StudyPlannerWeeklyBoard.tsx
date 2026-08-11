@@ -38,6 +38,9 @@ interface StudyPlannerWeeklyBoardProps {
   setEditingPlan: (plan: StudyPlanItem | null) => void;
   setDeletingPlan: (plan: { id: string; title: string } | null) => void;
   touchStartRef: any;
+  weekDaysMap?: Record<string, { isoDate: string; displayDate: string }>;
+  isArchivedWeek?: boolean;
+  isFutureWeek?: boolean;
 }
 
 export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = ({
@@ -65,16 +68,39 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
   openAddModal,
   setEditingPlan,
   setDeletingPlan,
-  touchStartRef
+  touchStartRef,
+  weekDaysMap,
+  isArchivedWeek,
+  isFutureWeek
 }) => {
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-400 bg-slate-900/40 p-3 rounded-2xl border border-slate-800">
-        <div className="flex items-center space-x-2">
-          <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
-          <span><strong>Sürükle & Bırak İpucu:</strong> Herhangi bir görevi basılı tutarak başka bir günün sütununa sürükleyin. Sürüklediğinizde hedef sütun mor renkle parlayacaktır.</span>
+      {isArchivedWeek && (
+        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between text-xs text-amber-300">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <span><strong>Geçmiş Hafta Arşivi:</strong> Şu an geçmiş bir haftanın kaydını görüntülüyorsunuz. Tamamlanan dersler veritabanında saklanmıştır.</span>
+          </div>
         </div>
-      </div>
+      )}
+
+      {isFutureWeek && (
+        <div className="p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl flex items-center justify-between text-xs text-indigo-300">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span><strong>Gelecek Hafta Planı:</strong> Bu hafta için ders ve hedef planlaması yapıyorsunuz. Haftası geldiğinde otomatik aktifleşecektir.</span>
+          </div>
+        </div>
+      )}
+
+      {!isArchivedWeek && !isFutureWeek && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-400 bg-slate-900/40 p-3 rounded-2xl border border-slate-800">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span><strong>Sürükle & Bırak İpucu:</strong> Herhangi bir görevi basılı tutarak başka bir günün sütununa sürükleyin. Sürüklediğinizde hedef sütun mor renkle parlayacaktır.</span>
+          </div>
+        </div>
+      )}
 
       {/* Subject Color Legend */}
       {activePlans.length > 0 && (
@@ -125,10 +151,15 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
               }`}>
                 <div className="flex flex-col gap-0.5">
                   <div className="flex items-center space-x-2">
-                    <h3 className={`text-base sm:text-lg font-black tracking-wider uppercase day-title-text ${
+                    <h3 className={`text-base sm:text-lg font-black tracking-wider uppercase day-title-text flex items-center gap-1.5 ${
                       isToday ? 'text-white' : (dayStyle?.titleColor || '')
                     }`}>
-                      {day.toUpperCase()}
+                      <span>{day.toUpperCase()}</span>
+                      {weekDaysMap && weekDaysMap[day] && (
+                        <span className="text-xs font-semibold opacity-75 lowercase tracking-normal">
+                          ({weekDaysMap[day].displayDate})
+                        </span>
+                      )}
                     </h3>
                     {isToday && (
                       <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-indigo-500 text-white uppercase tracking-wider shadow-sm animate-pulse">

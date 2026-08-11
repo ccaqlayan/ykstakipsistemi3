@@ -110,3 +110,74 @@ export const parseWeekStartTimestamp = (weekLabel: string): number => {
   const year = 2026; 
   return new Date(year, monthIndex, day).getTime();
 };
+
+/**
+ * Returns Monday Date object for the week containing the given date.
+ */
+export const getMonday = (date: Date = new Date()): Date => {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dayIndex = d.getDay();
+  const diff = dayIndex === 0 ? -6 : 1 - dayIndex;
+  d.setDate(d.getDate() + diff);
+  return d;
+};
+
+/**
+ * Formats a Date object to YYYY-MM-DD ISO string using local timezone.
+ */
+export const getIsoDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+/**
+ * Returns 7 dates (Monday through Sunday) for a given Monday Date.
+ */
+export const getWeekDays = (mondayDate: Date) => {
+  const days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'] as const;
+  const shortMonths = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+
+  return days.map((dayName, index) => {
+    const d = new Date(mondayDate);
+    d.setDate(mondayDate.getDate() + index);
+    const isoDate = getIsoDateString(d);
+    const displayDate = `${d.getDate()} ${shortMonths[d.getMonth()]}`;
+    return {
+      dayName,
+      date: d,
+      isoDate,
+      displayDate
+    };
+  });
+};
+
+/**
+ * Formats week label with optional year, e.g. "11 - 17 Ağustos 2026"
+ */
+export const formatWeekLabelWithYear = (mondayDate: Date): string => {
+  const sunday = new Date(mondayDate);
+  sunday.setDate(mondayDate.getDate() + 6);
+
+  const mDay = mondayDate.getDate();
+  const mMonth = TURKISH_MONTHS[mondayDate.getMonth()];
+  const sDay = sunday.getDate();
+  const sMonth = TURKISH_MONTHS[sunday.getMonth()];
+  const year = mondayDate.getFullYear();
+
+  if (mondayDate.getMonth() === sunday.getMonth()) {
+    return `${mDay} - ${sDay} ${mMonth} ${year}`;
+  }
+  return `${mDay} ${mMonth} - ${sDay} ${sMonth} ${year}`;
+};
+
+/**
+ * Shifts Monday date by N weeks.
+ */
+export const addWeeks = (mondayDate: Date, weeks: number): Date => {
+  const d = new Date(mondayDate);
+  d.setDate(d.getDate() + weeks * 7);
+  return d;
+};
+
