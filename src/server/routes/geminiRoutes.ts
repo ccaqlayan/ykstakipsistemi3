@@ -21,6 +21,27 @@ import {
 
 const router = Router();
 
+function extractResponseText(response: any): string {
+  if (!response) return '';
+  if (typeof response.text === 'string' && response.text.trim()) {
+    return response.text;
+  }
+  if (typeof response.text === 'function') {
+    try {
+      const txt = response.text();
+      if (typeof txt === 'string' && txt.trim()) return txt;
+    } catch {
+      // Fallback
+    }
+  }
+  if (response.candidates?.[0]?.content?.parts) {
+    const parts = response.candidates[0].content.parts;
+    const textStr = parts.map((p: any) => p.text || '').join('\n').trim();
+    if (textStr) return textStr;
+  }
+  return typeof response === 'string' ? response : JSON.stringify(response);
+}
+
 // Helper summarizers for AI prompts
 function summarizeMocksForPrompt(mocks: any[], limit: number = 3) {
   return (mocks || []).slice(-limit).map(m => ({
@@ -241,8 +262,8 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
       }
     });
 
-    const responseText = response.text || '{}';
-    const parsedData = JSON.parse(responseText);
+    const responseText = extractResponseText(response);
+    const parsedData = JSON.parse(responseText || '{}');
 
     const userName = req.body.userName || req.body.profile?.name || 'Öğrenci';
     const userRole = req.body.userRole || req.body.profile?.role || 'Öğrenci';
@@ -329,8 +350,8 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
       }
     });
 
-    const responseText = response.text || '{}';
-    const parsedData = JSON.parse(responseText);
+    const responseText = extractResponseText(response);
+    const parsedData = JSON.parse(responseText || '{}');
 
     const userName = req.body.userName || req.body.teacherName || 'Öğretmen / Rehberlik';
     const userRole = req.body.userRole || 'Öğretmen';
@@ -416,8 +437,8 @@ Lütfen bu verileri detaylıca analiz et ve sonucu YALNIZCA geçerli bir JSON ob
       }
     });
 
-    const responseText = response.text || '{}';
-    const parsedData = JSON.parse(responseText);
+    const responseText = extractResponseText(response);
+    const parsedData = JSON.parse(responseText || '{}');
 
     const userName = req.body.userName || req.body.profile?.name || 'Sistem Kullanıcısı';
     const userRole = req.body.userRole || 'Öğrenci';
@@ -495,8 +516,8 @@ Lütfen yanıtını doğrudan öğrenciye hitap eden bir tonda yaz ve YALNIZCA g
       }
     });
 
-    const responseText = response.text || '{}';
-    const parsedData = JSON.parse(responseText);
+    const responseText = extractResponseText(response);
+    const parsedData = JSON.parse(responseText || '{}');
 
     const userName = req.body.userName || req.body.profile?.name || 'Sistem Kullanıcısı';
     const userRole = req.body.userRole || 'Öğrenci';
@@ -612,7 +633,7 @@ ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, 
       contents
     });
 
-    const responseText = response.text || '';
+    const responseText = extractResponseText(response);
 
     const userName = req.body.userName || req.body.profile?.name || 'Sistem Kullanıcısı';
     const userRole = req.body.userRole || 'Öğrenci';
@@ -738,7 +759,7 @@ Kesinlikle selamlaşma, "İşte senin için soru", "Başarılar dilerim" gibi hi
     });
 
     let similarQuestionsData = null;
-    const responseText = response.text || '{}';
+    const responseText = extractResponseText(response);
     try {
       similarQuestionsData = JSON.parse(responseText);
     } catch (parseErr) {
@@ -881,7 +902,7 @@ BİÇİMLENDİRME:
       contents
     });
 
-    const responseText = response.text || '';
+    const responseText = extractResponseText(response);
 
     const userName = req.body.userName || req.body.profile?.name || 'Sistem Kullanıcısı';
     const userRole = req.body.userRole || 'Öğrenci';
