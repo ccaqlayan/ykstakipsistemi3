@@ -156,13 +156,6 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                 isDragTarget ? 'bg-indigo-900/90 border-indigo-500/60' : (dayStyle?.headerBg || '')
               }`}>
                 <div className="flex flex-col gap-0.5">
-                  {isToday && (
-                    <div className="mb-1">
-                      <span className="inline-block text-[9px] font-black px-1.5 py-0.5 rounded bg-indigo-500 text-white uppercase tracking-wider shadow-sm animate-pulse">
-                        BUGÜN
-                      </span>
-                    </div>
-                  )}
                   <h3 className={`text-base sm:text-lg font-black tracking-wider uppercase day-title-text flex items-center gap-1.5 ${
                     isToday ? 'text-white' : (dayStyle?.titleColor || '')
                   }`}>
@@ -173,10 +166,15 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                       </span>
                     )}
                   </h3>
-                  <div className="text-[11px] font-semibold flex items-center space-x-1 mt-0.5">
+                  <div className="text-[11px] font-semibold flex items-center space-x-2 mt-0.5">
                     <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold day-header-badge ${dayStyle?.badgeBg || ''}`}>
                       {completedCount}/{dayPlans.length} Görev Bitti
                     </span>
+                    {isToday && (
+                      <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-indigo-500 text-white uppercase tracking-wider shadow-sm animate-pulse shrink-0">
+                        BUGÜN
+                      </span>
+                    )}
                   </div>
                 </div>
 
