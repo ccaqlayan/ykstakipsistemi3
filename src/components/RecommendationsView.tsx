@@ -167,12 +167,19 @@ const SUBJECT_COLORS: Record<string, { bg: string, text: string, border: string 
   'Coğrafya': { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/20' },
 };
 
-const getChannelAvatar = (channel: RecommendedChannel): string | null => {
+const getChannelAvatar = (channel: RecommendedChannel): string => {
   if (channel.avatarUrl) return channel.avatarUrl;
   if (channel.url) {
-    return `/api/youtube/avatar?url=${encodeURIComponent(channel.url)}&name=${encodeURIComponent(channel.name)}`;
+    const handleMatch = channel.url.match(/@([\w.-]+)/);
+    let slug = '';
+    if (handleMatch && handleMatch[1]) {
+      slug = handleMatch[1].toLowerCase().replace(/[^a-z0-9]/g, '_');
+    } else {
+      slug = (channel.name || 'chan').toLowerCase().replace(/[^a-z0-9]/g, '_');
+    }
+    return `/uploads/avatars/youtube/${slug}.jpg`;
   }
-  return null;
+  return '';
 };
 
 export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
@@ -281,12 +288,26 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
     const oldState = editingChannel ? { ...editingChannel } : null;
 
     if (editingChannel && !chanId) {
-      // Reconstruct ID for default channel if it is somehow missing
       const safeSubject = (editingChannel.subject || 'Matematik').toLowerCase().replace(/[^a-z0-9]/g, '-');
       const safeName = (editingChannel.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
       chanId = `def-chan-${safeSubject}-${safeName}`;
     } else if (!editingChannel) {
       chanId = 'rec-chan-' + Date.now();
+    }
+
+    let syncedAvatarUrl = '';
+    try {
+      const syncRes = await fetch('/api/youtube/sync-channel-avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: channelUrl, name: channelName })
+      });
+      const syncData = await syncRes.json();
+      if (syncData.success && syncData.avatarUrl) {
+        syncedAvatarUrl = syncData.avatarUrl;
+      }
+    } catch (e) {
+      console.log('Channel avatar sync error on submit:', e);
     }
 
     const newChan = {
@@ -296,7 +317,8 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
       name: channelName,
       subscribersText: channelSubscribersText,
       subscribersCount: 0,
-      url: channelUrl
+      url: channelUrl,
+      ...(syncedAvatarUrl ? { avatarUrl: syncedAvatarUrl } : {})
     };
 
     const addedId = chanId;
@@ -821,6 +843,14 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                                         alt={channel.name}
                                         loading="lazy"
                                         className="w-full h-full object-cover absolute inset-0 z-10 rounded-xl"
+                                        onError={(e) => {
+                                          const target = e.currentTarget as HTMLImageElement;
+                                          if (target.src.endsWith('.jpg')) {
+                                            target.src = target.src.replace('.jpg', '.svg');
+                                          } else if (!target.src.includes('/api/youtube/avatar')) {
+                                            target.src = `/api/youtube/avatar?url=${encodeURIComponent(channel.url)}&name=${encodeURIComponent(channel.name)}`;
+                                          }
+                                        }}
                                       />
                                     ) : null}
                                     <div className="w-full h-full bg-gradient-to-br from-red-900/80 to-rose-950/90 flex items-center justify-center text-red-400 font-bold text-xs z-0">

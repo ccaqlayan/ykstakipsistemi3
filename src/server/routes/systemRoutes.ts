@@ -698,7 +698,7 @@ router.post('/youtube/video-info', async (req, res) => {
 // -------------------------------------------------------------
 // YouTube Channel Avatar Server-Side Local Disk Backup & Downloader
 // -------------------------------------------------------------
-const avatarsDir = path.join(uploadsDir, 'avatars');
+const avatarsDir = path.join(uploadsDir, 'avatars', 'youtube');
 if (!fs.existsSync(avatarsDir)) {
   try {
     fs.mkdirSync(avatarsDir, { recursive: true });
@@ -737,7 +737,7 @@ function generateFallbackAvatarSvg(name: string): string {
   </svg>`;
 }
 
-async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: string): Promise<string> {
+async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: string, forceRefresh: boolean = false): Promise<string> {
   let slug = '';
   const handleMatch = channelUrl.match(/@([\w.-]+)/);
   if (handleMatch && handleMatch[1]) {
@@ -751,12 +751,14 @@ async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: 
   const webpPath = path.join(avatarsDir, `${slug}.webp`);
   const svgPath = path.join(avatarsDir, `${slug}.svg`);
 
-  for (const p of [jpgPath, pngPath, webpPath]) {
-    if (fs.existsSync(p)) {
-      try {
-        const stats = fs.statSync(p);
-        if (stats.size > 500) return p;
-      } catch (e) {}
+  if (!forceRefresh) {
+    for (const p of [jpgPath, pngPath, webpPath]) {
+      if (fs.existsSync(p)) {
+        try {
+          const stats = fs.statSync(p);
+          if (stats.size > 500) return p;
+        } catch (e) {}
+      }
     }
   }
 
@@ -777,7 +779,7 @@ async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: 
           const buffer = Buffer.from(arrayBuffer);
           if (buffer.length > 500) {
             fs.writeFileSync(jpgPath, buffer);
-            console.log(`[Avatar Backup oEmbed] Successfully saved avatar for ${slug} (${buffer.length} bytes).`);
+            console.log(`[Avatar Backup oEmbed] Saved avatar for ${slug} to youtube/ (${buffer.length} bytes).`);
             return jpgPath;
           }
         }
@@ -817,7 +819,7 @@ async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: 
           const buffer = Buffer.from(arrayBuffer);
           if (buffer.length > 500) {
             fs.writeFileSync(jpgPath, buffer);
-            console.log(`[Avatar Backup Scrape] Successfully saved avatar for ${slug} (${buffer.length} bytes).`);
+            console.log(`[Avatar Backup Scrape] Saved avatar for ${slug} to youtube/ (${buffer.length} bytes).`);
             return jpgPath;
           }
         }
@@ -827,7 +829,7 @@ async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: 
     console.error(`[Avatar Backup Error] Failed to fetch avatar for ${channelUrl}:`, err);
   }
 
-  if (fs.existsSync(svgPath)) {
+  if (fs.existsSync(svgPath) && !forceRefresh) {
     return svgPath;
   }
 
@@ -855,6 +857,21 @@ router.get('/youtube/avatar', async (req, res) => {
   } catch (err) {
     console.error('YouTube avatar route error:', err);
     res.status(500).send('Avatar error');
+  }
+});
+
+router.post('/youtube/sync-channel-avatar', async (req, res) => {
+  const { url, name } = req.body;
+  if (!url) return res.status(400).json({ success: false, error: 'URL gereklidir.' });
+
+  try {
+    const savedPath = await getOrDownloadChannelAvatarPath(url, name, true);
+    const filename = path.basename(savedPath);
+    const publicUrl = `/uploads/avatars/youtube/${filename}?t=${Date.now()}`;
+    return res.json({ success: true, avatarUrl: publicUrl });
+  } catch (err: any) {
+    console.error('Single channel avatar sync error:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Avatar indirilemedi.' });
   }
 });
 

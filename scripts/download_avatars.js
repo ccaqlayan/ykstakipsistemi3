@@ -5,9 +5,21 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const avatarsDir = path.resolve(__dirname, '../public/uploads/avatars');
+const avatarsDir = path.resolve(__dirname, '../public/uploads/avatars/youtube');
 if (!fs.existsSync(avatarsDir)) {
   fs.mkdirSync(avatarsDir, { recursive: true });
+}
+
+// Remove old loose files in public/uploads/avatars root if any exist
+const parentDir = path.resolve(__dirname, '../public/uploads/avatars');
+if (fs.existsSync(parentDir)) {
+  const files = fs.readdirSync(parentDir);
+  for (const f of files) {
+    const fullP = path.join(parentDir, f);
+    if (fs.statSync(fullP).isFile()) {
+      try { fs.unlinkSync(fullP); } catch(e) {}
+    }
+  }
 }
 
 const RECOMMENDED_CHANNELS = [
@@ -151,7 +163,7 @@ async function downloadAvatar(channel) {
           const buffer = Buffer.from(await imgRes.arrayBuffer());
           if (buffer.length > 500) {
             fs.writeFileSync(jpgPath, buffer);
-            console.log(`  ✓ Saved JPG via oEmbed (${buffer.length} bytes)`);
+            console.log(`  ✓ Saved JPG via oEmbed (${buffer.length} bytes) to youtube/`);
             return;
           }
         }
@@ -181,7 +193,7 @@ async function downloadAvatar(channel) {
           const buffer = Buffer.from(await imgRes.arrayBuffer());
           if (buffer.length > 500) {
             fs.writeFileSync(jpgPath, buffer);
-            console.log(`  ✓ Saved JPG via Scrape (${buffer.length} bytes)`);
+            console.log(`  ✓ Saved JPG via Scrape (${buffer.length} bytes) to youtube/`);
             return;
           }
         }
@@ -193,14 +205,14 @@ async function downloadAvatar(channel) {
 
   // Save SVG Fallback
   fs.writeFileSync(svgPath, generateSvgAvatar(channel.name), 'utf-8');
-  console.log(`  ✓ Saved SVG Fallback`);
+  console.log(`  ✓ Saved SVG Fallback to youtube/`);
 }
 
 async function run() {
   for (const ch of RECOMMENDED_CHANNELS) {
     await downloadAvatar(ch);
   }
-  console.log('Finished downloading all channel avatars!');
+  console.log('Finished downloading all channel avatars into youtube/ folder!');
 }
 
 run();
