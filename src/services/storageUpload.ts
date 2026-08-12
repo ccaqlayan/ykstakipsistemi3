@@ -10,6 +10,7 @@ export async function uploadProfileAvatar(file: File, userId: string): Promise<U
   const { dataUrl, originalKb, compressedKb } = await compressImageFile(file, 800, 0.7);
   const response = await fetch('/api/upload/photo', {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       type: 'avatar',
@@ -32,6 +33,7 @@ export async function uploadChannelAvatar(file: File, channelUrl: string, channe
   const { dataUrl, originalKb, compressedKb } = await compressImageFile(file, 120, 0.60);
   const response = await fetch('/api/upload/photo', {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       type: 'youtube-avatar',
@@ -55,6 +57,7 @@ export async function uploadMessageAttachment(file: File, messageId: string): Pr
   const { dataUrl, originalKb, compressedKb } = await compressImageFile(file, 1000, 0.65);
   const response = await fetch('/api/upload/photo', {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       type: 'message',
@@ -77,6 +80,7 @@ export async function uploadQuestionErrorImage(file: File, userId: string, error
   const { dataUrl, originalKb, compressedKb } = await compressImageFile(file, 1000, 0.65);
   const response = await fetch('/api/upload/photo', {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       type: 'question-error',
@@ -106,6 +110,7 @@ export async function deleteStorageFile(pathOrUrl: string): Promise<boolean> {
   try {
     const response = await fetch('/api/upload/delete', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pathOrUrl })
     });

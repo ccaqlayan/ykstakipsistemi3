@@ -877,14 +877,14 @@ router.post('/youtube/sync-avatars', async (req, res) => {
 // -------------------------------------------------------------
 router.post('/upload/photo', async (req, res) => {
   const authUser = getAuthUserFromRequest(req);
-  if (!authUser) {
-    return res.status(401).json({ success: false, error: 'Fotoğraf yüklemek için giriş yapmış olmalısınız.' });
-  }
-
   const { type, userId, messageId, errorId, fileData } = req.body;
 
   if (!type || !fileData) {
     return res.status(400).json({ success: false, error: 'Eksik parametreler (type, fileData gereklidir).' });
+  }
+
+  if (!authUser && type !== 'youtube-avatar') {
+    return res.status(401).json({ success: false, error: 'Fotoğraf yüklemek için giriş yapmış olmalısınız.' });
   }
 
   let ext = 'jpg';
@@ -894,8 +894,8 @@ router.post('/upload/photo', async (req, res) => {
 
   let storagePath = '';
   if (type === 'avatar') {
-    const targetUserId = userId || authUser.id;
-    if (authUser.role !== 'admin' && targetUserId !== authUser.id) {
+    const targetUserId = userId || (authUser ? authUser.id : '');
+    if (authUser && authUser.role !== 'admin' && targetUserId !== authUser.id) {
       return res.status(403).json({ success: false, error: 'Başka bir kullanıcının profil fotoğrafını değiştiremezsiniz.' });
     }
     storagePath = `avatars/${targetUserId}/profile.${ext}`;
@@ -903,16 +903,12 @@ router.post('/upload/photo', async (req, res) => {
     const msgId = messageId || `msg-${Date.now()}`;
     storagePath = `messages/${msgId}/attachment.${ext}`;
   } else if (type === 'question-error') {
-    const targetUserId = userId || authUser.id;
-    const errId = errorId || `err-${Date.now()}`;
-    if (authUser.role !== 'admin' && authUser.role !== 'class_teacher' && authUser.role !== 'school_counselor' && authUser.role !== 'teacher' && targetUserId !== authUser.id) {
+    const targetUserId = userId || (authUser ? authUser.id : '');
+    if (authUser && authUser.role !== 'admin' && authUser.role !== 'class_teacher' && authUser.role !== 'school_counselor' && authUser.role !== 'teacher' && targetUserId !== authUser.id) {
       return res.status(403).json({ success: false, error: 'Bu kullanıcı için soru fotoğrafı yükleme yetkiniz yok.' });
     }
-    storagePath = `question-errors/${targetUserId}/${errId}.${ext}`;
+    storagePath = `question-errors/${targetUserId}/${errorId || Date.now()}.${ext}`;
   } else if (type === 'youtube-avatar') {
-    if (authUser.role !== 'admin' && authUser.role !== 'teacher' && authUser.role !== 'class_teacher' && authUser.role !== 'school_counselor') {
-      return res.status(403).json({ success: false, error: 'Kanal görseli yükleme yetkiniz yok.' });
-    }
     const channelUrl = req.body.channelUrl || '';
     const channelName = req.body.channelName || '';
     const handleMatch = channelUrl.match(/@([\w.-]+)/);
@@ -938,6 +934,13 @@ router.post('/upload/photo', async (req, res) => {
       fs.mkdirSync(localSubDir, { recursive: true });
     }
     fs.writeFileSync(localFilePath, buffer);
+
+    if (type === 'youtube-avatar') {
+      const svgFallbackPath = localFilePath.replace(/\.(jpg|png|webp|gif)$/, '.svg');
+      if (fs.existsSync(svgFallbackPath)) {
+        try { fs.unlinkSync(svgFallbackPath); } catch (e) {}
+      }
+    }
 
     const uploadedUrl = `/uploads/${storagePath}?t=${Date.now()}`;
 

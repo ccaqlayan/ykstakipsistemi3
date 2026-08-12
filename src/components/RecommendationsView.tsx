@@ -883,16 +883,18 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                                   <div className="w-full h-full relative flex items-center justify-center">
                                     {avatarSrc ? (
                                       <img
+                                        key={avatarSrc}
                                         src={avatarSrc}
                                         alt={channel.name}
                                         loading="lazy"
                                         className="w-full h-full object-cover absolute inset-0 z-10 rounded-xl"
                                         onError={(e) => {
                                           const target = e.currentTarget as HTMLImageElement;
-                                          if (target.src.endsWith('.jpg')) {
-                                            target.src = target.src.replace('.jpg', '.svg');
+                                          const urlPath = target.src.split('?')[0];
+                                          if (urlPath.endsWith('.jpg')) {
+                                            target.src = urlPath.replace('.jpg', '.svg') + '?t=' + Date.now();
                                           } else if (!target.src.includes('/api/youtube/avatar')) {
-                                            target.src = `/api/youtube/avatar?url=${encodeURIComponent(channel.url)}&name=${encodeURIComponent(channel.name)}`;
+                                            target.src = `/api/youtube/avatar?url=${encodeURIComponent(channel.url)}&name=${encodeURIComponent(channel.name)}&t=${Date.now()}`;
                                           } else {
                                             target.style.display = 'none';
                                           }
