@@ -29,6 +29,34 @@ export const getYouTubeThumbnailFromPlan = (plan: StudyPlanItem): string | null 
   return null;
 };
 
+export const isVideoTask = (plan: StudyPlanItem): boolean => {
+  if (getYouTubeThumbnailFromPlan(plan) || getYouTubeUrlFromPlan(plan)) return true;
+  if (plan.taskType && (plan.taskType.toLowerCase().includes('video') || plan.taskType.toLowerCase().includes('youtube'))) return true;
+  if (plan.topic && plan.topic.startsWith('[Video]')) return true;
+  return false;
+};
+
+export const formatDurationBadge = (minutes?: number): string | null => {
+  if (!minutes || minutes <= 0) return null;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours > 0) {
+    return mins > 0 ? `${hours} sa ${mins} dk` : `${hours} sa`;
+  }
+  return `${mins} dk`;
+};
+
+export const shouldShowPlanNote = (plan: StudyPlanItem): boolean => {
+  if (!plan.notes) return false;
+  if (isVideoTask(plan)) {
+    const trimmed = plan.notes.trim();
+    if (extractYouTubeVideoId(trimmed) || /^https?:\/\//i.test(trimmed)) {
+      return false;
+    }
+  }
+  return true;
+};
+
 export const syncCompletedPlanToYoutubeVideos = (
   completedPlan: StudyPlanItem,
   youtubeVideos: YouTubeVideoItem[]

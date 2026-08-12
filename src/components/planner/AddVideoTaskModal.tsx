@@ -122,8 +122,9 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
         topic: `[Video] ${item.title} (${item.channelName})`,
         taskType: 'Video İzleme',
         day: targetDay,
-        targetMinutes: item.duration && item.duration > 0 ? item.duration : (targetMinutes || 45),
-        isCompleted: false,
+        plannedMinutes: item.duration && item.duration > 0 ? item.duration : (targetMinutes || 45),
+        completedMinutes: 0,
+        status: 'pending',
         weekLabel,
         notes: item.videoUrl || ''
       });
@@ -171,8 +172,9 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
       topic: `[Video] ${finalTopic} (${finalChannel})`,
       taskType: 'Video İzleme',
       day: targetDay,
-      targetMinutes: Number(targetMinutes) || 45,
-      isCompleted: false,
+      plannedMinutes: Number(targetMinutes) || 45,
+      completedMinutes: 0,
+      status: 'pending',
       weekLabel,
       notes: videoUrl.trim() || ''
     });

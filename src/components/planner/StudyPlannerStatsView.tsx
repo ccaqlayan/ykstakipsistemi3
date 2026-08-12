@@ -25,6 +25,7 @@ import {
   Legend 
 } from 'recharts';
 import { StudyPlanItem, DayOfWeek } from '../../types';
+import { isVideoTask } from '../../utils/youtubeUtils';
 import { isSameWeekLabel } from '../../utils/dateUtils';
 
 interface StudyPlannerStatsViewProps {
@@ -550,12 +551,14 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
                                   </span>
                                 </div>
 
-                                <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1.5 border-t border-slate-800/60">
-                                  <span>Hedef: {p.plannedMinutes}dk</span>
-                                  {p.targetQuestionCount ? (
-                                    <span className="text-emerald-400 font-bold">{p.targetQuestionCount} Soru</span>
-                                  ) : null}
-                                </div>
+                                {!isVideoTask(p) && (
+                                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1.5 border-t border-slate-800/60">
+                                    <span>Hedef: {p.plannedMinutes}dk</span>
+                                    {p.targetQuestionCount ? (
+                                      <span className="text-emerald-400 font-bold">{p.targetQuestionCount} Soru</span>
+                                    ) : null}
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>

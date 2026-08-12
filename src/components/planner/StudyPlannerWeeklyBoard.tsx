@@ -9,11 +9,12 @@ import {
   Copy, 
   Trash2,
   Youtube,
-  ExternalLink
+  ExternalLink,
+  Play
 } from 'lucide-react';
 import { StudyPlanItem, DayOfWeek } from '../../types';
 import { SubjectTheme } from '../StudyPlannerView';
-import { getYouTubeThumbnailFromPlan, getYouTubeUrlFromPlan } from '../../utils/youtubeUtils';
+import { getYouTubeThumbnailFromPlan, getYouTubeUrlFromPlan, isVideoTask, formatDurationBadge } from '../../utils/youtubeUtils';
 
 interface StudyPlannerWeeklyBoardProps {
   activePlans: StudyPlanItem[];
@@ -352,10 +353,15 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                                     className="w-full h-full object-cover group-hover/yt:scale-105 transition-transform duration-300"
                                   />
                                   <div className="absolute inset-0 bg-black/20 group-hover/yt:bg-black/40 transition-colors flex items-center justify-center">
-                                    <div className="p-1.5 bg-red-600 text-white rounded-full shadow-md scale-90 group-hover/yt:scale-100 transition-all">
-                                      <Youtube className="w-3.5 h-3.5 fill-current ml-0.5" />
+                                    <div className="w-7 h-7 bg-red-600 group-hover/yt:bg-red-500 text-white rounded-full shadow-md scale-90 group-hover/yt:scale-100 transition-all flex items-center justify-center">
+                                      <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
                                     </div>
                                   </div>
+                                  {plan.plannedMinutes && plan.plannedMinutes > 0 ? (
+                                    <div className="absolute bottom-1 right-1 bg-black/85 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded font-mono shadow-md border border-white/10 pointer-events-none">
+                                      {formatDurationBadge(plan.plannedMinutes)}
+                                    </div>
+                                  ) : null}
                                 </a>
                               ) : ytUrl ? (
                                 <a
@@ -376,15 +382,17 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                           );
                         })()}
 
-                        {/* Target Duration & Question Count ONLY */}
-                        <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-800/80 font-mono">
-                          <span>Hedef: <strong className="text-slate-200">{plan.plannedMinutes}dk</strong></span>
-                          {plan.targetQuestionCount ? (
-                            <span className="text-emerald-400 font-bold">({plan.targetQuestionCount} Soru)</span>
-                          ) : (
-                            <span className="text-slate-600 font-medium">(- Soru)</span>
-                          )}
-                        </div>
+                        {/* Target Duration & Question Count ONLY (Hidden for Video tasks) */}
+                        {!isVideoTask(plan) && (
+                          <div className="flex items-center justify-between text-[10px] text-slate-400 mt-2 pt-1.5 border-t border-slate-800/80 font-mono">
+                            <span>Hedef: <strong className="text-slate-200">{plan.plannedMinutes}dk</strong></span>
+                            {plan.targetQuestionCount ? (
+                              <span className="text-emerald-400 font-bold">({plan.targetQuestionCount} Soru)</span>
+                            ) : (
+                              <span className="text-slate-600 font-medium">(- Soru)</span>
+                            )}
+                          </div>
+                        )}
 
                         {isArchivedWeek ? (
                           <div className="mt-2 pt-1.5 flex items-center justify-between text-[10px] border-t border-slate-800/80">

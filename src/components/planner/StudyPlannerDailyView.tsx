@@ -12,12 +12,13 @@ import {
   Sparkles, 
   Edit2,
   Youtube,
-  ExternalLink
+  ExternalLink,
+  Play
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StudyPlanItem, DayOfWeek, QuestionLog } from '../../types';
 import { SubjectTheme } from '../StudyPlannerView';
-import { getYouTubeThumbnailFromPlan, getYouTubeUrlFromPlan } from '../../utils/youtubeUtils';
+import { getYouTubeThumbnailFromPlan, getYouTubeUrlFromPlan, isVideoTask, formatDurationBadge, shouldShowPlanNote } from '../../utils/youtubeUtils';
 
 interface StudyPlannerDailyViewProps {
   activePlans: StudyPlanItem[];
@@ -239,10 +240,15 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                                  <div className="p-2.5 bg-red-600 group-hover:bg-red-500 text-white rounded-full shadow-lg scale-90 group-hover:scale-100 transition-all">
-                                    <Youtube className="w-5 h-5 fill-current" />
+                                  <div className="w-9 h-9 bg-red-600 group-hover:bg-red-500 text-white rounded-full shadow-lg scale-90 group-hover:scale-100 transition-all flex items-center justify-center">
+                                    <Play className="w-4 h-4 text-white fill-white ml-0.5" />
                                   </div>
                                 </div>
+                                {plan.plannedMinutes && plan.plannedMinutes > 0 ? (
+                                  <div className="absolute bottom-1.5 right-1.5 bg-black/85 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded font-mono shadow-md border border-white/10 pointer-events-none">
+                                    {formatDurationBadge(plan.plannedMinutes)}
+                                  </div>
+                                ) : null}
                               </a>
                             )}
 
@@ -269,146 +275,150 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
                       })()}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 text-xs font-mono bg-slate-900/90 px-4 py-2.5 rounded-xl border border-slate-800 w-full sm:w-auto self-start">
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                        <span className="text-slate-400">
-                          Hedef Süre: <strong className="text-slate-200">{plan.plannedMinutes} dk</strong>
-                        </span>
+                    {!isVideoTask(plan) && (
+                      <div className="flex flex-wrap items-center gap-3 text-xs font-mono bg-slate-900/90 px-4 py-2.5 rounded-xl border border-slate-800 w-full sm:w-auto self-start">
+                        <div className="flex items-center space-x-2">
+                          <Clock className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                          <span className="text-slate-400">
+                            Hedef Süre: <strong className="text-slate-200">{plan.plannedMinutes} dk</strong>
+                          </span>
+                        </div>
+                        <span className="text-slate-700 font-bold">|</span>
+                        <div className="flex items-center space-x-2">
+                          <BookOpen className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span className="text-slate-400">
+                            Hedef Soru: <strong className={plan.targetQuestionCount ? "text-emerald-400" : "text-slate-500"}>
+                              {plan.targetQuestionCount ? `${plan.targetQuestionCount} Soru` : '-'}
+                            </strong>
+                          </span>
+                        </div>
                       </div>
-                      <span className="text-slate-700 font-bold">|</span>
-                      <div className="flex items-center space-x-2">
-                        <BookOpen className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                        <span className="text-slate-400">
-                          Hedef Soru: <strong className={plan.targetQuestionCount ? "text-emerald-400" : "text-slate-500"}>
-                            {plan.targetQuestionCount ? `${plan.targetQuestionCount} Soru` : '-'}
-                          </strong>
-                        </span>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
-                  {/* Quick Status & Quick Reflection Dropdowns */}
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setExpandedQuickControls(prev => ({ ...prev, [plan.id]: !prev[plan.id] }))}
-                      className="w-full flex items-center justify-between text-xs text-slate-400 hover:text-indigo-300 py-1.5 px-3 rounded-xl bg-slate-950/60 hover:bg-slate-900 border border-slate-800/80 transition-all cursor-pointer"
-                    >
-                      <span className="flex items-center font-bold text-[11px] sm:text-xs text-slate-300">
-                        <span>Hızlı Durum & Yorum Seçenekleri</span>
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-semibold flex items-center space-x-1">
-                        <span>{expandedQuickControls[plan.id] ? 'Gizle' : 'Göster'}</span>
-                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedQuickControls[plan.id] ? 'rotate-180 text-indigo-400' : ''}`} />
-                      </span>
-                    </button>
+                  {/* Quick Status & Quick Reflection Dropdowns (Hidden for Video tasks) */}
+                  {!isVideoTask(plan) && (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedQuickControls(prev => ({ ...prev, [plan.id]: !prev[plan.id] }))}
+                        className="w-full flex items-center justify-between text-xs text-slate-400 hover:text-indigo-300 py-1.5 px-3 rounded-xl bg-slate-950/60 hover:bg-slate-900 border border-slate-800/80 transition-all cursor-pointer"
+                      >
+                        <span className="flex items-center font-bold text-[11px] sm:text-xs text-slate-300">
+                          <span>Hızlı Durum & Yorum Seçenekleri</span>
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-semibold flex items-center space-x-1">
+                          <span>{expandedQuickControls[plan.id] ? 'Gizle' : 'Göster'}</span>
+                          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedQuickControls[plan.id] ? 'rotate-180 text-indigo-400' : ''}`} />
+                        </span>
+                      </button>
 
-                    <AnimatePresence>
-                      {expandedQuickControls[plan.id] && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 mt-2 border-t border-slate-800/80">
-                            {/* Hızlı Durum Açılır Menü */}
-                            <div className="flex items-center space-x-2">
-                              <span className="text-xs font-bold text-slate-400 shrink-0">Hızlı Durum:</span>
-                              <select
-                                disabled={isArchivedWeek}
-                                value={plan.status}
-                                onChange={(e) => {
-                                  if (isArchivedWeek) return;
-                                  const newStatus = e.target.value as 'pending' | 'in_progress' | 'completed';
-                                  if (newStatus === 'completed' && plan.status !== 'completed') {
-                                    const updatedPlan: StudyPlanItem = {
-                                      ...plan,
-                                      status: 'completed',
-                                      completedMinutes: plan.completedMinutes || plan.plannedMinutes || 60,
-                                      reflection: plan.reflection || 'Çalıştım'
-                                    };
-                                    onUpdatePlan(updatedPlan);
-                                    processQuestionLogOnComplete(updatedPlan);
-                                  } else if (plan.status === 'completed' && newStatus !== 'completed') {
-                                    const linked = getLinkedQuestionLogs(plan.id, plan.topic, plan.subject);
-                                    if (linked.length > 0) {
-                                      setUncompleteConfirm({
-                                        plan,
-                                        targetStatus: newStatus,
-                                        linkedLogs: linked
-                                      });
+                      <AnimatePresence>
+                        {expandedQuickControls[plan.id] && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 mt-2 border-t border-slate-800/80">
+                              {/* Hızlı Durum Açılır Menü */}
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs font-bold text-slate-400 shrink-0">Hızlı Durum:</span>
+                                <select
+                                  disabled={isArchivedWeek}
+                                  value={plan.status}
+                                  onChange={(e) => {
+                                    if (isArchivedWeek) return;
+                                    const newStatus = e.target.value as 'pending' | 'in_progress' | 'completed';
+                                    if (newStatus === 'completed' && plan.status !== 'completed') {
+                                      const updatedPlan: StudyPlanItem = {
+                                        ...plan,
+                                        status: 'completed',
+                                        completedMinutes: plan.completedMinutes || plan.plannedMinutes || 60,
+                                        reflection: plan.reflection || 'Çalıştım'
+                                      };
+                                      onUpdatePlan(updatedPlan);
+                                      processQuestionLogOnComplete(updatedPlan);
+                                    } else if (plan.status === 'completed' && newStatus !== 'completed') {
+                                      const linked = getLinkedQuestionLogs(plan.id, plan.topic, plan.subject);
+                                      if (linked.length > 0) {
+                                        setUncompleteConfirm({
+                                          plan,
+                                          targetStatus: newStatus,
+                                          linkedLogs: linked
+                                        });
+                                      } else {
+                                        removeLinkedQuestionLog(plan.id, plan.topic, plan.subject);
+                                        onUpdatePlan({
+                                          ...plan,
+                                          status: newStatus,
+                                          completedMinutes: newStatus === 'pending' ? 0 : plan.completedMinutes
+                                        });
+                                      }
                                     } else {
-                                      removeLinkedQuestionLog(plan.id, plan.topic, plan.subject);
                                       onUpdatePlan({
                                         ...plan,
                                         status: newStatus,
                                         completedMinutes: newStatus === 'pending' ? 0 : plan.completedMinutes
                                       });
                                     }
-                                  } else {
+                                  }}
+                                  className={`text-xs font-bold px-3 py-1.5 rounded-xl border focus:outline-none transition-all ${
+                                    isArchivedWeek ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'
+                                  } ${
+                                    plan.status === 'completed'
+                                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                      : plan.status === 'in_progress'
+                                      ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
+                                      : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                  }`}
+                                >
+                                  <option value="pending" className="bg-slate-900 text-amber-300">⏳ Bekliyor</option>
+                                  <option value="in_progress" className="bg-slate-900 text-sky-300">⚡ Devam Ediyor</option>
+                                  <option value="completed" className="bg-slate-900 text-emerald-300">✅ Tamamladı</option>
+                                </select>
+                              </div>
+
+                              {/* Hızlı Yorum Açılır Menü */}
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs font-bold text-slate-400 shrink-0 flex items-center space-x-1">
+                                  <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" />
+                                  <span>Hızlı Yorum:</span>
+                                </span>
+                                <select
+                                  disabled={isArchivedWeek}
+                                  value={plan.reflection || ''}
+                                  onChange={(e) => {
+                                    if (isArchivedWeek) return;
                                     onUpdatePlan({
                                       ...plan,
-                                      status: newStatus,
-                                      completedMinutes: newStatus === 'pending' ? 0 : plan.completedMinutes
+                                      reflection: e.target.value || undefined
                                     });
-                                  }
-                                }}
-                                className={`text-xs font-bold px-3 py-1.5 rounded-xl border focus:outline-none transition-all ${
-                                  isArchivedWeek ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'
-                                } ${
-                                  plan.status === 'completed'
-                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                                    : plan.status === 'in_progress'
-                                    ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-                                    : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                                }`}
-                              >
-                                <option value="pending" className="bg-slate-900 text-amber-300">⏳ Bekliyor</option>
-                                <option value="in_progress" className="bg-slate-900 text-sky-300">⚡ Devam Ediyor</option>
-                                <option value="completed" className="bg-slate-900 text-emerald-300">✅ Tamamladı</option>
-                              </select>
+                                  }}
+                                  className={`text-xs font-bold px-3 py-1.5 rounded-xl border focus:outline-none transition-all ${
+                                    isArchivedWeek ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'
+                                  } ${
+                                    plan.reflection
+                                      ? 'bg-fuchsia-500/20 text-fuchsia-200 border-fuchsia-500/40'
+                                      : 'bg-slate-900 text-slate-400 border-slate-800'
+                                  }`}
+                                >
+                                  <option value="" className="bg-slate-900 text-slate-400">-- Yorum Yok --</option>
+                                  {QUICK_REFLECTIONS.map((chip) => (
+                                    <option key={chip.label} value={chip.label} className="bg-slate-900 text-white">
+                                      {chip.icon} {chip.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
                             </div>
-
-                            {/* Hızlı Yorum Açılır Menü */}
-                            <div className="flex items-center space-x-2">
-                              <span className="text-xs font-bold text-slate-400 shrink-0 flex items-center space-x-1">
-                                <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" />
-                                <span>Hızlı Yorum:</span>
-                              </span>
-                              <select
-                                disabled={isArchivedWeek}
-                                value={plan.reflection || ''}
-                                onChange={(e) => {
-                                  if (isArchivedWeek) return;
-                                  onUpdatePlan({
-                                    ...plan,
-                                    reflection: e.target.value || undefined
-                                  });
-                                }}
-                                className={`text-xs font-bold px-3 py-1.5 rounded-xl border focus:outline-none transition-all ${
-                                  isArchivedWeek ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'
-                                } ${
-                                  plan.reflection
-                                    ? 'bg-fuchsia-500/20 text-fuchsia-200 border-fuchsia-500/40'
-                                    : 'bg-slate-900 text-slate-400 border-slate-800'
-                                }`}
-                              >
-                                <option value="" className="bg-slate-900 text-slate-400">-- Yorum Yok --</option>
-                                {QUICK_REFLECTIONS.map((chip) => (
-                                  <option key={chip.label} value={chip.label} className="bg-slate-900 text-white">
-                                    {chip.icon} {chip.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
 
                   {/* Notes / Custom Comment Display & Inline Editing */}
                   <div className="pt-2 border-t border-slate-800/40">
@@ -455,7 +465,7 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
                           </button>
                         </div>
                       </div>
-                    ) : plan.notes ? (
+                    ) : shouldShowPlanNote(plan) ? (
                       <div className="flex items-center justify-between bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-800 text-xs text-slate-300">
                         <div className="flex items-center space-x-2">
                           <span className="text-indigo-400 font-bold">Not:</span>
