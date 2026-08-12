@@ -13,7 +13,8 @@ import {
   Bookmark,
   Pencil,
   Upload,
-  Loader2
+  Loader2,
+  Globe
 } from 'lucide-react';
 import { YouTubeVideoItem, ResourceItem, UserAccount, RecommendedChannel, RecommendedBook } from '../types';
 import { RECOMMENDED_BOOKS } from '../data/books';
@@ -235,6 +236,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const [avatarCompressionStats, setAvatarCompressionStats] = useState<{ originalKb: number; compressedKb: number } | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isFetchingApiAvatar, setIsFetchingApiAvatar] = useState(false);
 
   // Book Form Fields
   const [bookSubject, setBookSubject] = useState('Matematik');
@@ -255,7 +257,35 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
     setAvatarPreviewUrl(null);
     setAvatarCompressionStats(null);
     setIsUploadingAvatar(false);
+    setIsFetchingApiAvatar(false);
     setEditingChannel(null);
+  };
+
+  const handleFetchAvatarFromApi = async () => {
+    if (!channelUrl) {
+      alert('Lütfen önce YouTube URL adresini giriniz.');
+      return;
+    }
+    setIsFetchingApiAvatar(true);
+    try {
+      const res = await fetch('/api/youtube/sync-channel-avatar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: channelUrl, name: channelName })
+      });
+      const data = await res.json();
+      if (data.success && data.avatarUrl) {
+        setAvatarPreviewUrl(data.avatarUrl);
+        setSuccessToast('Kanal fotoğrafı YouTube API servisinden başarıyla çekildi!');
+        setTimeout(() => setSuccessToast(null), 3000);
+      } else {
+        alert('YouTube API servisinden fotoğraf çekilemedi: ' + (data.error || 'Görsel bulunamadı'));
+      }
+    } catch (e: any) {
+      alert('API bağlantı hatası: ' + e.message);
+    } finally {
+      setIsFetchingApiAvatar(false);
+    }
   };
 
   const handleAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1278,28 +1308,44 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                       <Youtube className="w-6 h-6 text-red-500" />
                     </div>
                   </div>
-                  <div className="flex-1 space-y-1">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      id="channel-avatar-input"
-                      onChange={handleAvatarFileSelect}
-                      className="hidden"
-                    />
-                    <label
-                      htmlFor="channel-avatar-input"
-                      className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer border border-slate-700"
-                    >
-                      <Upload className="w-3.5 h-3.5 text-red-400" />
-                      <span>{avatarFile ? 'Görseli Değiştir' : 'Özel Fotoğraf Yükle'}</span>
-                    </label>
+                  <div className="flex-1 space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="channel-avatar-input"
+                        onChange={handleAvatarFileSelect}
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="channel-avatar-input"
+                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer border border-slate-700"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-red-400" />
+                        <span>{avatarFile ? 'Görseli Değiştir' : 'Özel Fotoğraf Yükle'}</span>
+                      </label>
+                      <button
+                        type="button"
+                        disabled={isFetchingApiAvatar}
+                        onClick={handleFetchAvatarFromApi}
+                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-red-950/60 hover:bg-red-900/80 text-red-300 hover:text-white rounded-lg text-xs font-bold transition-all border border-red-800/60"
+                        title="YouTube kanal sayfasından / API servisinden resmi profil resmini çeker"
+                      >
+                        {isFetchingApiAvatar ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-red-400" />
+                        ) : (
+                          <Globe className="w-3.5 h-3.5 text-red-400" />
+                        )}
+                        <span>{isFetchingApiAvatar ? 'Çekiliyor...' : 'YouTube\'dan Çek (API)'}</span>
+                      </button>
+                    </div>
                     {avatarCompressionStats ? (
                       <p className="text-[10px] text-emerald-400 font-bold">
                         ⚡ Sıkıştırıldı: ~{avatarCompressionStats.compressedKb} KB <span className="text-slate-500 font-normal">(Orijinal: {avatarCompressionStats.originalKb} KB)</span>
                       </p>
                     ) : (
                       <p className="text-[10px] text-slate-500">
-                        Yüklenen fotoğraflar mikro boyutta otomatize edilip sıkıştırılır.
+                        Fotoğraflar YouTube API veya özel dosya ile yüklenebilir.
                       </p>
                     )}
                   </div>

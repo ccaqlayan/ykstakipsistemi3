@@ -738,6 +738,43 @@ async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: 
     }
   }
 
+  // Strategy 0: Official YouTube Data API v3 (if YOUTUBE_API_KEY is configured)
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (apiKey) {
+    try {
+      const handleMatchApi = channelUrl.match(/@([\w.-]+)/);
+      if (handleMatchApi && handleMatchApi[1]) {
+        const handle = handleMatchApi[1];
+        const apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet&forHandle=${encodeURIComponent(handle)}&key=${apiKey}`;
+        const apiRes = await fetch(apiUrl);
+        if (apiRes.ok) {
+          const apiData = await apiRes.json() as any;
+          if (apiData && apiData.items && apiData.items[0]?.snippet?.thumbnails) {
+            const thumbs = apiData.items[0].snippet.thumbnails;
+            let imgUrl = thumbs.high?.url || thumbs.medium?.url || thumbs.default?.url;
+            if (imgUrl) {
+              if (imgUrl.includes('=s')) {
+                imgUrl = imgUrl.replace(/=s\d+-[^&]+/, '=s240-c-k-c0x00ffffff-no-rj');
+              }
+              const imgRes = await fetch(imgUrl);
+              if (imgRes.ok) {
+                const arrayBuffer = await imgRes.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+                if (buffer.length > 500) {
+                  fs.writeFileSync(jpgPath, buffer);
+                  console.log(`[Avatar Backup YouTube API v3] Saved avatar for ${slug} to youtube/ (${buffer.length} bytes).`);
+                  return jpgPath;
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (apiErr) {
+      console.log(`[Avatar YouTube API v3 Warning] API call failed for ${channelUrl}`);
+    }
+  }
+
   // Strategy 1: YouTube Official oEmbed API
   try {
     const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(channelUrl)}&format=json`;
