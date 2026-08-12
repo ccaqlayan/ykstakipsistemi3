@@ -1,5 +1,5 @@
 import React from 'react';
-import { CalendarDays, List, LayoutGrid, ArrowUpRight, Clock, BookOpen, CheckCircle2, Flame, Plus } from 'lucide-react';
+import { CalendarDays, List, LayoutGrid, ArrowUpRight, Clock, BookOpen, CheckCircle2, Flame, Plus, Youtube } from 'lucide-react';
 import { StudyPlanItem, DayOfWeek } from '../../types';
 
 interface DashboardScheduleWidgetProps {
@@ -257,6 +257,11 @@ export const DashboardScheduleWidget: React.FC<DashboardScheduleWidgetProps> = (
                 const isInProgress = plan.status === 'in_progress';
                 const isPostponed = plan.reflection === 'Erteledim';
                 const isHard = plan.reflection === 'Zor Geldi';
+                const isVideoTask = plan.taskType === 'Video İzleme' || 
+                                    plan.taskType?.toLowerCase().includes('video') || 
+                                    plan.topic?.toLowerCase().includes('video') ||
+                                    plan.notes?.toLowerCase().includes('video') ||
+                                    !!plan.videoUrl;
 
                 return (
                   <div 
@@ -292,8 +297,11 @@ export const DashboardScheduleWidget: React.FC<DashboardScheduleWidgetProps> = (
                           )}
                         </div>
 
-                        <div className="text-xs font-semibold text-white truncate">
-                          {plan.topic}
+                        <div className="text-xs font-semibold text-white truncate flex items-center gap-1.5">
+                          {isVideoTask && (
+                            <Youtube className="w-4 h-4 text-rose-500 shrink-0" fill="currentColor" />
+                          )}
+                          <span className="truncate">{plan.topic}</span>
                         </div>
 
                         {plan.notes && (
@@ -391,6 +399,11 @@ export const DashboardScheduleWidget: React.FC<DashboardScheduleWidgetProps> = (
                     <div className="space-y-2">
                       {dayData.plans.map((p) => {
                         const isDone = p.status === 'completed' || p.reflection === 'Çalıştım' || p.reflection === 'Uzmanlaştım';
+                        const isVideoTask = p.taskType === 'Video İzleme' || 
+                                            p.taskType?.toLowerCase().includes('video') || 
+                                            p.topic?.toLowerCase().includes('video') ||
+                                            p.notes?.toLowerCase().includes('video') ||
+                                            !!p.videoUrl;
                         return (
                           <div 
                             key={p.id}
@@ -408,7 +421,12 @@ export const DashboardScheduleWidget: React.FC<DashboardScheduleWidgetProps> = (
                                 <span className="text-[9px] text-slate-400 font-mono">{p.plannedMinutes}dk</span>
                               )}
                             </div>
-                            <div className="text-[11px] font-medium text-slate-200 truncate">{p.topic}</div>
+                            <div className="text-[11px] font-medium text-slate-200 truncate flex items-center gap-1">
+                              {isVideoTask && (
+                                <Youtube className="w-3.5 h-3.5 text-rose-500 shrink-0" fill="currentColor" />
+                              )}
+                              <span className="truncate">{p.topic}</span>
+                            </div>
                           </div>
                         );
                       })}
