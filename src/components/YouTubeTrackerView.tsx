@@ -102,6 +102,10 @@ const PlaylistSubVideosList: React.FC<PlaylistSubVideosListProps> = ({
     targetIdx = videos.length - 1;
   }
 
+  // Scroll anchor index: show the video right BEFORE targetIdx (previously watched video)
+  // so both the previously watched video and next target video are visible together
+  const scrollAnchorIdx = targetIdx > 0 ? targetIdx - 1 : 0;
+
   React.useEffect(() => {
     if (containerRef.current && targetRef.current) {
       const container = containerRef.current;
@@ -111,7 +115,7 @@ const PlaylistSubVideosList: React.FC<PlaylistSubVideosListProps> = ({
       const relativeTop = elementTop - containerTop + container.scrollTop;
 
       container.scrollTo({
-        top: Math.max(0, relativeTop - 36),
+        top: Math.max(0, relativeTop - 10),
         behavior: 'smooth'
       });
     }
@@ -128,12 +132,12 @@ const PlaylistSubVideosList: React.FC<PlaylistSubVideosListProps> = ({
         const isNextTarget = !subVid.isWatched && !firstUnwatchedFound;
         if (isNextTarget) firstUnwatchedFound = true;
 
-        const isTargetToScroll = idx === targetIdx;
+        const isScrollAnchor = idx === scrollAnchorIdx;
 
         return (
           <div
             key={subVid.id || idx}
-            ref={isTargetToScroll ? targetRef : null}
+            ref={isScrollAnchor ? targetRef : null}
             className={`flex items-center justify-between p-2 rounded-xl transition-all group border ${
               isNextTarget
                 ? 'bg-amber-950/40 border-amber-500/60 text-amber-200 shadow-md ring-1 ring-amber-500/30'
