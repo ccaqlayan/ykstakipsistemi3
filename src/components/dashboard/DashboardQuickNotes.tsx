@@ -497,11 +497,9 @@ export const DashboardQuickNotes: React.FC<DashboardQuickNotesProps> = ({
 
                         {/* Pinned Tag */}
                         {note.isPinned && (
-                          <div className="mt-3 pt-2 border-t border-slate-700/40 flex items-center justify-between text-[9.5px]">
-                            <span className={`font-semibold flex items-center space-x-1 ${styles.pinText}`}>
-                              <Pin className="w-3 h-3 rotate-45 inline" />
-                              <span>Sabitlendi</span>
-                            </span>
+                          <div className="mt-3 pt-2 border-t border-slate-700/40 flex flex-col items-center justify-center text-[9.5px] space-y-0.5">
+                            <Pin className="w-3.5 h-3.5 rotate-45" />
+                            <span className={`font-semibold ${styles.pinText}`}>Sabitlendi</span>
                           </div>
                         )}
                       </>
