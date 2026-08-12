@@ -1,6 +1,24 @@
 import React from 'react';
-import { CalendarDays, List, LayoutGrid, ArrowUpRight, Clock, BookOpen, CheckCircle2, Flame, Plus, Youtube } from 'lucide-react';
+import { CalendarDays, List, LayoutGrid, ArrowUpRight, Clock, BookOpen, CheckCircle2, Flame, Plus } from 'lucide-react';
 import { StudyPlanItem, DayOfWeek } from '../../types';
+
+const YoutubeIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    className={`${className} shrink-0`} 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path 
+      d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.33z" 
+      fill="#FF0000" 
+    />
+    <polygon 
+      points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" 
+      fill="#FFFFFF" 
+    />
+  </svg>
+);
 
 interface DashboardScheduleWidgetProps {
   studyPlans: StudyPlanItem[];
@@ -299,7 +317,7 @@ export const DashboardScheduleWidget: React.FC<DashboardScheduleWidgetProps> = (
 
                         <div className="text-xs font-semibold text-white truncate flex items-center gap-1.5">
                           {isVideoTask && (
-                            <Youtube className="w-4 h-4 text-rose-500 shrink-0" fill="currentColor" />
+                            <YoutubeIcon className="w-4 h-4 shrink-0" />
                           )}
                           <span className="truncate">{plan.topic}</span>
                         </div>
@@ -423,7 +441,7 @@ export const DashboardScheduleWidget: React.FC<DashboardScheduleWidgetProps> = (
                             </div>
                             <div className="text-[11px] font-medium text-slate-200 truncate flex items-center gap-1">
                               {isVideoTask && (
-                                <Youtube className="w-3.5 h-3.5 text-rose-500 shrink-0" fill="currentColor" />
+                                <YoutubeIcon className="w-3.5 h-3.5 shrink-0" />
                               )}
                               <span className="truncate">{p.topic}</span>
                             </div>
