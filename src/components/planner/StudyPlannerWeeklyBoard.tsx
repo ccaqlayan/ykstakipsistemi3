@@ -108,20 +108,6 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
         </div>
       )}
 
-      {/* Subject Color Legend */}
-      {activePlans.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 p-3 bg-slate-900/60 border border-slate-800/80 rounded-2xl text-xs">
-          <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider mr-1">Ders Renkleri:</span>
-          {Array.from(new Set<string>(activePlans.map(p => p.subject))).map((subject) => {
-            const theme = getSubjectTheme(subject);
-            return (
-              <span key={subject} className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-lg border ${theme.badgeClass}`}>
-                {subject}
-              </span>
-            );
-          })}
-        </div>
-      )}
 
       {/* Drag and Drop Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-10 gap-3.5">
