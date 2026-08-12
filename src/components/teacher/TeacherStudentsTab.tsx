@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Users, 
   TrendingUp, 
@@ -16,7 +16,8 @@ import {
   Trash2,
   Lock,
   Unlock,
-  Pencil
+  Pencil,
+  X
 } from 'lucide-react';
 import { UserAccount, YKSDataState } from '../../types';
 import { DEFAULT_AVATAR } from '../../data/initialData';
@@ -87,6 +88,8 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
   setTypedConfirmName,
   OfflineStatusDisplay
 }) => {
+  const [selectedCoachNoteStudent, setSelectedCoachNoteStudent] = useState<{ name: string; notes: string } | null>(null);
+
   return (
     <div className="space-y-6 font-sans">
       {/* Executive Summary Metrics */}
@@ -219,144 +222,171 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
               const data = studentsData[student.id];
               const profile = data?.profile;
               const lastMock = data?.generalMocks?.[data.generalMocks.length - 1];
-              const plansCount = data?.studyPlans?.length || 0;
-              const hasCoachNote = Boolean(profile?.coachNotes);
+              const plans = data?.studyPlans || [];
+              const totalPlansCount = plans.length;
+              const completedPlansCount = plans.filter(p => p.status === 'completed' || (p.completedMinutes && p.completedMinutes > 0)).length;
+              const planPct = totalPlansCount > 0 ? Math.round((completedPlansCount / totalPlansCount) * 100) : 0;
+              
+              const hasCoachNote = Boolean(profile?.coachNotes && profile.coachNotes.trim() !== '');
               const unresolvedErrorsCount = (data?.topicErrors || []).filter(e => !e.revised).length;
 
               return (
                 <div 
                   key={student.id} 
-                  className="bg-slate-950/80 backdrop-blur-xl border border-white/10 rounded-3xl p-5 shadow-xl hover:border-indigo-500/50 hover:bg-slate-900/90 transition-all duration-300 hover:-translate-y-1 cursor-pointer group flex flex-col justify-between h-full relative"
+                  className="bg-slate-950/80 backdrop-blur-xl border border-white/10 rounded-3xl p-5 shadow-xl hover:border-indigo-500/50 hover:bg-slate-900/90 transition-all duration-300 hover:-translate-y-1 cursor-pointer group flex flex-col justify-between h-full relative space-y-4"
                   onClick={() => handleOpenInspectStudent(student, 'performance')}
                 >
-                  {/* Top Card Header */}
+                  {/* Top Card Header: Full room for student name */}
                   <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center space-x-3 min-w-0">
-                        <div className="relative shrink-0">
-                          <img 
-                            src={student.avatarUrl || DEFAULT_AVATAR} 
-                            alt={student.name}
-                            className="w-13 h-13 rounded-2xl object-cover border-2 border-white/15 shadow-md group-hover:border-indigo-400/60 transition-colors" 
-                          />
-                          <span 
-                            className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-slate-950 shadow-sm ${
-                              isStudentActive(student.id, studentsData[student.id]) ? 'bg-emerald-500' : 'bg-slate-500'
-                            }`}
-                            title={isStudentActive(student.id, studentsData[student.id]) ? 'Aktif Öğrenci' : 'Pasif Öğrenci'}
-                          />
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center space-x-1.5">
-                            <h3 
-                              className="text-sm font-black text-white group-hover:text-indigo-300 transition-colors truncate"
-                              title={student.name}
-                            >
-                              {student.name}
-                            </h3>
-                            {!isBranchTeacher && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingStudentId(student.id);
-                                  setEditStudentName(student.name);
-                                  setEditStudentEmail(student.email);
-                                  setEditStudentClassName(student.className || '');
-                                  setEditStudentPassword('');
-                                  setShowEditStudentModal(true);
-                                }}
-                                className="text-slate-500 hover:text-indigo-400 transition-colors p-0.5 rounded shrink-0"
-                                title="Öğrenci Bilgilerini Düzenle"
-                              >
-                                <Pencil className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                            <span className="text-[10px] font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-500/30 whitespace-nowrap">
-                              {student.className || 'Sınıfsız'}
-                            </span>
-                            {profile?.targetField && (
-                              <span className="text-[9px] font-bold bg-fuchsia-500/20 text-fuchsia-300 px-1.5 py-0.5 rounded-md border border-fuchsia-500/30">
-                                {profile.targetField}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="relative shrink-0">
+                        <img 
+                          src={student.avatarUrl || DEFAULT_AVATAR} 
+                          alt={student.name}
+                          className="w-13 h-13 rounded-2xl object-cover border-2 border-white/15 shadow-md group-hover:border-indigo-400/60 transition-colors" 
+                        />
+                        <span 
+                          className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-slate-950 shadow-sm ${
+                            isStudentActive(student.id, studentsData[student.id]) ? 'bg-emerald-500' : 'bg-slate-500'
+                          }`}
+                          title={isStudentActive(student.id, studentsData[student.id]) ? 'Aktif Öğrenci' : 'Pasif Öğrenci'}
+                        />
                       </div>
 
-                      {/* Online Status Tag */}
-                      <div className="shrink-0 text-right">
-                        {isUserOnline(student) ? (
-                          <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center space-x-1 whitespace-nowrap" title="Çevrimiçi">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                            <span>Online</span>
-                          </span>
-                        ) : (
-                          <OfflineStatusDisplay 
-                            user={student} 
-                            className="text-[10px] text-slate-400 font-medium px-2 py-0.5 rounded-full bg-white/5 border border-white/5 whitespace-nowrap inline-flex" 
-                          />
-                        )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-1">
+                          <h3 
+                            className="text-sm font-black text-white group-hover:text-indigo-300 transition-colors leading-snug break-words"
+                          >
+                            {student.name}
+                          </h3>
 
-                        {(student.isLocked || (student.lockoutUntil && new Date(student.lockoutUntil).getTime() > Date.now())) && (
-                          <span className="mt-1 bg-rose-500/20 text-rose-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-rose-500/30 flex items-center space-x-1 whitespace-nowrap justify-end" title="Hesap Kilitli">
-                            <Lock className="w-3 h-3 text-rose-400" />
-                            <span>Kilitli</span>
+                          {!isBranchTeacher && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingStudentId(student.id);
+                                setEditStudentName(student.name);
+                                setEditStudentEmail(student.email);
+                                setEditStudentClassName(student.className || '');
+                                setEditStudentPassword('');
+                                setShowEditStudentModal(true);
+                              }}
+                              className="text-slate-500 hover:text-indigo-400 transition-colors p-1 rounded shrink-0"
+                              title="Öğrenci Bilgilerini Düzenle"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          <span className="text-[10px] font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-500/30 whitespace-nowrap">
+                            {student.className || 'Sınıfsız'}
                           </span>
-                        )}
+                          {profile?.targetField && (
+                            <span className="text-[9px] font-bold bg-fuchsia-500/20 text-fuchsia-300 px-1.5 py-0.5 rounded-md border border-fuchsia-500/30">
+                              {profile.targetField}
+                            </span>
+                          )}
+                          {isUserOnline(student) ? (
+                            <span className="bg-emerald-500/20 text-emerald-300 text-[9px] font-bold px-1.5 py-0.5 rounded-md border border-emerald-500/30 flex items-center space-x-1 whitespace-nowrap" title="Çevrimiçi">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                              <span>Online</span>
+                            </span>
+                          ) : (
+                            <OfflineStatusDisplay 
+                              user={student} 
+                              className="text-[9px] text-slate-400 font-medium px-1.5 py-0.5 rounded-md bg-white/5 border border-white/5 whitespace-nowrap inline-flex" 
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Target & Last Net Grid */}
-                    <div className="grid grid-cols-2 gap-2.5 pt-1">
-                      <div className="bg-slate-900/90 rounded-2xl p-2.5 border border-white/5 space-y-1">
-                        <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
-                          <Target className="w-3 h-3 text-indigo-400" />
-                          <span>Hedef</span>
-                        </div>
-                        <div className="text-xs font-bold text-white truncate" title={profile?.targetUniversity}>
-                          {profile?.targetUniversity || 'Üniversite'}
-                        </div>
-                        <div className="text-[10px] text-slate-400 truncate flex items-center justify-between">
-                          <span className="truncate">{profile?.targetDepartment || 'Bölüm'}</span>
+                    {/* Stacked Horizontal Rectangles (Hedef & Son Deneme) */}
+                    <div className="space-y-2">
+                      {/* Target Rectangle Box */}
+                      <div className="bg-slate-900/90 rounded-2xl p-3 border border-white/5 space-y-1">
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold">
+                          <span className="flex items-center gap-1">
+                            <Target className="w-3 h-3 text-indigo-400" />
+                            <span>Hedef Üniversite & Bölüm</span>
+                          </span>
                           {profile?.targetRank && (
-                            <strong className="text-amber-300 font-mono shrink-0 ml-1">#{profile.targetRank.toLocaleString()}</strong>
+                            <span className="text-amber-300 font-mono font-bold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                              #{profile.targetRank.toLocaleString()} Sıralama
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs font-bold text-white flex items-center gap-1.5 flex-wrap">
+                          <span>{profile?.targetUniversity || 'Üniversite Belirtilmedi'}</span>
+                          {profile?.targetDepartment && (
+                            <span className="text-slate-400 font-normal">• {profile.targetDepartment}</span>
                           )}
                         </div>
                       </div>
 
-                      <div className="bg-slate-900/90 rounded-2xl p-2.5 border border-white/5 space-y-1">
-                        <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                      {/* Last Mock Net Rectangle Box */}
+                      <div className="bg-slate-900/90 rounded-2xl p-3 border border-white/5 flex items-center justify-between text-xs font-bold">
+                        <div className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold">
                           <TrendingUp className="w-3 h-3 text-emerald-400" />
-                          <span>Son Deneme</span>
+                          <span>Son Deneme Netleri</span>
                         </div>
-                        <div className="text-xs font-black font-mono flex items-center justify-between pt-0.5">
-                          <span className="text-emerald-400">{lastMock?.tyt?.totalNet ? `${lastMock.tyt.totalNet} TYT` : 'TYT -'}</span>
-                          <span className="text-purple-300">{lastMock?.ayt?.totalNet ? `${lastMock.ayt.totalNet} AYT` : 'AYT -'}</span>
+                        <div className="flex items-center gap-2 font-mono">
+                          <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                            TYT: <strong className="text-white ml-0.5">{lastMock?.tyt?.totalNet || '-'}</strong>
+                          </span>
+                          <span className="text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-lg border border-purple-500/20">
+                            AYT: <strong className="text-white ml-0.5">{lastMock?.ayt?.totalNet || '-'}</strong>
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Quick Metric Pills */}
-                    <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                      <div className="text-[10px] bg-white/5 text-slate-300 px-2.5 py-1 rounded-xl flex items-center space-x-1 font-medium border border-white/5">
-                        <BookOpen className="w-3 h-3 text-fuchsia-400 shrink-0" />
-                        <span>{plansCount} Görev</span>
+                    {/* Task Progress Bar Box */}
+                    <div className="bg-slate-900/90 rounded-2xl p-3 border border-white/5 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                          <BookOpen className="w-3.5 h-3.5 text-fuchsia-400 shrink-0" />
+                          <span>Haftalık Çalışma Planı</span>
+                        </span>
+                        <span className="font-mono text-slate-400 text-[10px]">
+                          <strong className="text-fuchsia-300 font-bold">{completedPlansCount}</strong> / {totalPlansCount} Görev ({planPct}%)
+                        </span>
                       </div>
+                      <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-white/5">
+                        <div 
+                          className="bg-gradient-to-r from-fuchsia-500 to-indigo-500 h-full rounded-full transition-all duration-500" 
+                          style={{ width: `${planPct}%` }} 
+                        />
+                      </div>
+                    </div>
 
+                    {/* Quick Metric Pills (Coach Note & Unresolved Errors) */}
+                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
                       {hasCoachNote ? (
-                        <div className="text-[10px] bg-emerald-500/15 text-emerald-300 px-2.5 py-1 rounded-xl flex items-center space-x-1 font-bold border border-emerald-500/30">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCoachNoteStudent({ name: student.name, notes: profile?.coachNotes || '' });
+                          }}
+                          className="text-[10px] bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 px-2.5 py-1 rounded-xl flex items-center space-x-1 font-bold border border-emerald-500/30 transition-colors cursor-pointer"
+                        >
                           <CheckCircle2 className="w-3 h-3 shrink-0" />
-                          <span>Koç Notu Var</span>
-                        </div>
+                          <span>Koç Notu Var (Tıkla Gör)</span>
+                        </button>
                       ) : (
-                        <div className="text-[10px] bg-amber-500/15 text-amber-300 px-2 py-1 rounded-xl flex items-center space-x-1 font-medium border border-amber-500/30">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCoachNoteStudent({ name: student.name, notes: '' });
+                          }}
+                          className="text-[10px] bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 px-2.5 py-1 rounded-xl flex items-center space-x-1 font-medium border border-amber-500/30 transition-colors cursor-pointer"
+                        >
                           <MessageSquare className="w-3 h-3 shrink-0 text-amber-400" />
                           <span>Not Eklenmedi</span>
-                        </div>
+                        </button>
                       )}
 
                       {unresolvedErrorsCount > 0 && (
@@ -417,6 +447,50 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
           </div>
         )}
       </div>
+
+      {/* Small Coach Note Popup Modal */}
+      {selectedCoachNoteStudent && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn"
+          onClick={() => setSelectedCoachNoteStudent(null)}
+        >
+          <div 
+            className="bg-slate-900 border border-indigo-500/30 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center space-x-2">
+                <BookOpen className="w-5 h-5 text-indigo-400" />
+                <h3 className="font-bold text-white text-base">Koç Değerlendirme Notu</h3>
+              </div>
+              <button
+                onClick={() => setSelectedCoachNoteStudent(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-xs font-bold text-indigo-300 block">{selectedCoachNoteStudent.name}</span>
+              <div className="bg-slate-950/90 border border-white/10 rounded-2xl p-4 text-xs text-slate-200 leading-relaxed font-sans max-h-60 overflow-y-auto whitespace-pre-wrap">
+                {selectedCoachNoteStudent.notes.trim() !== '' 
+                  ? selectedCoachNoteStudent.notes 
+                  : 'Henüz bu öğrenci için rehberlik/koç değerlendirme notu girilmemiş.'}
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => setSelectedCoachNoteStudent(null)}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-md shadow-indigo-600/30 border border-indigo-400/40"
+              >
+                Kapat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
