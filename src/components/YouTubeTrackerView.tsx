@@ -76,6 +76,125 @@ const getYouTubeThumbnail = (videoUrl?: string, firstSubVideoUrl?: string): stri
   return id ? `https://i.ytimg.com/vi/${id}/mqdefault.jpg` : null;
 };
 
+interface PlaylistSubVideosListProps {
+  playlistId: string;
+  videos: Array<{
+    id: string;
+    title: string;
+    videoUrl?: string;
+    durationMinutes?: number;
+    isWatched?: boolean;
+  }>;
+  onToggleWatch: (idx: number, subVid: any) => void;
+}
+
+const PlaylistSubVideosList: React.FC<PlaylistSubVideosListProps> = ({
+  playlistId,
+  videos,
+  onToggleWatch
+}) => {
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const targetRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Target index: first unwatched video, or last video if all watched
+  let targetIdx = videos.findIndex(v => !v.isWatched);
+  if (targetIdx === -1 && videos.length > 0) {
+    targetIdx = videos.length - 1;
+  }
+
+  React.useEffect(() => {
+    if (containerRef.current && targetRef.current) {
+      const container = containerRef.current;
+      const element = targetRef.current;
+      const containerTop = container.getBoundingClientRect().top;
+      const elementTop = element.getBoundingClientRect().top;
+      const relativeTop = elementTop - containerTop + container.scrollTop;
+
+      container.scrollTo({
+        top: Math.max(0, relativeTop - 36),
+        behavior: 'smooth'
+      });
+    }
+  }, [playlistId, targetIdx]);
+
+  let firstUnwatchedFound = false;
+
+  return (
+    <div 
+      ref={containerRef}
+      className="max-h-60 overflow-y-auto custom-scrollbar pr-1 space-y-1.5 bg-slate-950 p-2.5 rounded-2xl border border-slate-850"
+    >
+      {videos.map((subVid, idx) => {
+        const isNextTarget = !subVid.isWatched && !firstUnwatchedFound;
+        if (isNextTarget) firstUnwatchedFound = true;
+
+        const isTargetToScroll = idx === targetIdx;
+
+        return (
+          <div
+            key={subVid.id || idx}
+            ref={isTargetToScroll ? targetRef : null}
+            className={`flex items-center justify-between p-2 rounded-xl transition-all group border ${
+              isNextTarget
+                ? 'bg-amber-950/40 border-amber-500/60 text-amber-200 shadow-md ring-1 ring-amber-500/30'
+                : subVid.isWatched
+                ? 'bg-slate-900/40 border-slate-850 opacity-75'
+                : 'bg-slate-900/70 border-slate-800 hover:bg-slate-850'
+            }`}
+          >
+            <div className="flex items-center space-x-2 min-w-0 pr-2">
+              <span className={`text-[10px] font-bold w-5 shrink-0 ${isNextTarget ? 'text-amber-400 font-black' : 'text-slate-500'}`}>
+                {idx + 1}.
+              </span>
+              <a
+                href={subVid.videoUrl || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`text-xs font-semibold truncate transition-colors ${
+                  subVid.isWatched 
+                    ? 'text-slate-500 line-through' 
+                    : isNextTarget 
+                    ? 'text-amber-200 font-bold group-hover:text-amber-100' 
+                    : 'text-slate-200 group-hover:text-red-400'
+                }`}
+              >
+                {subVid.title}
+              </a>
+
+              {isNextTarget && (
+                <span className="text-[9px] font-extrabold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-md border border-amber-400/40 flex items-center space-x-1 shrink-0 animate-pulse shadow-sm">
+                  <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+                  <span>🎯 SIRADAKİ</span>
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center space-x-2 shrink-0">
+              {(subVid.durationMinutes || 0) > 0 && (
+                <span className="text-[10px] font-mono text-slate-400">{formatDuration(subVid.durationMinutes || 0)}</span>
+              )}
+              <button
+                type="button"
+                onClick={() => onToggleWatch(idx, subVid)}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  subVid.isWatched 
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                    : isNextTarget
+                    ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50 hover:bg-amber-500/40 shadow-sm'
+                    : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                }`}
+                title={subVid.isWatched ? 'İzlendi' : 'İzlenecek olarak işaretle'}
+              >
+                <CheckCircle className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
   videos,
   onAddVideo,
@@ -1015,45 +1134,16 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                           </div>
 
                           {isExpanded && (
-                            <div className="max-h-56 overflow-y-auto custom-scrollbar pr-1 space-y-1.5 bg-slate-950 p-2.5 rounded-2xl border border-slate-850">
-                              {vid.playlistVideos.map((subVid, idx) => (
-                                <div key={subVid.id} className="flex items-center justify-between p-2 rounded-xl bg-slate-900/70 hover:bg-slate-850 transition-colors group">
-                                  <div className="flex items-center space-x-2 min-w-0 pr-2">
-                                    <span className="text-[10px] font-bold text-slate-500 w-5 shrink-0">{idx + 1}.</span>
-                                    <a
-                                      href={subVid.videoUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className={`text-xs font-semibold truncate transition-colors ${subVid.isWatched ? 'text-slate-500 line-through' : 'text-slate-200 group-hover:text-red-400'}`}
-                                    >
-                                      {subVid.title}
-                                    </a>
-                                  </div>
-                                  <div className="flex items-center space-x-2 shrink-0">
-                                    {subVid.durationMinutes > 0 && (
-                                      <span className="text-[10px] font-mono text-slate-400">{formatDuration(subVid.durationMinutes)}</span>
-                                    )}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const newPlaylist = [...vid.playlistVideos!];
-                                        newPlaylist[idx] = { ...subVid, isWatched: !subVid.isWatched };
-                                        const allWatched = newPlaylist.every(v => v.isWatched);
-                                        onUpdateVideo({ ...vid, playlistVideos: newPlaylist, isWatched: allWatched });
-                                      }}
-                                      className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                                        subVid.isWatched 
-                                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                                          : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
-                                      }`}
-                                      title={subVid.isWatched ? 'İzlendi' : 'İzlenecek olarak işaretle'}
-                                    >
-                                      <CheckCircle className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                            <PlaylistSubVideosList
+                              playlistId={vid.id}
+                              videos={vid.playlistVideos}
+                              onToggleWatch={(idx, subVid) => {
+                                const newPlaylist = [...vid.playlistVideos!];
+                                newPlaylist[idx] = { ...subVid, isWatched: !subVid.isWatched };
+                                const allWatched = newPlaylist.every(v => v.isWatched);
+                                onUpdateVideo({ ...vid, playlistVideos: newPlaylist, isWatched: allWatched });
+                              }}
+                            />
                           )}
                         </div>
                       )}
