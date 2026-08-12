@@ -109,35 +109,11 @@ const RECOMMENDED_CHANNELS = [
   { subject: 'Felsefe', name: 'Can Köni', url: 'https://www.youtube.com/@CanKoni' }
 ];
 
-function generateSvgAvatar(name) {
-  const cleanName = (name || 'YT').trim();
-  const words = cleanName.split(/\s+/);
-  let initials = 'YT';
-  if (words.length >= 2) {
-    initials = (words[0][0] + words[1][0]).toUpperCase();
-  } else if (words[0]) {
-    initials = words[0].substring(0, 2).toUpperCase();
-  }
-
-  const bgGradients = [
-    ['#dc2626', '#991b1b'],
-    ['#2563eb', '#1e40af'],
-    ['#059669', '#065f46'],
-    ['#7c3aed', '#5b21b6'],
-    ['#d97706', '#92400e']
-  ];
-  const charCodeSum = cleanName.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const [c1, c2] = bgGradients[charCodeSum % bgGradients.length];
-
+function generateSvgAvatar() {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-    <defs>
-      <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="${c1}" />
-        <stop offset="100%" stop-color="${c2}" />
-      </linearGradient>
-    </defs>
-    <rect width="128" height="128" rx="28" fill="url(#g)" />
-    <text x="64" y="74" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="44" font-weight="900" fill="#ffffff" text-anchor="middle">${initials}</text>
+    <rect width="128" height="128" rx="28" fill="#0f172a" />
+    <rect x="24" y="38" width="80" height="52" rx="14" fill="#ff0000" />
+    <polygon points="54,50 82,64 54,78" fill="#ffffff" />
   </svg>`;
 }
 

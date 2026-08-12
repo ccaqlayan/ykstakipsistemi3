@@ -849,6 +849,8 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                                             target.src = target.src.replace('.jpg', '.svg');
                                           } else if (!target.src.includes('/api/youtube/avatar')) {
                                             target.src = `/api/youtube/avatar?url=${encodeURIComponent(channel.url)}&name=${encodeURIComponent(channel.name)}`;
+                                          } else {
+                                            target.style.display = 'none';
                                           }
                                         }}
                                       />
