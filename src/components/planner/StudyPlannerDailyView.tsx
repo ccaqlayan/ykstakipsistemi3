@@ -88,10 +88,11 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
                 {openAddVideoModal && (
                   <button
                     onClick={() => openAddVideoModal(selectedDay)}
-                    className="text-[11px] sm:text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-all font-bold flex items-center space-x-1 sm:space-x-1.5 shadow-lg shadow-indigo-600/30 border border-indigo-400/30 shrink-0 cursor-pointer whitespace-nowrap"
+                    className="text-[11px] sm:text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-all font-bold flex items-center space-x-1 shadow-lg shadow-indigo-600/30 border border-indigo-400/30 shrink-0 cursor-pointer whitespace-nowrap"
                   >
+                    <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                     <Youtube className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                    <span>+ Video Ekle</span>
+                    <span>Video Ekle</span>
                   </button>
                 )}
                 <button
@@ -115,10 +116,11 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
                 {openAddVideoModal && (
                   <button
                     onClick={() => openAddVideoModal(selectedDay)}
-                    className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl font-bold transition-all shadow-md flex items-center space-x-1.5 cursor-pointer shadow-indigo-600/30 border border-indigo-400/30"
+                    className="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-2 rounded-xl font-bold transition-all shadow-md flex items-center space-x-1 cursor-pointer shadow-indigo-600/30 border border-indigo-400/30"
                   >
-                    <Youtube className="w-4 h-4" />
-                    <span>+ Video Ekle</span>
+                    <Plus className="w-4 h-4 shrink-0" />
+                    <Youtube className="w-4 h-4 shrink-0" />
+                    <span>Video Ekle</span>
                   </button>
                 )}
                 <button
