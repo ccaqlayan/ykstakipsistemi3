@@ -746,7 +746,7 @@ async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: 
       if (handleMatchApi && handleMatchApi[1]) {
         const handle = handleMatchApi[1];
         const apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet&forHandle=${encodeURIComponent(handle)}&key=${apiKey}`;
-        const apiRes = await fetch(apiUrl);
+        const apiRes = await fetch(apiUrl, { signal: AbortSignal.timeout(5000) });
         if (apiRes.ok) {
           const apiData = await apiRes.json() as any;
           if (apiData && apiData.items && apiData.items[0]?.snippet?.thumbnails) {
@@ -756,7 +756,7 @@ async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: 
               if (imgUrl.includes('=s')) {
                 imgUrl = imgUrl.replace(/=s\d+-[^&]+/, '=s240-c-k-c0x00ffffff-no-rj');
               }
-              const imgRes = await fetch(imgUrl);
+              const imgRes = await fetch(imgUrl, { signal: AbortSignal.timeout(5000) });
               if (imgRes.ok) {
                 const arrayBuffer = await imgRes.arrayBuffer();
                 const buffer = Buffer.from(arrayBuffer);
@@ -778,7 +778,7 @@ async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: 
   // Strategy 1: YouTube Official oEmbed API
   try {
     const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(channelUrl)}&format=json`;
-    const oembedRes = await fetch(oembedUrl);
+    const oembedRes = await fetch(oembedUrl, { signal: AbortSignal.timeout(5000) });
     if (oembedRes.ok) {
       const data = await oembedRes.json() as any;
       if (data && data.thumbnail_url) {
@@ -786,7 +786,7 @@ async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: 
         if (imageUrl.includes('=s')) {
           imageUrl = imageUrl.replace(/=s\d+-[^&]+/, '=s240-c-k-c0x00ffffff-no-rj');
         }
-        const imgRes = await fetch(imageUrl);
+        const imgRes = await fetch(imageUrl, { signal: AbortSignal.timeout(5000) });
         if (imgRes.ok) {
           const arrayBuffer = await imgRes.arrayBuffer();
           const buffer = Buffer.from(arrayBuffer);
@@ -805,6 +805,7 @@ async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: 
   // Strategy 2: HTML Scrape for og:image
   try {
     const response = await fetch(channelUrl, {
+      signal: AbortSignal.timeout(5000),
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept-Language': 'tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7',
@@ -822,6 +823,7 @@ async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: 
         }
 
         const imgRes = await fetch(imageUrl, {
+          signal: AbortSignal.timeout(5000),
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
           }

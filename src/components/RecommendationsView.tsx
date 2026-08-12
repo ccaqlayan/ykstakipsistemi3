@@ -273,8 +273,16 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: channelUrl, name: channelName })
       });
-      const data = await res.json();
-      if (data.success && data.avatarUrl) {
+
+      const responseText = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseErr) {
+        throw new Error(`Sunucudan geçersiz yanıt alındı (Status: ${res.status}).`);
+      }
+
+      if (res.ok && data.success && data.avatarUrl) {
         setAvatarPreviewUrl(data.avatarUrl);
         setSuccessToast('Kanal fotoğrafı YouTube API servisinden başarıyla çekildi!');
         setTimeout(() => setSuccessToast(null), 3000);
