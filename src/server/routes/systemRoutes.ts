@@ -760,6 +760,34 @@ async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: 
     }
   }
 
+  // Strategy 1: YouTube Official oEmbed API
+  try {
+    const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(channelUrl)}&format=json`;
+    const oembedRes = await fetch(oembedUrl);
+    if (oembedRes.ok) {
+      const data = await oembedRes.json() as any;
+      if (data && data.thumbnail_url) {
+        let imageUrl = data.thumbnail_url;
+        if (imageUrl.includes('=s')) {
+          imageUrl = imageUrl.replace(/=s\d+-[^&]+/, '=s240-c-k-c0x00ffffff-no-rj');
+        }
+        const imgRes = await fetch(imageUrl);
+        if (imgRes.ok) {
+          const arrayBuffer = await imgRes.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          if (buffer.length > 500) {
+            fs.writeFileSync(jpgPath, buffer);
+            console.log(`[Avatar Backup oEmbed] Successfully saved avatar for ${slug} (${buffer.length} bytes).`);
+            return jpgPath;
+          }
+        }
+      }
+    }
+  } catch (oembedErr) {
+    console.log(`[Avatar oEmbed Warning] oEmbed failed for ${channelUrl}`);
+  }
+
+  // Strategy 2: HTML Scrape for og:image
   try {
     const response = await fetch(channelUrl, {
       headers: {
@@ -772,7 +800,7 @@ async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: 
     if (response.ok) {
       const html = await response.text();
       const ogMatch = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i) || html.match(/<link\s+rel="image_src"\s+href="([^"]+)"/i);
-      if (ogMatch && ogMatch[1]) {
+      if (ogMatch && ogMatch[1] && !ogMatch[1].includes('googleg_standard_color')) {
         let imageUrl = ogMatch[1];
         if (imageUrl.includes('=s')) {
           imageUrl = imageUrl.replace(/=s\d+-[^&]+/, '=s240-c-k-c0x00ffffff-no-rj');
@@ -789,7 +817,7 @@ async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: 
           const buffer = Buffer.from(arrayBuffer);
           if (buffer.length > 500) {
             fs.writeFileSync(jpgPath, buffer);
-            console.log(`[Avatar Backup] Successfully saved avatar for ${slug} (${buffer.length} bytes) to server disk.`);
+            console.log(`[Avatar Backup Scrape] Successfully saved avatar for ${slug} (${buffer.length} bytes).`);
             return jpgPath;
           }
         }
@@ -815,6 +843,14 @@ router.get('/youtube/avatar', async (req, res) => {
 
   try {
     const avatarFilePath = await getOrDownloadChannelAvatarPath(channelUrl, channelName);
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    if (avatarFilePath.endsWith('.svg')) {
+      res.setHeader('Content-Type', 'image/svg+xml');
+    } else if (avatarFilePath.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    } else {
+      res.setHeader('Content-Type', 'image/jpeg');
+    }
     return res.sendFile(avatarFilePath);
   } catch (err) {
     console.error('YouTube avatar route error:', err);

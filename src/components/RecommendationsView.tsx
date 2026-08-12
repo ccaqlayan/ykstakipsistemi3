@@ -814,22 +814,19 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                               {(() => {
                                 const avatarSrc = getChannelAvatar(channel);
                                 return (
-                                  <>
-                                    {avatarSrc && (
+                                  <div className="w-full h-full relative flex items-center justify-center">
+                                    {avatarSrc ? (
                                       <img
                                         src={avatarSrc}
                                         alt={channel.name}
-                                        referrerPolicy="no-referrer"
-                                        className="w-full h-full object-cover relative z-10"
-                                        onError={(e) => {
-                                          (e.currentTarget as HTMLElement).style.display = 'none';
-                                        }}
+                                        loading="lazy"
+                                        className="w-full h-full object-cover absolute inset-0 z-10 rounded-xl"
                                       />
-                                    )}
-                                    <div className="absolute inset-0 bg-gradient-to-br from-red-900/80 to-rose-950/90 flex items-center justify-center text-red-400 font-bold text-xs z-0">
+                                    ) : null}
+                                    <div className="w-full h-full bg-gradient-to-br from-red-900/80 to-rose-950/90 flex items-center justify-center text-red-400 font-bold text-xs z-0">
                                       <Youtube className="w-4 h-4 text-red-500" />
                                     </div>
-                                  </>
+                                  </div>
                                 );
                               })()}
                             </a>
