@@ -1570,10 +1570,10 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                 <button
                   type="button"
                   onClick={() => openAddVideoModal()}
-                  className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-md shadow-red-600/30 flex items-center space-x-1.5 border border-red-400/40 cursor-pointer shrink-0 whitespace-nowrap"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-md shadow-indigo-600/30 flex items-center space-x-1.5 border border-indigo-400/40 cursor-pointer shrink-0 whitespace-nowrap"
                 >
                   <Youtube className="w-4 h-4 shrink-0" />
-                  <span>Video Ekle</span>
+                  <span>+ Video Ekle</span>
                 </button>
 
                 <button
@@ -1678,10 +1678,10 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                   <button
                     type="button"
                     onClick={() => openAddVideoModal()}
-                    className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-[11px] sm:text-xs font-bold px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl transition-all shadow-md shadow-red-600/30 flex items-center space-x-1.5 border border-red-400/40 cursor-pointer shrink-0 whitespace-nowrap flex-1 sm:flex-initial justify-center"
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl transition-all shadow-md shadow-indigo-600/30 flex items-center space-x-1.5 border border-indigo-400/40 cursor-pointer shrink-0 whitespace-nowrap flex-1 sm:flex-initial justify-center"
                   >
                     <Youtube className="w-4 h-4 shrink-0" />
-                    <span>Video Ekle</span>
+                    <span>+ Video Ekle</span>
                   </button>
                   <button
                     type="button"
