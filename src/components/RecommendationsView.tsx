@@ -857,7 +857,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
 
                     return (
                       <tr 
-                        key={`${channel.subject}-${channel.name}`}
+                        key={`${channel.id || channel.name}-${channel.avatarUrl || ''}`}
                         className="hover:bg-slate-900/60 transition-colors group"
                       >
                         <td className="py-3.5 px-4 text-center font-bold text-slate-500">

@@ -13,6 +13,7 @@ import {
   subscribeToFirestore, 
   subscribeToMessages,
   subscribeToInstitutionalMockExams,
+  subscribeToRecommendations,
   subscribeToAuditLogs, 
   subscribeToAllStudentsData,
   subscribeToSingleStudentData,
@@ -138,6 +139,18 @@ export default function App() {
     });
     return () => unsubscribeExams();
   }, [currentUser?.id, currentUser?.role]);
+
+  // recommendations: login sonrası dinle
+  useEffect(() => {
+    if (!currentUser) return;
+    const unsubscribeRecs = subscribeToRecommendations((recs) => {
+      setGlobalState((prev) => ({
+        ...prev,
+        customRecommendations: recs
+      }));
+    });
+    return () => unsubscribeRecs();
+  }, [currentUser?.id]);
 
   const [currentSchoolName, setCurrentSchoolName] = useState<string>(
     () => localStorage.getItem('school_name') || 'Yıldız Anadolu Lisesi'

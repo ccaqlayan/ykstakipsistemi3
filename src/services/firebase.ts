@@ -778,6 +778,29 @@ export async function deleteAllInstitutionalExamsFromFirestore() {
 }
 
 /**
+ * Subscribe to custom recommendations in Firestore
+ */
+export function subscribeToRecommendations(
+  onChange: (data: { channels: RecommendedChannel[]; books: RecommendedBook[] }) => void
+) {
+  return onSnapshot(collection(db, 'recommendations'), (snapshot) => {
+    const channels: RecommendedChannel[] = [];
+    const books: RecommendedBook[] = [];
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data() as any;
+      if (data.type === 'channel') {
+        channels.push(data as RecommendedChannel);
+      } else if (data.type === 'book') {
+        books.push(data as RecommendedBook);
+      }
+    });
+    onChange({ channels, books });
+  }, (err) => {
+    console.error('Firestore recommendations subscription error:', err);
+  });
+}
+
+/**
  * Save custom recommendation to Firestore
  */
 export async function saveRecommendationToFirestore(rec: any) {
