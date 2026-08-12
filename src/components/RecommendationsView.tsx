@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { 
   Sparkles, 
   Youtube, 
@@ -11,11 +10,15 @@ import {
   Trash2,
   BookOpen,
   Bookmark,
-  Pencil
+  Pencil,
+  Upload,
+  Loader2
 } from 'lucide-react';
 import { YouTubeVideoItem, ResourceItem, UserAccount, RecommendedChannel, RecommendedBook } from '../types';
 import { RECOMMENDED_BOOKS } from '../data/books';
 import { saveRecommendationToFirestore, deleteRecommendationFromFirestore } from '../services/firebase';
+import { uploadChannelAvatar } from '../services/storageUpload';
+import { compressImageFile } from '../utils/imageCompressor';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 interface RecommendationsViewProps {
@@ -227,6 +230,10 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   const [channelName, setChannelName] = useState('');
   const [channelSubscribersText, setChannelSubscribersText] = useState('');
   const [channelUrl, setChannelUrl] = useState('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [avatarCompressionStats, setAvatarCompressionStats] = useState<{ originalKb: number; compressedKb: number } | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Book Form Fields
   const [bookSubject, setBookSubject] = useState('Matematik');
@@ -243,7 +250,27 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
     setChannelName('');
     setChannelSubscribersText('');
     setChannelUrl('');
+    setAvatarFile(null);
+    setAvatarPreviewUrl(null);
+    setAvatarCompressionStats(null);
+    setIsUploadingAvatar(false);
     setEditingChannel(null);
+  };
+
+  const handleAvatarFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const compressed = await compressImageFile(file, 120, 0.60);
+      setAvatarFile(file);
+      setAvatarPreviewUrl(compressed.dataUrl);
+      setAvatarCompressionStats({
+        originalKb: compressed.originalKb,
+        compressedKb: compressed.compressedKb
+      });
+    } catch (err) {
+      alert('Görsel sıkıştırılırken bir hata oluştu.');
+    }
   };
 
   const resetBookForm = () => {
@@ -264,6 +291,9 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
     setChannelName(channel.name || '');
     setChannelSubscribersText(channel.subscribersText || '');
     setChannelUrl(channel.url || '');
+    setAvatarFile(null);
+    setAvatarCompressionStats(null);
+    setAvatarPreviewUrl(channel.avatarUrl || getChannelAvatar(channel));
     setShowAddChannelModal(true);
   };
 
@@ -282,7 +312,6 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
 
   const handleChannelSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Explicitly preserve or reconstruct the ID to prevent editing from creating duplicates
     let chanId = editingChannel?.id;
     const isEdit = !!editingChannel;
     const oldState = editingChannel ? { ...editingChannel } : null;
@@ -296,18 +325,32 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
     }
 
     let syncedAvatarUrl = '';
-    try {
-      const syncRes = await fetch('/api/youtube/sync-channel-avatar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: channelUrl, name: channelName })
-      });
-      const syncData = await syncRes.json();
-      if (syncData.success && syncData.avatarUrl) {
-        syncedAvatarUrl = syncData.avatarUrl;
+    if (avatarFile) {
+      try {
+        setIsUploadingAvatar(true);
+        const uploadRes = await uploadChannelAvatar(avatarFile, channelUrl, channelName);
+        syncedAvatarUrl = `${uploadRes.url}?t=${Date.now()}`;
+      } catch (err: any) {
+        console.error('Channel custom avatar upload error:', err);
+      } finally {
+        setIsUploadingAvatar(false);
       }
-    } catch (e) {
-      console.log('Channel avatar sync error on submit:', e);
+    }
+
+    if (!syncedAvatarUrl) {
+      try {
+        const syncRes = await fetch('/api/youtube/sync-channel-avatar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: channelUrl, name: channelName })
+        });
+        const syncData = await syncRes.json();
+        if (syncData.success && syncData.avatarUrl) {
+          syncedAvatarUrl = syncData.avatarUrl;
+        }
+      } catch (e) {
+        console.log('Channel avatar sync error on submit:', e);
+      }
     }
 
     const newChan = {
@@ -1214,9 +1257,56 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                 />
               </div>
 
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kanal Logosu / Fotoğrafı (Opsiyonel)</label>
+                <div className="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 shrink-0 flex items-center justify-center relative">
+                    {avatarPreviewUrl ? (
+                      <img 
+                        src={avatarPreviewUrl} 
+                        alt="Kanal Görseli" 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    ) : null}
+                    <div className="w-full h-full bg-slate-900 flex items-center justify-center text-red-500 absolute inset-0 z-0">
+                      <Youtube className="w-6 h-6 text-red-500" />
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="channel-avatar-input"
+                      onChange={handleAvatarFileSelect}
+                      className="hidden"
+                    />
+                    <label
+                      htmlFor="channel-avatar-input"
+                      className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition-all cursor-pointer border border-slate-700"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-red-400" />
+                      <span>{avatarFile ? 'Görseli Değiştir' : 'Özel Fotoğraf Yükle'}</span>
+                    </label>
+                    {avatarCompressionStats ? (
+                      <p className="text-[10px] text-emerald-400 font-bold">
+                        ⚡ Sıkıştırıldı: ~{avatarCompressionStats.compressedKb} KB <span className="text-slate-500 font-normal">(Orijinal: {avatarCompressionStats.originalKb} KB)</span>
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-slate-500">
+                        Yüklenen fotoğraflar mikro boyutta otomatize edilip sıkıştırılır.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
                 <button
                   type="button"
+                  disabled={isUploadingAvatar}
                   onClick={() => {
                     setShowAddChannelModal(false);
                     resetChannelForm();
@@ -1227,9 +1317,17 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-red-600/10"
+                  disabled={isUploadingAvatar}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-red-600/10 flex items-center space-x-1.5"
                 >
-                  {editingChannel ? 'Değişiklikleri Kaydet' : 'Kanalı Ekle'}
+                  {isUploadingAvatar ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Sıkıştırılıyor & Yükleniyor...</span>
+                    </>
+                  ) : (
+                    <span>{editingChannel ? 'Değişiklikleri Kaydet' : 'Kanalı Ekle'}</span>
+                  )}
                 </button>
               </div>
             </form>

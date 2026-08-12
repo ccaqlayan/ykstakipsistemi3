@@ -909,6 +909,20 @@ router.post('/upload/photo', async (req, res) => {
       return res.status(403).json({ success: false, error: 'Bu kullanıcı için soru fotoğrafı yükleme yetkiniz yok.' });
     }
     storagePath = `question-errors/${targetUserId}/${errId}.${ext}`;
+  } else if (type === 'youtube-avatar') {
+    if (authUser.role !== 'admin' && authUser.role !== 'teacher' && authUser.role !== 'class_teacher' && authUser.role !== 'school_counselor') {
+      return res.status(403).json({ success: false, error: 'Kanal görseli yükleme yetkiniz yok.' });
+    }
+    const channelUrl = req.body.channelUrl || '';
+    const channelName = req.body.channelName || '';
+    const handleMatch = channelUrl.match(/@([\w.-]+)/);
+    let slug = '';
+    if (handleMatch && handleMatch[1]) {
+      slug = handleMatch[1].toLowerCase().replace(/[^a-z0-9]/g, '_');
+    } else {
+      slug = (channelName || 'chan').toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Math.abs(channelUrl.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a | 0; }, 0));
+    }
+    storagePath = `avatars/youtube/${slug}.${ext}`;
   } else {
     return res.status(400).json({ success: false, error: 'Geçersiz fotoğraf türü.' });
   }

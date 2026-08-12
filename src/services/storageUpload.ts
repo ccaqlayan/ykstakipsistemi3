@@ -28,6 +28,29 @@ export async function uploadProfileAvatar(file: File, userId: string): Promise<U
   return { url: data.url, originalKb, compressedKb };
 }
 
+export async function uploadChannelAvatar(file: File, channelUrl: string, channelName: string): Promise<UploadResult> {
+  const { dataUrl, originalKb, compressedKb } = await compressImageFile(file, 120, 0.60);
+  const response = await fetch('/api/upload/photo', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: 'youtube-avatar',
+      channelUrl,
+      channelName,
+      fileData: dataUrl,
+      fileName: file.name
+    })
+  });
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(errData.error || 'Kanal görseli yüklenirken bir hata oluştu.');
+  }
+
+  const data = await response.json();
+  return { url: data.url, originalKb, compressedKb };
+}
+
 export async function uploadMessageAttachment(file: File, messageId: string): Promise<UploadResult> {
   const { dataUrl, originalKb, compressedKb } = await compressImageFile(file, 1000, 0.65);
   const response = await fetch('/api/upload/photo', {
