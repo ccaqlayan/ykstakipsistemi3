@@ -183,7 +183,7 @@ const PlaylistSubVideosList: React.FC<PlaylistSubVideosListProps> = ({
                     ? 'bg-amber-500/30 text-amber-300 border border-amber-500/50 hover:bg-amber-500/40 shadow-sm'
                     : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
                 }`}
-                title={subVid.isWatched ? 'İzlendi' : 'İzlenecek olarak işaretle'}
+                title={subVid.isWatched ? 'İzlendi' : 'İzlendi olarak işaretle'}
               >
                 <CheckCircle className="w-3.5 h-3.5" />
               </button>
