@@ -11,7 +11,6 @@ import {
   Target, 
   CheckCircle2, 
   MessageSquare, 
-  Calendar, 
   Eye, 
   Trash2,
   Lock,
@@ -217,7 +216,8 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
             <p className="text-xs text-slate-400">Filtrenizi değiştirebilir veya yeni öğrenci kaydı ekleyebilirsiniz.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          /* 3-Column Grid for spacious user-friendly student cards */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredStudents.map((student) => {
               const data = studentsData[student.id];
               const profile = data?.profile;
@@ -233,17 +233,17 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
               return (
                 <div 
                   key={student.id} 
-                  className="bg-slate-950/80 backdrop-blur-xl border border-white/10 rounded-3xl p-5 shadow-xl hover:border-indigo-500/50 hover:bg-slate-900/90 transition-all duration-300 hover:-translate-y-1 cursor-pointer group flex flex-col justify-between h-full relative space-y-4"
+                  className="bg-slate-950/90 backdrop-blur-xl border border-white/10 rounded-3xl p-5 shadow-xl hover:border-indigo-500/50 hover:bg-slate-900/90 transition-all duration-300 hover:-translate-y-1 cursor-pointer group flex flex-col justify-between h-full relative space-y-4"
                   onClick={() => handleOpenInspectStudent(student, 'performance')}
                 >
-                  {/* Top Card Header: Full room for student name */}
+                  {/* Top Card Header */}
                   <div className="space-y-3">
-                    <div className="flex items-start space-x-3">
+                    <div className="flex items-start space-x-3.5">
                       <div className="relative shrink-0">
                         <img 
                           src={student.avatarUrl || DEFAULT_AVATAR} 
                           alt={student.name}
-                          className="w-13 h-13 rounded-2xl object-cover border-2 border-white/15 shadow-md group-hover:border-indigo-400/60 transition-colors" 
+                          className="w-14 h-14 rounded-2xl object-cover border-2 border-white/15 shadow-md group-hover:border-indigo-400/60 transition-colors" 
                         />
                         <span 
                           className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-slate-950 shadow-sm ${
@@ -256,7 +256,7 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-1">
                           <h3 
-                            className="text-sm font-black text-white group-hover:text-indigo-300 transition-colors leading-snug break-words"
+                            className="text-base font-black text-white group-hover:text-indigo-300 transition-colors leading-snug break-words"
                           >
                             {student.name}
                           </h3>
@@ -306,15 +306,15 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
 
                     {/* Stacked Horizontal Rectangles (Hedef & Son Deneme) */}
                     <div className="space-y-2">
-                      {/* Target Rectangle Box */}
+                      {/* Target Rectangle Box: Label is simple "Hedef" */}
                       <div className="bg-slate-900/90 rounded-2xl p-3 border border-white/5 space-y-1">
                         <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold">
                           <span className="flex items-center gap-1">
-                            <Target className="w-3 h-3 text-indigo-400" />
-                            <span>Hedef Üniversite & Bölüm</span>
+                            <Target className="w-3.5 h-3.5 text-indigo-400" />
+                            <span className="font-bold text-slate-300">Hedef</span>
                           </span>
                           {profile?.targetRank && (
-                            <span className="text-amber-300 font-mono font-bold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                            <span className="text-amber-300 font-mono font-bold bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 text-[10px]">
                               #{profile.targetRank.toLocaleString()} Sıralama
                             </span>
                           )}
@@ -322,7 +322,7 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
                         <div className="text-xs font-bold text-white flex items-center gap-1.5 flex-wrap">
                           <span>{profile?.targetUniversity || 'Üniversite Belirtilmedi'}</span>
                           {profile?.targetDepartment && (
-                            <span className="text-slate-400 font-normal">• {profile.targetDepartment}</span>
+                            <span className="text-slate-400 font-medium">• {profile.targetDepartment}</span>
                           )}
                         </div>
                       </div>
@@ -330,14 +330,14 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
                       {/* Last Mock Net Rectangle Box */}
                       <div className="bg-slate-900/90 rounded-2xl p-3 border border-white/5 flex items-center justify-between text-xs font-bold">
                         <div className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold">
-                          <TrendingUp className="w-3 h-3 text-emerald-400" />
-                          <span>Son Deneme Netleri</span>
+                          <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="font-bold text-slate-300">Son Deneme Netleri</span>
                         </div>
                         <div className="flex items-center gap-2 font-mono">
-                          <span className="text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                          <span className="text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 text-xs">
                             TYT: <strong className="text-white ml-0.5">{lastMock?.tyt?.totalNet || '-'}</strong>
                           </span>
-                          <span className="text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-lg border border-purple-500/20">
+                          <span className="text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20 text-xs">
                             AYT: <strong className="text-white ml-0.5">{lastMock?.ayt?.totalNet || '-'}</strong>
                           </span>
                         </div>
@@ -345,19 +345,19 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
                     </div>
 
                     {/* Task Progress Bar Box */}
-                    <div className="bg-slate-900/90 rounded-2xl p-3 border border-white/5 space-y-1.5">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-slate-300 flex items-center gap-1.5">
+                    <div className="bg-slate-900/90 rounded-2xl p-3 border border-white/5 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-300 flex items-center gap-1.5 text-[11px]">
                           <BookOpen className="w-3.5 h-3.5 text-fuchsia-400 shrink-0" />
                           <span>Haftalık Çalışma Planı</span>
                         </span>
                         <span className="font-mono text-slate-400 text-[10px]">
-                          <strong className="text-fuchsia-300 font-bold">{completedPlansCount}</strong> / {totalPlansCount} Görev ({planPct}%)
+                          <strong className="text-fuchsia-300 font-bold text-xs">{completedPlansCount}</strong> / {totalPlansCount} Görev ({planPct}%)
                         </span>
                       </div>
-                      <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-white/5">
+                      <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-white/5 p-0.5">
                         <div 
-                          className="bg-gradient-to-r from-fuchsia-500 to-indigo-500 h-full rounded-full transition-all duration-500" 
+                          className="bg-gradient-to-r from-fuchsia-500 via-purple-500 to-indigo-500 h-full rounded-full transition-all duration-500" 
                           style={{ width: `${planPct}%` }} 
                         />
                       </div>
@@ -398,32 +398,23 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
                     </div>
                   </div>
 
-                  {/* Bottom Action Bar */}
+                  {/* Bottom Action Bar: Single prominent "Öğrenciyi İncele & Detay" button */}
                   <div className="flex items-center space-x-2 pt-3 border-t border-white/10 mt-3" onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={() => handleOpenInspectStudent(student, 'planner')}
-                      className="flex-1 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-xl text-[11px] font-bold transition-all border border-fuchsia-400/40 flex items-center justify-center space-x-1.5 shadow-md shadow-fuchsia-600/20 cursor-pointer"
-                      title="Haftalık Çalışma Planını İncele"
-                    >
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>Çalışma Planı</span>
-                    </button>
-
-                    <button
                       onClick={() => handleOpenInspectStudent(student, 'performance')}
-                      className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[11px] font-bold transition-all border border-indigo-400/40 flex items-center justify-center space-x-1.5 shadow-md shadow-indigo-600/20 cursor-pointer"
+                      className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-bold transition-all border border-indigo-400/40 flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/30 cursor-pointer"
                     >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Detay</span>
+                      <Eye className="w-4 h-4 text-indigo-200" />
+                      <span>Öğrenciyi İncele & Detay</span>
                     </button>
 
                     {onUnlockUserAccount && (student.isLocked || (student.lockoutUntil && new Date(student.lockoutUntil).getTime() > Date.now())) && (
                       <button
                         onClick={() => onUnlockUserAccount(student.id)}
-                        className="px-2.5 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl text-[11px] font-bold transition-all border border-amber-500/30 flex items-center justify-center space-x-1 shadow-sm shrink-0 cursor-pointer"
+                        className="px-3 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl text-xs font-bold transition-all border border-amber-500/30 flex items-center justify-center space-x-1 shadow-sm shrink-0 cursor-pointer"
                         title="Hesap Kilidini Aç"
                       >
-                        <Unlock className="w-3.5 h-3.5 text-amber-400" />
+                        <Unlock className="w-4 h-4 text-amber-400" />
                       </button>
                     )}
 
@@ -434,10 +425,10 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
                           setDeleteConfirmationStep(1);
                           setTypedConfirmName('');
                         }}
-                        className="p-2 text-slate-400 hover:text-rose-400 bg-white/5 hover:bg-rose-500/10 rounded-xl transition-all border border-white/10 shrink-0 cursor-pointer"
+                        className="p-2.5 text-slate-400 hover:text-rose-400 bg-white/5 hover:bg-rose-500/10 rounded-xl transition-all border border-white/10 shrink-0 cursor-pointer"
                         title="Öğrenciyi Kalıcı Olarak Sil"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>
