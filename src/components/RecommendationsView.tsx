@@ -170,7 +170,7 @@ const SUBJECT_COLORS: Record<string, { bg: string, text: string, border: string 
 const getChannelAvatar = (channel: RecommendedChannel): string | null => {
   if (channel.avatarUrl) return channel.avatarUrl;
   if (channel.url) {
-    return `/api/youtube/avatar?url=${encodeURIComponent(channel.url)}`;
+    return `/api/youtube/avatar?url=${encodeURIComponent(channel.url)}&name=${encodeURIComponent(channel.name)}`;
   }
   return null;
 };
@@ -195,6 +195,16 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   const [showOnlyFavorites, setShowOnlyFavorites] = useState<boolean>(false);
   const [channelSortOrder, setChannelSortOrder] = useState<'desc' | 'asc'>('desc');
   const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetch('/api/youtube/sync-avatars', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channels: RECOMMENDED_CHANNELS.map(c => ({ url: c.url, name: c.name }))
+      })
+    }).catch(() => {});
+  }, []);
 
   // --- Teacher Add/Edit Resource Modals ---
   const [showAddChannelModal, setShowAddChannelModal] = useState(false);

@@ -696,17 +696,68 @@ router.post('/youtube/video-info', async (req, res) => {
 });
 
 // -------------------------------------------------------------
-// YouTube Channel Avatar Proxy & Scraper
+// YouTube Channel Avatar Server-Side Local Disk Backup & Downloader
 // -------------------------------------------------------------
-const channelAvatarCache = new Map<string, string>();
+const avatarsDir = path.join(uploadsDir, 'avatars');
+if (!fs.existsSync(avatarsDir)) {
+  try {
+    fs.mkdirSync(avatarsDir, { recursive: true });
+  } catch (e) {}
+}
 
-router.get('/youtube/avatar', async (req, res) => {
-  const channelUrl = req.query.url as string;
-  if (!channelUrl) return res.status(400).send('Missing url');
+function generateFallbackAvatarSvg(name: string): string {
+  const cleanName = (name || 'YT').trim();
+  const words = cleanName.split(/\s+/);
+  let initials = 'YT';
+  if (words.length >= 2) {
+    initials = (words[0][0] + words[1][0]).toUpperCase();
+  } else if (words[0]) {
+    initials = words[0].substring(0, 2).toUpperCase();
+  }
 
-  const cached = channelAvatarCache.get(channelUrl);
-  if (cached) {
-    return res.redirect(302, cached);
+  const bgGradients = [
+    ['#dc2626', '#991b1b'],
+    ['#2563eb', '#1e40af'],
+    ['#059669', '#065f46'],
+    ['#7c3aed', '#5b21b6'],
+    ['#d97706', '#92400e']
+  ];
+  const charCodeSum = cleanName.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const [c1, c2] = bgGradients[charCodeSum % bgGradients.length];
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+    <defs>
+      <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${c1}" />
+        <stop offset="100%" stop-color="${c2}" />
+      </linearGradient>
+    </defs>
+    <rect width="128" height="128" rx="28" fill="url(#g)" />
+    <text x="64" y="74" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="44" font-weight="900" fill="#ffffff" text-anchor="middle">${initials}</text>
+  </svg>`;
+}
+
+async function getOrDownloadChannelAvatarPath(channelUrl: string, channelName?: string): Promise<string> {
+  let slug = '';
+  const handleMatch = channelUrl.match(/@([\w.-]+)/);
+  if (handleMatch && handleMatch[1]) {
+    slug = handleMatch[1].toLowerCase().replace(/[^a-z0-9]/g, '_');
+  } else {
+    slug = (channelName || 'chan').toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + Math.abs(channelUrl.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a | 0; }, 0));
+  }
+
+  const jpgPath = path.join(avatarsDir, `${slug}.jpg`);
+  const pngPath = path.join(avatarsDir, `${slug}.png`);
+  const webpPath = path.join(avatarsDir, `${slug}.webp`);
+  const svgPath = path.join(avatarsDir, `${slug}.svg`);
+
+  for (const p of [jpgPath, pngPath, webpPath]) {
+    if (fs.existsSync(p)) {
+      try {
+        const stats = fs.statSync(p);
+        if (stats.size > 500) return p;
+      } catch (e) {}
+    }
   }
 
   try {
@@ -722,19 +773,74 @@ router.get('/youtube/avatar', async (req, res) => {
       const html = await response.text();
       const ogMatch = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/i) || html.match(/<link\s+rel="image_src"\s+href="([^"]+)"/i);
       if (ogMatch && ogMatch[1]) {
-        let avatarUrl = ogMatch[1];
-        if (avatarUrl.includes('=s')) {
-          avatarUrl = avatarUrl.replace(/=s\d+-[^&]+/, '=s160-c-k-c0x00ffffff-no-rj');
+        let imageUrl = ogMatch[1];
+        if (imageUrl.includes('=s')) {
+          imageUrl = imageUrl.replace(/=s\d+-[^&]+/, '=s240-c-k-c0x00ffffff-no-rj');
         }
-        channelAvatarCache.set(channelUrl, avatarUrl);
-        return res.redirect(302, avatarUrl);
+
+        const imgRes = await fetch(imageUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+
+        if (imgRes.ok) {
+          const arrayBuffer = await imgRes.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          if (buffer.length > 500) {
+            fs.writeFileSync(jpgPath, buffer);
+            console.log(`[Avatar Backup] Successfully saved avatar for ${slug} (${buffer.length} bytes) to server disk.`);
+            return jpgPath;
+          }
+        }
       }
     }
   } catch (err) {
-    console.error('YouTube avatar fetch error:', err);
+    console.error(`[Avatar Backup Error] Failed to fetch avatar for ${channelUrl}:`, err);
   }
 
-  res.status(404).send('Avatar not found');
+  if (fs.existsSync(svgPath)) {
+    return svgPath;
+  }
+
+  const svgContent = generateFallbackAvatarSvg(channelName || slug);
+  fs.writeFileSync(svgPath, svgContent, 'utf-8');
+  return svgPath;
+}
+
+router.get('/youtube/avatar', async (req, res) => {
+  const channelUrl = req.query.url as string;
+  const channelName = (req.query.name as string) || '';
+  if (!channelUrl) return res.status(400).send('Missing url');
+
+  try {
+    const avatarFilePath = await getOrDownloadChannelAvatarPath(channelUrl, channelName);
+    return res.sendFile(avatarFilePath);
+  } catch (err) {
+    console.error('YouTube avatar route error:', err);
+    res.status(500).send('Avatar error');
+  }
+});
+
+router.post('/youtube/sync-avatars', async (req, res) => {
+  const channels = req.body.channels as Array<{ url: string; name?: string }>;
+  if (!Array.isArray(channels) || channels.length === 0) {
+    return res.status(400).json({ success: false, error: 'Kanal listesi gereklidir.' });
+  }
+
+  let count = 0;
+  for (const ch of channels) {
+    if (ch.url) {
+      try {
+        await getOrDownloadChannelAvatarPath(ch.url, ch.name);
+        count++;
+      } catch (e) {
+        console.error('Error syncing avatar for', ch.url);
+      }
+    }
+  }
+
+  res.json({ success: true, syncedCount: count, message: `${count} kanal görseli sunucuya başarıyla yedeklendi.` });
 });
 
 // -------------------------------------------------------------
