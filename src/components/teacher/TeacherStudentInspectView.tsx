@@ -166,6 +166,9 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
 }) => {
   const [activeTab, setActiveTab] = useState<InspectTabType>('performance');
   const [isNotesSavedToast, setIsNotesSavedToast] = useState(false);
+  const [showAllTopics, setShowAllTopics] = useState(false);
+  const [resourceSubjectFilter, setResourceSubjectFilter] = useState<string>('all');
+  const [expandedPlaylistId, setExpandedPlaylistId] = useState<string | null>(null);
 
   const stData = (studentsData[selectedStudentUser.id] || {}) as Partial<YKSDataState> & { 
     topics?: Record<string, Record<string, boolean>>; 
@@ -1076,84 +1079,112 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
       )}
 
       {/* TAB 4: SUBJECT & TOPIC PROGRESS */}
-      {activeTab === 'topics' && (
-        <div className="bg-slate-900/90 border border-white/15 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl space-y-6">
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
-            <div>
-              <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                <ListChecks className="w-5 h-5 text-teal-400" />
-                <span>Müfredat ve Konu Tamamlama İlerlemesi</span>
-              </h3>
-              <p className="text-xs text-slate-400 mt-0.5">TYT ve AYT derslerindeki tamamlanmış ve eksik konuların detaylı listesi.</p>
+      {activeTab === 'topics' && (() => {
+        const studentField = profile?.targetField || 'SAY';
+        const fieldKeywords: Record<string, string[]> = {
+          'SAY': ['Matematik', 'Fizik', 'Kimya', 'Biyoloji', 'TYT'],
+          'EA':  ['Matematik', 'Edebiyat', 'Tarih', 'Coğrafya', 'TYT'],
+          'SÖZ': ['Edebiyat', 'Tarih', 'Coğrafya', 'Felsefe', 'Dil', 'TYT'],
+          'DİL': ['Dil', 'İngilizce', 'TYT'],
+        };
+        const keywords = fieldKeywords[studentField] || [];
+        const fieldFiltered = showAllTopics 
+          ? subjectProgressList 
+          : subjectProgressList.filter(s => keywords.some(kw => s.subjectName.toLowerCase().includes(kw.toLowerCase())));
+        const displayList = fieldFiltered.length > 0 ? fieldFiltered : subjectProgressList;
+
+        return (
+          <div className="bg-slate-900/90 border border-white/15 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                  <ListChecks className="w-5 h-5 text-teal-400" />
+                  <span>Müfredat ve Konu Tamamlama İlerlemesi</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {showAllTopics ? 'Tüm dersler gösteriliyor.' : `Öğrencinin alanı (${studentField}) dersleri gösteriliyor.`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-bold px-3 py-1.5 rounded-xl font-mono">
+                  %{topicCompletionPct} ({completedTopicsCount}/{totalTopicsCount})
+                </span>
+                <button
+                  onClick={() => setShowAllTopics(v => !v)}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+                    showAllTopics
+                      ? 'bg-indigo-600 text-white border-indigo-400/40'
+                      : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  {showAllTopics ? 'Alanı Göster' : 'Tümünü Göster'}
+                </button>
+              </div>
             </div>
 
-            <span className="bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-bold px-3 py-1.5 rounded-xl font-mono">
-              %{topicCompletionPct} Tamamlandı ({completedTopicsCount}/{totalTopicsCount})
-            </span>
-          </div>
+            {displayList.length === 0 ? (
+              <div className="py-16 text-center text-xs text-slate-400 italic border border-dashed border-white/10 rounded-2xl">
+                Henüz konu ilerleme kaydı bulunmuyor.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {displayList.map(subjItem => {
+                  const isMyBranch = teacherSubj && subjItem.subjectName.toLowerCase().includes(teacherSubj);
 
-          {subjectProgressList.length === 0 ? (
-            <div className="py-16 text-center text-xs text-slate-400 italic border border-dashed border-white/10 rounded-2xl">
-              Henüz konu ilerleme kaydı bulunmuyor.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {subjectProgressList.map(subjItem => {
-                const isMyBranch = teacherSubj && subjItem.subjectName.toLowerCase().includes(teacherSubj);
-
-                return (
-                  <div 
-                    key={subjItem.subjectName} 
-                    className={`p-4.5 rounded-2xl border space-y-3 ${
-                      isMyBranch 
-                        ? 'bg-amber-500/10 border-amber-500/40 shadow-lg shadow-amber-500/5' 
-                        : 'bg-slate-950/80 border-white/10'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex items-center space-x-1.5">
-                          <h4 className="font-bold text-white text-sm">{subjItem.subjectName}</h4>
-                          {isMyBranch && (
-                            <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.2 rounded font-semibold">
-                              Branşınız ⭐
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          {subjItem.doneCount} / {subjItem.totalCount} Bitti
-                        </span>
-                      </div>
-                      <span className="text-xs font-mono font-bold text-teal-400">%{subjItem.pct}</span>
-                    </div>
-
-                    <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                      <div className="bg-teal-500 h-full rounded-full transition-all duration-500" style={{ width: `${subjItem.pct}%` }} />
-                    </div>
-
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 text-xs pt-1">
-                      {subjItem.topics.map(topic => (
-                        <div key={topic.name} className="flex items-center justify-between text-slate-300 py-0.5 border-b border-white/5 last:border-0">
-                          <span className="truncate pr-2">{topic.name}</span>
-                          <span className={
-                            topic.isDone 
-                              ? 'text-emerald-400 font-bold shrink-0' 
-                              : topic.isInProgress 
-                              ? 'text-amber-400 font-bold shrink-0' 
-                              : 'text-slate-500 shrink-0'
-                          }>
-                            {topic.isDone ? '✓ Bitti' : topic.isInProgress ? '⏳ Çalışılıyor' : '○ Eksik'}
+                  return (
+                    <div 
+                      key={subjItem.subjectName} 
+                      className={`p-4 rounded-2xl border space-y-3 ${
+                        isMyBranch 
+                          ? 'bg-amber-500/10 border-amber-500/40 shadow-lg shadow-amber-500/5' 
+                          : 'bg-slate-950/80 border-white/10'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center space-x-1.5">
+                            <h4 className="font-bold text-white text-sm">{subjItem.subjectName}</h4>
+                            {isMyBranch && (
+                              <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded font-semibold">
+                                Branşınız ⭐
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {subjItem.doneCount} / {subjItem.totalCount} Bitti
                           </span>
                         </div>
-                      ))}
+                        <span className="text-xs font-mono font-bold text-teal-400">%{subjItem.pct}</span>
+                      </div>
+
+                      <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                        <div className="bg-teal-500 h-full rounded-full transition-all duration-500" style={{ width: `${subjItem.pct}%` }} />
+                      </div>
+
+                      <div className="space-y-1 max-h-40 overflow-y-auto pr-1 text-xs pt-1">
+                        {subjItem.topics.map(topic => (
+                          <div key={topic.name} className="flex items-center justify-between text-slate-300 py-0.5 border-b border-white/5 last:border-0">
+                            <span className="truncate pr-2">{topic.name}</span>
+                            <span className={
+                              topic.isDone 
+                                ? 'text-emerald-400 font-bold shrink-0' 
+                                : topic.isInProgress 
+                                ? 'text-amber-400 font-bold shrink-0' 
+                                : 'text-slate-500 shrink-0'
+                            }>
+                              {topic.isDone ? '✓ Bitti' : topic.isInProgress ? '⏳ Çalışılıyor' : '○ Eksik'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* TAB 5: MOCKS & BRANCH EXAMS */}
       {activeTab === 'mocks' && (
@@ -1264,25 +1295,49 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
       )}
 
       {/* TAB 6: RESOURCES */}
-      {activeTab === 'resources' && (
+      {activeTab === 'resources' && (() => {
+        const resSubjects = ['all', ...Array.from(new Set(resources.map((r: any) => r.subject).filter(Boolean)))];
+        const filteredResources = resourceSubjectFilter === 'all' ? resources : resources.filter((r: any) => r.subject === resourceSubjectFilter);
+        return (
         <div className="bg-slate-900/90 border border-white/15 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl space-y-6">
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-white/10 pb-4">
             <div>
               <h3 className="text-base font-bold text-white flex items-center space-x-2">
                 <BookOpenCheck className="w-5 h-5 text-emerald-400" />
-                <span>Kaynak Kitap ve Soru Bankası İlerlemesi ({resources.length})</span>
+                <span>Kaynak Kitap ve Soru Bankası İlerlemesi ({filteredResources.length}/{resources.length})</span>
               </h3>
               <p className="text-xs text-slate-400 mt-0.5">Öğrencinin takip ettiği soru bankaları ve test tamamlama oranları.</p>
             </div>
+            {resSubjects.length > 1 && (
+              <div className="flex flex-wrap gap-1.5 shrink-0">
+                {resSubjects.map(subj => (
+                  <button
+                    key={subj}
+                    onClick={() => setResourceSubjectFilter(subj)}
+                    className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                      resourceSubjectFilter === subj
+                        ? 'bg-emerald-600 text-white border-emerald-400/40 shadow-sm'
+                        : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    {subj === 'all' ? 'Tümü' : subj}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {resources.length === 0 ? (
             <div className="py-16 text-center text-xs text-slate-400 italic border border-dashed border-white/10 rounded-2xl">
               Kayıtlı soru bankası/kaynak bulunmuyor.
             </div>
+          ) : filteredResources.length === 0 ? (
+            <div className="py-12 text-center text-xs text-slate-400 italic border border-dashed border-white/10 rounded-2xl">
+              Bu derse ait kayıtlı kaynak bulunmuyor.
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {resources.map((res: any) => {
+              {filteredResources.map((res: any) => {
                 const bookName = res.bookTitle || res.bookName || 'Soru Bankası';
                 const totalCount = res.totalUnits || res.totalTestCount || 0;
                 const completedCount = res.completedUnits || res.completedTestCount || 0;
@@ -1388,30 +1443,68 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
             </div>
           )}
         </div>
-      )}
+        );
+      })()}
 
       {/* TAB 7: ROUTINES & POMODORO */}
       {activeTab === 'routines' && (
         <div className="space-y-6">
           
-          {/* Daily Routines Card */}
+          {/* Daily Routines Card - Weekly Heatmap */}
           <div className="bg-slate-900/90 border border-white/15 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl space-y-4">
             <h3 className="text-base font-bold text-white flex items-center space-x-2">
               <Flame className="w-5 h-5 text-orange-400" />
-              <span>Günlük Çalışma Rutinleri (Paragraf & Problem)</span>
+              <span>Günlük Çalışma Rutinleri — Haftalık Görünüm</span>
             </h3>
 
             {routinesList.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {routinesList.map(r => (
-                  <div key={r.id} className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-2">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-bold text-orange-300">📖 {r.title}</span>
-                      <span className="font-mono font-black text-amber-400 text-sm">{r.completedDays ? r.completedDays.length : 0} Gün 🔥</span>
+              <div className="space-y-4">
+                {routinesList.map(r => {
+                  const doneDays: string[] = r.completedDays || [];
+                  const weekDays = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+                  const fullDayMap: Record<string, string> = {
+                    'Pzt': 'Pazartesi', 'Sal': 'Salı', 'Çar': 'Çarşamba',
+                    'Per': 'Perşembe', 'Cum': 'Cuma', 'Cmt': 'Cumartesi', 'Paz': 'Pazar'
+                  };
+                  // Match both short and full day names
+                  const isDayDone = (short: string) =>
+                    doneDays.some(d => d === short || d === fullDayMap[short] || (fullDayMap[short] && d.includes(fullDayMap[short].substring(0, 3))));
+                  const doneCount = weekDays.filter(isDayDone).length;
+
+                  return (
+                    <div key={r.id} className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold text-orange-300">📖 {r.title}</span>
+                        <span className="text-xs font-mono font-black text-amber-400">
+                          {doneCount}/7 Gün {doneCount >= 5 ? '🔥' : doneCount >= 3 ? '✅' : doneCount > 0 ? '⚠️' : '❌'}
+                        </span>
+                      </div>
+                      {/* Weekly Heatmap */}
+                      <div className="flex gap-2">
+                        {weekDays.map(day => {
+                          const done = isDayDone(day);
+                          return (
+                            <div key={day} className="flex-1 flex flex-col items-center gap-1">
+                              <div className={`w-full h-8 rounded-lg border flex items-center justify-center text-xs font-bold transition-all ${
+                                done
+                                  ? 'bg-emerald-500/30 border-emerald-500/60 text-emerald-300 shadow-sm shadow-emerald-500/20'
+                                  : 'bg-slate-800/60 border-white/5 text-slate-600'
+                              }`}>
+                                {done ? '✓' : '○'}
+                              </div>
+                              <span className={`text-[9px] font-bold ${done ? 'text-emerald-400' : 'text-slate-600'}`}>{day}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {r.completedDays && r.completedDays.length > 0 && (
+                        <p className="text-[10px] text-slate-500 font-mono">
+                          Tamamlanan: {r.completedDays.join(' · ')}
+                        </p>
+                      )}
                     </div>
-                    <p className="text-[11px] text-slate-400">Tamamlanan Günler: {r.completedDays?.join(', ') || 'Henüz tamamlanmadı'}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="py-12 text-center text-xs text-slate-400 italic border border-dashed border-white/10 rounded-2xl">
@@ -1508,15 +1601,29 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                     </div>
 
                     {isPlaylist && (
-                      <div className="space-y-1 max-h-32 overflow-y-auto pr-1 text-[11px] pt-1 border-t border-white/5">
-                        {item.playlistVideos.slice(0, 5).map((v: any, idx: number) => (
-                          <div key={v.id || idx} className="flex justify-between text-slate-300">
-                            <span className="truncate pr-2">{v.title || `Video ${idx + 1}`}</span>
-                            <span className={(v.isWatched || v.watched) ? 'text-emerald-400 font-bold shrink-0' : 'text-slate-500 shrink-0'}>
-                              {(v.isWatched || v.watched) ? '✓ İzlendi' : '○ İzlenmedi'}
-                            </span>
+                      <div className="border-t border-white/5 pt-2 space-y-1">
+                        <button
+                          onClick={() => setExpandedPlaylistId(expandedPlaylistId === item.id ? null : item.id)}
+                          className="text-[10px] font-bold text-indigo-300 hover:text-indigo-200 transition-colors cursor-pointer w-full text-left flex items-center justify-between"
+                        >
+                          <span>{expandedPlaylistId === item.id ? '▲ Videoları Gizle' : `▼ ${item.playlistVideos.length} Videoyu Göster`}</span>
+                          <span className="text-[9px] text-slate-500">{watchedVids} izlendi</span>
+                        </button>
+                        {expandedPlaylistId === item.id && (
+                          <div className="space-y-1 max-h-56 overflow-y-auto pr-1 text-[11px] mt-1">
+                            {item.playlistVideos.map((v: any, idx: number) => (
+                              <div key={v.id || idx} className="flex items-center justify-between text-slate-300 py-0.5 border-b border-white/5 last:border-0">
+                                <span className="truncate pr-2 text-[11px]">
+                                  <span className="text-slate-500 font-mono mr-1">{idx + 1}.</span>
+                                  {v.title || `Video ${idx + 1}`}
+                                </span>
+                                <span className={(v.isWatched || v.watched) ? 'text-emerald-400 font-bold shrink-0 text-[10px]' : 'text-slate-500 shrink-0 text-[10px]'}>
+                                  {(v.isWatched || v.watched) ? '✓' : '○'}
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
                       </div>
                     )}
                   </div>
