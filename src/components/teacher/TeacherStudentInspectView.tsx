@@ -22,7 +22,9 @@ import {
   ListChecks,
   Timer,
   Save,
-  GraduationCap
+  GraduationCap,
+  Activity,
+  FileSpreadsheet
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -50,6 +52,69 @@ import { YKS_CURRICULUM_TOPICS } from '../../data/initialData';
 
 const DAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
 const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+
+const TURKISH_MONTHS_LOCAL = [
+  'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+];
+
+const parseAnyDateToTime = (dateStr?: string | number): number => {
+  if (!dateStr) return 0;
+  if (typeof dateStr === 'number') return dateStr;
+  
+  const str = String(dateStr).trim();
+  const time = Date.parse(str);
+  if (!isNaN(time) && time > 0) return time;
+
+  const dotParts = str.split(/[./-]/);
+  if (dotParts.length === 3) {
+    if (dotParts[0].length === 2 && dotParts[2].length === 4) {
+      const day = parseInt(dotParts[0], 10);
+      const month = parseInt(dotParts[1], 10) - 1;
+      const year = parseInt(dotParts[2], 10);
+      return new Date(year, month, day).getTime();
+    } else if (dotParts[0].length === 4 && dotParts[2].length <= 2) {
+      const year = parseInt(dotParts[0], 10);
+      const month = parseInt(dotParts[1], 10) - 1;
+      const day = parseInt(dotParts[2], 10);
+      return new Date(year, month, day).getTime();
+    }
+  }
+  return 0;
+};
+
+const formatEntryDateStr = (ts: number, fallbackStr?: string): string => {
+  if (ts > 0) {
+    const d = new Date(ts);
+    const day = d.getDate();
+    const month = TURKISH_MONTHS_LOCAL[d.getMonth()] || '';
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    if (d.getHours() !== 0 || d.getMinutes() !== 0) {
+      return `${day} ${month} ${year}, ${hours}:${mins}`;
+    }
+    return `${day} ${month} ${year}`;
+  }
+  return fallbackStr || 'Tarihsiz';
+};
+
+const getRelativeTimeStr = (ts: number): string => {
+  if (!ts) return '';
+  const now = Date.now();
+  const diffMs = now - ts;
+  if (diffMs < 0) return 'Tarih belirtildi';
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 2) return 'Az önce';
+  if (diffMins < 60) return `${diffMins} dk önce`;
+  if (diffHours < 24) return `${diffHours} saat önce`;
+  if (diffDays === 1) return 'Dün';
+  if (diffDays < 30) return `${diffDays} gün önce`;
+  return '';
+};
 
 export type InspectTabType = 
   | 'performance' 
@@ -230,6 +295,128 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
 
   const topicCompletionPct = totalTopicsCount > 0 ? Math.round((completedTopicsCount / totalTopicsCount) * 100) : 0;
 
+  // LATEST DATA ENTRY CALCULATION
+  const entryCandidates: Array<{
+    timestamp: number;
+    formattedDate: string;
+    relativeTime: string;
+    categoryLabel: string;
+    badgeClass: string;
+    icon: React.ReactNode;
+    title: string;
+    subtitle?: string;
+    stats?: Array<{ label: string; value: string; colorClass: string }>;
+  }> = [];
+
+  questionLogs.forEach(q => {
+    const ts = parseAnyDateToTime(q.date);
+    entryCandidates.push({
+      timestamp: ts,
+      formattedDate: formatEntryDateStr(ts, q.date),
+      relativeTime: getRelativeTimeStr(ts),
+      categoryLabel: 'Soru Çözümü',
+      badgeClass: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40',
+      icon: <CheckSquare className="w-3.5 h-3.5 text-indigo-400" />,
+      title: `${q.subject}${q.topic ? ' • ' + q.topic : ''} (${q.examType || 'Soru'})`,
+      subtitle: q.notes ? `Not: ${q.notes}` : undefined,
+      stats: [
+        { label: 'Çözülen', value: `${q.solvedCount || 0} Soru`, colorClass: 'text-indigo-300 font-bold' },
+        { label: 'Doğru/Yanlış', value: `${q.correctCount || 0} D / ${q.wrongCount || 0} Y`, colorClass: 'text-emerald-400 font-bold' },
+        { label: 'Net', value: `${q.netScore || 0}`, colorClass: 'text-amber-300 font-bold' }
+      ]
+    });
+  });
+
+  mocks.forEach(m => {
+    const ts = parseAnyDateToTime(m.date);
+    entryCandidates.push({
+      timestamp: ts,
+      formattedDate: formatEntryDateStr(ts, m.date),
+      relativeTime: getRelativeTimeStr(ts),
+      categoryLabel: 'Genel Deneme',
+      badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+      icon: <BarChart3 className="w-3.5 h-3.5 text-purple-400" />,
+      title: m.title || 'Genel Deneme Sınavı',
+      subtitle: m.notes ? `Not: ${m.notes}` : undefined,
+      stats: [
+        { label: 'TYT Net', value: `${m.tyt?.totalNet || 0}`, colorClass: 'text-sky-300 font-bold' },
+        { label: 'AYT Net', value: `${m.ayt?.totalNet || 0}`, colorClass: 'text-emerald-400 font-bold' }
+      ]
+    });
+  });
+
+  branchExams.forEach(b => {
+    const ts = parseAnyDateToTime(b.date);
+    entryCandidates.push({
+      timestamp: ts,
+      formattedDate: formatEntryDateStr(ts, b.date),
+      relativeTime: getRelativeTimeStr(ts),
+      categoryLabel: 'Branş Denemesi',
+      badgeClass: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
+      icon: <FileSpreadsheet className="w-3.5 h-3.5 text-sky-400" />,
+      title: `${b.subject} Branş Denemesi (${b.publisher || 'Genel Yayın'})`,
+      subtitle: b.notes ? `Not: ${b.notes}` : undefined,
+      stats: [
+        { label: 'Net', value: `${b.net || 0}`, colorClass: 'text-amber-300 font-bold' },
+        { label: 'D/Y/B', value: `${b.correct || 0} D / ${b.wrong || 0} Y / ${b.empty || 0} B`, colorClass: 'text-slate-300' }
+      ]
+    });
+  });
+
+  plans.filter(p => p.status === 'completed' || (p.completedMinutes && p.completedMinutes > 0)).forEach(p => {
+    const ts = parseAnyDateToTime(p.date);
+    entryCandidates.push({
+      timestamp: ts,
+      formattedDate: formatEntryDateStr(ts, p.date),
+      relativeTime: getRelativeTimeStr(ts),
+      categoryLabel: 'Ders Çalışması',
+      badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+      icon: <BookOpen className="w-3.5 h-3.5 text-emerald-400" />,
+      title: `${p.subject}${p.topic ? ' • ' + p.topic : ''}`,
+      subtitle: p.reflection || p.notes ? `Yorum: ${p.reflection || p.notes}` : undefined,
+      stats: [
+        { label: 'Çalışılan Süre', value: `${p.completedMinutes || 0} dk`, colorClass: 'text-emerald-300 font-bold' },
+        { label: 'Hedef Süre', value: `${p.plannedMinutes || 0} dk`, colorClass: 'text-slate-300' }
+      ]
+    });
+  });
+
+  topicErrors.forEach(e => {
+    const ts = parseAnyDateToTime(e.date);
+    entryCandidates.push({
+      timestamp: ts,
+      formattedDate: formatEntryDateStr(ts, e.date),
+      relativeTime: getRelativeTimeStr(ts),
+      categoryLabel: 'Konu Hatası',
+      badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+      icon: <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />,
+      title: `${e.subject} • ${e.topicName}`,
+      subtitle: `Hata Nedeni: ${e.errorReason || 'Belirtilmedi'}`,
+      stats: [
+        { label: 'Durum', value: e.revised ? 'Tekrar Edildi' : 'Tekrar Bekliyor', colorClass: e.revised ? 'text-emerald-400' : 'text-amber-400 font-bold' }
+      ]
+    });
+  });
+
+  auditLogs
+    .filter(a => a.targetUserId === selectedStudentUser.id || a.actorId === selectedStudentUser.id)
+    .forEach(a => {
+      const ts = parseAnyDateToTime(a.timestamp);
+      entryCandidates.push({
+        timestamp: ts,
+        formattedDate: formatEntryDateStr(ts, a.timestamp),
+        relativeTime: getRelativeTimeStr(ts),
+        categoryLabel: 'Sistem İşlemi',
+        badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+        icon: <Footprints className="w-3.5 h-3.5 text-purple-400" />,
+        title: a.actionDescription || a.actionType,
+        subtitle: `Kullanıcı: ${a.actorName} (${a.actorRole === 'student' ? 'Öğrenci' : a.actorRole})`
+      });
+    });
+
+  entryCandidates.sort((a, b) => b.timestamp - a.timestamp);
+  const latestEntry = entryCandidates.length > 0 ? entryCandidates[0] : null;
+
   const onNotesSave = () => {
     handleSaveCoachNotes();
     setIsNotesSavedToast(true);
@@ -374,7 +561,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
               }`}
             >
               <TrendingUp className="w-4 h-4 text-indigo-300 shrink-0" />
-              <span>📊 Performans & Koçluk</span>
+              <span>Performans & Koçluk</span>
             </button>
 
             <button
@@ -386,7 +573,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
               }`}
             >
               <Calendar className="w-4 h-4 text-fuchsia-300 shrink-0" />
-              <span>📅 Çalışma Programı</span>
+              <span>Çalışma Programı</span>
             </button>
 
             <button
@@ -398,7 +585,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
               }`}
             >
               <CheckSquare className="w-4 h-4 text-amber-300 shrink-0" />
-              <span>📝 Soru Takibi</span>
+              <span>Soru Takibi</span>
             </button>
 
             <button
@@ -410,7 +597,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
               }`}
             >
               <ListChecks className="w-4 h-4 text-teal-300 shrink-0" />
-              <span>📚 Konu İlerlemesi</span>
+              <span>Konu İlerlemesi</span>
             </button>
 
             <button
@@ -422,7 +609,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
               }`}
             >
               <BarChart3 className="w-4 h-4 text-sky-300 shrink-0" />
-              <span>📈 Deneme Analizi</span>
+              <span>Deneme Analizi</span>
             </button>
           </div>
 
@@ -437,7 +624,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
               }`}
             >
               <BookOpenCheck className="w-4 h-4 text-emerald-300 shrink-0" />
-              <span>📖 Kaynak Kitaplar</span>
+              <span>Kaynak Kitaplar</span>
             </button>
 
             <button
@@ -449,7 +636,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
               }`}
             >
               <Timer className="w-4 h-4 text-orange-300 shrink-0" />
-              <span>⏰ Rutinler & Odaklanma</span>
+              <span>Rutinler & Odaklanma</span>
             </button>
 
             <button
@@ -461,7 +648,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
               }`}
             >
               <Youtube className="w-4 h-4 text-rose-300 shrink-0" />
-              <span>▶️ YouTube Takibi</span>
+              <span>YouTube Takibi</span>
             </button>
 
             <button
@@ -473,7 +660,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
               }`}
             >
               <Footprints className="w-4 h-4 text-purple-300 shrink-0" />
-              <span>👣 Öğrenci Ayak İzi</span>
+              <span>Öğrenci Ayak İzi</span>
             </button>
           </div>
 
@@ -484,6 +671,64 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
       {/* TAB 1: COACHING & EXECUTIVE PERFORMANCE */}
       {activeTab === 'performance' && (
         <div className="space-y-6">
+          
+          {/* 📌 Son Veri Girişi (Last Data Entry Card) */}
+          <div className="bg-slate-900/90 border border-indigo-500/30 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
+              <div className="flex items-center space-x-3">
+                <span className="p-2.5 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shadow-inner">
+                  <Clock className="w-5 h-5 text-indigo-300" />
+                </span>
+                <div>
+                  <h3 className="font-bold text-white text-base">Öğrencinin Son Veri Girişi & Aktivitesi</h3>
+                  {latestEntry ? (
+                    <div className="text-xs text-slate-400 font-medium flex items-center space-x-2 mt-0.5">
+                      <span>{latestEntry.formattedDate}</span>
+                      {latestEntry.relativeTime && (
+                        <>
+                          <span>•</span>
+                          <span className="text-emerald-400 font-bold">{latestEntry.relativeTime}</span>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-slate-500">Henüz veri kaydı bulunmuyor</span>
+                  )}
+                </div>
+              </div>
+
+              {latestEntry && (
+                <span className={`px-3 py-1.5 rounded-xl text-xs font-bold border shadow-sm flex items-center space-x-1.5 ${latestEntry.badgeClass}`}>
+                  {latestEntry.icon}
+                  <span>{latestEntry.categoryLabel}</span>
+                </span>
+              )}
+            </div>
+
+            {latestEntry ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs bg-slate-950/60 p-4 rounded-2xl border border-white/5">
+                <div className="space-y-1">
+                  <div className="text-base font-black text-white">{latestEntry.title}</div>
+                  {latestEntry.subtitle && (
+                    <div className="text-xs text-slate-300 font-medium">{latestEntry.subtitle}</div>
+                  )}
+                </div>
+
+                {latestEntry.stats && latestEntry.stats.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-3 shrink-0 bg-slate-900 px-4 py-2.5 rounded-xl border border-white/10 font-mono text-xs shadow-inner">
+                    {latestEntry.stats.map((stat, i) => (
+                      <div key={i} className="flex items-center space-x-1.5">
+                        <span className="text-slate-400">{stat.label}:</span>
+                        <strong className={stat.colorClass}>{stat.value}</strong>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 italic">Öğrenciye ait henüz bir soru çözümü, deneme veya ders çalışma kaydı bulunmuyor.</p>
+            )}
+          </div>
           
           {/* Coach Notes Editor & Immediate Action Alerts */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
