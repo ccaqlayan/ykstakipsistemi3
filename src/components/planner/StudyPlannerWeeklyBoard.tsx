@@ -131,7 +131,7 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
           const isDragTarget = dragOverDay === day;
           const isWeekend = day === 'Cumartesi' || day === 'Pazar';
           const dayStyle = DAY_COLUMN_STYLES[day];
-          const isToday = day === today;
+          const isToday = day === today && !isArchivedWeek && !isFutureWeek;
 
           return (
             <div
