@@ -958,50 +958,52 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
               <span className="text-xs text-slate-400">Hoş geldiniz, {teacher.name}</span>
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1">
-              Sınıf Takip & Haftalık Çalışma Programı Yönetimi
+              Sınıf Takip
             </h1>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => {
-              if (!newStudentClass && availableClasses.length > 0) {
-                setNewStudentClass(availableClasses[0]);
-              }
-              setShowCreateStudentModal(true);
-            }}
-            id="create-student-btn-top"
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2.5 rounded-2xl transition-all flex items-center space-x-1.5 shadow-lg shadow-indigo-600/30 border border-indigo-400/40"
-          >
-            <UserPlus className="w-4 h-4 text-indigo-200" />
-            <span>Yeni Öğrenci Ekle</span>
-          </button>
+        <div className="flex flex-col sm:items-end gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => {
+                if (!newStudentClass && availableClasses.length > 0) {
+                  setNewStudentClass(availableClasses[0]);
+                }
+                setShowCreateStudentModal(true);
+              }}
+              id="create-student-btn-top"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 shadow-lg shadow-indigo-600/30 border border-indigo-400/40 cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4 text-indigo-200" />
+              <span>Yeni Öğrenci Ekle</span>
+            </button>
 
-          <button
-            onClick={() => {
-              if (!isSchoolCounselor) {
-                alert('Yeni öğretmen hesabı tanımlama yetkisi yalnızca Okul Rehber Öğretmenine aittir.');
-                return;
-              }
-              setNewTeacherName('');
-              setNewTeacherEmail('');
-              setNewTeacherPassword('123456');
-              setNewTeacherTitle('Sınıf Rehber Öğretmeni');
-              setNewTeacherAssignedClasses([]);
-              setShowCreateTeacherModal(true);
-            }}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2.5 rounded-2xl transition-all flex items-center space-x-1.5 shadow-lg shadow-indigo-600/30 border border-indigo-400/40"
-          >
-            <UserCheck className="w-4 h-4 text-indigo-200" />
-            <span>Yeni Öğretmen Ekle</span>
-          </button>
+            <button
+              onClick={() => {
+                if (!isSchoolCounselor) {
+                  alert('Yeni öğretmen hesabı tanımlama yetkisi yalnızca Okul Rehber Öğretmenine aittir.');
+                  return;
+                }
+                setNewTeacherName('');
+                setNewTeacherEmail('');
+                setNewTeacherPassword('123456');
+                setNewTeacherTitle('Sınıf Rehber Öğretmeni');
+                setNewTeacherAssignedClasses([]);
+                setShowCreateTeacherModal(true);
+              }}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 shadow-lg shadow-indigo-600/30 border border-indigo-400/40 cursor-pointer"
+            >
+              <UserCheck className="w-4 h-4 text-indigo-200" />
+              <span>Yeni Öğretmen Ekle</span>
+            </button>
+          </div>
 
           <button
             onClick={() => setShowCreateClassModal(true)}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2.5 rounded-2xl transition-all flex items-center space-x-1.5 shadow-lg shadow-indigo-600/30 border border-indigo-400/40"
+            className="bg-slate-800/80 hover:bg-slate-700 text-indigo-300 hover:text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all flex items-center space-x-1.5 border border-indigo-500/30 shadow-md self-end cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-indigo-200" />
+            <Plus className="w-4 h-4 text-indigo-400" />
             <span>Sınıf Ekle</span>
           </button>
         </div>
