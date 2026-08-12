@@ -430,62 +430,70 @@ export const DashboardQuickNotes: React.FC<DashboardQuickNotesProps> = ({
                       /* Display Mode */
                       <>
                         <div>
-                          {/* Card Top Actions */}
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-1.5">
+                          {/* Card Top Actions & Header */}
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center space-x-1.5 pt-1">
                               <span className={`w-2 h-2 rounded-full ${styles.dot}`} />
                               <span className="text-[10px] text-slate-400 font-mono font-medium">
                                 {note.createdAt || 'Bugün'}
                               </span>
                             </div>
 
-                            <div className="flex items-center space-x-1 opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button
-                                type="button"
-                                onClick={() => handleTogglePin(note.id)}
-                                title={note.isPinned ? 'İğneyi Kaldır' : 'Başa İğnele'}
-                                className={`p-1 rounded-lg transition-colors cursor-pointer ${
-                                  note.isPinned 
-                                    ? `${styles.pinBg} ${styles.pinText}` 
-                                    : 'hover:bg-slate-800/80 text-slate-400 hover:text-slate-200'
-                                }`}
-                              >
-                                {note.isPinned ? (
-                                  <PinOff className="w-3.5 h-3.5" />
-                                ) : (
-                                  <Pin className="w-3.5 h-3.5" />
-                                )}
-                              </button>
+                            <div className="flex flex-col items-end space-y-1">
+                              <div className="flex items-center space-x-1 opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  type="button"
+                                  onClick={() => handleTogglePin(note.id)}
+                                  title={note.isPinned ? 'İğneyi Kaldır' : 'Başa İğnele'}
+                                  className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                                    note.isPinned 
+                                      ? `${styles.pinBg} ${styles.pinText}` 
+                                      : 'hover:bg-slate-800/80 text-slate-400 hover:text-slate-200'
+                                  }`}
+                                >
+                                  {note.isPinned ? (
+                                    <PinOff className="w-3.5 h-3.5" />
+                                  ) : (
+                                    <Pin className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
 
-                              <button
-                                type="button"
-                                onClick={() => handleEditNote(note)}
-                                title="Notu Düzenle"
-                                className="p-1 rounded-lg hover:bg-slate-800/80 text-slate-400 hover:text-amber-300 transition-colors cursor-pointer"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditNote(note)}
+                                  title="Notu Düzenle"
+                                  className="p-1 rounded-lg hover:bg-slate-800/80 text-slate-400 hover:text-amber-300 transition-colors cursor-pointer"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
 
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (deletingNoteId === note.id) {
-                                    handleDeleteNote(note.id);
-                                    setDeletingNoteId(null);
-                                  } else {
-                                    setDeletingNoteId(note.id);
-                                    setTimeout(() => setDeletingNoteId(null), 3000);
-                                  }
-                                }}
-                                title={deletingNoteId === note.id ? 'Emin misiniz? Silmek için tekrar basın.' : 'Notu Sil'}
-                                className={`p-1 rounded-lg transition-colors cursor-pointer ${
-                                  deletingNoteId === note.id
-                                    ? 'bg-rose-500/30 text-rose-300 border border-rose-500/40 animate-pulse'
-                                    : 'hover:bg-rose-500/20 text-slate-400 hover:text-rose-400'
-                                }`}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (deletingNoteId === note.id) {
+                                      handleDeleteNote(note.id);
+                                      setDeletingNoteId(null);
+                                    } else {
+                                      setDeletingNoteId(note.id);
+                                      setTimeout(() => setDeletingNoteId(null), 3000);
+                                    }
+                                  }}
+                                  title={deletingNoteId === note.id ? 'Emin misiniz? Silmek için tekrar basın.' : 'Notu Sil'}
+                                  className={`p-1 rounded-lg transition-colors cursor-pointer ${
+                                    deletingNoteId === note.id
+                                      ? 'bg-rose-500/30 text-rose-300 border border-rose-500/40 animate-pulse'
+                                      : 'hover:bg-rose-500/20 text-slate-400 hover:text-rose-400'
+                                  }`}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
+                              {note.isPinned && (
+                                <span className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 ${styles.pinText}`}>
+                                  Sabitlendi
+                                </span>
+                              )}
                             </div>
                           </div>
 
@@ -494,14 +502,6 @@ export const DashboardQuickNotes: React.FC<DashboardQuickNotesProps> = ({
                             {note.text}
                           </p>
                         </div>
-
-                        {/* Pinned Tag */}
-                        {note.isPinned && (
-                          <div className="mt-3 pt-2 border-t border-slate-700/40 flex flex-col items-center justify-center text-[9.5px] space-y-0.5">
-                            <Pin className="w-3.5 h-3.5 rotate-45" />
-                            <span className={`font-semibold ${styles.pinText}`}>Sabitlendi</span>
-                          </div>
-                        )}
                       </>
                     )}
                   </motion.div>
