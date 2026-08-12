@@ -431,15 +431,21 @@ export const DashboardQuickNotes: React.FC<DashboardQuickNotesProps> = ({
                       <>
                         <div>
                           {/* Card Top Actions & Header */}
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center space-x-1.5 pt-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-1.5">
                               <span className={`w-2 h-2 rounded-full ${styles.dot}`} />
                               <span className="text-[10px] text-slate-400 font-mono font-medium">
                                 {note.createdAt || 'Bugün'}
                               </span>
                             </div>
 
-                            <div className="flex flex-col items-end space-y-1">
+                            <div className="flex items-center space-x-1">
+                              {note.isPinned && (
+                                <span className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 shrink-0 ${styles.pinText}`}>
+                                  Sabitlendi
+                                </span>
+                              )}
+
                               <div className="flex items-center space-x-1 opacity-90 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                   type="button"
@@ -488,12 +494,6 @@ export const DashboardQuickNotes: React.FC<DashboardQuickNotesProps> = ({
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </div>
-
-                              {note.isPinned && (
-                                <span className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 ${styles.pinText}`}>
-                                  Sabitlendi
-                                </span>
-                              )}
                             </div>
                           </div>
 
