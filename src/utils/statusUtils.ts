@@ -1,4 +1,41 @@
-import { UserAccount } from '../types';
+import { UserAccount, DirectMessage } from '../types';
+
+/**
+ * Robustly evaluate whether a message is unread for a specific user account.
+ */
+export function isMessageUnreadForUser(m: DirectMessage | null | undefined, user: UserAccount | null | undefined): boolean {
+  if (!m || !user || !m.senderId || m.senderId === user.id) return false;
+
+  // If user has already read the message via readBy array
+  if (m.readBy && Array.isArray(m.readBy) && m.readBy.some(r => r.userId === user.id)) {
+    return false;
+  }
+
+  // 1. Group Chat
+  if (m.receiverId?.startsWith('class-group-')) {
+    return true; // Not read by user yet
+  }
+
+  // 2. Broadcast Channel
+  if (m.receiverId?.startsWith('broadcast-')) {
+    const role = user.role;
+    let relevant = false;
+    if (m.receiverId === 'broadcast-all') relevant = true;
+    if (m.receiverId === 'broadcast-students' && (role === 'student' || role === 'admin' || role === 'school_counselor' || role === 'class_teacher' || role === 'teacher')) relevant = true;
+    if (m.receiverId === 'broadcast-teachers' && (role === 'teacher' || role === 'class_teacher' || role === 'school_counselor' || role === 'admin')) relevant = true;
+    if (m.receiverId === 'broadcast-counselors' && (role === 'school_counselor' || role === 'admin' || role === 'class_teacher' || role === 'teacher')) relevant = true;
+
+    if (!relevant) return false;
+    return true; // Not read by user yet
+  }
+
+  // 3. Direct 1-on-1 Message
+  if (m.receiverId === user.id) {
+    return !m.isRead;
+  }
+
+  return false;
+}
 
 /**
  * Get configured active/passive and presence parameters from localStorage with sensible fallbacks.

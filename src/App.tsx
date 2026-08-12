@@ -8,6 +8,7 @@ import { MandatoryPasswordChangeModal } from './components/MandatoryPasswordChan
 import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, InstitutionalMockExam, FieldType } from './types';
 import { deleteStorageFile } from './services/storageUpload';
 import { loadGlobalState, saveGlobalState, exportDataAsJSON, resetToDefaultData } from './services/storage';
+import { isMessageUnreadForUser } from './utils/statusUtils';
 import { 
   seedInitialFirestoreData, 
   subscribeToFirestore, 
@@ -2602,23 +2603,7 @@ export default function App() {
     markMessagesAsReadInFirestore(messageIds, currentUser.id, readAt);
   };
 
-  const unreadMessageCount = currentUser ? (globalState.messages || []).filter(m => {
-    if (!m || m.senderId === currentUser.id) return false;
-    if (m.receiverId?.startsWith('class-group-')) {
-      return !m.readBy || !m.readBy.some(r => r.userId === currentUser.id);
-    }
-    if (m.receiverId?.startsWith('broadcast-')) {
-      const role = currentUser.role;
-      let relevant = false;
-      if (m.receiverId === 'broadcast-all') relevant = true;
-      if (m.receiverId === 'broadcast-students' && (role === 'student' || role === 'admin')) relevant = true;
-      if (m.receiverId === 'broadcast-teachers' && (role === 'teacher' || role === 'class_teacher' || role === 'admin')) relevant = true;
-      if (m.receiverId === 'broadcast-counselors' && (role === 'school_counselor' || role === 'admin')) relevant = true;
-      if (!relevant) return false;
-      return !m.readBy || !m.readBy.some(r => r.userId === currentUser.id);
-    }
-    return m.receiverId === currentUser.id && !m.isRead;
-  }).length : 0;
+  const unreadMessageCount = currentUser ? (globalState.messages || []).filter(m => isMessageUnreadForUser(m, currentUser)).length : 0;
 
   // IF NOT LOGGED IN -> RENDER LOGIN VIEW
   if (!currentUser) {

@@ -71,7 +71,7 @@ const getContactMessages = (contact: UserAccount, allMessages: DirectMessage[], 
 };
 import { UserAccount, DirectMessage, ClassDefinition, UserRole } from '../types';
 import { uploadMessageAttachment } from '../services/storageUpload';
-import { isUserOnline, getUserLastSeenText, getExactLastSeenText, isStudentActive, getStatusConfig } from '../utils/statusUtils';
+import { isUserOnline, getUserLastSeenText, getExactLastSeenText, isStudentActive, getStatusConfig, isMessageUnreadForUser } from '../utils/statusUtils';
 import { getUserColor } from '../utils/colorUtils';
 import { playNotificationSound } from '../utils/soundUtils';
 import { subscribeToPresence } from '../services/firebase';
@@ -487,19 +487,8 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
       const msgsA = getContactMessages(a, messages, currentUser.id, currentUser.role);
       const msgsB = getContactMessages(b, messages, currentUser.id, currentUser.role);
 
-      const unreadA = msgsA.filter(m => 
-        m.senderId !== currentUser.id && 
-        ((a.id?.startsWith('class-group-') || a.id?.startsWith('broadcast-') || a.id === 'broadcast-all')
-          ? (!m.readBy || !m.readBy.some(r => r.userId === currentUser.id)) 
-          : !m.isRead)
-      ).length;
-
-      const unreadB = msgsB.filter(m => 
-        m.senderId !== currentUser.id && 
-        ((b.id?.startsWith('class-group-') || b.id?.startsWith('broadcast-') || b.id === 'broadcast-all')
-          ? (!m.readBy || !m.readBy.some(r => r.userId === currentUser.id)) 
-          : !m.isRead)
-      ).length;
+      const unreadA = msgsA.filter(m => isMessageUnreadForUser(m, currentUser)).length;
+      const unreadB = msgsB.filter(m => isMessageUnreadForUser(m, currentUser)).length;
 
       if (unreadA > 0 && unreadB === 0) return -1;
       if (unreadB > 0 && unreadA === 0) return 1;
@@ -647,25 +636,16 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   }, [displayedMessages]);
 
   // Auto-mark unread messages as read when opening active contact chat
-  const markedAsReadRef = useRef<Set<string>>(new Set());
-
   useEffect(() => {
     if (!activeContact) return;
     const unreadReceivedIds = conversationMessages
-      .filter(m => 
-        m.senderId !== currentUser.id && 
-        ((activeContact.id?.startsWith('class-group-') || activeContact.id?.startsWith('broadcast-') || activeContact.id === 'broadcast-all')
-          ? (!m.readBy || !m.readBy.some(r => r.userId === currentUser.id))
-          : !m.isRead) && 
-        !markedAsReadRef.current.has(m.id)
-      )
+      .filter(m => isMessageUnreadForUser(m, currentUser))
       .map(m => m.id);
 
     if (unreadReceivedIds.length > 0) {
-      unreadReceivedIds.forEach(id => markedAsReadRef.current.add(id));
       onMarkAsRead(unreadReceivedIds);
     }
-  }, [activeContact, conversationMessages, currentUser.id, onMarkAsRead]);
+  }, [activeContact, conversationMessages, currentUser, onMarkAsRead]);
 
   // Play sound for new incoming messages globally on this view
   useEffect(() => {
@@ -938,12 +918,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 const lastMsg = contactMsgs.length > 0 ? contactMsgs[contactMsgs.length - 1] : null;
 
                 // Unread count
-                const unreadCount = contactMsgs.filter(m => 
-                  m.senderId !== currentUser.id && 
-                  ((contact.id?.startsWith('class-group-') || contact.id?.startsWith('broadcast-'))
-                    ? (!m.readBy || !m.readBy.some(r => r.userId === currentUser.id)) 
-                    : !m.isRead)
-                ).length;
+                const unreadCount = contactMsgs.filter(m => isMessageUnreadForUser(m, currentUser)).length;
 
                 return (
                   <button
