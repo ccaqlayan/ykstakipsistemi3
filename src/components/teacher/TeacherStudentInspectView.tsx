@@ -381,38 +381,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
     });
   });
 
-  topicErrors.forEach(e => {
-    const ts = parseAnyDateToTime(e.date);
-    entryCandidates.push({
-      timestamp: ts,
-      formattedDate: formatEntryDateStr(ts, e.date),
-      relativeTime: getRelativeTimeStr(ts),
-      categoryLabel: 'Konu Hatası',
-      badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-      icon: <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />,
-      title: `${e.subject} • ${e.topicName}`,
-      subtitle: `Hata Nedeni: ${e.errorReason || 'Belirtilmedi'}`,
-      stats: [
-        { label: 'Durum', value: e.revised ? 'Tekrar Edildi' : 'Tekrar Bekliyor', colorClass: e.revised ? 'text-emerald-400' : 'text-amber-400 font-bold' }
-      ]
-    });
-  });
-
-  auditLogs
-    .filter(a => a.targetUserId === selectedStudentUser.id || a.actorId === selectedStudentUser.id)
-    .forEach(a => {
-      const ts = parseAnyDateToTime(a.timestamp);
-      entryCandidates.push({
-        timestamp: ts,
-        formattedDate: formatEntryDateStr(ts, a.timestamp),
-        relativeTime: getRelativeTimeStr(ts),
-        categoryLabel: 'Sistem İşlemi',
-        badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
-        icon: <Footprints className="w-3.5 h-3.5 text-purple-400" />,
-        title: a.actionDescription || a.actionType,
-        subtitle: `Kullanıcı: ${a.actorName} (${a.actorRole === 'student' ? 'Öğrenci' : a.actorRole})`
-      });
-    });
+  // NOTE: auditLogs (system events like logout) are intentionally excluded – only lesson-related entries shown.
 
   entryCandidates.sort((a, b) => b.timestamp - a.timestamp);
   const latestEntries = entryCandidates.slice(0, 3);
@@ -672,86 +641,73 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
       {activeTab === 'performance' && (
         <div className="space-y-6">
           
-          {/* 📌 Son 3 Veri Girişi (Last 3 Data Entries Card) */}
-          <div className="bg-slate-900/90 border border-indigo-500/30 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-3">
-              <div className="flex items-center space-x-3">
-                <span className="p-2.5 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 shadow-inner">
-                  <Clock className="w-5 h-5 text-indigo-300" />
-                </span>
-                <div>
-                  <h3 className="font-bold text-white text-base">Öğrencinin Son Veri Girişleri & Aktiviteleri</h3>
-                  <p className="text-xs text-slate-400">Öğrencinin kaydettiği son 3 veri girişinin tarih, saat ve zaman bilgileri</p>
-                </div>
+          {/* 📌 Son 3 Veri Girişi – Compact List */}
+          <div className="bg-slate-900/90 border border-indigo-500/30 rounded-2xl px-5 py-4 shadow-xl backdrop-blur-2xl">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <Clock className="w-4 h-4 text-indigo-400 shrink-0" />
+                <span className="text-sm font-bold text-white">Son Ders Aktiviteleri</span>
               </div>
-
               {latestEntries.length > 0 && (
-                <span className="px-3 py-1 rounded-xl text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono">
-                  {latestEntries.length} Kayıt Gösteriliyor
+                <span className="text-[10px] font-bold text-indigo-300 bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 rounded-lg font-mono">
+                  {latestEntries.length} kayıt
                 </span>
               )}
             </div>
 
             {latestEntries.length > 0 ? (
-              <div className="space-y-3">
+              <div className="divide-y divide-white/5">
                 {latestEntries.map((entry, idx) => (
-                  <div 
-                    key={idx} 
-                    className="flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs bg-slate-950/70 hover:bg-slate-950 p-4 rounded-2xl border border-white/10 transition-all shadow-sm group"
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between gap-3 py-2.5 group"
                   >
-                    <div className="flex items-start space-x-3 min-w-0">
-                      <span className={`p-2 rounded-xl border shrink-0 mt-0.5 ${entry.badgeClass}`}>
+                    {/* Left: icon + title + category badge + stats inline */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`p-1.5 rounded-lg border shrink-0 ${entry.badgeClass}`}>
                         {entry.icon}
                       </span>
-                      
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-                          <span className="text-sm font-black text-white group-hover:text-indigo-300 transition-colors">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs font-bold text-white group-hover:text-indigo-300 transition-colors truncate">
                             {entry.title}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border ${entry.badgeClass}`}>
+                          <span className={`px-1.5 py-px rounded text-[9px] font-bold border shrink-0 ${entry.badgeClass}`}>
                             {entry.categoryLabel}
                           </span>
                         </div>
-                        
-                        {entry.subtitle && (
-                          <p className="text-xs text-slate-300 font-medium truncate">{entry.subtitle}</p>
-                        )}
-
-                        {/* Exact Date, Time & Relative Time */}
-                        <div className="flex items-center space-x-2 text-[11px] text-slate-400 font-mono pt-0.5 flex-wrap gap-y-1">
-                          <span className="flex items-center space-x-1 text-slate-300">
-                            <Calendar className="w-3 h-3 text-indigo-400" />
-                            <span>{entry.formattedDate}</span>
-                          </span>
-                          {entry.relativeTime && (
-                            <>
-                              <span>•</span>
-                              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                                ⏱️ {entry.relativeTime}
+                        {/* Stats on second line */}
+                        {entry.stats && entry.stats.length > 0 && (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {entry.stats.map((stat, i) => (
+                              <span key={i} className="text-[10px] font-mono text-slate-400">
+                                <span className="text-slate-500">{stat.label}: </span>
+                                <span className={stat.colorClass}>{stat.value}</span>
                               </span>
-                            </>
-                          )}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Stat chips */}
-                    {entry.stats && entry.stats.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2.5 shrink-0 bg-slate-900/90 px-3.5 py-2 rounded-xl border border-white/10 font-mono text-xs shadow-inner self-start md:self-center">
-                        {entry.stats.map((stat, i) => (
-                          <div key={i} className="flex items-center space-x-1">
-                            <span className="text-slate-400">{stat.label}:</span>
-                            <strong className={stat.colorClass}>{stat.value}</strong>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {/* Right: relative time with full date as native tooltip */}
+                    <div className="shrink-0 text-right">
+                      {entry.relativeTime ? (
+                        <span
+                          title={entry.formattedDate}
+                          className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md cursor-default hover:bg-emerald-500/20 hover:text-emerald-300 transition-colors"
+                        >
+                          {entry.relativeTime}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-mono text-slate-500">{entry.formattedDate}</span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 italic py-2">Öğrenciye ait henüz bir soru çözümü, deneme veya ders çalışma kaydı bulunmuyor.</p>
+              <p className="text-xs text-slate-400 italic py-1">Henüz ders aktivitesi kaydı bulunmuyor.</p>
             )}
           </div>
           
