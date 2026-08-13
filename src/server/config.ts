@@ -295,8 +295,8 @@ export async function generateContentWithFallback(
   const fallbackList = [
     { requested: requestedModel, apiModel: primaryApiModel },
     { requested: 'gemini-3.1-flash-lite', apiModel: 'gemini-3.1-flash-lite' },
-    { requested: 'gemini-2.5-flash', apiModel: 'gemini-2.5-flash' },
-    { requested: 'gemini-2.0-flash', apiModel: 'gemini-2.0-flash' }
+    { requested: 'gemini-3.6-flash', apiModel: 'gemini-3.6-flash' },
+    { requested: 'gemini-2.0-flash-lite', apiModel: 'gemini-2.0-flash-lite' }
   ];
 
   const uniqueList: { requested: string; apiModel: string }[] = [];

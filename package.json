@@ -1,12 +1,12 @@
 {
   "name": "react-example",
   "private": true,
-  "version": "1.5.23",
+  "version": "1.5.24",
 
   "type": "module",
   "scripts": {
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
-    "dev": "tsx server.ts",
+    "dev": "tsx watch server.ts",
     "lint": "tsc --noEmit",
     "preview": "vite preview",
     "start": "node dist/server.cjs"
