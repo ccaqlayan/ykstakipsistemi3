@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   PieChart, 
   TrendingUp, 
@@ -10,7 +10,15 @@ import {
   History, 
   Calendar, 
   CheckCircle, 
-  Check 
+  Check,
+  Settings2,
+  SlidersHorizontal,
+  Target,
+  Zap,
+  Activity,
+  ChevronDown,
+  Info,
+  Timer
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -18,15 +26,19 @@ import {
   Area, 
   BarChart, 
   Bar, 
+  LineChart,
+  Line,
   XAxis, 
   YAxis, 
   Tooltip, 
   CartesianGrid, 
-  Legend 
+  Legend,
+  ReferenceLine
 } from 'recharts';
-import { StudyPlanItem, DayOfWeek } from '../../types';
+import { StudyPlanItem, DayOfWeek, DailyStudyTimeLog } from '../../types';
 import { isVideoTask } from '../../utils/youtubeUtils';
 import { isSameWeekLabel } from '../../utils/dateUtils';
+import { DEFAULT_DAILY_STUDY_LOGS } from '../../data/initialData';
 
 interface StudyPlannerStatsViewProps {
   viewMode: 'board' | 'daily' | 'stats';
@@ -47,6 +59,7 @@ interface StudyPlannerStatsViewProps {
   getPlansForWeek: (weekLabel: string) => StudyPlanItem[];
   getEffectiveDayStudyMinutes?: (day: DayOfWeek, dateKey?: string) => { minutes: number; isManual: boolean; notes?: string };
   weekDaysMap?: Record<string, { isoDate: string; displayDate: string }>;
+  dailyStudyLogs?: Record<string, DailyStudyTimeLog>;
 }
 
 export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
@@ -67,8 +80,189 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
   getSubjectDistributionStats,
   getPlansForWeek,
   getEffectiveDayStudyMinutes,
-  weekDaysMap
+  weekDaysMap,
+  dailyStudyLogs
 }) => {
+  // Net Study Duration Chart State & Settings
+  const [netChartScope, setNetChartScope] = useState<'selected_week' | 'all_weeks' | 'all_days'>('selected_week');
+  const [netChartType, setNetChartType] = useState<'bar' | 'area' | 'line'>('bar');
+  const [netChartCompareTasks, setNetChartCompareTasks] = useState<boolean>(true);
+  const [netChartShowTargetLine, setNetChartShowTargetLine] = useState<boolean>(true);
+  const [netChartTargetHours, setNetChartTargetHours] = useState<number>(6);
+  const [netChartShowAvgLine, setNetChartShowAvgLine] = useState<boolean>(true);
+  const [netChartUnit, setNetChartUnit] = useState<'hours' | 'minutes'>('hours');
+  const [showNetChartSettings, setShowNetChartSettings] = useState<boolean>(false);
+
+  const mergedDailyLogs = useMemo(() => {
+    return { ...DEFAULT_DAILY_STUDY_LOGS, ...(dailyStudyLogs || {}) };
+  }, [dailyStudyLogs]);
+
+  // Compute Net Study Chart Data based on netChartScope
+  const netStudyChartData = useMemo(() => {
+    if (netChartScope === 'selected_week') {
+      const plans = getPlansForWeek(activeHistoryWeek);
+      return DAYS.map(day => {
+        const dayPlans = plans.filter(p => p.day === day);
+        const taskCompletedMins = dayPlans.reduce((sum, p) => sum + (p.completedMinutes || 0), 0);
+        const taskPlannedMins = dayPlans.reduce((sum, p) => sum + (p.plannedMinutes || 0), 0);
+
+        // Find matching log in mergedDailyLogs
+        const matchingLogKey = Object.keys(mergedDailyLogs).find(k => {
+          const log = mergedDailyLogs[k];
+          return log && log.day === day && isSameWeekLabel(log.weekLabel || '', activeHistoryWeek);
+        });
+        const log = matchingLogKey ? mergedDailyLogs[matchingLogKey] : undefined;
+        const rawNetMins = log ? log.minutes : taskCompletedMins;
+        const isManual = Boolean(log);
+
+        const netVal = netChartUnit === 'hours' ? Number((rawNetMins / 60).toFixed(1)) : rawNetMins;
+        const taskVal = netChartUnit === 'hours' ? Number((taskCompletedMins / 60).toFixed(1)) : taskCompletedMins;
+        const plannedVal = netChartUnit === 'hours' ? Number((taskPlannedMins / 60).toFixed(1)) : taskPlannedMins;
+
+        return {
+          name: day.substring(0, 3),
+          fullName: day,
+          'Net Çalışma': netVal,
+          'Görev Süresi': taskVal,
+          'Planlanan Süre': plannedVal,
+          rawNetMinutes: rawNetMins,
+          rawTaskMinutes: taskCompletedMins,
+          isManual,
+          notes: log?.notes
+        };
+      });
+    }
+
+    if (netChartScope === 'all_weeks') {
+      const reversedWeeks = [...orderedWeeks].reverse();
+      return reversedWeeks.map(weekLabel => {
+        const plans = getPlansForWeek(weekLabel);
+        const totalTaskMins = plans.reduce((sum, p) => sum + (p.completedMinutes || 0), 0);
+        const totalPlannedMins = plans.reduce((sum, p) => sum + (p.plannedMinutes || 0), 0);
+
+        // Sum net minutes for each day of that week
+        const totalNetMins = DAYS.reduce((sum, day) => {
+          const matchingLogKey = Object.keys(mergedDailyLogs).find(k => {
+            const log = mergedDailyLogs[k];
+            return log && log.day === day && isSameWeekLabel(log.weekLabel || '', weekLabel);
+          });
+          if (matchingLogKey && mergedDailyLogs[matchingLogKey]) {
+            return sum + mergedDailyLogs[matchingLogKey].minutes;
+          }
+          const dayTaskMin = plans.filter(p => p.day === day).reduce((s, p) => s + (p.completedMinutes || 0), 0);
+          return sum + dayTaskMin;
+        }, 0);
+
+        const netVal = netChartUnit === 'hours' ? Number((totalNetMins / 60).toFixed(1)) : totalNetMins;
+        const taskVal = netChartUnit === 'hours' ? Number((totalTaskMins / 60).toFixed(1)) : totalTaskMins;
+        const plannedVal = netChartUnit === 'hours' ? Number((totalPlannedMins / 60).toFixed(1)) : totalPlannedMins;
+
+        return {
+          name: weekLabel,
+          fullName: weekLabel,
+          'Net Çalışma': netVal,
+          'Görev Süresi': taskVal,
+          'Planlanan Süre': plannedVal,
+          rawNetMinutes: totalNetMins,
+          rawTaskMinutes: totalTaskMins,
+          isManual: true
+        };
+      });
+    }
+
+    if (netChartScope === 'all_days') {
+      const sortedKeys = Object.keys(mergedDailyLogs).sort();
+      return sortedKeys.map(key => {
+        const log = mergedDailyLogs[key];
+        const rawNetMins = log.minutes;
+        const netVal = netChartUnit === 'hours' ? Number((rawNetMins / 60).toFixed(1)) : rawNetMins;
+        const displayLabel = log.date ? log.date.substring(5) : (log.day || key);
+
+        return {
+          name: displayLabel,
+          fullName: `${log.date || ''} (${log.day || ''})`,
+          'Net Çalışma': netVal,
+          'Görev Süresi': netVal,
+          rawNetMinutes: rawNetMins,
+          rawTaskMinutes: rawNetMins,
+          isManual: true,
+          notes: log.notes
+        };
+      });
+    }
+
+    return [];
+  }, [netChartScope, activeHistoryWeek, orderedWeeks, mergedDailyLogs, netChartUnit, DAYS]);
+
+  // Derived Metrics for Net Chart
+  const netMetrics = useMemo(() => {
+    if (netStudyChartData.length === 0) {
+      return { totalHours: '0', avgHours: '0', avgVal: 0, maxVal: 0, maxName: '-', targetMetCount: 0, targetTotal: 0, diffHours: '0', unitLabel: 'sa' };
+    }
+    const totalMinutes = netStudyChartData.reduce((sum, d: any) => sum + (d.rawNetMinutes || 0), 0);
+    const totalTaskMinutes = netStudyChartData.reduce((sum, d: any) => sum + (d.rawTaskMinutes || 0), 0);
+    const avgMinutes = Math.round(totalMinutes / netStudyChartData.length);
+    const maxItem = netStudyChartData.reduce((max: any, d: any) => (d['Net Çalışma'] > (max?.['Net Çalışma'] || 0) ? d : max), netStudyChartData[0]);
+    
+    const targetThreshold = netChartUnit === 'hours' ? netChartTargetHours : netChartTargetHours * 60;
+    const targetMetCount = netStudyChartData.filter((d: any) => d['Net Çalışma'] >= targetThreshold).length;
+    const diffMins = totalMinutes - totalTaskMinutes;
+
+    return {
+      totalHours: (totalMinutes / 60).toFixed(1),
+      avgHours: (avgMinutes / 60).toFixed(1),
+      avgVal: netChartUnit === 'hours' ? Number((avgMinutes / 60).toFixed(1)) : avgMinutes,
+      maxVal: maxItem ? maxItem['Net Çalışma'] : 0,
+      maxName: maxItem ? maxItem.fullName || maxItem.name : '-',
+      targetMetCount,
+      targetTotal: netStudyChartData.length,
+      diffHours: (diffMins / 60).toFixed(1),
+      unitLabel: netChartUnit === 'hours' ? 'sa' : 'dk'
+    };
+  }, [netStudyChartData, netChartTargetHours, netChartUnit]);
+
+  // Custom Net Study Tooltip Component
+  const CustomNetTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const dataPoint = payload[0].payload;
+      return (
+        <div className="bg-slate-950 border border-slate-750 rounded-2xl p-3.5 shadow-2xl backdrop-blur-md text-xs space-y-2 max-w-xs border-slate-700">
+          <div className="font-black text-white border-b border-slate-800 pb-1.5 flex items-center justify-between gap-2">
+            <span>{dataPoint.fullName || label}</span>
+            {dataPoint.isManual && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 whitespace-nowrap">
+                ⏱️ NET KRONOMETRE
+              </span>
+            )}
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-emerald-400 font-bold">
+              <span className="flex items-center space-x-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+                <span>Net Çalışma:</span>
+              </span>
+              <span className="font-mono text-sm">{dataPoint['Net Çalışma']} {netMetrics.unitLabel}</span>
+            </div>
+            {netChartCompareTasks && dataPoint['Görev Süresi'] !== undefined && (
+              <div className="flex items-center justify-between text-indigo-300 font-medium">
+                <span className="flex items-center space-x-1.5">
+                  <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block"></span>
+                  <span>Görev Süresi:</span>
+                </span>
+                <span className="font-mono">{dataPoint['Görev Süresi']} {netMetrics.unitLabel}</span>
+              </div>
+            )}
+          </div>
+          {dataPoint.notes && (
+            <div className="text-[11px] text-slate-300 italic bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+              "{dataPoint.notes}"
+            </div>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
   return (
     <>
       {/* VIEW 3: WEEKLY STATS OVERVIEW */}
@@ -219,6 +413,402 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
                   })()}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* HERO CHART: NET ÇALIŞMA SÜRELERİ & KRONOMETRE ANALİZ GRAFİĞİ */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4 backdrop-blur-md">
+            
+            {/* Header & Controls Bar */}
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
+                    <Timer className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-white flex items-center space-x-2">
+                      <span>Net Çalışma Süresi & Kronometre Takip Grafiği</span>
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Kronometreyle tuttuğunuz net çalışma süreleri ve görev sürelerinin periyodik analizi
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons & Selectors */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* Scope Switcher */}
+                <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setNetChartScope('selected_week')}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      netChartScope === 'selected_week'
+                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Seçili Hafta Günleri
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNetChartScope('all_weeks')}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      netChartScope === 'all_weeks'
+                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Haftalık Trend
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNetChartScope('all_days')}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      netChartScope === 'all_days'
+                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Tüm Günler
+                  </button>
+                </div>
+
+                {/* Chart Type Switcher */}
+                <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setNetChartType('bar')}
+                    className={`px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      netChartType === 'bar'
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                    title="Çubuk Grafik"
+                  >
+                    Çubuk
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNetChartType('area')}
+                    className={`px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      netChartType === 'area'
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                    title="Alan Grafiği"
+                  >
+                    Alan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNetChartType('line')}
+                    className={`px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                      netChartType === 'line'
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                    title="Çizgi Grafik"
+                  >
+                    Çizgi
+                  </button>
+                </div>
+
+                {/* Settings Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowNetChartSettings(!showNetChartSettings)}
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                    showNetChartSettings
+                      ? 'bg-indigo-600/30 border-indigo-500 text-white shadow-sm'
+                      : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  <Settings2 className="w-3.5 h-3.5" />
+                  <span>Grafik Ayarları</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showNetChartSettings ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* EXPANDABLE SETTINGS PANEL */}
+            {showNetChartSettings && (
+              <div className="bg-slate-950/90 border border-slate-800 rounded-2xl p-4 space-y-3.5 animate-in slide-in-from-top-2 duration-200">
+                <div className="text-xs font-bold text-slate-300 flex items-center space-x-1.5">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Grafik Görünüm ve Hedef Parametreleri</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                  {/* Target Line Setting */}
+                  <div className="bg-slate-900/90 border border-slate-800/80 p-3 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-300 flex items-center space-x-1.5">
+                        <Target className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Günlük Hedef Çizgisi:</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setNetChartShowTargetLine(!netChartShowTargetLine)}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer ${
+                          netChartShowTargetLine ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-slate-800 text-slate-500'
+                        }`}
+                      >
+                        {netChartShowTargetLine ? 'Açık' : 'Kapalı'}
+                      </button>
+                    </div>
+                    {netChartShowTargetLine && (
+                      <div className="flex items-center gap-1 pt-1">
+                        {[4, 5, 6, 7, 8].map(h => (
+                          <button
+                            key={h}
+                            type="button"
+                            onClick={() => setNetChartTargetHours(h)}
+                            className={`flex-1 py-1 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                              netChartTargetHours === h
+                                ? 'bg-amber-500 text-slate-950 shadow-sm'
+                                : 'bg-slate-800 text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            {h} sa
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Task Comparison Setting */}
+                  <div className="bg-slate-900/90 border border-slate-800/80 p-3 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-300 flex items-center space-x-1.5">
+                        <Activity className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Görev Süresi Kıyası:</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setNetChartCompareTasks(!netChartCompareTasks)}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer ${
+                          netChartCompareTasks ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40' : 'bg-slate-800 text-slate-500'
+                        }`}
+                      >
+                        {netChartCompareTasks ? 'Gösteriliyor' : 'Gizli'}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-slate-400 leading-tight">
+                      Ders planındaki tamamlanan görev sürelerini yanına ekler.
+                    </p>
+                  </div>
+
+                  {/* Average Line Setting */}
+                  <div className="bg-slate-900/90 border border-slate-800/80 p-3 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-300 flex items-center space-x-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+                        <span>Ortalama Çizgisi:</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setNetChartShowAvgLine(!netChartShowAvgLine)}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer ${
+                          netChartShowAvgLine ? 'bg-pink-500/20 text-pink-300 border border-pink-500/40' : 'bg-slate-800 text-slate-500'
+                        }`}
+                      >
+                        {netChartShowAvgLine ? 'Açık' : 'Kapalı'}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-slate-400 leading-tight">
+                      Dönem içi ortalama süreyi pembe referans çizgisi ile belirtir.
+                    </p>
+                  </div>
+
+                  {/* Unit Setting */}
+                  <div className="bg-slate-900/90 border border-slate-800/80 p-3 rounded-xl space-y-2">
+                    <span className="font-bold text-slate-300 flex items-center space-x-1.5">
+                      <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Süre Birimi:</span>
+                    </span>
+                    <div className="flex items-center gap-1.5 pt-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setNetChartUnit('hours')}
+                        className={`flex-1 py-1 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                          netChartUnit === 'hours'
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Saat (sa)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNetChartUnit('minutes')}
+                        className={`flex-1 py-1 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                          netChartUnit === 'minutes'
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Dakika (dk)
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Metrics Bar inside Hero Card */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-1">
+              <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5">
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Dönem Net Toplamı</div>
+                <div className="text-sm font-black text-emerald-400 font-mono mt-0.5">{netMetrics.totalHours} Saat</div>
+              </div>
+              <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5">
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Ortalama Net Süre</div>
+                <div className="text-sm font-black text-white font-mono mt-0.5">{netMetrics.avgHours} sa / gün</div>
+              </div>
+              <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5">
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Zirve Değer</div>
+                <div className="text-sm font-black text-amber-300 font-mono mt-0.5 truncate">
+                  {netMetrics.maxVal} {netMetrics.unitLabel} <span className="text-[10px] text-slate-400 font-normal">({netMetrics.maxName})</span>
+                </div>
+              </div>
+              <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5">
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Hedefi Aşanlar</div>
+                <div className="text-sm font-black text-indigo-300 font-mono mt-0.5">
+                  {netMetrics.targetMetCount} / {netMetrics.targetTotal} ({netMetrics.targetTotal > 0 ? Math.round((netMetrics.targetMetCount / netMetrics.targetTotal) * 100) : 0}%)
+                </div>
+              </div>
+              <div className="col-span-2 sm:col-span-1 bg-slate-950/60 border border-slate-800/80 rounded-xl p-2.5">
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Net / Görev Farkı</div>
+                <div className="text-sm font-black text-emerald-300 font-mono mt-0.5">
+                  {Number(netMetrics.diffHours) >= 0 ? `+${netMetrics.diffHours}` : netMetrics.diffHours} Saat
+                </div>
+              </div>
+            </div>
+
+            {/* Recharts Chart Rendering */}
+            <div className="h-72 w-full pt-2">
+              {netStudyChartData.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-xs text-slate-500 italic">
+                  Görüntülenecek net çalışma verisi bulunmuyor.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  {netChartType === 'bar' ? (
+                    <BarChart data={netStudyChartData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="netBarGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
+                          <stop offset="100%" stopColor="#059669" stopOpacity={0.8}/>
+                        </linearGradient>
+                        <linearGradient id="taskBarGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#6366f1" stopOpacity={0.8}/>
+                          <stop offset="100%" stopColor="#4338ca" stopOpacity={0.6}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                      <XAxis dataKey="name" stroke="#64748b" style={{ fontSize: '11px', fontWeight: 'bold' }} />
+                      <YAxis stroke="#64748b" style={{ fontSize: '10px' }} unit={` ${netMetrics.unitLabel}`} />
+                      <Tooltip content={<CustomNetTooltip />} />
+                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                      {netChartShowTargetLine && (
+                        <ReferenceLine 
+                          y={netChartUnit === 'hours' ? netChartTargetHours : netChartTargetHours * 60} 
+                          stroke="#f59e0b" 
+                          strokeDasharray="4 4" 
+                          strokeWidth={2}
+                          label={{ value: `🎯 Hedef: ${netChartTargetHours} sa`, fill: '#f59e0b', fontSize: 10, position: 'top' }} 
+                        />
+                      )}
+                      {netChartShowAvgLine && (
+                        <ReferenceLine 
+                          y={netMetrics.avgVal} 
+                          stroke="#ec4899" 
+                          strokeDasharray="3 3" 
+                          strokeWidth={1.5}
+                          label={{ value: `📊 Ort: ${netMetrics.avgHours} sa`, fill: '#ec4899', fontSize: 10, position: 'insideBottomRight' }} 
+                        />
+                      )}
+                      <Bar name="Net Çalışma Süresi" dataKey="Net Çalışma" fill="url(#netBarGrad)" radius={[6, 6, 0, 0]} />
+                      {netChartCompareTasks && (
+                        <Bar name="Planlanan Görev Süresi" dataKey="Görev Süresi" fill="url(#taskBarGrad)" radius={[6, 6, 0, 0]} />
+                      )}
+                    </BarChart>
+                  ) : netChartType === 'area' ? (
+                    <AreaChart data={netStudyChartData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="netAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="taskAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                      <XAxis dataKey="name" stroke="#64748b" style={{ fontSize: '11px', fontWeight: 'bold' }} />
+                      <YAxis stroke="#64748b" style={{ fontSize: '10px' }} unit={` ${netMetrics.unitLabel}`} />
+                      <Tooltip content={<CustomNetTooltip />} />
+                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                      {netChartShowTargetLine && (
+                        <ReferenceLine 
+                          y={netChartUnit === 'hours' ? netChartTargetHours : netChartTargetHours * 60} 
+                          stroke="#f59e0b" 
+                          strokeDasharray="4 4" 
+                          strokeWidth={2}
+                          label={{ value: `🎯 Hedef: ${netChartTargetHours} sa`, fill: '#f59e0b', fontSize: 10, position: 'top' }} 
+                        />
+                      )}
+                      {netChartShowAvgLine && (
+                        <ReferenceLine 
+                          y={netMetrics.avgVal} 
+                          stroke="#ec4899" 
+                          strokeDasharray="3 3" 
+                          strokeWidth={1.5}
+                          label={{ value: `📊 Ort: ${netMetrics.avgHours} sa`, fill: '#ec4899', fontSize: 10, position: 'insideBottomRight' }} 
+                        />
+                      )}
+                      <Area type="monotone" name="Net Çalışma Süresi" dataKey="Net Çalışma" stroke="#10b981" strokeWidth={3} fill="url(#netAreaGrad)" />
+                      {netChartCompareTasks && (
+                        <Area type="monotone" name="Planlanan Görev Süresi" dataKey="Görev Süresi" stroke="#6366f1" strokeWidth={2} strokeDasharray="3 3" fill="url(#taskAreaGrad)" />
+                      )}
+                    </AreaChart>
+                  ) : (
+                    <LineChart data={netStudyChartData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                      <XAxis dataKey="name" stroke="#64748b" style={{ fontSize: '11px', fontWeight: 'bold' }} />
+                      <YAxis stroke="#64748b" style={{ fontSize: '10px' }} unit={` ${netMetrics.unitLabel}`} />
+                      <Tooltip content={<CustomNetTooltip />} />
+                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                      {netChartShowTargetLine && (
+                        <ReferenceLine 
+                          y={netChartUnit === 'hours' ? netChartTargetHours : netChartTargetHours * 60} 
+                          stroke="#f59e0b" 
+                          strokeDasharray="4 4" 
+                          strokeWidth={2}
+                          label={{ value: `🎯 Hedef: ${netChartTargetHours} sa`, fill: '#f59e0b', fontSize: 10, position: 'top' }} 
+                        />
+                      )}
+                      {netChartShowAvgLine && (
+                        <ReferenceLine 
+                          y={netMetrics.avgVal} 
+                          stroke="#ec4899" 
+                          strokeDasharray="3 3" 
+                          strokeWidth={1.5}
+                          label={{ value: `📊 Ort: ${netMetrics.avgHours} sa`, fill: '#ec4899', fontSize: 10, position: 'insideBottomRight' }} 
+                        />
+                      )}
+                      <Line type="monotone" name="Net Çalışma Süresi" dataKey="Net Çalışma" stroke="#10b981" strokeWidth={3.5} dot={{ r: 4, fill: '#10b981' }} activeDot={{ r: 6 }} />
+                      {netChartCompareTasks && (
+                        <Line type="monotone" name="Planlanan Görev Süresi" dataKey="Görev Süresi" stroke="#6366f1" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3, fill: '#6366f1' }} activeDot={{ r: 5 }} />
+                      )}
+                    </LineChart>
+                  )}
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 

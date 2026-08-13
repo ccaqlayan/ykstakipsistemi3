@@ -2054,6 +2054,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         getPlansForWeek={getPlansForWeek}
         getEffectiveDayStudyMinutes={getEffectiveDayStudyMinutes}
         weekDaysMap={selectedWeekDaysMap}
+        dailyStudyLogs={dailyStudyLogs}
       />
 
       {/* ALL MODALS */}
