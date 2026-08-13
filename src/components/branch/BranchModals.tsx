@@ -326,6 +326,17 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
       .replace(/([^\n])\s*(Çözüm[:\.-])/gi, '$1\n\n$2')
       .replace(/([^\n])\s*(Sonuç[:\.-])/gi, '$1\n\n$2');
 
+    // Extract correct answer line if present
+    let extractedCorrectAnswer: string | null = null;
+    const rawLines = cleanText.split('\n');
+    rawLines.forEach(l => {
+      const trimmed = l.trim();
+      if (trimmed.toLowerCase().startsWith('doğru cevap') || trimmed.toLowerCase().startsWith('cevap:')) {
+        const val = trimmed.replace(/^(doğru cevap|cevap)[:\.-]?\s*/i, '').replace(/\*\*/g, '').trim();
+        if (val) extractedCorrectAnswer = val;
+      }
+    });
+
     // Normalize math symbols only (no LaTeX)
     const cleanMath = (s: string) => s
       .replace(/\$\$/g, '')
@@ -353,7 +364,6 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
     const isHeader = (line: string) => {
       const t = line.trim().toLowerCase();
       return (
-        t.startsWith('doğru cevap') ||
         t.startsWith('konu özeti') ||
         t.startsWith('pratik taktik') ||
         t.startsWith('çözüm rehberi') ||
@@ -361,46 +371,65 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
       );
     };
 
-    return cleanText.split('\n').map((line, idx) => {
-      const cleaned = cleanMath(line);
-      const trimmed = cleaned.trim();
+    return (
+      <div className="space-y-2">
+        {/* Top Green Correct Answer Badge (matching Benzer Sorular style) */}
+        {extractedCorrectAnswer && (
+          <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-xl space-y-1 mb-2">
+            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Çözüm & Doğru Cevap</span>
+            <div className="inline-block bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-lg text-xs font-bold mt-1">
+              ✅ {extractedCorrectAnswer}
+            </div>
+          </div>
+        )}
 
-      if (trimmed === '') return <div key={idx} className="h-2" />;
+        {rawLines.map((line, idx) => {
+          const cleaned = cleanMath(line);
+          const trimmed = cleaned.trim();
 
-      // Section header lines — bold amber text with margin
-      if (isHeader(trimmed)) {
-        return (
-          <p key={idx} className="text-xs font-extrabold text-amber-300 mt-3 mb-1 tracking-wide">
-            {trimmed.replace(/\*\*/g, '')}
-          </p>
-        );
-      }
+          if (trimmed === '') return <div key={idx} className="h-1.5" />;
 
-      // Step headings like "Adım 1: ..."
-      if (trimmed.toLowerCase().startsWith('adım ')) {
-        return (
-          <p key={idx} className="text-xs font-bold text-indigo-300 mt-2 mb-0.5">
-            {trimmed.replace(/\*\*/g, '')}
-          </p>
-        );
-      }
+          // Skip rendering the original "Doğru Cevap:" line if we rendered the top badge
+          if (extractedCorrectAnswer && (trimmed.toLowerCase().startsWith('doğru cevap') || trimmed.toLowerCase().startsWith('cevap:'))) {
+            return null;
+          }
 
-      // List items (- or *)
-      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-        return (
-          <li key={idx} className="ml-4 list-disc text-xs text-slate-300 pl-1 py-0.5 leading-relaxed">
-            {trimmed.slice(2).replace(/\*\*/g, '')}
-          </li>
-        );
-      }
+          // Section header lines — bold amber text with margin
+          if (isHeader(trimmed)) {
+            return (
+              <p key={idx} className="text-xs font-extrabold text-amber-300 mt-3 mb-1 tracking-wide">
+                {trimmed.replace(/\*\*/g, '')}
+              </p>
+            );
+          }
 
-      // All other lines — plain text paragraph
-      return (
-        <p key={idx} className="text-xs text-slate-300 leading-relaxed py-0.5">
-          {trimmed.replace(/\*\*/g, '')}
-        </p>
-      );
-    });
+          // Step headings like "Adım 1: ..."
+          if (trimmed.toLowerCase().startsWith('adım ')) {
+            return (
+              <p key={idx} className="text-xs font-bold text-indigo-300 mt-2 mb-0.5">
+                {trimmed.replace(/\*\*/g, '')}
+              </p>
+            );
+          }
+
+          // List items (- or *)
+          if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+            return (
+              <li key={idx} className="ml-4 list-disc text-xs text-slate-300 pl-1 py-0.5 leading-relaxed">
+                {trimmed.slice(2).replace(/\*\*/g, '')}
+              </li>
+            );
+          }
+
+          // All other lines — plain text paragraph
+          return (
+            <p key={idx} className="text-xs text-slate-300 leading-relaxed py-0.5">
+              {trimmed.replace(/\*\*/g, '')}
+            </p>
+          );
+        })}
+      </div>
+    );
   };
 
   return (

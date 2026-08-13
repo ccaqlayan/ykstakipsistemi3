@@ -161,110 +161,91 @@ const parseCellContent = (content: string) => {
 const formatAnalysisTable = (text: string) => {
   if (!text) return <p className="text-xs text-slate-400 italic">İçerik bulunamadı.</p>;
 
-  // Convert literal \n or <br> to real newlines
-  const cleanText = text.replace(/\\n/g, '\n').replace(/<br\s*\/?>/gi, '\n');
-  const lines = cleanText.split('\n');
-  const tableRows: string[][] = [];
-  const headerLines: string[] = [];
+  // 1. Multi-stage normalization: handle \n, <br>, and multi-pipe delimiters (|| or | | or | \n |)
+  let cleanText = text
+    .replace(/\\n/g, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/\|\s*\|\s*/g, '\n| ')
+    .replace(/\|\s*\n\s*\|/g, '\n| ');
 
-  lines.forEach(line => {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('|')) {
-      // Skip markdown separator lines (--- only)
-      if (/^\|[-\s:|]+\|/.test(trimmed)) return;
-      const cells = trimmed
-        .split('|')
-        .map(c => c.trim())
-        .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
-      if (cells.length > 0) {
-        tableRows.push(cells);
-      }
-    } else if (trimmed && !trimmed.match(/^[-=]+$/)) {
-      // Non-table text lines (like **SORU ANALİZİ** title)
-      const cleaned = trimmed.replace(/\*\*/g, '').trim();
-      if (cleaned) headerLines.push(cleaned);
-    }
-  });
+  const rawLines = cleanText.split('\n');
+  const tableEntries: Array<{ key: string; val: string }> = [];
+  let detectedTitle = 'SORU ANALİZ KARNESİ';
 
-  if (tableRows.length > 0) {
-    const headerRow = tableRows[0];
-    const bodyRows = tableRows.slice(1);
-
-    return (
-      <div className="space-y-2">
-        {headerLines.length > 0 && (
-          <p className="text-xs font-extrabold text-amber-300 mb-2 tracking-wide uppercase">{headerLines[0]}</p>
-        )}
-        <div className="overflow-x-auto w-full border border-slate-800 rounded-xl bg-slate-900/80 shadow-xl">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-950 border-b border-slate-800">
-                {headerRow.map((cell, idx) => (
-                  <th key={idx} className="p-3 text-xs font-bold text-indigo-300 uppercase tracking-wider">
-                    {cell.replace(/\*\*/g, '')}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {bodyRows.map((row, rowIdx) => (
-                <tr key={rowIdx} className="hover:bg-slate-900/40 transition-colors">
-                  {row.map((cell, cellIdx) => (
-                    <td
-                      key={cellIdx}
-                      className={`p-3 text-xs leading-relaxed ${
-                        cellIdx === 0
-                          ? 'text-indigo-400 font-semibold bg-slate-950/40 w-1/3 align-top border-r border-slate-800/60'
-                          : 'text-slate-200 align-top'
-                      }`}
-                    >
-                      {parseCellContent(cell)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  }
-
-  // Fallback 1: Try parsing Key: Value or - Key: Value pairs into a structured table
-  const kvPairs: Array<{ key: string; val: string }> = [];
-  lines.forEach(l => {
-    const trimmed = l.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '').trim();
+  rawLines.forEach(line => {
+    let trimmed = line.trim();
     if (!trimmed) return;
+
+    // Detect title (e.g. **SORU ANALİZİ**)
+    if (trimmed.toLowerCase().includes('soru analizi') || trimmed.toLowerCase().includes('soru karnesi')) {
+      const cleanTitle = trimmed.replace(/[\*\#|]/g, '').trim();
+      if (cleanTitle) detectedTitle = cleanTitle.toUpperCase();
+      return;
+    }
+
+    // Skip table separators (---|---, :---) and header labels ("Kriter", "Değerlendirme")
+    if (trimmed.includes('---') || trimmed.includes(':---')) return;
+    if (/^\|?\s*Kriter\s*\|\s*Değerlendirme\s*\|?$/i.test(trimmed)) return;
+
+    // A) If line contains pipe '|'
+    if (trimmed.includes('|')) {
+      const parts = trimmed
+        .split('|')
+        .map(p => p.replace(/[\*\#]/g, '').trim())
+        .filter(Boolean);
+
+      if (parts.length >= 2) {
+        let k = parts[0];
+        let v = parts.slice(1).join(' · ');
+        if (k && v && !k.toLowerCase().includes('kriter') && !v.toLowerCase().includes('değerlendirme')) {
+          if (k.length === 1 && ['A', 'B', 'C', 'D', 'E'].includes(k.toUpperCase())) {
+            k = `${k.toUpperCase()} Şıkkı Çeldiricisi`;
+          }
+          tableEntries.push({ key: k, val: v });
+          return;
+        }
+      }
+    }
+
+    // B) If line contains colon ':' (Key: Value)
     const colonIdx = trimmed.indexOf(':');
     if (colonIdx > 0) {
-      const k = trimmed.slice(0, colonIdx).trim();
-      const v = trimmed.slice(colonIdx + 1).trim();
-      if (k && v) {
-        kvPairs.push({ key: k, val: v });
+      let k = trimmed.slice(0, colonIdx).replace(/^[-*•|]\s*/, '').replace(/[\*\#]/g, '').trim();
+      let v = trimmed.slice(colonIdx + 1).replace(/\|$/, '').trim();
+      if (k && v && !k.toLowerCase().includes('kriter')) {
+        if (k.length === 1 && ['A', 'B', 'C', 'D', 'E'].includes(k.toUpperCase())) {
+          k = `${k.toUpperCase()} Şıkkı Çeldiricisi`;
+        }
+        tableEntries.push({ key: k, val: v });
+        return;
       }
     }
   });
 
-  if (kvPairs.length > 0) {
+  if (tableEntries.length > 0) {
     return (
       <div className="space-y-2">
-        <p className="text-xs font-extrabold text-amber-300 mb-2 tracking-wide uppercase">SORU ANALİZ KARNESİ</p>
+        <p className="text-xs font-extrabold text-amber-300 mb-2 tracking-wide uppercase">{detectedTitle}</p>
         <div className="overflow-x-auto w-full border border-slate-800 rounded-xl bg-slate-900/80 shadow-xl">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-950 border-b border-slate-800">
-                <th className="p-3 text-xs font-bold text-indigo-300 uppercase tracking-wider w-1/3">Kriter</th>
-                <th className="p-3 text-xs font-bold text-indigo-300 uppercase tracking-wider">Değerlendirme</th>
+                <th className="p-3 text-xs font-bold text-indigo-300 uppercase tracking-wider w-1/3 border-r border-slate-800">
+                  KRİTER
+                </th>
+                <th className="p-3 text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                  DEĞERLENDİRME
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {kvPairs.map((pair, idx) => (
+              {tableEntries.map((entry, idx) => (
                 <tr key={idx} className="hover:bg-slate-900/40 transition-colors">
-                  <td className="p-3 text-xs leading-relaxed font-semibold text-indigo-400 bg-slate-950/40 align-top border-r border-slate-800/60">
-                    {pair.key}
+                  <td className="p-3 text-xs leading-relaxed font-bold text-indigo-400 bg-slate-950/40 align-top border-r border-slate-800/60">
+                    {entry.key}
                   </td>
                   <td className="p-3 text-xs leading-relaxed text-slate-200 align-top">
-                    {parseCellContent(pair.val)}
+                    {parseCellContent(entry.val)}
                   </td>
                 </tr>
               ))}
@@ -275,7 +256,7 @@ const formatAnalysisTable = (text: string) => {
     );
   }
 
-  // Fallback 2: Plain formatted text if no key-value or table syntax found
+  // Fallback: Plain formatted text if no structured key-value entries found
   return <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{cleanText.replace(/\*\*/g, '')}</p>;
 };
 
