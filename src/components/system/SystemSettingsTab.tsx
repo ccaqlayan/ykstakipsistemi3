@@ -11,7 +11,10 @@ import {
   Bell, 
   Save, 
   CheckCircle2, 
-  X 
+  X,
+  Wrench,
+  Clock,
+  ShieldAlert
 } from 'lucide-react';
 import { db, setLowDataMode, setLowDataModeIntervalMinutes, getPresenceHeartbeatMinutes, setPresenceHeartbeatMinutes, setPresenceHeartbeatEnabled, sanitizeAndPrepareForFirestore } from '../../services/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -53,6 +56,15 @@ interface SystemSettingsTabProps {
   setInactiveStudentAlert: (val: boolean) => void;
   highRiskTopicAlert: boolean;
   setHighRiskTopicAlert: (val: boolean) => void;
+  maintenanceMode: boolean;
+  setMaintenanceMode: (val: boolean) => void;
+  maintenanceMessage: string;
+  setMaintenanceMessage: (val: string) => void;
+  maintenanceEndTime: string;
+  setMaintenanceEndTime: (val: string) => void;
+  maintenanceAllowTeachers: boolean;
+  setMaintenanceAllowTeachers: (val: boolean) => void;
+  handleSaveMaintenanceSettings: (e?: React.FormEvent, directMode?: boolean) => Promise<void>;
 }
 
 export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
@@ -92,6 +104,15 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
   setInactiveStudentAlert,
   highRiskTopicAlert,
   setHighRiskTopicAlert,
+  maintenanceMode,
+  setMaintenanceMode,
+  maintenanceMessage,
+  setMaintenanceMessage,
+  maintenanceEndTime,
+  setMaintenanceEndTime,
+  maintenanceAllowTeachers,
+  setMaintenanceAllowTeachers,
+  handleSaveMaintenanceSettings,
 }) => {
   return (
     <div className="space-y-6 animate-fade-in">
@@ -109,6 +130,135 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
           </button>
         </div>
       )}
+
+      {/* FEATURED: MAINTENANCE MODE CONFIGURATION CARD */}
+      <div className={`border rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-5 transition-all ${
+        maintenanceMode 
+          ? 'bg-gradient-to-r from-amber-950/70 via-slate-900 to-orange-950/70 border-amber-500/60 shadow-amber-500/10'
+          : 'bg-slate-900/90 border-slate-800'
+      }`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          <div className="flex items-center space-x-3">
+            <div className={`p-2.5 rounded-xl border ${
+              maintenanceMode 
+                ? 'bg-amber-500/20 text-amber-400 border-amber-500/40 animate-pulse' 
+                : 'bg-slate-800 text-slate-400 border-slate-700'
+            }`}>
+              <Wrench className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h3 className="font-bold text-white text-base">Sistem Bakım Modu (Maintenance Mode)</h3>
+                {maintenanceMode ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider animate-pulse">
+                    ⚠️ Bakım Aktif
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    🟢 Normal Çalışıyor
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Bakım modunu açarak öğrenci erişimini durdurabilir, bakım mesajı ve bitiş saati yayınlayabilirsiniz.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                const nextState = !maintenanceMode;
+                if (nextState) {
+                  if (confirm('Sistem Bakım Modunu AKTİF etmek üzeresiniz. Yönetici (Admin) haricindeki tüm kullanıcılar bakım ekranına yönlendirilecektir. Onaylıyor musunuz?')) {
+                    setMaintenanceMode(true);
+                    handleSaveMaintenanceSettings(undefined, true);
+                  }
+                } else {
+                  setMaintenanceMode(false);
+                  handleSaveMaintenanceSettings(undefined, false);
+                }
+              }}
+              className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer flex items-center space-x-2 shadow-lg ${
+                maintenanceMode
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/30 border border-emerald-400/40'
+                  : 'bg-gradient-to-r from-amber-600 via-orange-600 to-amber-600 hover:from-amber-500 hover:to-orange-500 text-white shadow-amber-600/30 border border-amber-400/40'
+              }`}
+            >
+              <Wrench className="w-4 h-4" />
+              <span>{maintenanceMode ? 'Bakım Modunu Kapat' : 'Bakım Modunu Başlat'}</span>
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={(e) => handleSaveMaintenanceSettings(e)} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                <span>Öğrencilere Gösterilecek Bakım Mesajı:</span>
+                <span className="text-[10px] text-slate-500 font-normal">Kişiselleştirilmiş duyuru metni</span>
+              </label>
+              <textarea
+                rows={3}
+                value={maintenanceMessage}
+                onChange={(e) => setMaintenanceMessage(e.target.value)}
+                placeholder="Öğrencilerin bakım ekranında göreceği açıklama metnini yazın..."
+                className="w-full bg-slate-950 text-white font-medium text-xs p-3 rounded-2xl border border-slate-800 focus:outline-none focus:border-amber-500 transition-all leading-relaxed"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-300 block">
+                  Tahmini Bitiş Saati / Süresi:
+                </label>
+                <div className="relative">
+                  <Clock className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={maintenanceEndTime}
+                    onChange={(e) => setMaintenanceEndTime(e.target.value)}
+                    placeholder="Örn: 23:30 veya 1 saat"
+                    className="w-full bg-slate-950 text-white font-medium text-xs py-2.5 pl-9 pr-3 rounded-2xl border border-slate-800 focus:outline-none focus:border-amber-500 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-slate-950/80 rounded-2xl border border-slate-800">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-bold text-slate-200 block">Öğretmen Girişi</span>
+                  <span className="text-[10px] text-slate-400 block">Öğretmenler bakımda sisteme girebilsin</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={maintenanceAllowTeachers}
+                    onChange={(e) => setMaintenanceAllowTeachers(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
+            <div className="text-[11px] text-slate-400 flex items-center space-x-1.5">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Yöneticiler (Admin) bakım modu açıkken bile sistemi tam yetkiyle kullanabilir.</span>
+            </div>
+
+            <button
+              type="submit"
+              className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all cursor-pointer flex items-center space-x-2 shadow-sm"
+            >
+              <Save className="w-4 h-4 text-amber-400" />
+              <span>Bakım Mesajı ve Ayarları Kaydet</span>
+            </button>
+          </div>
+        </form>
+      </div>
 
       {/* FEATURED: UNIVERSITY LOGO MANAGER SECTION */}
       <div className="bg-gradient-to-r from-purple-950/80 via-slate-900 to-indigo-950/80 border border-purple-500/40 rounded-3xl p-6 shadow-2xl backdrop-blur-md relative overflow-hidden">

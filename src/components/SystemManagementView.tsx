@@ -218,6 +218,22 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
   const [highRiskTopicAlert, setHighRiskTopicAlert] = useState<boolean>(true);
   const [settingsSaveMsg, setSettingsSaveMsg] = useState<string | null>(null);
 
+  // Maintenance Mode States
+  const [maintenanceMode, setMaintenanceMode] = useState<boolean>(() => {
+    const val = localStorage.getItem('maintenance_mode');
+    return val === 'true';
+  });
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string>(() => {
+    return localStorage.getItem('maintenance_message') || 'Sistemimizde şu anda planlı altyapı iyileştirmesi ve güncelleme çalışması yapılmaktadır. Öğrenci verileriniz güvendedir ve en kısa sürede sistem tekrar açılacaktır.';
+  });
+  const [maintenanceEndTime, setMaintenanceEndTime] = useState<string>(() => {
+    return localStorage.getItem('maintenance_end_time') || '';
+  });
+  const [maintenanceAllowTeachers, setMaintenanceAllowTeachers] = useState<boolean>(() => {
+    const val = localStorage.getItem('maintenance_allow_teachers');
+    return val === 'true';
+  });
+
   // Sync settings states on external updates
   useEffect(() => {
     const handleUpdate = () => {
@@ -235,6 +251,14 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
       if (phEnabled !== null) setPresenceHeartbeatEnabledState(phEnabled === 'true');
       const phMinutes = localStorage.getItem('presence_heartbeat_minutes');
       if (phMinutes) setPresenceHeartbeatMinutesState(parseInt(phMinutes, 10));
+      const mm = localStorage.getItem('maintenance_mode');
+      if (mm !== null) setMaintenanceMode(mm === 'true');
+      const mmMsg = localStorage.getItem('maintenance_message');
+      if (mmMsg) setMaintenanceMessage(mmMsg);
+      const mmEnd = localStorage.getItem('maintenance_end_time');
+      if (mmEnd !== null) setMaintenanceEndTime(mmEnd);
+      const mmTeach = localStorage.getItem('maintenance_allow_teachers');
+      if (mmTeach !== null) setMaintenanceAllowTeachers(mmTeach === 'true');
     };
     window.addEventListener('yks_settings_updated', handleUpdate);
     return () => window.removeEventListener('yks_settings_updated', handleUpdate);
@@ -549,6 +573,37 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
     }
   };
 
+  const handleSaveMaintenanceSettings = async (e?: React.FormEvent, directMode?: boolean) => {
+    if (e) e.preventDefault();
+    const targetMode = directMode !== undefined ? directMode : maintenanceMode;
+    try {
+      localStorage.setItem('maintenance_mode', String(targetMode));
+      localStorage.setItem('maintenance_message', maintenanceMessage);
+      localStorage.setItem('maintenance_end_time', maintenanceEndTime);
+      localStorage.setItem('maintenance_allow_teachers', String(maintenanceAllowTeachers));
+
+      await setDoc(doc(db, 'settings', 'school_config'), {
+        maintenanceMode: targetMode,
+        maintenanceMessage,
+        maintenanceEndTime,
+        maintenanceAllowTeachers
+      }, { merge: true });
+
+      window.dispatchEvent(new Event('yks_settings_updated'));
+
+      setSettingsSaveMsg(targetMode 
+        ? '⚠️ Bakım Modu AKTİF edildi! Öğrenciler bakım ekranına yönlendirilecek.'
+        : '✅ Bakım Modu KAPATILDI! Sistem tüm kullanıcılara açıldı.'
+      );
+      setTimeout(() => setSettingsSaveMsg(null), 5000);
+    } catch (err) {
+      console.error('Failed to save maintenance settings:', err);
+      window.dispatchEvent(new Event('yks_settings_updated'));
+      setSettingsSaveMsg('Bakım modu ayarları yerel tarayıcıya kaydedildi.');
+      setTimeout(() => setSettingsSaveMsg(null), 4000);
+    }
+  };
+
   const handleExportSystemBackup = () => {
     try {
       const rawBackup = {
@@ -857,6 +912,15 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
           setInactiveStudentAlert={setInactiveStudentAlert}
           highRiskTopicAlert={highRiskTopicAlert}
           setHighRiskTopicAlert={setHighRiskTopicAlert}
+          maintenanceMode={maintenanceMode}
+          setMaintenanceMode={setMaintenanceMode}
+          maintenanceMessage={maintenanceMessage}
+          setMaintenanceMessage={setMaintenanceMessage}
+          maintenanceEndTime={maintenanceEndTime}
+          setMaintenanceEndTime={setMaintenanceEndTime}
+          maintenanceAllowTeachers={maintenanceAllowTeachers}
+          setMaintenanceAllowTeachers={setMaintenanceAllowTeachers}
+          handleSaveMaintenanceSettings={handleSaveMaintenanceSettings}
         />
       )}
 

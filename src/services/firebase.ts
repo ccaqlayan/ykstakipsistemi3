@@ -387,6 +387,18 @@ export function subscribeToFirestore(
         presenceHeartbeatEnabled = data.presenceHeartbeatEnabled;
         localStorage.setItem('presence_heartbeat_enabled', String(data.presenceHeartbeatEnabled));
       }
+      if (data.maintenanceMode !== undefined) {
+        localStorage.setItem('maintenance_mode', String(data.maintenanceMode));
+      }
+      if (data.maintenanceMessage !== undefined) {
+        localStorage.setItem('maintenance_message', data.maintenanceMessage);
+      }
+      if (data.maintenanceEndTime !== undefined) {
+        localStorage.setItem('maintenance_end_time', data.maintenanceEndTime);
+      }
+      if (data.maintenanceAllowTeachers !== undefined) {
+        localStorage.setItem('maintenance_allow_teachers', String(data.maintenanceAllowTeachers));
+      }
       // Dispatch a custom event so components can listen to setting updates reactively
       window.dispatchEvent(new Event('yks_settings_updated'));
     }

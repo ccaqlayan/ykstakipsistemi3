@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Sidebar, TabType } from './components/Sidebar';
 import { LoginView } from './components/LoginView';
+import { MaintenanceView } from './components/MaintenanceView';
 import { ProfileModal } from './components/ProfileModal';
 import { MandatoryPasswordChangeModal } from './components/MandatoryPasswordChangeModal';
 
@@ -50,6 +51,27 @@ import { AppTabRouter } from './components/app/AppTabRouter';
 export default function App() {
   const [globalState, setGlobalState] = useState<AppGlobalState>(() => loadGlobalState());
   const currentUser = globalState.currentUser;
+
+  // Maintenance Mode States
+  const [maintenanceMode, setMaintenanceMode] = useState<boolean>(() => localStorage.getItem('maintenance_mode') === 'true');
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string>(() => localStorage.getItem('maintenance_message') || '');
+  const [maintenanceEndTime, setMaintenanceEndTime] = useState<string>(() => localStorage.getItem('maintenance_end_time') || '');
+  const [maintenanceAllowTeachers, setMaintenanceAllowTeachers] = useState<boolean>(() => localStorage.getItem('maintenance_allow_teachers') === 'true');
+
+  useEffect(() => {
+    const handleSettingsUpdate = () => {
+      const mm = localStorage.getItem('maintenance_mode');
+      if (mm !== null) setMaintenanceMode(mm === 'true');
+      const mmMsg = localStorage.getItem('maintenance_message');
+      if (mmMsg !== null) setMaintenanceMessage(mmMsg);
+      const mmEnd = localStorage.getItem('maintenance_end_time');
+      if (mmEnd !== null) setMaintenanceEndTime(mmEnd);
+      const mmTeach = localStorage.getItem('maintenance_allow_teachers');
+      if (mmTeach !== null) setMaintenanceAllowTeachers(mmTeach === 'true');
+    };
+    window.addEventListener('yks_settings_updated', handleSettingsUpdate);
+    return () => window.removeEventListener('yks_settings_updated', handleSettingsUpdate);
+  }, []);
 
   // Audit loglarını sadece öğrenci olmayan roller için dinle
   useEffect(() => {
@@ -2605,6 +2627,25 @@ export default function App() {
 
   const unreadMessageCount = currentUser ? (globalState.messages || []).filter(m => isMessageUnreadForUser(m, currentUser)).length : 0;
 
+  const isAdmin = currentUser?.role === 'admin';
+  const isTeacherAllowed = currentUser?.role === 'teacher' && maintenanceAllowTeachers;
+  const isMaintenanceBlocked = maintenanceMode && !isAdmin && !isTeacherAllowed;
+
+  // IF MAINTENANCE MODE IS ACTIVE AND USER NOT ALLOWED -> RENDER MAINTENANCE VIEW
+  if (isMaintenanceBlocked) {
+    return (
+      <MaintenanceView
+        currentUser={currentUser}
+        onLogout={handleLogout}
+        onAdminLogin={handleLoginSuccess}
+        users={globalState.users}
+        schoolName={currentSchoolName}
+        maintenanceMessage={maintenanceMessage}
+        maintenanceEndTime={maintenanceEndTime}
+      />
+    );
+  }
+
   // IF NOT LOGGED IN -> RENDER LOGIN VIEW
   if (!currentUser) {
     return (
@@ -2623,6 +2664,23 @@ export default function App() {
   // IF LOGGED IN -> MAIN APPLICATION VIEW
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white relative overflow-x-hidden">
+      {/* Top Warning Banner for Admin during Maintenance Mode */}
+      {isAdmin && maintenanceMode && (
+        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-slate-950 px-4 py-2 text-xs font-black flex items-center justify-between shadow-lg sticky top-0 z-50 animate-pulse">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-black">🚧</span>
+            <span>DİKKAT: Sistem şu anda BAKIM MODUNDA! Öğrenciler bakım ekranını görmektedir.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActiveTab('teacher_system')}
+            className="bg-slate-950 text-amber-400 hover:text-white px-3 py-1 rounded-xl text-[11px] font-black transition-all cursor-pointer shadow-md"
+          >
+            Bakım Modu Ayarlarını Aç
+          </button>
+        </div>
+      )}
+
       {currentUser.mustChangePassword && (
         <MandatoryPasswordChangeModal
           currentUser={currentUser}

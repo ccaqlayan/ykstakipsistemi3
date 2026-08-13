@@ -122,6 +122,7 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - src/components/ConfirmDeleteModal.tsx        : Evrensel silme onay penceresi.
 - src/components/GoogleSheetsView.tsx          : Google Tabloları bağlantı ve veri senkronizasyonu.
 - src/components/LoginView.tsx                 : Kullanıcı giriş ve hesap oluşturma ekranı.
+- src/components/MaintenanceView.tsx           : Sistem bakım modu ekranı ve yönetici bypass giriş penceresi.
 - src/components/MessagesView.tsx              : Birebir rehberlik ve sınıf mesajlaşma alanı.
 - src/components/PastExamsView.tsx             : ÖSYM Çıkmış YKS sınav istatistikleri ve analiz ekranı.
 - src/components/PastQuestionsView.tsx          : Konularına göre çıkmış soru sayıları ve ağırlıkları.
