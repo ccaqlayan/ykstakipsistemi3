@@ -8,18 +8,15 @@ import {
   Flame, 
   TrendingUp, 
   BookOpen, 
-  Award,
-  Sparkles,
-  Layers,
-  BarChart2,
-  HelpCircle,
-  ArrowUpDown,
-  CheckCheck,
-  RotateCcw,
-  Target,
-  Clock,
-  ChevronRight,
-  Zap
+  Sparkles, 
+  Layers, 
+  HelpCircle, 
+  CheckCheck, 
+  RotateCcw, 
+  Target, 
+  X,
+  Zap,
+  GraduationCap
 } from 'lucide-react';
 import { PAST_EXAM_QUESTIONS_DATA, PastTopicData } from '../data/pastQuestionsData';
 import { YKS_SUBJECTS } from '../data/initialData';
@@ -34,34 +31,11 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
   onTogglePastTopic
 }) => {
   const [selectedSubject, setSelectedSubject] = useState<string>('TYT Türkçe');
-  const [examTypeFilter, setExamTypeFilter] = useState<'ALL' | 'TYT' | 'AYT'>('ALL');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [completionFilter, setCompletionFilter] = useState<'ALL' | 'completed' | 'pending'>('ALL');
   const [sortBy, setSortBy] = useState<'total_desc' | 'default' | 'latest_2025'>('total_desc');
 
-  // Available subjects list combining TYT & AYT
-  const allSubjects = useMemo(() => {
-    return [...YKS_SUBJECTS.TYT, ...YKS_SUBJECTS.AYT];
-  }, []);
-
-  // Filter subjects based on examTypeFilter dropdown
-  const filteredSubjectOptions = useMemo(() => {
-    if (examTypeFilter === 'TYT') return YKS_SUBJECTS.TYT;
-    if (examTypeFilter === 'AYT') return YKS_SUBJECTS.AYT;
-    return allSubjects;
-  }, [examTypeFilter, allSubjects]);
-
-  // Handle subject selection when changing exam type filter
-  const handleExamTypeFilterChange = (type: 'ALL' | 'TYT' | 'AYT') => {
-    setExamTypeFilter(type);
-    if (type === 'TYT' && !YKS_SUBJECTS.TYT.includes(selectedSubject)) {
-      setSelectedSubject(YKS_SUBJECTS.TYT[0]);
-    } else if (type === 'AYT' && !YKS_SUBJECTS.AYT.includes(selectedSubject)) {
-      setSelectedSubject(YKS_SUBJECTS.AYT[0]);
-    }
-  };
-
-  // Get topics for selected subject
+  // Topics for selected subject (when not searching globally)
   const currentSubjectTopics = useMemo(() => {
     return PAST_EXAM_QUESTIONS_DATA.filter((item) => item.subject === selectedSubject);
   }, [selectedSubject]);
@@ -72,17 +46,17 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
     return Math.max(...currentSubjectTopics.map(t => t.totalQuestions));
   }, [currentSubjectTopics]);
 
-  // Total questions in 8-year archive for this subject
+  // Total questions in 8-year archive for selected subject
   const totalQuestionsInSubject = useMemo(() => {
     return currentSubjectTopics.reduce((acc, t) => acc + t.totalQuestions, 0);
   }, [currentSubjectTopics]);
 
-  // Total average questions per YKS exam for this subject (e.g. 40 in TYT Türkçe, 14 in AYT Fizik)
+  // Total average questions per YKS exam for selected subject (e.g. 40 in TYT Türkçe, 14 in AYT Fizik)
   const totalSubjectExamQuestions = useMemo(() => {
     return currentSubjectTopics.reduce((acc, t) => acc + (t.totalQuestions / 8), 0);
   }, [currentSubjectTopics]);
 
-  // Average questions solved/completed based on student's checked topics
+  // Average questions solved/completed based on student's checked topics for selected subject
   const completedQuestionsAvg = useMemo(() => {
     return currentSubjectTopics
       .filter((t) => {
@@ -102,7 +76,7 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
     return Math.max(0, totalSubjectExamQuestions - completedQuestionsAvg);
   }, [totalSubjectExamQuestions, completedQuestionsAvg]);
 
-  // Count of completed topics
+  // Count of completed topics in selected subject
   const completedTopicsCount = useMemo(() => {
     return currentSubjectTopics.filter((t) => {
       const topicKey = `${t.subject}:${t.topic}`;
@@ -119,15 +93,23 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
     return [...currentSubjectTopics].sort((a, b) => b.totalQuestions - a.totalQuestions)[0];
   }, [currentSubjectTopics]);
 
-  // Apply search & extra filters
-  const displayedTopics = useMemo(() => {
-    let list = [...currentSubjectTopics];
+  // Global Search or Subject Topics List
+  const isGlobalSearchActive = searchTerm.trim().length > 0;
 
-    if (searchTerm.trim() !== '') {
-      const q = searchTerm.toLowerCase();
-      list = list.filter(
-        (t) => t.topic.toLowerCase().includes(q) || (t.description && t.description.toLowerCase().includes(q))
+  const displayedTopics = useMemo(() => {
+    let list: PastTopicData[];
+
+    if (isGlobalSearchActive) {
+      // Search across ALL subjects in the curriculum
+      const q = searchTerm.toLowerCase().trim();
+      list = PAST_EXAM_QUESTIONS_DATA.filter(
+        (t) =>
+          t.topic.toLowerCase().includes(q) ||
+          (t.description && t.description.toLowerCase().includes(q)) ||
+          t.subject.toLowerCase().includes(q)
       );
+    } else {
+      list = [...currentSubjectTopics];
     }
 
     if (completionFilter !== 'ALL') {
@@ -145,9 +127,9 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
     }
 
     return list;
-  }, [currentSubjectTopics, searchTerm, completionFilter, sortBy, completedPastTopics]);
+  }, [isGlobalSearchActive, searchTerm, currentSubjectTopics, completionFilter, sortBy, completedPastTopics]);
 
-  // Bulk actions for this subject
+  // Bulk actions for current subject
   const handleMarkAllCompleted = () => {
     currentSubjectTopics.forEach(t => {
       const topicKey = `${t.subject}:${t.topic}`;
@@ -166,12 +148,15 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
     });
   };
 
+  const clearSearch = () => {
+    setSearchTerm('');
+  };
+
   return (
     <div className="space-y-6 pb-12 animate-fade-in">
       
-      {/* ── 1. STUNNING HERO BANNER & QUESTION COVERAGE POWER ── */}
+      {/* ── 1. HERO BANNER & QUESTION COVERAGE POWER ── */}
       <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-7 border border-indigo-500/25 shadow-2xl backdrop-blur-xl">
-        {/* Ambient Glows */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -198,7 +183,7 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
                 <Target className="w-4 h-4 text-emerald-400" />
                 <span>Sınav Soru Kapsaması</span>
               </span>
-              <span className="text-xs font-mono font-bold text-slate-400 bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-800">
+              <span className="text-xs font-mono font-bold text-indigo-300 bg-indigo-950/60 px-2.5 py-0.5 rounded-lg border border-indigo-500/30">
                 {selectedSubject}
               </span>
             </div>
@@ -244,117 +229,131 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
         </div>
       </div>
 
-      {/* ── 2. QUICK SUBJECT SELECTOR & FILTERS BAR ── */}
-      <div className="bg-slate-900/90 rounded-3xl p-5 border border-slate-800 shadow-xl space-y-4 backdrop-blur-md">
+      {/* ── 2. GLOBAL SEARCH & GROUPED SUBJECT SELECTOR ── */}
+      <div className="bg-slate-900/90 rounded-3xl p-5 sm:p-6 border border-slate-800 shadow-xl space-y-5 backdrop-blur-md">
         
-        {/* Row 1: Exam Type & Subject Selector */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        {/* Global Search Bar Across All Subjects */}
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-400 pointer-events-none" />
+          <input
+            id="past-questions-global-search-input"
+            type="text"
+            placeholder="Tüm dersler içinde konu ara (Örn: Türev, Paragraf, Elektrik, Hücre Bölünmeleri)..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-slate-950 border-2 border-indigo-500/30 focus:border-indigo-500 text-white text-sm font-semibold rounded-2xl pl-12 pr-12 py-3.5 outline-none shadow-inner transition-all placeholder:text-slate-500"
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-all cursor-pointer"
+              title="Aramayı Temizle"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Global Search Active Banner */}
+        {isGlobalSearchActive && (
+          <div className="p-3 bg-indigo-950/60 border border-indigo-500/40 rounded-2xl flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center space-x-2 text-indigo-200 font-bold">
+              <Search className="w-4 h-4 text-indigo-400 shrink-0" />
+              <span>
+                Tüm YKS müfredatında <strong className="text-white font-extrabold">"{searchTerm}"</strong> araması: 
+                <span className="text-amber-300 font-mono ml-1 font-black">{displayedTopics.length}</span> konu bulundu
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs transition-all cursor-pointer flex items-center space-x-1 shrink-0"
+            >
+              <span>Ders Görünümüne Dön</span>
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* GROUPED SUBJECT BUTTONS: TYT & AYT Distinct Rows */}
+        <div className="space-y-3.5 pt-1">
           
-          {/* Exam Type Buttons */}
-          <div className="flex items-center bg-slate-950 p-1.5 rounded-2xl border border-slate-800 shrink-0">
-            <button
-              id="past-questions-filter-all"
-              type="button"
-              onClick={() => handleExamTypeFilterChange('ALL')}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                examTypeFilter === 'ALL'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Tüm Sınavlar
-            </button>
-            <button
-              id="past-questions-filter-tyt"
-              type="button"
-              onClick={() => handleExamTypeFilterChange('TYT')}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                examTypeFilter === 'TYT'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              📘 TYT
-            </button>
-            <button
-              id="past-questions-filter-ayt"
-              type="button"
-              onClick={() => handleExamTypeFilterChange('AYT')}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                examTypeFilter === 'AYT'
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              📙 AYT
-            </button>
+          {/* Row 1: TYT Dersleri */}
+          <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-850 space-y-2">
+            <div className="flex items-center space-x-2">
+              <span className="px-2.5 py-0.5 rounded-lg bg-sky-500/15 border border-sky-500/30 text-sky-400 text-[11px] font-black uppercase tracking-wider flex items-center space-x-1">
+                <GraduationCap className="w-3 h-3" />
+                <span>TYT Dersleri</span>
+              </span>
+              <span className="text-[11px] text-slate-500">Temel Yeterlilik Testi</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              {YKS_SUBJECTS.TYT.map((sub) => {
+                const isSelected = selectedSubject === sub && !isGlobalSearchActive;
+                const displayName = sub.replace(/^TYT\s+/, '');
+
+                return (
+                  <button
+                    key={sub}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubject(sub);
+                      if (isGlobalSearchActive) setSearchTerm('');
+                    }}
+                    className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-sky-600 border-sky-400 text-white shadow-md shadow-sky-600/30 ring-2 ring-sky-400/40 scale-105'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-850'
+                    }`}
+                  >
+                    {displayName}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Search Box */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-            <input
-              id="past-questions-search-input"
-              type="text"
-              placeholder={`${selectedSubject} içinde konu ara...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white text-xs font-medium rounded-2xl pl-10 pr-4 py-2.5 outline-none shadow-inner"
-            />
+          {/* Row 2: AYT Dersleri */}
+          <div className="bg-slate-950/70 p-3.5 rounded-2xl border border-slate-850 space-y-2">
+            <div className="flex items-center space-x-2">
+              <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[11px] font-black uppercase tracking-wider flex items-center space-x-1">
+                <GraduationCap className="w-3 h-3" />
+                <span>AYT Dersleri</span>
+              </span>
+              <span className="text-[11px] text-slate-500">Alan Yeterlilik Testleri</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              {YKS_SUBJECTS.AYT.map((sub) => {
+                const isSelected = selectedSubject === sub && !isGlobalSearchActive;
+                const displayName = sub.replace(/^AYT\s+/, '');
+
+                return (
+                  <button
+                    key={sub}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubject(sub);
+                      if (isGlobalSearchActive) setSearchTerm('');
+                    }}
+                    className={`text-xs px-3 py-1.5 rounded-xl border font-bold transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-amber-600 border-amber-400 text-white shadow-md shadow-amber-600/30 ring-2 ring-amber-400/40 scale-105'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-850'
+                    }`}
+                  >
+                    {displayName}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Subject Dropdown */}
-          <div className="min-w-[220px]">
-            <select
-              id="past-questions-subject-select"
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full bg-slate-950 border-2 border-indigo-500/40 focus:border-indigo-500 text-white font-bold rounded-2xl px-4 py-2.5 text-xs outline-none cursor-pointer shadow-inner"
-            >
-              {(examTypeFilter === 'ALL' || examTypeFilter === 'TYT') && (
-                <optgroup label="--- TYT DERSLERİ ---">
-                  {YKS_SUBJECTS.TYT.map((sub) => (
-                    <option key={sub} value={sub}>
-                      📘 {sub}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-              {(examTypeFilter === 'ALL' || examTypeFilter === 'AYT') && (
-                <optgroup label="--- AYT DERSLERİ ---">
-                  {YKS_SUBJECTS.AYT.map((sub) => (
-                    <option key={sub} value={sub}>
-                      📙 {sub}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
-          </div>
         </div>
 
-        {/* Row 2: Subject Chips (Full-width clean wrapped grid) */}
-        <div className="pt-2 border-t border-slate-850 flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] font-bold text-slate-400 mr-1 uppercase tracking-wider flex items-center space-x-1 shrink-0">
-            <span>Ders:</span>
-          </span>
-          {filteredSubjectOptions.map((sub) => (
-            <button
-              key={sub}
-              type="button"
-              onClick={() => setSelectedSubject(sub)}
-              className={`text-xs px-3 py-1.5 rounded-xl border transition-all font-bold cursor-pointer ${
-                selectedSubject === sub
-                  ? 'bg-indigo-950/90 border-indigo-500 text-indigo-200 shadow-md shadow-indigo-950/50 ring-1 ring-indigo-500/30'
-                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
-              }`}
-            >
-              {sub}
-            </button>
-          ))}
-        </div>
-
-        {/* Row 3: Status Filters & Bulk Actions */}
+        {/* Row 3: Status Filters, Sort, and Bulk Actions */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-850 text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-slate-400 font-bold flex items-center gap-1 mr-1">
@@ -373,7 +372,7 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                Tümü ({currentSubjectTopics.length})
+                Tümü ({isGlobalSearchActive ? displayedTopics.length : currentSubjectTopics.length})
               </button>
               <button
                 type="button"
@@ -385,7 +384,7 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
                 }`}
               >
                 <CheckCircle2 className="w-3 h-3 text-emerald-300" />
-                <span>Çözülenler ({completedTopicsCount})</span>
+                <span>Çözülenler</span>
               </button>
               <button
                 type="button"
@@ -396,7 +395,7 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                ⏳ Çözülecekler ({currentSubjectTopics.length - completedTopicsCount})
+                ⏳ Çözülecekler
               </button>
             </div>
 
@@ -413,86 +412,90 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
             </select>
           </div>
 
-          {/* Quick Bulk Action Buttons */}
-          <div className="flex items-center space-x-2">
-            {completedTopicsCount < currentSubjectTopics.length && (
-              <button
-                type="button"
-                onClick={handleMarkAllCompleted}
-                className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-emerald-950/60 text-slate-400 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-[11px] font-bold transition-all flex items-center space-x-1.5 cursor-pointer"
-                title="Bu dersteki tüm konuları çözüldü olarak işaretle"
-              >
-                <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Tümünü Çözüldü Yap</span>
-              </button>
-            )}
+          {/* Quick Bulk Action Buttons for current subject */}
+          {!isGlobalSearchActive && (
+            <div className="flex items-center space-x-2">
+              {completedTopicsCount < currentSubjectTopics.length && (
+                <button
+                  type="button"
+                  onClick={handleMarkAllCompleted}
+                  className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-emerald-950/60 text-slate-400 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-[11px] font-bold transition-all flex items-center space-x-1.5 cursor-pointer"
+                  title="Bu dersteki tüm konuları çözüldü olarak işaretle"
+                >
+                  <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Tümünü Çözüldü Yap</span>
+                </button>
+              )}
 
-            {completedTopicsCount > 0 && (
-              <button
-                type="button"
-                onClick={handleResetAllCompleted}
-                className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 text-[11px] font-bold transition-all flex items-center space-x-1.5 cursor-pointer"
-                title="Bu dersteki tüm işaretleri sıfırla"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
-                <span>Sıfırla</span>
-              </button>
-            )}
-          </div>
+              {completedTopicsCount > 0 && (
+                <button
+                  type="button"
+                  onClick={handleResetAllCompleted}
+                  className="px-3 py-1.5 rounded-xl bg-slate-950 hover:bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 text-[11px] font-bold transition-all flex items-center space-x-1.5 cursor-pointer"
+                  title="Bu dersteki tüm işaretleri sıfırla"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Sıfırla</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── 3. OVERVIEW KPI CARDS ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Card 1: Total Exam Questions Archive */}
-        <div className="bg-slate-900/80 rounded-3xl p-5 border border-slate-800 shadow-xl flex items-center space-x-4 backdrop-blur-md">
-          <div className="p-3.5 bg-indigo-500/15 rounded-2xl border border-indigo-500/30 text-indigo-400 shrink-0">
-            <BookOpen className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Toplam Çıkmış Soru</span>
-            <div className="text-xl font-black text-white mt-0.5 font-mono">
-              {totalQuestionsInSubject} Soru
+      {/* ── 3. OVERVIEW KPI CARDS (For Selected Subject) ── */}
+      {!isGlobalSearchActive && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Card 1: Total Exam Questions Archive */}
+          <div className="bg-slate-900/80 rounded-3xl p-5 border border-slate-800 shadow-xl flex items-center space-x-4 backdrop-blur-md">
+            <div className="p-3.5 bg-indigo-500/15 rounded-2xl border border-indigo-500/30 text-indigo-400 shrink-0">
+              <BookOpen className="w-6 h-6" />
             </div>
-            <span className="text-[11px] text-slate-500 truncate block">
-              2018 - 2025 Arşivi (Yıllık ort. ~{totalSubjectExamQuestions.toFixed(0)} soru)
-            </span>
+            <div className="min-w-0">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Toplam Çıkmış Soru</span>
+              <div className="text-xl font-black text-white mt-0.5 font-mono">
+                {totalQuestionsInSubject} Soru
+              </div>
+              <span className="text-[11px] text-slate-500 truncate block">
+                2018 - 2025 Arşivi (Yıllık ort. ~{totalSubjectExamQuestions.toFixed(0)} soru)
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* Card 2: Top Subject Question Leader */}
-        <div className="bg-slate-900/80 rounded-3xl p-5 border border-slate-800 shadow-xl flex items-center space-x-4 backdrop-blur-md">
-          <div className="p-3.5 bg-amber-500/15 rounded-2xl border border-amber-500/30 text-amber-400 shrink-0">
-            <Flame className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">En Çok Soru Çıkan Konu</span>
-            <div className="text-sm font-extrabold text-amber-300 mt-0.5 truncate">
-              {topTopicInSubject ? topTopicInSubject.topic : 'Kayıt Yok'}
+          {/* Card 2: Top Subject Question Leader */}
+          <div className="bg-slate-900/80 rounded-3xl p-5 border border-slate-800 shadow-xl flex items-center space-x-4 backdrop-blur-md">
+            <div className="p-3.5 bg-amber-500/15 rounded-2xl border border-amber-500/30 text-amber-400 shrink-0">
+              <Flame className="w-6 h-6" />
             </div>
-            <span className="text-[11px] text-amber-400/80 font-mono font-bold truncate block">
-              {topTopicInSubject ? `${topTopicInSubject.totalQuestions} Soru • (${(topTopicInSubject.totalQuestions / 8).toFixed(1)} soru/yıl)` : ''}
-            </span>
+            <div className="min-w-0">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">En Çok Soru Çıkan Konu</span>
+              <div className="text-sm font-extrabold text-amber-300 mt-0.5 truncate">
+                {topTopicInSubject ? topTopicInSubject.topic : 'Kayıt Yok'}
+              </div>
+              <span className="text-[11px] text-amber-400/80 font-mono font-bold truncate block">
+                {topTopicInSubject ? `${topTopicInSubject.totalQuestions} Soru • (${(topTopicInSubject.totalQuestions / 8).toFixed(1)} soru/yıl)` : ''}
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* Card 3: Student Study Progress */}
-        <div className="bg-slate-900/80 rounded-3xl p-5 border border-slate-800 shadow-xl flex items-center space-x-4 backdrop-blur-md">
-          <div className="p-3.5 bg-emerald-500/15 rounded-2xl border border-emerald-500/30 text-emerald-400 shrink-0">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Çözülen Soru Potansiyeli</span>
-            <div className="text-xl font-black text-white mt-0.5 font-mono flex items-baseline space-x-1.5">
-              <span>%{questionCoveragePercentage.toFixed(1)}</span>
-              <span className="text-xs text-slate-400 font-normal">({completedQuestionsAvg.toFixed(1)} soru)</span>
+          {/* Card 3: Student Study Progress */}
+          <div className="bg-slate-900/80 rounded-3xl p-5 border border-slate-800 shadow-xl flex items-center space-x-4 backdrop-blur-md">
+            <div className="p-3.5 bg-emerald-500/15 rounded-2xl border border-emerald-500/30 text-emerald-400 shrink-0">
+              <CheckCircle2 className="w-6 h-6" />
             </div>
-            <span className="text-[11px] text-emerald-400 font-bold truncate block">
-              {completedTopicsCount} / {currentSubjectTopics.length} Konu Tamamlandı
-            </span>
+            <div className="min-w-0">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Çözülen Soru Potansiyeli</span>
+              <div className="text-xl font-black text-white mt-0.5 font-mono flex items-baseline space-x-1.5">
+                <span>%{questionCoveragePercentage.toFixed(1)}</span>
+                <span className="text-xs text-slate-400 font-normal">({completedQuestionsAvg.toFixed(1)} soru)</span>
+              </div>
+              <span className="text-[11px] text-emerald-400 font-bold truncate block">
+                {completedTopicsCount} / {currentSubjectTopics.length} Konu Tamamlandı
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── 4. MAIN PAST EXAM QUESTIONS TABLE ── */}
       <div className="bg-slate-900/90 rounded-3xl border border-slate-800 overflow-hidden shadow-2xl backdrop-blur-md">
@@ -505,7 +508,7 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
             </div>
             <div>
               <h2 className="text-base font-extrabold text-white tracking-tight flex items-center gap-2">
-                <span>{selectedSubject} Çıkmış Soru Dağılımı</span>
+                <span>{isGlobalSearchActive ? `"${searchTerm}" Arama Sonuçları` : `${selectedSubject} Çıkmış Soru Dağılımı`}</span>
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-900 text-indigo-300 font-bold border border-indigo-500/30">
                   8 Yıl (2018 - 2025)
                 </span>
@@ -517,7 +520,7 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
           </div>
 
           <div className="text-xs font-mono font-bold text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1 rounded-xl">
-            {displayedTopics.length} / {currentSubjectTopics.length} Konu Listeleniyor
+            {displayedTopics.length} Konu Listeleniyor
           </div>
         </div>
 
@@ -528,7 +531,9 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
             </div>
             <h3 className="text-sm font-bold text-white">Konu Kaydı Bulunamadı</h3>
             <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              Arama kriterlerinize veya seçilen filtrelere uygun çıkmış soru kaydı bulunamadı.
+              {isGlobalSearchActive 
+                ? `"${searchTerm}" aramasına uygun hiçbir YKS çıkmış soru konusu bulunamadı.` 
+                : 'Arama kriterlerinize veya seçilen filtrelere uygun çıkmış soru kaydı bulunamadı.'}
             </p>
           </div>
         ) : (
@@ -556,11 +561,11 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
                   const isCompleted = completedPastTopics.includes(topicKey);
                   const avgPerYear = (topicItem.totalQuestions / 8).toFixed(1);
                   const numAvg = topicItem.totalQuestions / 8;
-                  const ratioToMax = Math.min(100, Math.max(8, (topicItem.totalQuestions / maxTopicQuestions) * 100));
+                  const ratioToMax = Math.min(100, Math.max(8, (topicItem.totalQuestions / (maxTopicQuestions || 1)) * 100));
 
                   return (
                     <tr 
-                      key={topicItem.id || index}
+                      key={`${topicItem.subject}-${topicItem.id || index}`}
                       className={`transition-all group border-b border-slate-850/80 ${
                         isCompleted 
                           ? 'bg-emerald-950/20 hover:bg-emerald-950/30 border-emerald-500/30' 
@@ -586,9 +591,22 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
                         </button>
                       </td>
 
-                      {/* Topic Name & Description */}
+                      {/* Topic Name & Subject Badge if Global Search */}
                       <td className="py-3.5 px-4">
-                        <div className="flex items-center space-x-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {isGlobalSearchActive && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedSubject(topicItem.subject);
+                                setSearchTerm('');
+                              }}
+                              className="px-2 py-0.5 rounded-md bg-indigo-950 border border-indigo-500/40 text-indigo-300 font-extrabold text-[10px] hover:bg-indigo-900 transition-colors cursor-pointer"
+                              title="Bu dersin sayfasına geç"
+                            >
+                              {topicItem.subject}
+                            </button>
+                          )}
                           <span className={`font-extrabold text-sm tracking-tight transition-colors ${
                             isCompleted ? 'text-slate-400 line-through' : 'text-white group-hover:text-indigo-200'
                           }`}>
