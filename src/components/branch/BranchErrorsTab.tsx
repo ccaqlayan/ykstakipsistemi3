@@ -725,21 +725,21 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                       setInlineEditingErrorId(item.id);
                       setInlineNotesText(item.solutionNotes || '');
                     }}
-                    className="bg-slate-950/70 hover:bg-slate-950 border border-slate-800/80 hover:border-indigo-500/40 p-3 rounded-2xl space-y-1 cursor-pointer transition-all group/note shadow-sm"
+                    className="bg-slate-950/70 hover:bg-slate-950 border border-slate-800/80 hover:border-indigo-500/40 px-3.5 py-2.5 rounded-2xl cursor-pointer transition-all flex items-center justify-between group/note shadow-sm"
                     title="Hata notunu düzenlemek için tıklayın"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-400 group-hover/note:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 transition-colors">
-                        <span>Hata Notu:</span>
+                    <div className="text-xs flex items-center gap-1.5 min-w-0 flex-1 flex-wrap">
+                      <span className="text-[11px] font-bold text-slate-400 group-hover/note:text-indigo-400 shrink-0 transition-colors">
+                        Hata Notu:
                       </span>
-                      <span className="text-[10px] text-slate-500 group-hover/note:text-indigo-400 flex items-center gap-1 opacity-0 group-hover/note:opacity-100 transition-all font-medium">
-                        <Edit2 className="w-3 h-3" />
-                        <span>Düzenle</span>
+                      <span className={`font-medium break-words ${item.solutionNotes ? 'text-slate-200' : 'text-slate-500 italic'}`}>
+                        {item.solutionNotes || 'Not eklemek için tıklayın...'}
                       </span>
                     </div>
-                    <p className={`text-xs whitespace-pre-wrap leading-relaxed font-medium ${item.solutionNotes ? 'text-slate-300' : 'text-slate-500 italic'}`}>
-                      {item.solutionNotes || 'Not eklemek için tıklayın...'}
-                    </p>
+                    <span className="text-[10px] text-slate-500 group-hover/note:text-indigo-400 flex items-center gap-1 opacity-0 group-hover/note:opacity-100 transition-all font-medium shrink-0 ml-2">
+                      <Edit2 className="w-3 h-3" />
+                      <span>Düzenle</span>
+                    </span>
                   </div>
                 )}
 
