@@ -514,27 +514,21 @@ router.post('/analyze-error-priority', async (req, res) => {
       }
     });
 
-    const prompt = `YKS Sınav Koçusun. Öğrencinin deneme yanlışı için hata teşhisi yap ve 1-10 arası öncelik puanı ("rating") belirle.
+    const prompt = `YKS Koçusun. Verilen deneme hatasını teşhis et ve 1-10 arası öncelik puanı ("rating") belirle.
 
-GİRİŞ:
-- Ders: ${subject || '-'}
-- Konu: ${topicName || '-'}
-- Yayın: ${publisher || '-'}
-- Hata Nedeni: ${errorReason || '-'}
-- Çözüm Notu: ${solutionNotes || '-'}
+Ders: ${subject || '-'} | Konu: ${topicName || '-'} | Yayın: ${publisher || '-'} | Hata Nedeni: ${errorReason || '-'} | Çözüm Notu: ${solutionNotes || '-'}
 
 KURALLAR:
-1. "analysis" metnine kesinlikle başlık/etiket EKLEME (Örn: "**Hata Teşhisi:**" yazma).
-2. "analysis" metninin İLK CÜMLESİNDE bu konunun YKS'de her yıl ortalama kaç soru çıktığını net olarak belirt (örn: "Bu konu YKS'de her yıl ortalama X soru ile karşımıza çıkmaktadır.").
-3. Ardından hata nedeni ve konunun püf noktasına göre kısa, net ve yapıcı hata teşhisi yaz (toplam 2-3 cümle).
-4. ÖSYM soru sıklığı ve hata türüne göre 1-10 arası öncelik ("rating") belirle (10: acil/kritik, 1: önemsiz).
+1. "analysis" metnine başlık/etiket kesinlikle ekleme (doğrudan metni yaz).
+2. İlk cümlede bu konudan YKS'de (TYT/AYT) her yıl ortalama kaç soru çıktığını belirt.
+3. Ardından hata nedeni ve konuya göre 1-2 cümlelik net ve yapıcı hata teşhisi yaz.
+4. Çıkma sıklığı ve hata türüne göre 1-10 arası "rating" ver (10: kritik, 1: düşük).
 
-JSON FORMATI:
+JSON:
 {
   "rating": 8,
-  "analysis": "Bu konu YKS'de her yıl ortalama 2-3 soru ile sorulmaktadır. ..."
-}
-    `;
+  "analysis": "Bu konudan YKS'de her yıl ortalama 2 soru çıkmaktadır. ..."
+}`;
 
     const targetModel = featureModelConfig['ERROR_PRIORITY'] || 'gemini-3.1-flash-lite';
     const { response, modelUsed } = await generateContentWithFallback(ai, {
