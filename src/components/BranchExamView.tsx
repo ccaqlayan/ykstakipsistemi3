@@ -1407,7 +1407,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     setSimilarError(null);
 
     try {
-      const response = await fetch('/api/gemini/analyze-photo-question-full', {
+      let response = await fetch('/api/gemini/analyze-photo-question-full', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1418,8 +1418,23 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         })
       });
 
+      // 1-time automatic retry for transient network / dev-server proxy delays
+      if (!response.ok && response.status !== 403) {
+        await new Promise(r => setTimeout(r, 1000));
+        response = await fetch('/api/gemini/analyze-photo-question-full', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageUrl: errorItem.imageUrl,
+            subject: errorItem.subject,
+            topicName: errorItem.topicName,
+            solutionText: existingSol || existingAnalysis || undefined
+          })
+        });
+      }
+
       if (!response.ok) {
-        let errText = 'Yapay zeka özellikleri şu an için kullanılamıyor, lütfen daha sonra tekrar deneyiniz.';
+        let errText = 'Yapay zeka yanıt üretemedi, lütfen yeniden deneyin.';
         try {
           const errData = await response.json();
           if (errData && errData.error) errText = errData.error;
@@ -2098,6 +2113,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         handleGenerateSimilarQuestions={handleGenerateSimilarQuestions}
         handleOpenQuestionReport={handleOpenQuestionReport}
         handleGenerateQuestionReport={handleGenerateQuestionReport}
+        handleFetchFullPhotoAnalysis={handleFetchFullPhotoAnalysis}
         reportLoading={reportLoading}
         reportText={reportText}
         reportError={reportError}

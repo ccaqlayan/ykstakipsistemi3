@@ -146,7 +146,7 @@ export function isAiEnabledOrRespond(res: express.Response): boolean {
   if (!aiFeaturesEnabled) {
     res.status(403).json({
       success: false,
-      error: 'Yapay zeka özellikleri şu an için kullanılamıyor, lütfen daha sonra tekrar deneyiniz.'
+      error: 'Yapay zeka özellikleri sistem ayarlarında devre dışı bırakılmıştır.'
     });
     return false;
   }
