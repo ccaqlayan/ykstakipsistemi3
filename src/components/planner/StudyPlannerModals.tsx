@@ -119,6 +119,8 @@ interface StudyPlannerModalsProps {
   aiSuggestError?: string | null;
   aiSuggestReason?: string | null;
   coachDataSettings?: any;
+  topicStatuses?: Record<string, 'Çalışmadım' | 'Erteledim' | 'Zor Geldi' | 'Çalıştım' | 'Uzmanlaştım'>;
+  completedPastTopics?: string[];
 }
 
 export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
@@ -210,7 +212,9 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
   aiSuggestLoading = false,
   aiSuggestError = null,
   aiSuggestReason = null,
-  coachDataSettings
+  coachDataSettings,
+  topicStatuses,
+  completedPastTopics
 }) => {
   return (
     <>
@@ -277,8 +281,9 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
               {subject && (
                 <div className="space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">
-                      Konu Seçimi
+                    <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
+                      <span>Konu Seçimi</span>
+                      <span className="text-[10px] text-slate-500 font-normal">🌟 Uzmanlaşıldı • ✅ Çalışıldı • ⚡ Zor Geldi</span>
                     </label>
                     <select
                       value={topic}
@@ -288,10 +293,56 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
                       <option value="">-- Konu Seçiniz --</option>
                       <option value="Genel">Genel</option>
                       <option value="Diğer">Diğer</option>
-                      {(YKS_CURRICULUM_TOPICS[subject] || []).map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
+                      {(YKS_CURRICULUM_TOPICS[subject] || []).map((t) => {
+                        const status = topicStatuses?.[t];
+                        const isPastDone = completedPastTopics?.includes(t);
+                        let badge = '';
+                        let suffix = '';
+                        if (status === 'Uzmanlaştım') {
+                          badge = '🌟 ';
+                          suffix = ' (Uzmanlaştım)';
+                        } else if (status === 'Çalıştım') {
+                          badge = '✅ ';
+                          suffix = ' (Çalıştım)';
+                        } else if (status === 'Zor Geldi') {
+                          badge = '⚡ ';
+                          suffix = ' (Zor Geldi)';
+                        } else if (isPastDone) {
+                          badge = '✅ ';
+                          suffix = ' (Çalışıldı)';
+                        }
+                        return (
+                          <option key={t} value={t}>
+                            {badge ? `${badge}${t}${suffix}` : t}
+                          </option>
+                        );
+                      })}
                     </select>
+                    {topic && topic !== 'Genel' && topic !== 'Diğer' && (topicStatuses?.[topic] || completedPastTopics?.includes(topic)) && (
+                      <div className="mt-1.5 flex items-center gap-1.5 text-[11px] animate-fade-in">
+                        <span className="text-slate-400 font-medium">Mevcut Durum:</span>
+                        {topicStatuses?.[topic] === 'Uzmanlaştım' && (
+                          <span className="px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1">
+                            <span>🌟</span> Uzmanlaşıldı
+                          </span>
+                        )}
+                        {topicStatuses?.[topic] === 'Çalıştım' && (
+                          <span className="px-2 py-0.5 rounded-full font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 inline-flex items-center gap-1">
+                            <span>✅</span> Çalışıldı
+                          </span>
+                        )}
+                        {topicStatuses?.[topic] === 'Zor Geldi' && (
+                          <span className="px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 inline-flex items-center gap-1">
+                            <span>⚡</span> Zor Geldi
+                          </span>
+                        )}
+                        {!topicStatuses?.[topic] && completedPastTopics?.includes(topic) && (
+                          <span className="px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1">
+                            <span>✅</span> Çalışıldı
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -494,8 +545,9 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Konu Seçimi (Otomatik Liste)
+                <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
+                  <span>Konu Seçimi (Otomatik Liste)</span>
+                  <span className="text-[10px] text-slate-500 font-normal">🌟 Uzmanlaşıldı • ✅ Çalışıldı • ⚡ Zor Geldi</span>
                 </label>
                 <select
                   onChange={(e) => {
@@ -505,10 +557,57 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400 font-medium text-indigo-300 mb-2"
                 >
                   <option value="">-- {editingPlan.subject} Konusu Seçin --</option>
-                  {(YKS_CURRICULUM_TOPICS[editingPlan.subject] || []).map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
+                  {(YKS_CURRICULUM_TOPICS[editingPlan.subject] || []).map((t) => {
+                    const status = topicStatuses?.[t];
+                    const isPastDone = completedPastTopics?.includes(t);
+                    let badge = '';
+                    let suffix = '';
+                    if (status === 'Uzmanlaştım') {
+                      badge = '🌟 ';
+                      suffix = ' (Uzmanlaştım)';
+                    } else if (status === 'Çalıştım') {
+                      badge = '✅ ';
+                      suffix = ' (Çalıştım)';
+                    } else if (status === 'Zor Geldi') {
+                      badge = '⚡ ';
+                      suffix = ' (Zor Geldi)';
+                    } else if (isPastDone) {
+                      badge = '✅ ';
+                      suffix = ' (Çalışıldı)';
+                    }
+                    return (
+                      <option key={t} value={t}>
+                        {badge ? `${badge}${t}${suffix}` : t}
+                      </option>
+                    );
+                  })}
                 </select>
+
+                {editingPlan.topic && (topicStatuses?.[editingPlan.topic] || completedPastTopics?.includes(editingPlan.topic)) && (
+                  <div className="mb-2 flex items-center gap-1.5 text-[11px] animate-fade-in">
+                    <span className="text-slate-400 font-medium">Mevcut Durum:</span>
+                    {topicStatuses?.[editingPlan.topic] === 'Uzmanlaştım' && (
+                      <span className="px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1">
+                        <span>🌟</span> Uzmanlaşıldı
+                      </span>
+                    )}
+                    {topicStatuses?.[editingPlan.topic] === 'Çalıştım' && (
+                      <span className="px-2 py-0.5 rounded-full font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 inline-flex items-center gap-1">
+                        <span>✅</span> Çalışıldı
+                      </span>
+                    )}
+                    {topicStatuses?.[editingPlan.topic] === 'Zor Geldi' && (
+                      <span className="px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 inline-flex items-center gap-1">
+                        <span>⚡</span> Zor Geldi
+                      </span>
+                    )}
+                    {!topicStatuses?.[editingPlan.topic] && completedPastTopics?.includes(editingPlan.topic) && (
+                      <span className="px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1">
+                        <span>✅</span> Çalışıldı
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 <label className="block text-xs font-bold text-slate-300 mb-1">Konu / Özel Başlık</label>
                 <input

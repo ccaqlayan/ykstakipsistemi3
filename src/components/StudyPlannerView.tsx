@@ -88,6 +88,8 @@ interface StudyPlannerViewProps {
   branchExams?: any[];
   coachDataSettings?: any;
   youtubeVideos?: YouTubeVideoItem[];
+  topicStatuses?: Record<string, 'Çalışmadım' | 'Erteledim' | 'Zor Geldi' | 'Çalıştım' | 'Uzmanlaştım'>;
+  completedPastTopics?: string[];
 }
 
 const DAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
@@ -335,7 +337,9 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   generalMocks,
   branchExams,
   coachDataSettings,
-  youtubeVideos = []
+  youtubeVideos = [],
+  topicStatuses,
+  completedPastTopics
 }) => {
   const today = getTodayName();
   const [viewMode, setViewMode] = useState<'board' | 'daily' | 'stats'>('daily');
@@ -2041,6 +2045,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         aiSuggestError={aiSuggestError}
         aiSuggestReason={aiSuggestReason}
         coachDataSettings={coachDataSettings}
+        topicStatuses={topicStatuses}
+        completedPastTopics={completedPastTopics}
       />
 
       <AddVideoTaskModal
