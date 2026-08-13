@@ -518,7 +518,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                             {matchingBooks.length > 0 && (
                               <optgroup label="Soru Bankalarım">
                                 {matchingBooks.map(b => (
-                                  <option key={b.id} value={`book:${b.id}`} data-publisher={`${b.publisher} (${b.bookTitle})`}>
+                                  <option key={b.id} value={`book_${b.id}`} data-publisher={`${b.publisher} (${b.bookTitle})`}>
                                     📖 {b.publisher} - {b.bookTitle}
                                   </option>
                                 ))}
@@ -528,7 +528,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                             {matchingBranchExams.length > 0 && (
                               <optgroup label="Branş Denemelerim (Son 3)">
                                 {matchingBranchExams.map(b => (
-                                  <option key={b.id} value={`branch:${b.id}`} data-publisher={b.publisher || `${b.subject} Branş Denemesi`}>
+                                  <option key={b.id} value={`branch_${b.id}`} data-publisher={b.publisher || `${b.subject} Branş Denemesi`}>
                                     🎯 {b.date} - {b.publisher || b.subject} ({b.net} Net)
                                   </option>
                                 ))}
@@ -538,7 +538,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                             {last3GeneralMocks.length > 0 && (
                               <optgroup label="Genel Denemelerim (Son 3)">
                                 {last3GeneralMocks.map(m => (
-                                  <option key={m.id} value={`general:${m.id}`} data-publisher={m.title}>
+                                  <option key={m.id} value={`general_${m.id}`} data-publisher={m.title}>
                                     🏆 {m.date} - {m.title}
                                   </option>
                                 ))}

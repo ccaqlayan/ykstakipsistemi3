@@ -1076,10 +1076,11 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
 
   const handleExamRefChange = (val: string) => {
     setSelectedExamRef(val);
-    if (val !== 'other') {
-      const parts = val.split('_');
+    if (val && val !== 'other') {
+      const separator = val.includes(':') ? ':' : '_';
+      const parts = val.split(separator);
       const type = parts[0];
-      const id = parts.slice(1).join('_');
+      const id = parts.slice(1).join(separator);
       if (type === 'book') {
         const matchingBook = resources.find(r => r.id === id);
         if (matchingBook) {
@@ -1292,9 +1293,10 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     let finalExamTypeRef: 'book' | 'branch' | 'general' | undefined = undefined;
 
     if (selectedExamRef && selectedExamRef !== 'other') {
-      const parts = selectedExamRef.split('_');
+      const separator = selectedExamRef.includes(':') ? ':' : '_';
+      const parts = selectedExamRef.split(separator);
       const type = parts[0] as 'book' | 'branch' | 'general';
-      const id = parts.slice(1).join('_');
+      const id = parts.slice(1).join(separator);
       finalExamId = id;
       finalExamTypeRef = type;
       if (type === 'book') {
@@ -1663,6 +1665,34 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
 
 
 
+  const isBookMatch = (e: TopicErrorItem) => {
+    if (e.examTypeRef === 'book') return true;
+    if (e.examId && resources.some(r => r.id === e.examId)) return true;
+    if (e.publisher) {
+      const pubLower = e.publisher.toLowerCase();
+      if (resources.some(r => (r.publisher && pubLower.includes(r.publisher.toLowerCase())) || (r.bookTitle && pubLower.includes(r.bookTitle.toLowerCase())))) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const isExamMatch = (e: TopicErrorItem) => {
+    if (e.examTypeRef === 'branch' || e.examTypeRef === 'general') return true;
+    if (e.examId && (branchExams.some(b => b.id === e.examId) || generalMocks.some(g => g.id === e.examId))) return true;
+    if (e.publisher) {
+      const pubLower = e.publisher.toLowerCase();
+      if (branchExams.some(b => b.publisher && pubLower.includes(b.publisher.toLowerCase()))) return true;
+      if (generalMocks.some(g => g.title && pubLower.includes(g.title.toLowerCase()))) return true;
+      if (pubLower.includes('deneme') || pubLower.includes('branş') || pubLower.includes('genel')) return true;
+    }
+    return false;
+  };
+
+  const isMatchedAny = (e: TopicErrorItem) => {
+    return isBookMatch(e) || isExamMatch(e) || !!e.examId || !!e.examTypeRef;
+  };
+
   const filteredErrors = topicErrors.filter((e) => {
     if (filterExamId) return e.examId === filterExamId;
     // 1. Durum Filtresi
@@ -1678,30 +1708,31 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     if (filterExamId) return true;
     // 3. Eşleşme Filtresi
     if (filterMatchStatus === 'ALL') return true;
-    if (filterMatchStatus === 'MATCHED') return !!e.examId;
-    if (filterMatchStatus === 'NOT_MATCHED') return !e.examId;
-    if (filterMatchStatus === 'BOOK') return e.examId && e.examTypeRef === 'book';
-    if (filterMatchStatus === 'EXAM') return e.examId && (e.examTypeRef === 'branch' || e.examTypeRef === 'general');
+    if (filterMatchStatus === 'MATCHED') return isMatchedAny(e);
+    if (filterMatchStatus === 'NOT_MATCHED') return !isMatchedAny(e);
+    if (filterMatchStatus === 'BOOK') return isBookMatch(e);
+    if (filterMatchStatus === 'EXAM') return isExamMatch(e);
     return true;
   });
 
   const sortedErrors = [...filteredErrors].sort((a, b) => {
-    if (sortOption === 'priority_desc') {
+    const opt = (sortOption || 'NEWEST').toUpperCase();
+    if (opt === 'PRIORITY_DESC') {
       const valA = typeof a.priority === 'number' ? a.priority : parseInt(a.priority as string, 10) || 3;
       const valB = typeof b.priority === 'number' ? b.priority : parseInt(b.priority as string, 10) || 3;
       return valB - valA;
     }
-    if (sortOption === 'priority_asc') {
+    if (opt === 'PRIORITY_ASC') {
       const valA = typeof a.priority === 'number' ? a.priority : parseInt(a.priority as string, 10) || 3;
       const valB = typeof b.priority === 'number' ? b.priority : parseInt(b.priority as string, 10) || 3;
       return valA - valB;
     }
-    if (sortOption === 'date_desc') {
+    if (opt === 'NEWEST' || opt === 'DATE_DESC') {
       const dateA = a.date || '';
       const dateB = b.date || '';
       return dateB.localeCompare(dateA);
     }
-    if (sortOption === 'date_asc') {
+    if (opt === 'OLDEST' || opt === 'DATE_ASC') {
       const dateA = a.date || '';
       const dateB = b.date || '';
       return dateA.localeCompare(dateB);
@@ -2015,7 +2046,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       {activeSubTab === 'errors' && (
         <BranchErrorsTab
           topicErrors={topicErrors}
-          filteredErrors={filteredErrors}
+          filteredErrors={sortedErrors}
           filterExamId={filterExamId}
           setFilterExamId={setFilterExamId}
           filterRevised={filterRevised}
@@ -2027,6 +2058,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
           sortOption={sortOption}
           setSortOption={setSortOption}
           branchExams={branchExams}
+          generalMocks={generalMocks}
           resources={resources}
           openAddErrorModal={openAddErrorModal}
           setDeletingItem={setDeletingItem}
