@@ -313,65 +313,69 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
 
   const formatSolutionText = (text: string) => {
     if (!text) return null;
-    let formattedText = text
-      .replace(/([^\n])\s*(Adım \d+[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(\d+\.\s+)/g, '$1\n$2')
-      .replace(/([^\n])\s*([A-E]\)\s+)/g, '$1\n$2')
-      .replace(/([^\n])\s*(Çözüm[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(Doğru Cevap[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(Sonuç[:\.-])/gi, '$1\n\n$2');
 
-    return formattedText.split('\n').map((line, idx) => {
-      let cleaned = line
-        .replace(/\$\$/g, '')
-        .replace(/\$/g, '')
-        .replace(/\\implies/g, ' ➔ ')
-        .replace(/\\cdot/g, ' · ')
-        .replace(/\\equiv/g, ' ≡ ')
-        .replace(/\\approx/g, ' ≈ ')
-        .replace(/\\ne/g, ' ≠ ')
-        .replace(/\\le/g, ' ≤ ')
-        .replace(/\\ge/g, ' ≥ ')
-        .replace(/\\infty/g, ' ∞ ')
-        .replace(/\\pm/g, ' ± ')
-        .replace(/\\times/g, ' × ')
-        .replace(/\\div/g, ' ÷ ')
-        .replace(/\\alpha/g, 'α')
-        .replace(/\\beta/g, 'β')
-        .replace(/\\theta/g, 'θ')
-        .replace(/\\pi/g, 'π')
-        .replace(/\\sqrt\{([^}]+)\}/g, 'kök($1)')
-        .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1 / $2)')
-        .replace(/\\Delta/g, 'Δ');
+    // Normalize math symbols only (no LaTeX)
+    const cleanMath = (s: string) => s
+      .replace(/\$\$/g, '')
+      .replace(/\$/g, '')
+      .replace(/\\implies/g, ' ➔ ')
+      .replace(/\\cdot/g, ' · ')
+      .replace(/\\equiv/g, ' ≡ ')
+      .replace(/\\approx/g, ' ≈ ')
+      .replace(/\\ne/g, ' ≠ ')
+      .replace(/\\le/g, ' ≤ ')
+      .replace(/\\ge/g, ' ≥ ')
+      .replace(/\\infty/g, ' ∞ ')
+      .replace(/\\pm/g, ' ± ')
+      .replace(/\\times/g, ' × ')
+      .replace(/\\div/g, ' ÷ ')
+      .replace(/\\alpha/g, 'α')
+      .replace(/\\beta/g, 'β')
+      .replace(/\\theta/g, 'θ')
+      .replace(/\\pi/g, 'π')
+      .replace(/\\sqrt\{([^}]+)\}/g, 'kök($1)')
+      .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1 / $2)')
+      .replace(/\\Delta/g, 'Δ');
 
-      const parts = cleaned.split('**');
-      const elements = parts.map((part, i) => {
-        if (i % 2 === 1) {
-          return <strong key={i} className="text-amber-300 font-bold">{part}</strong>;
-        }
-        return part;
-      });
+    // Section headers that should be bold/highlighted
+    const isHeader = (line: string) => {
+      const t = line.trim().toLowerCase();
+      return (
+        t.startsWith('doğru cevap') ||
+        t.startsWith('adım adım') ||
+        t.startsWith('konu özeti') ||
+        t.startsWith('pratik taktik')
+      );
+    };
 
-      if (cleaned.trim().startsWith('- ') || cleaned.trim().startsWith('* ')) {
+    return text.split('\n').map((line, idx) => {
+      const cleaned = cleanMath(line);
+      const trimmed = cleaned.trim();
+
+      if (trimmed === '') return <div key={idx} className="h-1.5" />;
+
+      // Section header lines — bold amber, no background
+      if (isHeader(trimmed)) {
         return (
-          <li key={idx} className="ml-4 list-disc text-slate-300 pl-1 py-0.5 text-xs leading-relaxed">
-            {elements}
+          <p key={idx} className="text-xs font-bold text-amber-300 mt-3 mb-1">
+            {trimmed.replace(/\*\*/g, '')}
+          </p>
+        );
+      }
+
+      // List items (- or *)
+      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+        return (
+          <li key={idx} className="ml-4 list-disc text-xs text-slate-300 pl-1 py-0.5 leading-relaxed">
+            {trimmed.slice(2).replace(/\*\*/g, '')}
           </li>
         );
       }
-      if (cleaned.trim().match(/^\d+\./) || cleaned.trim().toLowerCase().startsWith('adım ')) {
-        return (
-          <div key={idx} className="text-xs text-slate-200 pl-3 font-semibold leading-relaxed my-2 border-l-2 border-emerald-400 py-1 bg-emerald-950/30 rounded-r-lg space-y-1">
-            {elements}
-          </div>
-        );
-      }
-      if (cleaned.trim() === '') {
-        return <div key={idx} className="h-2" />;
-      }
+
+      // All other lines — plain text, strip any bold markers
       return (
-        <p key={idx} className="text-xs text-slate-300 leading-relaxed font-normal py-0.5">
-          {elements}
+        <p key={idx} className="text-xs text-slate-300 leading-relaxed py-0.5">
+          {trimmed.replace(/\*\*/g, '')}
         </p>
       );
     });

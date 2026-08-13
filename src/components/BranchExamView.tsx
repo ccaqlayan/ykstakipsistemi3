@@ -142,78 +142,92 @@ const compressImageFile = (file: File, maxDimension = 1000, quality = 0.65): Pro
 };
 
 const parseCellContent = (content: string) => {
-  const segments = content.split('<br>');
+  // Handle both <br> and \n as line separators, and strip **bold** markers
+  const normalized = content
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/\\n/g, '\n');
+  const segments = normalized.split('\n');
   return segments.map((seg, segIdx) => {
-    const parts = seg.split('**');
-    const elements = parts.map((part, i) => {
-      if (i % 2 === 1) {
-        return <strong key={i} className="text-amber-300 font-extrabold">{part}</strong>;
-      }
-      return part;
-    });
+    const stripped = seg.replace(/\*\*/g, '').trim();
+    if (!stripped) return null;
     return (
-      <div key={segIdx} className="py-0.5">
-        {elements}
+      <div key={segIdx} className="py-0.5 text-xs leading-relaxed">
+        {stripped}
       </div>
     );
-  });
+  }).filter(Boolean);
 };
 
 const formatAnalysisTable = (text: string) => {
-  if (!text || !text.includes('|')) {
-    return <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{text}</p>;
-  }
+  if (!text) return <p className="text-xs text-slate-400 italic">İçerik bulunamadı.</p>;
 
   const lines = text.split('\n');
-  const rows: string[][] = [];
+  const tableRows: string[][] = [];
+  const headerLines: string[] = [];
 
   lines.forEach(line => {
     const trimmed = line.trim();
     if (trimmed.startsWith('|')) {
-      if (trimmed.includes('---')) {
-        return; // skip separator row
-      }
+      // Skip markdown separator lines (--- only)
+      if (/^\|[-\s:|]+\|/.test(trimmed)) return;
       const cells = trimmed
         .split('|')
         .map(c => c.trim())
-        .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1); // remove outer empty elements
+        .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
       if (cells.length > 0) {
-        rows.push(cells);
+        tableRows.push(cells);
       }
+    } else if (trimmed && !trimmed.match(/^[-=]+$/)) {
+      // Non-table text lines (like **SORU ANALİZİ** title)
+      const cleaned = trimmed.replace(/\*\*/g, '').trim();
+      if (cleaned) headerLines.push(cleaned);
     }
   });
 
-  if (rows.length === 0) {
-    return <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{text}</p>;
+  if (tableRows.length === 0) {
+    // No table found — render as plain text
+    return <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{text.replace(/\*\*/g, '')}</p>;
   }
 
-  const header = rows[0];
-  const bodyRows = rows.slice(1);
+  const headerRow = tableRows[0];
+  const bodyRows = tableRows.slice(1);
 
   return (
-    <div className="overflow-x-auto w-full border border-slate-800 rounded-xl bg-slate-900/60 shadow-lg my-3">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="bg-slate-950 border-b border-slate-800">
-            {header.map((cell, idx) => (
-              <th key={idx} className="p-3 text-xs font-bold text-indigo-300 uppercase tracking-wider">
-                {cell.replace(/\*\*/g, '')}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-800/60">
-          {bodyRows.map((row, rowIdx) => (
-            <tr key={rowIdx} className="hover:bg-slate-900/30 transition-colors">
-              {row.map((cell, cellIdx) => (
-                <td key={cellIdx} className={`p-3 text-xs leading-relaxed font-medium ${cellIdx === 0 ? 'text-indigo-400 font-semibold bg-slate-950/20 w-1/3' : 'text-slate-200'}`}>
-                  {parseCellContent(cell)}
-                </td>
+    <div className="space-y-2">
+      {headerLines.length > 0 && (
+        <p className="text-xs font-bold text-amber-300 mb-2">{headerLines[0]}</p>
+      )}
+      <div className="overflow-x-auto w-full border border-slate-800 rounded-xl bg-slate-900/60 shadow-lg">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-950 border-b border-slate-800">
+              {headerRow.map((cell, idx) => (
+                <th key={idx} className="p-3 text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                  {cell.replace(/\*\*/g, '')}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-slate-800/60">
+            {bodyRows.map((row, rowIdx) => (
+              <tr key={rowIdx} className="hover:bg-slate-900/30 transition-colors">
+                {row.map((cell, cellIdx) => (
+                  <td
+                    key={cellIdx}
+                    className={`p-3 text-xs leading-relaxed ${
+                      cellIdx === 0
+                        ? 'text-indigo-400 font-semibold bg-slate-950/20 w-1/3 align-top'
+                        : 'text-slate-200 align-top'
+                    }`}
+                  >
+                    {parseCellContent(cell)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
@@ -1369,31 +1383,46 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     if (!errorItem.imageUrl) return;
 
     const title = `${errorItem.subject} - ${errorItem.topicName}`;
-    openImagePreview(errorItem.imageUrl, title);
+    
+    // Only open preview if modal is not already showing this image
+    // (avoid re-calling openImagePreview which resets state via React async setState)
+    const normalizeUrl = (u: string) => (u || '').split('?')[0];
+    const alreadyOpen = previewImage && (
+      previewImage.url === errorItem.imageUrl ||
+      normalizeUrl(previewImage.url) === normalizeUrl(errorItem.imageUrl) ||
+      previewImage.title === title
+    );
+    if (!alreadyOpen) {
+      openImagePreview(errorItem.imageUrl, title);
+    }
     setAiModalTab(targetTab);
 
-    // Find current error item in state
-    const matchingError = topicErrors.find(e => e.id === errorItem.id || e.imageUrl === errorItem.imageUrl || `${e.subject} - ${e.topicName}` === title) || errorItem;
+    // Find current error item in state (use stored AI data only, NOT current state vars to avoid stale reads)
+    const matchingError = topicErrors.find(e => e.id === errorItem.id || e.imageUrl === errorItem.imageUrl || normalizeUrl(e.imageUrl || '') === normalizeUrl(errorItem.imageUrl) || `${e.subject} - ${e.topicName}` === title) || errorItem;
 
-    const existingSol = matchingError.aiSolution || solveSolution;
-    const existingAnalysis = matchingError.aiAnalysis || reportText || supportAnalysisText;
-    const existingSimilar = (matchingError.similarQuestionsList && matchingError.similarQuestionsList.length > 0) ? matchingError.similarQuestionsList : similarQuestionsList;
+    // Read existing data exclusively from the persisted errorItem data (not from potentially stale state)
+    const existingSol = matchingError.aiSolution || null;
+    const existingAnalysis = matchingError.aiAnalysis || null;
+    const existingSimilar = (matchingError.similarQuestionsList && matchingError.similarQuestionsList.length > 0)
+      ? matchingError.similarQuestionsList
+      : null;
 
+    // Populate UI with any already-cached data
     if (existingSol) setSolveSolution(existingSol);
     if (existingAnalysis) {
       setReportText(existingAnalysis);
       setSupportAnalysisText(existingAnalysis);
     }
-    if (existingSimilar && existingSimilar.length > 0) {
+    if (existingSimilar) {
       setSimilarQuestionsList(existingSimilar);
       setActiveSimilarIdx(0);
     }
 
-    // Check if the requested targetTab already has data generated!
+    // If the requested tab already has persisted data, no need to call API
     const hasTargetData =
       (targetTab === 'solution' && !!existingSol) ||
       (targetTab === 'report' && !!existingAnalysis) ||
-      (targetTab === 'similar' && existingSimilar && existingSimilar.length > 0);
+      (targetTab === 'similar' && !!existingSimilar);
 
     if (hasTargetData) {
       return;
