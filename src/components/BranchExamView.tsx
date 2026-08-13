@@ -1454,10 +1454,13 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         }
 
         let simList = existingSimilar || [];
-        if (data.similarQuestions && data.similarQuestions.question) {
-          simList = [data.similarQuestions];
+        // similarQuestions is now an array of {question, solution, correctAnswer}
+        if (Array.isArray(data.similarQuestions) && data.similarQuestions.length > 0) {
+          simList = data.similarQuestions;
           setSimilarQuestionsList(simList);
           setActiveSimilarIdx(0);
+        } else if (existingSimilar && existingSimilar.length > 0) {
+          setSimilarQuestionsList(existingSimilar);
         }
 
         const updatedError = {

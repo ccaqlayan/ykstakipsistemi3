@@ -1040,38 +1040,37 @@ router.post('/analyze-photo-question-full', async (req, res) => {
 
     const textPrompt = `
 Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden uzman bir branş öğretmeni ve soru analistisin.
-Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'Genel'}) TEK BİR İNCELEMEDE tam 3 farklı açıdan analiz et ve yanıtını YALNIZCA belirtilen JSON formatında dön:
+Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'Genel'}) TEK BİR İNCELEMEDE 3 farklı açıdan analiz et ve yanıtını YALNIZCA belirtilen JSON formatında dön.
 
-1. ÇÖZÜM REHBERİ (solution):
+1. ÇÖZÜM REHBERİ (solution alanı için):
 - Görseldeki soruyu adım adım son derece anlaşılır Türkçe ile çöz.
-- ASLA "Merhaba" veya selamlama cümleleri kullanma, doğrudan 1. Konu Özeti veya çözüm adımları ile başla.
+- ASLA "Merhaba" veya selamlama cümleleri kullanma, doğrudan konu özeti veya çözüm adımları ile başla.
 - Konu özetini, adım adım çözümü, belirgin doğru cevabı ve 1 pratik taktiği içersin.
 - KESİNLİKLE LaTeX ($...$) kullanma, düz metin ve klavye karakterleri kullan.
 
-2. BENZER SORU (similarQuestion):
-- Görseldeki soruya ve konusuna (${subject} - ${topicName}) benzer tarzda, Türkiye YKS (TYT/AYT) müfredatına %100 uygun 1 adet özgün yeni benzer soru üret.
-- Soru metni ve şıklarını (A, B, C, D, E), adım adım detaylı çözümünü ve doğru cevabını hazırla.
+2. BENZER SORULAR (similarQuestions alanı için - 3 adet):
+- Görseldeki soruya benzer tarzda, Türkiye YKS (TYT/AYT) müfredatına %100 uygun, birbirinden farklı 3 adet özgün soru üret.
+- Her biri için: soru metni ve şıkları (A, B, C, D, E), adım adım detaylı çözümü ve doğru cevabını hazırla.
 
-3. DETAYLI SORU KARNESİ (analysis):
-- Sorunun ders, konu, MEB kazanımı, müfredat uygunluğu, zorluk puanı (örn: 6/10 - Orta), okuma süresi, çözme süresi, ayırt edicilik ve TÜM ŞIKLARIN ayrı ayrı detaylı çeldirici analizini içeren tam bir Markdown Tablo oluştur.
-- Biçimlendirme şu şekilde olmalıdır:
-**SORU ANALİZİ**
-
+3. DETAYLI SORU KARNESİ (analysis alanı için):
+- Sorunun ders, konu, MEB kazanımı, müfredat uygunluğu, zorluk (örn: 6/10 - Orta), okuma süresi, çözme süresi, ayırt edicilik ve TÜM ŞIKLARIN çeldirici analizini içeren Markdown tablosu oluştur.
+- Başlık: **SORU ANALİZİ**
 | Kriter | Değerlendirme |
 | :--- | :--- |
 | **Ders** | ${subject || 'YKS'} |
 | **Konu** | ${topicName || 'Genel'} |
-| **Kazanım** | [Sorunun ölçtüğü MEB kazanımı] |
-| **Müfredat Uygunluğu** | [Uygun / Uygun Değil - Açıklama] |
+| **Kazanım** | [MEB kazanımı] |
+| **Müfredat Uygunluğu** | [Uygun/Değil + açıklama] |
 | **Zorluk** | [Örn: 5/10 - Orta] |
 | **Okuma Süresi** | [Örn: 0.8 dk] |
 | **Çözme Süresi** | [Örn: 1.5 dk] |
-| **Ayırt Edicilik** | [Düşük / Orta / Yüksek] |
-| **Çeldirici Analizi** | **A Şıkkı:** ...<br>**B Şıkkı:** ...<br>**C Şıkkı:** ...<br>**D Şıkkı:** ...<br>**E Şıkkı:** ... |
+| **Ayırt Edicilik** | [Düşük/Orta/Yüksek] |
+| **Çeldirici Analizi** | **A:** ...<br>**B:** ...<br>**C:** ...<br>**D:** ...<br>**E:** ... |
 
-Cevabını YALNIZCA aşağıdaki JSON şemasında döndür. Başka açıklama veya Markdown sarmalayıcı ekleme:
+YANITINI YALNIZCA aşağıdaki JSON formatında döndür. Kesinlikle JSON dışında açıklama veya Markdown kod bloğu ekleme:
 `;
 
+    console.log(`[PHOTO_ANALYSIS] Starting full analysis for subject=${subject}, topic=${topicName}, hasImage=${!!imagePart}`);
     const contents = imagePart ? [imagePart, { text: textPrompt }] : [{ text: textPrompt }];
 
     const targetModel = featureModelConfig['SOLVE_QUESTION'] || featureModelConfig['SIMILAR_QUESTION'] || 'gemini-3.1-flash-lite';
@@ -1088,64 +1087,88 @@ Cevabını YALNIZCA aşağıdaki JSON şemasında döndür. Başka açıklama ve
               type: 'STRING',
               description: 'Adım adım detaylı Türkçe soru çözümü ve pratik taktik.'
             },
-            similarQuestion: {
-              type: 'OBJECT',
-              properties: {
-                question: {
-                  type: 'STRING',
-                  description: 'YKS müfredatına uygun 1 adet özgün benzer soru ve şıkları (A, B, C, D, E).'
+            similarQuestions: {
+              type: 'ARRAY',
+              description: 'YKS müfredatına uygun 3 adet özgün benzer soru listesi.',
+              items: {
+                type: 'OBJECT',
+                properties: {
+                  question: {
+                    type: 'STRING',
+                    description: 'Benzer soru metni ve şıkları (A, B, C, D, E).'
+                  },
+                  solution: {
+                    type: 'STRING',
+                    description: 'Benzer sorunun adım adım detaylı Türkçe çözümü.'
+                  },
+                  correctAnswer: {
+                    type: 'STRING',
+                    description: 'Benzer sorunun doğru cevabı (örn. C seçeneğidir).'
+                  }
                 },
-                solution: {
-                  type: 'STRING',
-                  description: 'Benzer sorunun adım adım detaylı Türkçe çözümü.'
-                },
-                correctAnswer: {
-                  type: 'STRING',
-                  description: 'Benzer sorunun doğru cevabı (örn. C seçeneğidir).'
-                }
-              },
-              required: ['question', 'solution', 'correctAnswer']
+                required: ['question', 'solution', 'correctAnswer']
+              }
             },
             analysis: {
               type: 'STRING',
               description: 'Detaylı soru karnesi ve çeldirici analizi Markdown tablosu.'
             }
           },
-          required: ['solution', 'similarQuestion', 'analysis']
+          required: ['solution', 'similarQuestions', 'analysis']
         }
       }
     });
 
     const responseText = extractResponseText(response);
+    console.log(`[PHOTO_ANALYSIS] Raw response length=${responseText?.length}, model=${modelUsed}`);
+    
     let parsedData: any = {};
     try {
       let cleanJson = (responseText || '').trim();
+      // Strip markdown code blocks if present
       const codeBlockMatch = cleanJson.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
       if (codeBlockMatch) {
         cleanJson = codeBlockMatch[1].trim();
+        console.log('[PHOTO_ANALYSIS] Stripped code block wrapper from response.');
+      }
+      // Strip leading/trailing non-JSON chars
+      const firstBrace = cleanJson.indexOf('{');
+      const lastBrace = cleanJson.lastIndexOf('}');
+      if (firstBrace > 0 || lastBrace < cleanJson.length - 1) {
+        cleanJson = cleanJson.slice(firstBrace, lastBrace + 1);
+        console.log('[PHOTO_ANALYSIS] Trimmed to JSON object boundaries.');
       }
       parsedData = JSON.parse(cleanJson);
+      console.log(`[PHOTO_ANALYSIS] Parse OK: solution=${!!parsedData.solution}, similarQuestions=${Array.isArray(parsedData.similarQuestions) ? parsedData.similarQuestions.length : 'N/A'}, analysis=${!!parsedData.analysis}`);
     } catch (parseErr) {
-      console.error('Failed to parse full question analysis JSON:', responseText);
+      console.error('[PHOTO_ANALYSIS] Failed to parse JSON:', (responseText || '').substring(0, 500));
+      // Fallback: treat raw text as solution only
       parsedData = {
         solution: responseText || 'Soru çözümü üretilemedi.',
-        similarQuestion: {
-          question: 'Benzer soru üretilemedi.',
-          solution: '',
-          correctAnswer: ''
-        },
+        similarQuestions: [
+          { question: 'Benzer soru üretilemedi.', solution: '', correctAnswer: '' }
+        ],
         analysis: 'Soru karnesi oluşturulamadı.'
       };
+    }
+
+    // Normalize: ensure similarQuestions is always an array
+    let simQs: any[] = [];
+    if (Array.isArray(parsedData.similarQuestions)) {
+      simQs = parsedData.similarQuestions;
+    } else if (parsedData.similarQuestion && typeof parsedData.similarQuestion === 'object') {
+      // Handle old singular field name from legacy model responses
+      simQs = [parsedData.similarQuestion];
     }
 
     const { userName, userRole, userId } = resolveUserInfo(req.body);
     const usageRecord = recordApiUsage({
       featureKey: 'PHOTO_QUESTION_FULL_ANALYSIS',
-      featureName: 'Fotoğraflı Soru Bütünleşik AI Analizi (Çözüm + Benzer Soru + Karne)',
+      featureName: 'Fotoğraflı Soru Bütünleşik AI Analizi (Çözüm + 3 Benzer Soru + Karne)',
       category: 'QUESTION_ANALYSIS',
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || 2500,
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil((responseText || '').length / 4),
       promptText: `Fotoğraflı Soru Bütünleşik Analiz (${subject || ''} - ${topicName || ''})`,
       responseText,
       userId,
@@ -1155,9 +1178,9 @@ Cevabını YALNIZCA aşağıdaki JSON şemasında döndür. Başka açıklama ve
 
     res.json({
       success: true,
-      solution: parsedData.solution,
-      similarQuestions: parsedData.similarQuestion,
-      analysis: parsedData.analysis,
+      solution: parsedData.solution || null,
+      similarQuestions: simQs,
+      analysis: parsedData.analysis || null,
       aiUsage: usageRecord
     });
   } catch (err: any) {

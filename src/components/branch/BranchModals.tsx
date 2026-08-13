@@ -272,15 +272,39 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
     setShowSolutionMap({});
   }, [previewImage]);
 
+  // Normalize image URL: strip query params for comparison
+  const normalizeUrl = (url: string) => url ? url.split('?')[0] : '';
+
   const getMatchingErrorItem = () => {
     if (!previewImage) return null;
-    return (topicErrors || []).find(e => e.imageUrl === previewImage.url || `${e.subject} - ${e.topicName}` === previewImage.title) || null;
+    const previewNorm = normalizeUrl(previewImage.url);
+    return (topicErrors || []).find(e => {
+      if (!e.imageUrl) return false;
+      // Try exact match first, then normalized (without query params), then title match
+      return e.imageUrl === previewImage.url
+        || normalizeUrl(e.imageUrl) === previewNorm
+        || `${e.subject} - ${e.topicName}` === previewImage.title;
+    }) || null;
   };
 
   const triggerFullPhotoAnalysis = (targetTab: 'solution' | 'similar' | 'report') => {
     const matchingError = getMatchingErrorItem();
     if (matchingError && handleFetchFullPhotoAnalysis) {
       handleFetchFullPhotoAnalysis(matchingError, targetTab);
+    } else if (previewImage && handleFetchFullPhotoAnalysis) {
+      // Build a synthetic error item from previewImage metadata so full analysis still runs
+      const [subject, ...topicParts] = previewImage.title.split(' - ');
+      const syntheticError = {
+        id: `preview-${Date.now()}`,
+        imageUrl: previewImage.url,
+        subject: subject || '',
+        topicName: topicParts.join(' - ') || '',
+        errorReason: 'wrong' as any,
+        publisher: '',
+        revised: false,
+        priority: 'medium' as any,
+      };
+      handleFetchFullPhotoAnalysis(syntheticError as any, targetTab);
     } else if (previewImage) {
       if (targetTab === 'solution') handleSolveQuestion(previewImage.url, previewImage.title);
       else if (targetTab === 'similar') handleGenerateSimilarQuestions(previewImage.url, previewImage.title);
