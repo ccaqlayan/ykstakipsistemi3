@@ -542,7 +542,7 @@ Lütfen cevabını YALNIZCA geçerli bir JSON objesi olarak ver:
 }
     `;
 
-    const targetModel = featureModelConfig['ERROR_PRIORITY'] || 'gemini-2.5-flash';
+    const targetModel = featureModelConfig['ERROR_PRIORITY'] || 'gemini-3.1-flash-lite';
     const { response, modelUsed } = await generateContentWithFallback(ai, {
       model: targetModel,
       contents: prompt,

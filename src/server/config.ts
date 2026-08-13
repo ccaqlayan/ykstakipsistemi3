@@ -274,17 +274,11 @@ export async function clearApiUsageLogs(olderThanDays = 30) {
 
 export function mapToActualGeminiModel(modelId: string): string {
   const m = (modelId || '').trim();
-  if (!m) return 'gemini-2.5-flash';
-  if (m === 'gemini-2.5-flash-lite' || m.includes('2.5-flash-lite') || m === 'gemini-3.1-flash-lite' || m === 'gemini-3.5-flash-lite') {
-    return 'gemini-2.5-flash';
+  if (!m) return 'gemini-3.1-flash-lite';
+  if (m.includes('3.1-flash-lite') || m === 'gemini-3.1-flash-lite') {
+    return 'gemini-3.1-flash-lite';
   }
-  if (m === 'gemini-3.6-flash' || m === 'gemini-3.5-flash' || m === 'gemini-flash-latest') {
-    return 'gemini-2.5-flash';
-  }
-  if (m.startsWith('gemini-2.5-') || m.startsWith('gemini-2.0-') || m.startsWith('gemini-1.5-')) {
-    return m;
-  }
-  return 'gemini-2.5-flash';
+  return m;
 }
 
 export async function generateContentWithFallback(
@@ -295,14 +289,14 @@ export async function generateContentWithFallback(
     config?: any;
   }
 ) {
-  const requestedModel = options.model || 'gemini-2.5-flash';
+  const requestedModel = options.model || 'gemini-3.1-flash-lite';
   const primaryApiModel = mapToActualGeminiModel(requestedModel);
 
   const fallbackList = [
     { requested: requestedModel, apiModel: primaryApiModel },
+    { requested: 'gemini-3.1-flash-lite', apiModel: 'gemini-3.1-flash-lite' },
     { requested: 'gemini-2.5-flash', apiModel: 'gemini-2.5-flash' },
-    { requested: 'gemini-2.0-flash', apiModel: 'gemini-2.0-flash' },
-    { requested: 'gemini-1.5-flash', apiModel: 'gemini-1.5-flash' }
+    { requested: 'gemini-2.0-flash', apiModel: 'gemini-2.0-flash' }
   ];
 
   const uniqueList: { requested: string; apiModel: string }[] = [];
