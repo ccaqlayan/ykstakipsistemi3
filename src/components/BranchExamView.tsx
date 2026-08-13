@@ -161,7 +161,9 @@ const parseCellContent = (content: string) => {
 const formatAnalysisTable = (text: string) => {
   if (!text) return <p className="text-xs text-slate-400 italic">İçerik bulunamadı.</p>;
 
-  const lines = text.split('\n');
+  // Convert literal \n or <br> to real newlines
+  const cleanText = text.replace(/\\n/g, '\n').replace(/<br\s*\/?>/gi, '\n');
+  const lines = cleanText.split('\n');
   const tableRows: string[][] = [];
   const headerLines: string[] = [];
 
@@ -184,52 +186,97 @@ const formatAnalysisTable = (text: string) => {
     }
   });
 
-  if (tableRows.length === 0) {
-    // No table found — render as plain text
-    return <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{text.replace(/\*\*/g, '')}</p>;
-  }
+  if (tableRows.length > 0) {
+    const headerRow = tableRows[0];
+    const bodyRows = tableRows.slice(1);
 
-  const headerRow = tableRows[0];
-  const bodyRows = tableRows.slice(1);
-
-  return (
-    <div className="space-y-2">
-      {headerLines.length > 0 && (
-        <p className="text-xs font-bold text-amber-300 mb-2">{headerLines[0]}</p>
-      )}
-      <div className="overflow-x-auto w-full border border-slate-800 rounded-xl bg-slate-900/60 shadow-lg">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-950 border-b border-slate-800">
-              {headerRow.map((cell, idx) => (
-                <th key={idx} className="p-3 text-xs font-bold text-indigo-300 uppercase tracking-wider">
-                  {cell.replace(/\*\*/g, '')}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800/60">
-            {bodyRows.map((row, rowIdx) => (
-              <tr key={rowIdx} className="hover:bg-slate-900/30 transition-colors">
-                {row.map((cell, cellIdx) => (
-                  <td
-                    key={cellIdx}
-                    className={`p-3 text-xs leading-relaxed ${
-                      cellIdx === 0
-                        ? 'text-indigo-400 font-semibold bg-slate-950/20 w-1/3 align-top'
-                        : 'text-slate-200 align-top'
-                    }`}
-                  >
-                    {parseCellContent(cell)}
-                  </td>
+    return (
+      <div className="space-y-2">
+        {headerLines.length > 0 && (
+          <p className="text-xs font-extrabold text-amber-300 mb-2 tracking-wide uppercase">{headerLines[0]}</p>
+        )}
+        <div className="overflow-x-auto w-full border border-slate-800 rounded-xl bg-slate-900/80 shadow-xl">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-950 border-b border-slate-800">
+                {headerRow.map((cell, idx) => (
+                  <th key={idx} className="p-3 text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                    {cell.replace(/\*\*/g, '')}
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60">
+              {bodyRows.map((row, rowIdx) => (
+                <tr key={rowIdx} className="hover:bg-slate-900/40 transition-colors">
+                  {row.map((cell, cellIdx) => (
+                    <td
+                      key={cellIdx}
+                      className={`p-3 text-xs leading-relaxed ${
+                        cellIdx === 0
+                          ? 'text-indigo-400 font-semibold bg-slate-950/40 w-1/3 align-top border-r border-slate-800/60'
+                          : 'text-slate-200 align-top'
+                      }`}
+                    >
+                      {parseCellContent(cell)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // Fallback 1: Try parsing Key: Value or - Key: Value pairs into a structured table
+  const kvPairs: Array<{ key: string; val: string }> = [];
+  lines.forEach(l => {
+    const trimmed = l.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '').trim();
+    if (!trimmed) return;
+    const colonIdx = trimmed.indexOf(':');
+    if (colonIdx > 0) {
+      const k = trimmed.slice(0, colonIdx).trim();
+      const v = trimmed.slice(colonIdx + 1).trim();
+      if (k && v) {
+        kvPairs.push({ key: k, val: v });
+      }
+    }
+  });
+
+  if (kvPairs.length > 0) {
+    return (
+      <div className="space-y-2">
+        <p className="text-xs font-extrabold text-amber-300 mb-2 tracking-wide uppercase">SORU ANALİZ KARNESİ</p>
+        <div className="overflow-x-auto w-full border border-slate-800 rounded-xl bg-slate-900/80 shadow-xl">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-950 border-b border-slate-800">
+                <th className="p-3 text-xs font-bold text-indigo-300 uppercase tracking-wider w-1/3">Kriter</th>
+                <th className="p-3 text-xs font-bold text-indigo-300 uppercase tracking-wider">Değerlendirme</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60">
+              {kvPairs.map((pair, idx) => (
+                <tr key={idx} className="hover:bg-slate-900/40 transition-colors">
+                  <td className="p-3 text-xs leading-relaxed font-semibold text-indigo-400 bg-slate-950/40 align-top border-r border-slate-800/60">
+                    {pair.key}
+                  </td>
+                  <td className="p-3 text-xs leading-relaxed text-slate-200 align-top">
+                    {parseCellContent(pair.val)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback 2: Plain formatted text if no key-value or table syntax found
+  return <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{cleanText.replace(/\*\*/g, '')}</p>;
 };
 
 interface BranchExamViewProps {
@@ -921,7 +968,13 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   };
 
   const openImagePreview = (url: string, title: string) => {
-    const matchingError = topicErrors.find(e => e.imageUrl === url || `${e.subject} - ${e.topicName}` === title);
+    const normalizeUrl = (u: string) => (u || '').split('?')[0];
+    const normUrl = normalizeUrl(url);
+    const matchingError = topicErrors.find(e => 
+      (e.imageUrl && (e.imageUrl === url || normalizeUrl(e.imageUrl) === normUrl)) ||
+      `${e.subject} - ${e.topicName}` === title ||
+      title.includes(e.topicName)
+    );
     if (matchingError) {
       setSolveSolution(matchingError.aiSolution || null);
       setSimilarQuestionsList(matchingError.similarQuestionsList || []);
@@ -1379,7 +1432,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     handleFetchTopicTips(subject, topicName);
   };
 
-  const handleFetchFullPhotoAnalysis = async (errorItem: TopicErrorItem, targetTab: 'solution' | 'similar' | 'report') => {
+  const handleFetchFullPhotoAnalysis = async (errorItem: TopicErrorItem, targetTab: 'solution' | 'similar' | 'report', force = false) => {
     if (!errorItem.imageUrl) return;
 
     const title = `${errorItem.subject} - ${errorItem.topicName}`;
@@ -1418,13 +1471,13 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       setActiveSimilarIdx(0);
     }
 
-    // If the requested tab already has persisted data, no need to call API
+    // If the requested tab already has persisted data and force is false, no need to call API
     const hasTargetData =
       (targetTab === 'solution' && !!existingSol) ||
       (targetTab === 'report' && !!existingAnalysis) ||
       (targetTab === 'similar' && !!existingSimilar);
 
-    if (hasTargetData) {
+    if (hasTargetData && !force) {
       return;
     }
 

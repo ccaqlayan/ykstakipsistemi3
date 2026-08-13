@@ -123,24 +123,24 @@ interface BranchModalsProps {
   handleGenerateSimilarQuestions: (imgUrl: string, titleStr: string) => void;
   handleOpenQuestionReport: (errorItem: TopicErrorItem) => void;
   handleGenerateQuestionReport: (errorItem: TopicErrorItem) => void;
-  handleFetchFullPhotoAnalysis: (errorItem: TopicErrorItem, targetTab: 'solution' | 'similar' | 'report') => void;
+  handleFetchFullPhotoAnalysis: (errorItem: TopicErrorItem, targetTab: 'solution' | 'similar' | 'report', force?: boolean) => void;
   reportLoading: boolean;
   reportText: string | null;
   reportError: string | null;
 
   // AI Support Center
   activeSupportItem: any;
-  setActiveSupportItem: (val: any) => void;
-  activeSupportTab: 'menu' | 'feedback' | 'analysis';
-  setActiveSupportTab: (val: 'menu' | 'feedback' | 'analysis') => void;
+  setActiveSupportItem: (item: any) => void;
+  activeSupportTab: 'feedback' | 'analysis';
+  setActiveSupportTab: (tab: 'feedback' | 'analysis') => void;
   supportFeedbackLoading: boolean;
   supportFeedbackError: string | null;
   supportFeedbackText: string | null;
   supportAnalysisLoading: boolean;
   supportAnalysisError: string | null;
   supportAnalysisText: string | null;
-  handleSupportGetFeedback: (item: any) => void;
-  handleSupportGetAnalysis: (item: any) => void;
+  handleSupportGetFeedback: (errorItem: TopicErrorItem) => void;
+  handleSupportGetAnalysis: (errorItem: TopicErrorItem) => void;
   formatAnalysisTable: (text: string) => React.ReactNode;
   setReturnToSupportItem: (item: any) => void;
   openImagePreview: (url: string, title: string) => void;
@@ -243,6 +243,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
   handleGenerateSimilarQuestions,
   handleOpenQuestionReport,
   handleGenerateQuestionReport,
+  handleFetchFullPhotoAnalysis,
   reportLoading,
   reportText,
   reportError,
@@ -283,14 +284,15 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
       // Try exact match first, then normalized (without query params), then title match
       return e.imageUrl === previewImage.url
         || normalizeUrl(e.imageUrl) === previewNorm
-        || `${e.subject} - ${e.topicName}` === previewImage.title;
+        || `${e.subject} - ${e.topicName}` === previewImage.title
+        || previewImage.title.includes(e.topicName);
     }) || null;
   };
 
-  const triggerFullPhotoAnalysis = (targetTab: 'solution' | 'similar' | 'report') => {
+  const triggerFullPhotoAnalysis = (targetTab: 'solution' | 'similar' | 'report', force = false) => {
     const matchingError = getMatchingErrorItem();
     if (matchingError && handleFetchFullPhotoAnalysis) {
-      handleFetchFullPhotoAnalysis(matchingError, targetTab);
+      handleFetchFullPhotoAnalysis(matchingError, targetTab, force);
     } else if (previewImage && handleFetchFullPhotoAnalysis) {
       // Build a synthetic error item from previewImage metadata so full analysis still runs
       const [subject, ...topicParts] = previewImage.title.split(' - ');
@@ -304,7 +306,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
         revised: false,
         priority: 'medium' as any,
       };
-      handleFetchFullPhotoAnalysis(syntheticError as any, targetTab);
+      handleFetchFullPhotoAnalysis(syntheticError as any, targetTab, force);
     } else if (previewImage) {
       if (targetTab === 'solution') handleSolveQuestion(previewImage.url, previewImage.title);
       else if (targetTab === 'similar') handleGenerateSimilarQuestions(previewImage.url, previewImage.title);
@@ -313,6 +315,16 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
 
   const formatSolutionText = (text: string) => {
     if (!text) return null;
+
+    // Handle literal \n and insert double line breaks before section headers if missing
+    const cleanText = text
+      .replace(/\\n/g, '\n')
+      .replace(/([^\n])\s*(Adım \d+[:\.-])/gi, '$1\n\n$2')
+      .replace(/([^\n])\s*(Konu Özeti[:\.-])/gi, '$1\n\n$2')
+      .replace(/([^\n])\s*(Doğru Cevap[:\.-])/gi, '$1\n\n$2')
+      .replace(/([^\n])\s*(Pratik Taktik[:\.-])/gi, '$1\n\n$2')
+      .replace(/([^\n])\s*(Çözüm[:\.-])/gi, '$1\n\n$2')
+      .replace(/([^\n])\s*(Sonuç[:\.-])/gi, '$1\n\n$2');
 
     // Normalize math symbols only (no LaTeX)
     const cleanMath = (s: string) => s
@@ -342,22 +354,32 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
       const t = line.trim().toLowerCase();
       return (
         t.startsWith('doğru cevap') ||
-        t.startsWith('adım adım') ||
         t.startsWith('konu özeti') ||
-        t.startsWith('pratik taktik')
+        t.startsWith('pratik taktik') ||
+        t.startsWith('çözüm rehberi') ||
+        t.startsWith('adım adım')
       );
     };
 
-    return text.split('\n').map((line, idx) => {
+    return cleanText.split('\n').map((line, idx) => {
       const cleaned = cleanMath(line);
       const trimmed = cleaned.trim();
 
-      if (trimmed === '') return <div key={idx} className="h-1.5" />;
+      if (trimmed === '') return <div key={idx} className="h-2" />;
 
-      // Section header lines — bold amber, no background
+      // Section header lines — bold amber text with margin
       if (isHeader(trimmed)) {
         return (
-          <p key={idx} className="text-xs font-bold text-amber-300 mt-3 mb-1">
+          <p key={idx} className="text-xs font-extrabold text-amber-300 mt-3 mb-1 tracking-wide">
+            {trimmed.replace(/\*\*/g, '')}
+          </p>
+        );
+      }
+
+      // Step headings like "Adım 1: ..."
+      if (trimmed.toLowerCase().startsWith('adım ')) {
+        return (
+          <p key={idx} className="text-xs font-bold text-indigo-300 mt-2 mb-0.5">
             {trimmed.replace(/\*\*/g, '')}
           </p>
         );
@@ -372,7 +394,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
         );
       }
 
-      // All other lines — plain text, strip any bold markers
+      // All other lines — plain text paragraph
       return (
         <p key={idx} className="text-xs text-slate-300 leading-relaxed py-0.5">
           {trimmed.replace(/\*\*/g, '')}
@@ -1184,7 +1206,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                         <p className="text-xs text-rose-400 font-medium">{solveError}</p>
                         <button
                           type="button"
-                          onClick={() => triggerFullPhotoAnalysis('solution')}
+                          onClick={() => triggerFullPhotoAnalysis('solution', true)}
                           className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
                         >
                           Yeniden Deneyin
@@ -1200,7 +1222,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                         <p className="text-xs text-slate-400">Bu sorunun henüz adım adım yapay zeka çözümü üretilmedi.</p>
                         <button
                           type="button"
-                          onClick={() => triggerFullPhotoAnalysis('solution')}
+                          onClick={() => triggerFullPhotoAnalysis('solution', true)}
                           className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-600/20 transition-all cursor-pointer inline-flex items-center space-x-1.5"
                         >
                           <Sparkles className="w-4 h-4 text-purple-200" />
@@ -1241,7 +1263,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                         <button
                           type="button"
                           disabled={similarLoading}
-                          onClick={() => triggerFullPhotoAnalysis('similar')}
+                          onClick={() => triggerFullPhotoAnalysis('similar', true)}
                           className="px-2.5 py-1 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 disabled:opacity-50 text-white text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center space-x-1 shrink-0 ml-auto"
                         >
                           {similarLoading ? (
@@ -1271,7 +1293,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                         {similarQuestionsList.length < 3 && (
                           <button
                             type="button"
-                            onClick={() => triggerFullPhotoAnalysis('similar')}
+                            onClick={() => triggerFullPhotoAnalysis('similar', true)}
                             className="px-3 py-1 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
                           >
                             Yeniden Deneyin
@@ -1343,7 +1365,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                         <button
                           type="button"
                           disabled={similarLoading}
-                          onClick={() => triggerFullPhotoAnalysis('similar')}
+                          onClick={() => triggerFullPhotoAnalysis('similar', true)}
                           className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-cyan-600/20 transition-all cursor-pointer inline-flex items-center space-x-1.5"
                         >
                           <Sparkles className="w-4 h-4 text-cyan-200" />
@@ -1376,7 +1398,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                         <p className="text-xs text-rose-400 font-medium">{reportError}</p>
                         <button
                           type="button"
-                          onClick={() => triggerFullPhotoAnalysis('report')}
+                          onClick={() => triggerFullPhotoAnalysis('report', true)}
                           className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-lg transition-all cursor-pointer"
                         >
                           Yeniden Deneyin
@@ -1392,7 +1414,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                         <p className="text-xs text-slate-400">Bu sorunun henüz detaylı soru karnesi ve çeldirici analizi oluşturulmadı.</p>
                         <button
                           type="button"
-                          onClick={() => triggerFullPhotoAnalysis('report')}
+                          onClick={() => triggerFullPhotoAnalysis('report', true)}
                           className="px-4 py-2 bg-gradient-to-r from-amber-600 to-indigo-600 hover:from-amber-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-amber-600/20 transition-all cursor-pointer inline-flex items-center space-x-1.5"
                         >
                           <Sparkles className="w-4 h-4 text-amber-200" />

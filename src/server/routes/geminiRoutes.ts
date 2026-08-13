@@ -1044,8 +1044,8 @@ Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'G
 
 1. ÇÖZÜM REHBERİ (solution alanı için):
 - Görseldeki soruyu adım adım son derece anlaşılır Türkçe ile çöz.
-- ASLA "Merhaba" veya selamlama cümleleri kullanma, doğrudan konu özeti veya çözüm adımları ile başla.
-- Konu özetini, adım adım çözümü, belirgin doğru cevabı ve 1 pratik taktiği içersin.
+- ASLA "Merhaba" veya selamlama cümleleri kullanma, doğrudan Konu Özeti ile başla.
+- Metin içinde paragraflar, adımlar (Adım 1:, Adım 2: vb.), Konu Özeti, Doğru Cevap: ve Pratik Taktik: bölümleri arasında KESİNLİKLE yeni satır (\\n\\n) kullan. ASLA tüm çözümü tek parça düz metin olarak yazma.
 - KESİNLİKLE LaTeX ($...$) kullanma, düz metin ve klavye karakterleri kullan.
 
 2. BENZER SORULAR (similarQuestions alanı için - 3 adet):
@@ -1053,8 +1053,11 @@ Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'G
 - Her biri için: soru metni ve şıkları (A, B, C, D, E), adım adım detaylı çözümü ve doğru cevabını hazırla.
 
 3. DETAYLI SORU KARNESİ (analysis alanı için):
-- Sorunun ders, konu, MEB kazanımı, müfredat uygunluğu, zorluk (örn: 6/10 - Orta), okuma süresi, çözme süresi, ayırt edicilik ve TÜM ŞIKLARIN çeldirici analizini içeren Markdown tablosu oluştur.
-- Başlık: **SORU ANALİZİ**
+- Sorunun ders, konu, MEB kazanımı, müfredat uygunluğu, zorluk (örn: 6/10 - Orta), okuma süresi, çözme süresi, ayırt edicilik ve TÜM ŞIKLARIN çeldirici analizini içeren tam bir Markdown Tablo oluştur.
+- Tablo tam olarak aşağıdaki formatta olmalıdır:
+
+**SORU ANALİZİ**
+
 | Kriter | Değerlendirme |
 | :--- | :--- |
 | **Ders** | ${subject || 'YKS'} |
