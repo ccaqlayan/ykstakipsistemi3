@@ -1118,57 +1118,6 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                       </div>
                     </div>
 
-                    {editingNotesId === res.id ? (
-                      <div className="flex items-center gap-2 bg-slate-950 p-2 rounded-xl border border-indigo-500/50">
-                        <input
-                          type="text"
-                          value={inlineNotesText}
-                          onChange={(e) => setInlineNotesText(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleSaveInlineNotes(res);
-                            } else if (e.key === 'Escape') {
-                              setEditingNotesId(null);
-                            }
-                          }}
-                          className="flex-1 bg-transparent text-xs text-white focus:outline-none px-2 py-1"
-                          placeholder="Kitap notu yazın..."
-                          autoFocus
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleSaveInlineNotes(res)}
-                          className="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all shrink-0"
-                        >
-                          Kaydet
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingNotesId(null)}
-                          className="text-slate-400 hover:text-white text-[11px] px-2 py-1.5 rounded-lg transition-all shrink-0"
-                        >
-                          İptal
-                        </button>
-                      </div>
-                    ) : (
-                      <p 
-                        onClick={() => {
-                          setEditingNotesId(res.id);
-                          setInlineNotesText(res.notes || '');
-                        }}
-                        className="text-xs text-slate-300 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80 cursor-pointer hover:border-indigo-500/30 hover:bg-slate-950 transition-all flex items-center justify-between group/notes"
-                        title="Kitap notunu düzenlemek için tıklayın"
-                      >
-                        <span className="flex items-center gap-1.5">
-                          <span className="text-slate-400 font-semibold shrink-0">Kitap Notu:</span>
-                          <span className={res.notes ? "" : "text-slate-500 italic"}>
-                            {res.notes || 'Not eklemek için tıklayın...'}
-                          </span>
-                        </span>
-                        <Pencil className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover/notes:opacity-100 transition-all shrink-0 ml-2" />
-                      </p>
-                    )}
-
                     {/* Progress Bar & Topic Stats */}
                     <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/60 space-y-2">
                       <div className="flex justify-between items-center text-xs font-medium text-slate-300 font-mono">
