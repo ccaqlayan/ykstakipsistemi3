@@ -32,16 +32,7 @@ import {
   Menu
 } from 'lucide-react';
 import { UserAccount, InstitutionalMockExam, InstitutionalSubjectDetail, YKSDataState } from '../types';
-import { 
-  MatchStudentModal, 
-  EditExamModal, 
-  DeleteConfirmModal, 
-  DeleteAllExamsModal, 
-  EditSeriesModal, 
-  ClassMappingModal 
-} from './import/BulkImportModals';
 import { BulkImportCsvTab } from './import/BulkImportCsvTab';
-import { BulkImportHistoryTab } from './import/BulkImportHistoryTab';
 
 interface BulkExamImportViewProps {
   currentUser: UserAccount | null;
@@ -66,23 +57,9 @@ export const BulkExamImportView: React.FC<BulkExamImportViewProps> = ({
   onSaveInstitutionalExams,
   onUpdateInstitutionalExam,
   onDeleteInstitutionalExam,
-  onDeleteAllInstitutionalExams,
   onAddAuditLog,
   onToggleMenu
 }) => {
-  const [activeTab, setActiveTab] = useState<'import' | 'reports'>('import');
-  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
-
-  // Modals for record management
-  const [matchModalExam, setMatchModalExam] = useState<InstitutionalMockExam | null>(null);
-  const [editModalExam, setEditModalExam] = useState<InstitutionalMockExam | null>(null);
-  const [deleteConfirmExam, setDeleteConfirmExam] = useState<InstitutionalMockExam | null>(null);
-  const [editingSeriesExam, setEditingSeriesExam] = useState<{
-    examTitle: string;
-    latestDate?: string;
-    count: number;
-  } | null>(null);
-
   // Persistent class mappings state (e.g. "12-A" -> "12-A SAY")
   const [classMappings, setClassMappings] = useState<Record<string, string>>(() => {
     try {
@@ -98,8 +75,6 @@ export const BulkExamImportView: React.FC<BulkExamImportViewProps> = ({
       '12B': '12-B EA'
     };
   });
-
-  const [showClassMappingModal, setShowClassMappingModal] = useState(false);
 
   // Sync class mappings to localStorage
   React.useEffect(() => {
@@ -207,95 +182,8 @@ export const BulkExamImportView: React.FC<BulkExamImportViewProps> = ({
     return 'all';
   };
 
-  const handleSaveSeries = (oldTitle: string, newTitle: string, newDate: string) => {
-    const matching = examsToUse.filter(e => e.examTitle === oldTitle);
-    matching.forEach(e => {
-      if (onUpdateInstitutionalExam) {
-        onUpdateInstitutionalExam({
-          ...e,
-          examTitle: newTitle,
-          examDate: newDate
-        });
-      }
-    });
-  };
-
-  const handleDeleteSeries = (titleToDelete: string) => {
-    const matching = examsToUse.filter(e => e.examTitle === titleToDelete);
-    const matchingIds = matching.map(e => e.id);
-    if (matchingIds.length > 0 && onDeleteInstitutionalExam) {
-      onDeleteInstitutionalExam(matchingIds);
-    }
-  };
-
   return (
     <div className="space-y-6 text-slate-100 max-w-7xl mx-auto px-4 py-6">
-      {/* Active Modals */}
-      {matchModalExam && (
-        <MatchStudentModal
-          exam={matchModalExam}
-          studentUsers={studentUsers}
-          availableClasses={availableClasses}
-          onClose={() => setMatchModalExam(null)}
-          onSaveMatch={(updatedExam) => {
-            if (onUpdateInstitutionalExam) onUpdateInstitutionalExam(updatedExam);
-            setMatchModalExam(null);
-          }}
-        />
-      )}
-
-      {editModalExam && (
-        <EditExamModal
-          exam={editModalExam}
-          onClose={() => setEditModalExam(null)}
-          onSaveEdit={(updatedExam) => {
-            if (onUpdateInstitutionalExam) onUpdateInstitutionalExam(updatedExam);
-            setEditModalExam(null);
-          }}
-        />
-      )}
-
-      {deleteConfirmExam && (
-        <DeleteConfirmModal
-          exam={deleteConfirmExam}
-          onClose={() => setDeleteConfirmExam(null)}
-          onConfirmDelete={(examId) => {
-            if (onDeleteInstitutionalExam) onDeleteInstitutionalExam(examId);
-            setDeleteConfirmExam(null);
-          }}
-        />
-      )}
-
-      {showDeleteAllConfirm && (
-        <DeleteAllExamsModal
-          totalExamsCount={examsToUse.length}
-          onClose={() => setShowDeleteAllConfirm(false)}
-          onConfirmDeleteAll={() => {
-            if (onDeleteAllInstitutionalExams) onDeleteAllInstitutionalExams();
-            setShowDeleteAllConfirm(false);
-          }}
-        />
-      )}
-
-      {editingSeriesExam && (
-        <EditSeriesModal
-          examTitle={editingSeriesExam.examTitle}
-          latestDate={editingSeriesExam.latestDate}
-          count={editingSeriesExam.count}
-          onClose={() => setEditingSeriesExam(null)}
-          onSaveSeries={handleSaveSeries}
-          onDeleteSeries={handleDeleteSeries}
-        />
-      )}
-
-      {showClassMappingModal && (
-        <ClassMappingModal
-          classMappings={classMappings}
-          availableClasses={availableClasses}
-          onClose={() => setShowClassMappingModal(false)}
-          onSaveMappings={(newMappings) => setClassMappings(newMappings)}
-        />
-      )}
 
       {/* Top Bar Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
@@ -313,77 +201,26 @@ export const BulkExamImportView: React.FC<BulkExamImportViewProps> = ({
           </div>
           <div>
             <h1 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
-              <span>Kurumsal Deneme Sınavı Yönetimi</span>
-              <span className="text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2.5 py-0.5 rounded-full">
-                v1.1.3
-              </span>
+              <span>Toplu Liste Girişi</span>
             </h1>
-            <p className="text-xs text-slate-400">Toplu Excel/PDF karne yükleme ve kurumsal analiz portalı</p>
+            <p className="text-xs text-slate-400">Toplu Excel/PDF karne yükleme</p>
           </div>
-        </div>
-
-        {/* Tab Buttons */}
-        <div className="flex items-center space-x-2 bg-slate-900 p-1.5 rounded-2xl border border-white/10 shrink-0">
-          <button
-            onClick={() => setActiveTab('import')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
-              activeTab === 'import'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Upload className="w-4 h-4" />
-            <span>Toplu Excel / PDF Yükle</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('reports')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
-              activeTab === 'reports'
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4" />
-            <span>Karneler & Raporlar ({examsToUse.length})</span>
-          </button>
         </div>
       </div>
 
-      {/* Main Tab Content */}
-      {activeTab === 'import' && (
-        <BulkImportCsvTab
-          currentUser={currentUser!}
-          studentUsers={studentUsers}
-          availableClasses={availableClasses}
-          studentsData={studentsData}
-          examsToUse={examsToUse}
-          onSaveInstitutionalExams={onSaveInstitutionalExams}
-          onDeleteInstitutionalExam={onDeleteInstitutionalExam}
-          onAddAuditLog={onAddAuditLog}
-          getMappedClassName={getMappedClassName}
-          findBestClassMatch={findBestClassMatch}
-          onImportComplete={() => setActiveTab('reports')}
-        />
-      )}
-
-      {activeTab === 'reports' && (
-        <BulkImportHistoryTab
-          examsToUse={examsToUse}
-          studentUsers={studentUsers}
-          availableClasses={availableClasses}
-          studentsData={studentsData}
-          onUpdateInstitutionalExam={onUpdateInstitutionalExam}
-          onDeleteInstitutionalExam={onDeleteInstitutionalExam}
-          onDeleteAllInstitutionalExams={onDeleteAllInstitutionalExams}
-          setMatchModalExam={setMatchModalExam}
-          setEditModalExam={setEditModalExam}
-          setDeleteConfirmExam={setDeleteConfirmExam}
-          setEditingSeriesExam={setEditingSeriesExam}
-          setShowClassMappingModal={setShowClassMappingModal}
-          setShowDeleteAllConfirm={setShowDeleteAllConfirm}
-        />
-      )}
+      <BulkImportCsvTab
+        currentUser={currentUser!}
+        studentUsers={studentUsers}
+        availableClasses={availableClasses}
+        studentsData={studentsData}
+        examsToUse={examsToUse}
+        onSaveInstitutionalExams={onSaveInstitutionalExams}
+        onDeleteInstitutionalExam={onDeleteInstitutionalExam}
+        onAddAuditLog={onAddAuditLog}
+        getMappedClassName={getMappedClassName}
+        findBestClassMatch={findBestClassMatch}
+        onImportComplete={() => {}}
+      />
     </div>
   );
 };

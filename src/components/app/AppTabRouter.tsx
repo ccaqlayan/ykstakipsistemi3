@@ -3,6 +3,7 @@ import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, ClassDefinit
 import { AuditLogsView } from '../AuditLogsView';
 import { SystemManagementView } from '../SystemManagementView';
 import { BulkExamImportView } from '../BulkExamImportView';
+import { InstitutionalMocksView } from '../InstitutionalMocksView';
 import { TeacherDashboardView } from '../TeacherDashboardView';
 import { DashboardView } from '../DashboardView';
 import SubjectProgressView from '../SubjectProgressView';
@@ -236,6 +237,21 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           onDeleteInstitutionalExam={handleDeleteInstitutionalExam}
           onDeleteAllInstitutionalExams={handleDeleteAllInstitutionalExams}
           onAddAuditLog={addAuditAndUndo}
+          onToggleMenu={() => setIsMobileMenuOpen(prev => !prev)}
+        />
+      )}
+
+      {/* INSTITUTIONAL MOCKS VIEW (KARNELER & RAPORLAR) */}
+      {activeTab === 'institutional_mocks' && (currentUser.role === 'school_counselor' || currentUser.role === 'admin') && (
+        <InstitutionalMocksView
+          currentUser={currentUser}
+          users={globalState.users}
+          classes={globalState.classes}
+          studentsData={globalState.studentsData}
+          institutionalMockExams={globalState.institutionalMockExams || []}
+          onUpdateInstitutionalExam={handleUpdateInstitutionalExam}
+          onDeleteInstitutionalExam={handleDeleteInstitutionalExam}
+          onDeleteAllInstitutionalExams={handleDeleteAllInstitutionalExams}
           onToggleMenu={() => setIsMobileMenuOpen(prev => !prev)}
         />
       )}
