@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowLeft, GraduationCap, SlidersHorizontal, Award, TrendingUp, BarChart2, Sparkles } from 'lucide-react';
 import { InstitutionalMockExam } from '../../types';
 
@@ -11,6 +11,12 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
   selectedInstitutionalExam,
   setSelectedInstitutionalExam
 }) => {
+  useEffect(() => {
+    if (selectedInstitutionalExam) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [selectedInstitutionalExam]);
+
   if (!selectedInstitutionalExam) return null;
 
   return (
