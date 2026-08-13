@@ -60,7 +60,7 @@ import {
   Legend
 } from 'recharts';
 import { StudyPlanItem, DayOfWeek, QuestionLog, YouTubeVideoItem, DailyStudyTimeLog } from '../types';
-import { YKS_SUBJECTS, YKS_CURRICULUM_TOPICS, DEFAULT_TASK_TYPES } from '../data/initialData';
+import { YKS_SUBJECTS, YKS_CURRICULUM_TOPICS, DEFAULT_TASK_TYPES, DEFAULT_DAILY_STUDY_LOGS } from '../data/initialData';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { StudyPlannerWeeklyBoard } from './planner/StudyPlannerWeeklyBoard';
 import { StudyPlannerDailyView } from './planner/StudyPlannerDailyView';
@@ -555,6 +555,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   const activeHistoryWeek = selectedHistoryWeek || orderedWeeks[0] || '20 - 26 Temmuz';
 
   const getWeeklyStats = () => {
+    const allLogs = { ...DEFAULT_DAILY_STUDY_LOGS, ...(dailyStudyLogs || {}) };
     return orderedWeeks.map(weekLabel => {
       const plans = getPlansForWeek(weekLabel);
       const totalTasks = plans.length;
@@ -562,9 +563,26 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       const plannedMin = plans.reduce((acc, p) => acc + p.plannedMinutes, 0);
       const completedMin = plans.reduce((acc, p) => acc + p.completedMinutes, 0);
       
+      // Calculate effective completed minutes for this week (using daily logs if available, fallback to completed tasks)
+      const effectiveMin = DAYS.reduce((sum, day) => {
+        const matchingLogKey = Object.keys(allLogs).find(k => {
+          const log = allLogs[k];
+          return log && log.day === day && isSameWeekLabel(log.weekLabel || '', weekLabel);
+        });
+        if (matchingLogKey && allLogs[matchingLogKey]) {
+          return sum + allLogs[matchingLogKey].minutes;
+        }
+        const altKey = `${weekLabel}_${day}`;
+        if (allLogs[altKey]) {
+          return sum + allLogs[altKey].minutes;
+        }
+        const dayTaskMin = plans.filter(p => p.day === day).reduce((s, p) => s + (p.completedMinutes || 0), 0);
+        return sum + dayTaskMin;
+      }, 0);
+
       const taskComplianceRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-      const durationComplianceRate = plannedMin > 0 ? Math.round((completedMin / plannedMin) * 100) : 0;
-      const completedHours = Number((completedMin / 60).toFixed(1));
+      const durationComplianceRate = plannedMin > 0 ? Math.round((effectiveMin / plannedMin) * 100) : 0;
+      const completedHours = Number((effectiveMin / 60).toFixed(1));
 
       return {
         name: weekLabel,
@@ -1426,12 +1444,20 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   const [dailyStudyLogModalData, setDailyStudyLogModalData] = useState<DailyStudyLogModalData | null>(null);
 
   const getEffectiveDayStudyMinutes = (day: DayOfWeek, dateKey?: string): { minutes: number; isManual: boolean; notes?: string } => {
-    if (dateKey && dailyStudyLogs?.[dateKey]) {
-      return { minutes: dailyStudyLogs[dateKey].minutes, isManual: true, notes: dailyStudyLogs[dateKey].notes };
+    const allLogs = { ...DEFAULT_DAILY_STUDY_LOGS, ...(dailyStudyLogs || {}) };
+    if (dateKey && allLogs[dateKey]) {
+      return { minutes: allLogs[dateKey].minutes, isManual: true, notes: allLogs[dateKey].notes };
     }
     const altKey = `${currentWeekLabel}_${day}`;
-    if (dailyStudyLogs?.[altKey]) {
-      return { minutes: dailyStudyLogs[altKey].minutes, isManual: true, notes: dailyStudyLogs[altKey].notes };
+    if (allLogs[altKey]) {
+      return { minutes: allLogs[altKey].minutes, isManual: true, notes: allLogs[altKey].notes };
+    }
+    const matchingLogKey = Object.keys(allLogs).find(k => {
+      const log = allLogs[k];
+      return log && log.day === day && isSameWeekLabel(log.weekLabel || '', currentWeekLabel);
+    });
+    if (matchingLogKey && allLogs[matchingLogKey]) {
+      return { minutes: allLogs[matchingLogKey].minutes, isManual: true, notes: allLogs[matchingLogKey].notes };
     }
     const dayPlans = activePlans.filter(p => p.day === day);
     const taskMinutes = dayPlans.reduce((sum, p) => sum + (p.completedMinutes || 0), 0);

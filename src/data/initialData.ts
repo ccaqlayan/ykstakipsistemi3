@@ -1,4 +1,4 @@
-import { YKSDataState, AuditLogItem, DirectMessage, FieldType } from '../types';
+import { YKSDataState, AuditLogItem, DirectMessage, FieldType, DailyStudyTimeLog } from '../types';
 
 export const DEFAULT_AVATAR = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImF2YXRhckdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxZTI5M2IiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMzMzQxNTUiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0idXJsKCNhdmF0YXJHcmFkKSIgcng9IjI0Ii8+PGNpcmNsZSBjeD0iNTAiIGN5PSI0MCIgcj0iMTgiIGZpbGw9IiM5NGEzYjgiLz48cGF0aCBkPSJNNTAgNjJjLTE1IDAtMjYgOC0yNiAxOHY0aDUydi00YzAtMTAtMTEtMTgtMjYtMTh6IiBmaWxsPSIjOTRhM2I4Ii8+PC9zdmc+`;
 
@@ -387,6 +387,60 @@ export const YKS_CURRICULUM_TOPICS: Record<string, string[]> = {
 'Translation (English - Turkish)',
     'Irrelevant Sentence & Paragraph Completion'
   ]
+};
+
+export const DEFAULT_DAILY_STUDY_LOGS: Record<string, DailyStudyTimeLog> = {
+  // 6 - 12 Temmuz 2026
+  '2026-07-06': { date: '2026-07-06', day: 'Pazartesi', weekLabel: '6 - 12 Temmuz', minutes: 330, notes: 'Okul etüdü ve evde paragraf çalışması' },
+  '2026-07-07': { date: '2026-07-07', day: 'Salı', weekLabel: '6 - 12 Temmuz', minutes: 270, notes: 'Kütüphanede fizik vektörler soru çözümü' },
+  '2026-07-08': { date: '2026-07-08', day: 'Çarşamba', weekLabel: '6 - 12 Temmuz', minutes: 360, notes: 'Dershane + bireysel matematik basamaklar' },
+  '2026-07-09': { date: '2026-07-09', day: 'Perşembe', weekLabel: '6 - 12 Temmuz', minutes: 240, notes: 'Kimya bilimi video dersleri ve özet' },
+  '2026-07-10': { date: '2026-07-10', day: 'Cuma', weekLabel: '6 - 12 Temmuz', minutes: 300, notes: 'Biyoloji canlıların ortak özellikleri' },
+  '2026-07-11': { date: '2026-07-11', day: 'Cumartesi', weekLabel: '6 - 12 Temmuz', minutes: 420, notes: 'Haftalık genel deneme ve tarih tekrarı' },
+  '2026-07-12': { date: '2026-07-12', day: 'Pazar', weekLabel: '6 - 12 Temmuz', minutes: 180, notes: 'Hafta değerlendirmesi ve dinlenme' },
+
+  // 13 - 19 Temmuz 2026
+  '2026-07-13': { date: '2026-07-13', day: 'Pazartesi', weekLabel: '13 - 19 Temmuz', minutes: 360, notes: 'Matematik bölünebilme ve paragraf maratonu' },
+  '2026-07-14': { date: '2026-07-14', day: 'Salı', weekLabel: '13 - 19 Temmuz', minutes: 300, notes: 'Fizik bağıl hareket soru bankası' },
+  '2026-07-15': { date: '2026-07-15', day: 'Çarşamba', weekLabel: '13 - 19 Temmuz', minutes: 390, notes: 'EBOB-EKOK maratonu ve kütüphane etüdü' },
+  '2026-07-16': { date: '2026-07-16', day: 'Perşembe', weekLabel: '13 - 19 Temmuz', minutes: 240, notes: 'Atom ve periyodik sistem notları' },
+  '2026-07-17': { date: '2026-07-17', day: 'Cuma', weekLabel: '13 - 19 Temmuz', minutes: 330, notes: 'Biyoloji temel bileşenler soru taraması' },
+  '2026-07-18': { date: '2026-07-18', day: 'Cumartesi', weekLabel: '13 - 19 Temmuz', minutes: 450, notes: 'Branş denemeleri ve soru çözümleri' },
+  '2026-07-19': { date: '2026-07-19', day: 'Pazar', weekLabel: '13 - 19 Temmuz', minutes: 210, notes: 'Geometri doğrudan ve üçgende açılar' },
+
+  // 20 - 26 Temmuz 2026
+  '2026-07-20': { date: '2026-07-20', day: 'Pazartesi', weekLabel: '20 - 26 Temmuz', minutes: 300, notes: 'Rasyonel sayılar ve anlatım biçimleri' },
+  '2026-07-21': { date: '2026-07-21', day: 'Salı', weekLabel: '20 - 26 Temmuz', minutes: 360, notes: 'Newton hareket yasaları derin analiz' },
+  '2026-07-22': { date: '2026-07-22', day: 'Çarşamba', weekLabel: '20 - 26 Temmuz', minutes: 330, notes: 'Birinci dereceden denklemler etüdü' },
+  '2026-07-23': { date: '2026-07-23', day: 'Perşembe', weekLabel: '20 - 26 Temmuz', minutes: 270, notes: 'Kimyasal türler arası etkileşimler' },
+  '2026-07-24': { date: '2026-07-24', day: 'Cuma', weekLabel: '20 - 26 Temmuz', minutes: 360, notes: 'Hücre yapısı ve video özetleri' },
+  '2026-07-25': { date: '2026-07-25', day: 'Cumartesi', weekLabel: '20 - 26 Temmuz', minutes: 480, notes: 'TYT denemesi + coğrafya doğa insan' },
+  '2026-07-26': { date: '2026-07-26', day: 'Pazar', weekLabel: '20 - 26 Temmuz', minutes: 240, notes: 'Özel üçgenler ve haftalık analiz' },
+
+  // 27 Temmuz - 2 Ağustos 2026
+  '2026-07-27': { date: '2026-07-27', day: 'Pazartesi', weekLabel: '27 Temmuz - 2 Ağustos', minutes: 330, notes: 'Okulda etüt ve paragraf çalışması' },
+  '2026-07-28': { date: '2026-07-28', day: 'Salı', weekLabel: '27 Temmuz - 2 Ağustos', minutes: 360, notes: 'Matematik ve Fizik soru çözümü' },
+  '2026-07-29': { date: '2026-07-29', day: 'Çarşamba', weekLabel: '27 Temmuz - 2 Ağustos', minutes: 300, notes: 'Kütüphanede Kimya çalışması' },
+  '2026-07-30': { date: '2026-07-30', day: 'Perşembe', weekLabel: '27 Temmuz - 2 Ağustos', minutes: 390, notes: 'Geometri üçgenler kampı' },
+  '2026-07-31': { date: '2026-07-31', day: 'Cuma', weekLabel: '27 Temmuz - 2 Ağustos', minutes: 270, notes: 'Biyoloji kalıtım hazırlık' },
+  '2026-08-01': { date: '2026-08-01', day: 'Cumartesi', weekLabel: '27 Temmuz - 2 Ağustos', minutes: 450, notes: 'Hafta sonu genel deneme etüdü' },
+  '2026-08-02': { date: '2026-08-02', day: 'Pazar', weekLabel: '27 Temmuz - 2 Ağustos', minutes: 180, notes: 'Eksik konu tekrarları' },
+
+  // 3 - 9 Ağustos 2026
+  '2026-08-03': { date: '2026-08-03', day: 'Pazartesi', weekLabel: '3 - 9 Ağustos', minutes: 360, notes: 'TYT kampı ve problem çözümü' },
+  '2026-08-04': { date: '2026-08-04', day: 'Salı', weekLabel: '3 - 9 Ağustos', minutes: 330, notes: 'Fizik iş güç enerji' },
+  '2026-08-05': { date: '2026-08-05', day: 'Çarşamba', weekLabel: '3 - 9 Ağustos', minutes: 360, notes: 'Matematik fonksiyonlar' },
+  '2026-08-06': { date: '2026-08-06', day: 'Perşembe', weekLabel: '3 - 9 Ağustos', minutes: 270, notes: 'Kimya mol kavramı' },
+  '2026-08-07': { date: '2026-08-07', day: 'Cuma', weekLabel: '3 - 9 Ağustos', minutes: 390, notes: 'Biyoloji hücre bölünmeleri' },
+  '2026-08-08': { date: '2026-08-08', day: 'Cumartesi', weekLabel: '3 - 9 Ağustos', minutes: 420, notes: 'Kurumsal TYT denemesi' },
+  '2026-08-09': { date: '2026-08-09', day: 'Pazar', weekLabel: '3 - 9 Ağustos', minutes: 210, notes: 'Haftalık deneme değerlendirmesi' },
+
+  // 10 - 16 Ağustos 2026 (Mevcut Hafta)
+  '2026-08-10': { date: '2026-08-10', day: 'Pazartesi', weekLabel: '10 - 16 Ağustos', minutes: 330, notes: 'Okul etüdü ve kütüphane çalışması' },
+  '2026-08-11': { date: '2026-08-11', day: 'Salı', weekLabel: '10 - 16 Ağustos', minutes: 360, notes: 'AYT Matematik ve Fizik soru çözümü' },
+  '2026-08-12': { date: '2026-08-12', day: 'Çarşamba', weekLabel: '10 - 16 Ağustos', minutes: 300, notes: 'Kimya ve Paragraf rutini' },
+  '2026-08-13': { date: '2026-08-13', day: 'Perşembe', weekLabel: '10 - 16 Ağustos', minutes: 270, notes: 'Biyoloji soru taraması' },
+  '2026-08-14': { date: '2026-08-14', day: 'Cuma', weekLabel: '10 - 16 Ağustos', minutes: 390, notes: 'Kronometre ile net soru çözümü' }
 };
 
 export const INITIAL_STATE: YKSDataState = {
@@ -2233,7 +2287,8 @@ export const INITIAL_STATE: YKSDataState = {
   ],
   sheetsStatus: {
     isConnected: false
-  }
+  },
+  dailyStudyLogs: DEFAULT_DAILY_STUDY_LOGS
 };
 
 export const INITIAL_STUDENT_2_STATE: YKSDataState = {
