@@ -690,30 +690,11 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                   </div>
                 )}
 
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
-                  <button
-                    type="button"
-                    disabled={isAnalyzingActiveError}
-                    onClick={() => handleRunAiAnalysis(activeAiErrorItem)}
-                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 disabled:opacity-50"
-                  >
-                    {isAnalyzingActiveError ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
-                        <span>Yeniden Analiz Ediliyor...</span>
-                      </>
-                    ) : (
-                      <>
-                        <RotateCcw className="w-3.5 h-3.5 text-purple-400" />
-                        <span>Analizi Yenile</span>
-                      </>
-                    )}
-                  </button>
-
+                <div className="flex justify-end pt-3 border-t border-slate-800">
                   <button
                     type="button"
                     onClick={() => setActiveAiErrorItem(null)}
-                    className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-lg shadow-purple-600/25"
+                    className="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-lg shadow-purple-600/25"
                   >
                     Kapat
                   </button>
@@ -754,7 +735,7 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4 text-amber-300" />
-                        <span>🤖 Yapay Zeka Analizi Başlat</span>
+                        <span>🤖 Yapay Zeka Hata Analizi Yap</span>
                       </>
                     )}
                   </button>

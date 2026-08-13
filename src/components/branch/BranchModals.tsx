@@ -731,9 +731,17 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                           <div className="p-3 bg-indigo-950/50 border border-indigo-500/30 rounded-xl space-y-1.5 text-xs animate-fade-in">
                             <div className="flex items-center space-x-1.5 font-bold text-indigo-300">
                               <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                              <span>Yapay Zeka Analiz Değerlendirmesi</span>
+                              <span>Yapay Zeka Hata Teşhisi</span>
                             </div>
-                            <p className="text-slate-300 text-[11.5px] leading-relaxed whitespace-pre-line font-normal">{aiFeedback}</p>
+                            <p className="text-slate-300 text-[11.5px] leading-relaxed whitespace-pre-line font-normal">
+                              {(() => {
+                                const match = aiFeedback.match(/(?:🔍\s*)?\*\*Hata Teşhisi:\*\*([\s\S]*?)(?=(?:\n\s*\n\s*(?:⚡|🎯|\*\*))|$)/i);
+                                if (match && match[1]?.trim()) return match[1].trim();
+                                const altMatch = aiFeedback.match(/Hata Teşhisi:?\s*([\s\S]*?)(?=(?:\n\s*\n\s*(?:⚡|🎯|\*\*))|$)/i);
+                                if (altMatch && altMatch[1]?.trim()) return altMatch[1].trim();
+                                return aiFeedback;
+                              })()}
+                            </p>
                           </div>
                         )}
                       </div>
