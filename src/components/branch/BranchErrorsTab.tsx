@@ -118,6 +118,51 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
     return isBookMatch(e) || isExamMatch(e) || !!e.examId || !!e.examTypeRef;
   };
 
+  const isErrorMatchingFilterSource = (e: TopicErrorItem, filterId: string | null) => {
+    if (!filterId) return true;
+    if (e.examId && e.examId === filterId) return true;
+    const fLower = filterId.trim().toLowerCase();
+    const pLower = (e.publisher || '').trim().toLowerCase();
+    if (pLower && (pLower === fLower || pLower.includes(fLower) || fLower.includes(pLower))) return true;
+
+    const matchedBook = resources.find(r => r.id === filterId || (r.publisher && r.publisher.toLowerCase() === fLower));
+    if (matchedBook) {
+      if (e.examId === matchedBook.id) return true;
+      if (pLower && matchedBook.publisher && (pLower.includes(matchedBook.publisher.toLowerCase()) || matchedBook.publisher.toLowerCase().includes(pLower))) return true;
+    }
+
+    const matchedBranch = branchExams.find(b => b.id === filterId || (b.publisher && b.publisher.toLowerCase() === fLower));
+    if (matchedBranch) {
+      if (e.examId === matchedBranch.id) return true;
+      if (pLower && matchedBranch.publisher && (pLower.includes(matchedBranch.publisher.toLowerCase()) || matchedBranch.publisher.toLowerCase().includes(pLower))) return true;
+    }
+
+    const matchedGeneral = (generalMocks || []).find(g => g.id === filterId || (g.title && g.title.toLowerCase() === fLower));
+    if (matchedGeneral) {
+      if (e.examId === matchedGeneral.id) return true;
+      if (pLower && matchedGeneral.title && (pLower.includes(matchedGeneral.title.toLowerCase()) || matchedGeneral.title.toLowerCase().includes(pLower))) return true;
+    }
+
+    return false;
+  };
+
+  const getFilterSourceDisplayName = (filterId: string | null) => {
+    if (!filterId) return '';
+    const directErr = topicErrors.find(e => e.examId === filterId || e.publisher === filterId || (e.publisher && e.publisher.toLowerCase().includes(filterId.toLowerCase())));
+    if (directErr?.publisher) return directErr.publisher;
+
+    const book = resources.find(r => r.id === filterId || r.publisher?.toLowerCase() === filterId.toLowerCase());
+    if (book) return `${book.publisher}${book.bookTitle ? ` (${book.bookTitle})` : ''}`;
+
+    const branch = branchExams.find(b => b.id === filterId || b.publisher?.toLowerCase() === filterId.toLowerCase());
+    if (branch) return `${branch.publisher} (${branch.subject} Branş)`;
+
+    const mock = (generalMocks || []).find(g => g.id === filterId || g.title?.toLowerCase() === filterId.toLowerCase());
+    if (mock) return mock.title;
+
+    return filterId;
+  };
+
   const handleRunAiAnalysis = async (errItem: TopicErrorItem) => {
     setIsAnalyzingActiveError(true);
     setAnalysisErrorMsg(null);
@@ -324,10 +369,10 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
         
         {/* Source Filter Badge Banner */}
         {filterExamId && (() => {
-          const sampleErr = topicErrors.find(e => e.examId === filterExamId);
-          const sourceName = sampleErr?.publisher || 'Seçilen Kaynak';
+          const sourceName = getFilterSourceDisplayName(filterExamId);
+          const count = topicErrors.filter(e => isErrorMatchingFilterSource(e, filterExamId)).length;
           return (
-            <div className="flex items-center justify-between bg-indigo-950/40 border border-indigo-500/30 px-4 py-2.5 rounded-2xl text-xs text-indigo-200 shadow-sm">
+            <div className="flex items-center justify-between bg-indigo-950/40 border border-indigo-500/30 px-4 py-2.5 rounded-2xl text-xs text-indigo-200 shadow-sm animate-fade-in">
               <span className="font-bold flex items-center space-x-2">
                 <span>📌 Özel Kaynak Filtresi Aktif:</span>
                 <span className="text-indigo-300 font-mono bg-indigo-500/20 px-2.5 py-0.5 rounded-lg">{sourceName}</span>
@@ -337,14 +382,14 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                 onClick={() => setFilterExamId(null)}
                 className="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-3 py-1 rounded-xl transition-all cursor-pointer shadow-sm"
               >
-                Filtreyi Temizle ({topicErrors.filter(e => e.examId === filterExamId).length} Soru)
+                Filtreyi Temizle ({count} Soru)
               </button>
             </div>
           );
         })()}
 
         {/* Top Line: Status Filter Pills */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="space-y-3">
           <div className="flex items-center space-x-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 w-fit overflow-x-auto">
             <button
               type="button"
@@ -381,8 +426,8 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
             </button>
           </div>
 
-          {/* Info Tip Note */}
-          <div className="flex items-center space-x-2 text-[11px] text-slate-400 bg-slate-950/70 border border-slate-800/80 px-3.5 py-2 rounded-2xl">
+          {/* Info Tip Note (Placed under status tabs) */}
+          <div className="flex items-center space-x-2 text-[11px] text-slate-400 bg-slate-950/70 border border-slate-800/80 px-3.5 py-2 rounded-2xl w-full">
             <Info className="w-4 h-4 text-indigo-400 shrink-0" />
             <span>
               <strong>Hızlı Filtreleme:</strong> Kartlardaki <span className="text-emerald-300 font-bold">📖 Kitap</span> veya <span className="text-indigo-300 font-bold">🎯 Deneme</span> simgesine tıklayarak yalnızca o kaynağa ait yanlışlarınızı filtreleyebilirsiniz.
@@ -396,6 +441,7 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ders:</span>
             {(() => {
               const statusPool = topicErrors.filter((err) => {
+                if (filterExamId && !isErrorMatchingFilterSource(err, filterExamId)) return false;
                 if (filterRevised === 'UNREVISED' && err.revised) return false;
                 if (filterRevised === 'REVISED' && !err.revised) return false;
                 if (filterMatchStatus === 'MATCHED' && !isMatchedAny(err)) return false;

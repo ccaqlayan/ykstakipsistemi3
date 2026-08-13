@@ -1693,11 +1693,37 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     return isBookMatch(e) || isExamMatch(e) || !!e.examId || !!e.examTypeRef;
   };
 
+  const isErrorMatchingFilterSource = (e: TopicErrorItem, filterId: string) => {
+    if (!filterId) return true;
+    if (e.examId && e.examId === filterId) return true;
+    const fLower = filterId.trim().toLowerCase();
+    const pLower = (e.publisher || '').trim().toLowerCase();
+    if (pLower && (pLower === fLower || pLower.includes(fLower) || fLower.includes(pLower))) return true;
+
+    const matchedBook = resources.find(r => r.id === filterId || (r.publisher && r.publisher.toLowerCase() === fLower));
+    if (matchedBook) {
+      if (e.examId === matchedBook.id) return true;
+      if (pLower && matchedBook.publisher && (pLower.includes(matchedBook.publisher.toLowerCase()) || matchedBook.publisher.toLowerCase().includes(pLower))) return true;
+    }
+
+    const matchedBranch = branchExams.find(b => b.id === filterId || (b.publisher && b.publisher.toLowerCase() === fLower));
+    if (matchedBranch) {
+      if (e.examId === matchedBranch.id) return true;
+      if (pLower && matchedBranch.publisher && (pLower.includes(matchedBranch.publisher.toLowerCase()) || matchedBranch.publisher.toLowerCase().includes(pLower))) return true;
+    }
+
+    const matchedGeneral = (generalMocks || []).find(g => g.id === filterId || (g.title && g.title.toLowerCase() === fLower));
+    if (matchedGeneral) {
+      if (e.examId === matchedGeneral.id) return true;
+      if (pLower && matchedGeneral.title && (pLower.includes(matchedGeneral.title.toLowerCase()) || matchedGeneral.title.toLowerCase().includes(pLower))) return true;
+    }
+
+    return false;
+  };
+
   const filteredErrors = topicErrors.filter((e) => {
     if (filterExamId) {
-      if (e.examId === filterExamId) return true;
-      if (e.publisher && filterExamId && e.publisher.toLowerCase() === filterExamId.toLowerCase()) return true;
-      return false;
+      return isErrorMatchingFilterSource(e, filterExamId);
     }
     // 1. Durum Filtresi
     if (filterRevised === 'UNREVISED') return !e.revised;
