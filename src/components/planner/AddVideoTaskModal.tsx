@@ -15,7 +15,12 @@ import {
   Layers,
   Sparkles,
   Filter,
-  PlayCircle
+  PlayCircle,
+  ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
+  CheckCheck,
+  RotateCcw
 } from 'lucide-react';
 import { StudyPlanItem, DayOfWeek, YouTubeVideoItem } from '../../types';
 import { YKS_SUBJECTS } from '../../data/initialData';
@@ -29,6 +34,19 @@ interface AddVideoTaskModalProps {
   onAddPlan: (plan: Omit<StudyPlanItem, 'id'>) => void;
   weekLabel: string;
 }
+
+const formatDuration = (totalMinutes?: number): string => {
+  if (!totalMinutes || totalMinutes <= 0) return '0 dk';
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = Math.round(totalMinutes % 60);
+  if (hours > 0) {
+    if (mins > 0) {
+      return `${hours}sa ${mins}dk`;
+    }
+    return `${hours}sa`;
+  }
+  return `${mins}dk`;
+};
 
 const extractYouTubeVideoId = (url?: string): string | null => {
   if (!url) return null;
@@ -65,8 +83,10 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
   // Tab 1 (Tracker Selection) states
   const [subjectFilter, setSubjectFilter] = useState<string>('Tümü');
   const [watchStatusFilter, setWatchStatusFilter] = useState<'all' | 'unwatched' | 'watched'>('unwatched');
+  const [contentTypeFilter, setContentTypeFilter] = useState<'all' | 'single' | 'playlist'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedItems, setSelectedItems] = useState<Record<string, { subject: string; title: string; channelName: string; videoUrl: string; duration?: number }>>({});
+  const [expandedPlaylists, setExpandedPlaylists] = useState<Record<string, boolean>>({});
 
   // Tab 2 (Manual / Link) states
   const [videoUrl, setVideoUrl] = useState('');
@@ -77,9 +97,40 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
 
   if (!isOpen) return null;
 
+  const toggleExpandPlaylist = (id: string) => {
+    setExpandedPlaylists(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const isAnyPlaylistExpanded = Object.values(expandedPlaylists).some(Boolean);
+
+  const toggleAllPlaylists = () => {
+    if (isAnyPlaylistExpanded) {
+      setExpandedPlaylists({});
+    } else {
+      const allOpen: Record<string, boolean> = {};
+      youtubeVideos.forEach(v => {
+        if (v.isPlaylist || (v.playlistVideos && v.playlistVideos.length > 1)) {
+          allOpen[v.id] = true;
+        }
+      });
+      setExpandedPlaylists(allOpen);
+    }
+  };
+
+  const isPlaylistItem = (v: YouTubeVideoItem) => {
+    return Boolean(v.isPlaylist || (v.playlistVideos && v.playlistVideos.length > 1));
+  };
+
+  const singleCount = youtubeVideos.filter(v => !isPlaylistItem(v)).length;
+  const playlistCount = youtubeVideos.filter(v => isPlaylistItem(v)).length;
+
   const subjectsList = ['Tümü', ...Array.from(new Set(youtubeVideos.map(v => v.subject)))];
 
   const filteredVideos = youtubeVideos.filter(v => {
+    const isPlaylist = isPlaylistItem(v);
     const matchesSubject = subjectFilter === 'Tümü' || v.subject === subjectFilter;
     const matchesSearch = !searchQuery.trim() || 
       v.topicName.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -88,12 +139,27 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
     
     let matchesWatchStatus = true;
     if (watchStatusFilter === 'unwatched') {
-      matchesWatchStatus = !v.isWatched;
+      if (isPlaylist && v.playlistVideos) {
+        matchesWatchStatus = v.playlistVideos.some(s => !s.isWatched);
+      } else {
+        matchesWatchStatus = !v.isWatched;
+      }
     } else if (watchStatusFilter === 'watched') {
-      matchesWatchStatus = v.isWatched;
+      if (isPlaylist && v.playlistVideos) {
+        matchesWatchStatus = v.playlistVideos.every(s => s.isWatched);
+      } else {
+        matchesWatchStatus = v.isWatched;
+      }
     }
 
-    return matchesSubject && matchesSearch && matchesWatchStatus;
+    let matchesContentType = true;
+    if (contentTypeFilter === 'single') {
+      matchesContentType = !isPlaylist;
+    } else if (contentTypeFilter === 'playlist') {
+      matchesContentType = isPlaylist;
+    }
+
+    return matchesSubject && matchesSearch && matchesWatchStatus && matchesContentType;
   });
 
   const toggleSelectItem = (key: string, itemData: { subject: string; title: string; channelName: string; videoUrl: string; duration?: number }) => {
@@ -187,6 +253,9 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
   };
 
   const selectedCount = Object.keys(selectedItems).length;
+  const totalSelectedMinutes = Object.values(selectedItems).reduce((acc, item) => {
+    return acc + (item.duration && item.duration > 0 ? item.duration : (targetMinutes || 45));
+  }, 0);
 
   return (
     <div 
@@ -258,7 +327,7 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
             </select>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1">Hedef İzleme Süresi (Dakika)</label>
+            <label className="block text-xs font-bold text-slate-300 mb-1">Varsayılan Süre (Dakika)</label>
             <input
               type="number"
               min={5}
@@ -274,71 +343,134 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
         {activeTab === 'tracker' && (
           <form onSubmit={handleAddSelectedFromTracker} className="space-y-4">
             
-            {/* Watch Status & Subject Filter Row */}
-            <div className="space-y-2">
-              {/* Watch Status Pills */}
-              <div className="flex items-center space-x-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
-                <span className="text-[11px] font-bold text-slate-400 px-2 flex items-center space-x-1 shrink-0">
-                  <Filter className="w-3 h-3 text-red-400" />
-                  <span>Durum:</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setWatchStatusFilter('unwatched')}
-                  className={`text-[11px] px-3 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    watchStatusFilter === 'unwatched'
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  🎯 Sıradaki İzlenecekler
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWatchStatusFilter('watched')}
-                  className={`text-[11px] px-3 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    watchStatusFilter === 'watched'
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  ✅ İzlendi Olanlar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setWatchStatusFilter('all')}
-                  className={`text-[11px] px-3 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    watchStatusFilter === 'all'
-                      ? 'bg-red-600 text-white shadow-sm'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Tümü
-                </button>
+            {/* Filter & Controls Bar */}
+            <div className="space-y-2.5 bg-slate-950/90 p-3.5 rounded-2xl border border-slate-800">
+              
+              {/* Row 1: Content Type & Expand All / Collapse All */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-850">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setContentTypeFilter('all')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 border cursor-pointer ${
+                      contentTypeFilter === 'all'
+                        ? 'bg-red-600 border-red-500 text-white shadow-sm'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Layers className="w-3 h-3" />
+                    <span>Tümü ({youtubeVideos.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setContentTypeFilter('single')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 border cursor-pointer ${
+                      contentTypeFilter === 'single'
+                        ? 'bg-red-600 border-red-500 text-white shadow-sm'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Video className="w-3 h-3 text-rose-400" />
+                    <span>Tekil Videolar ({singleCount})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setContentTypeFilter('playlist')}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 border cursor-pointer ${
+                      contentTypeFilter === 'playlist'
+                        ? 'bg-red-600 border-red-500 text-white shadow-sm'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <ListVideo className="w-3 h-3 text-amber-400" />
+                    <span>Kamplar ({playlistCount})</span>
+                  </button>
+                </div>
+
+                {playlistCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={toggleAllPlaylists}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 border cursor-pointer ${
+                      isAnyPlaylistExpanded
+                        ? 'bg-amber-600/20 border-amber-500/40 text-amber-300 hover:bg-amber-600/30'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-amber-300 hover:border-amber-500/30'
+                    }`}
+                    title={isAnyPlaylistExpanded ? 'Tüm Kamp Listelerini Kapat' : 'Tüm Kamp Listelerini Aç'}
+                  >
+                    <ChevronsUpDown className="w-3 h-3 text-amber-400 shrink-0" />
+                    <span>{isAnyPlaylistExpanded ? 'Tümünü Kapat' : 'Tümünü Aç'}</span>
+                  </button>
+                )}
               </div>
 
-              {/* Search & Subject Filter */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              {/* Row 2: Watch Status Filter Row */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+                  <span className="text-[11px] font-bold text-slate-400 px-1.5 flex items-center space-x-1 shrink-0">
+                    <Filter className="w-3 h-3 text-red-400" />
+                    <span>Durum:</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setWatchStatusFilter('unwatched')}
+                    className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      watchStatusFilter === 'unwatched'
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🎯 Sıradaki İzlenecekler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWatchStatusFilter('watched')}
+                    className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      watchStatusFilter === 'watched'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    ✅ İzlendi Olanlar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWatchStatusFilter('all')}
+                    className={`text-[11px] px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      watchStatusFilter === 'all'
+                        ? 'bg-red-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Tümü
+                  </button>
+                </div>
+              </div>
+
+              {/* Row 3: Search & Subject Filter Chips */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
                 <div className="relative flex-1">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
                   <input
                     type="text"
-                    placeholder="Video veya kanal adı ara..."
+                    placeholder="Video, kamp veya kanal adı ara..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white outline-none focus:border-red-500 font-medium"
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white outline-none focus:border-red-500 font-medium"
                   />
                 </div>
-                <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-0.5">
+                <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full sm:max-w-xs">
                   {subjectsList.map(sub => (
                     <button
                       key={sub}
                       type="button"
                       onClick={() => setSubjectFilter(sub)}
-                      className={`text-[11px] px-2.5 py-1.5 rounded-lg border font-bold whitespace-nowrap cursor-pointer transition-all ${
+                      className={`text-[11px] px-2.5 py-1 rounded-lg border font-bold whitespace-nowrap cursor-pointer transition-all ${
                         subjectFilter === sub
                           ? 'bg-red-950 border-red-500 text-red-300'
-                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
                       }`}
                     >
                       {sub}
@@ -349,7 +481,7 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
             </div>
 
             {/* Videos List */}
-            <div className="max-h-72 overflow-y-auto custom-scrollbar space-y-2.5 pr-1">
+            <div className="max-h-80 overflow-y-auto custom-scrollbar space-y-3 pr-1">
               {filteredVideos.length === 0 ? (
                 <div className="text-center py-10 border border-dashed border-slate-800 rounded-2xl p-4 space-y-2">
                   <Video className="w-8 h-8 text-slate-600 mx-auto" />
@@ -368,25 +500,38 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
                 </div>
               ) : (
                 filteredVideos.map(vid => {
-                  const isPlaylist = Boolean(vid.isPlaylist || (vid.playlistVideos && vid.playlistVideos.length > 1));
+                  const isPlaylist = isPlaylistItem(vid);
                   const firstSubUrl = vid.playlistVideos?.[0]?.videoUrl;
                   const thumb = getYouTubeThumbnail(vid.videoUrl, firstSubUrl);
                   const isMainSelected = Boolean(selectedItems[`main-${vid.id}`]);
 
-                  // Playlist watched count
+                  // Playlist metrics
                   const totalSubCount = vid.playlistVideos?.length || 0;
                   const watchedSubCount = vid.playlistVideos?.filter(s => s.isWatched).length || 0;
-                  let firstUnwatchedFound = false;
+                  const progressPct = totalSubCount > 0 ? Math.round((watchedSubCount / totalSubCount) * 100) : 0;
+                  const nextVideo = vid.playlistVideos?.find(s => !s.isWatched);
+                  const nextVideoIdx = nextVideo && vid.playlistVideos ? vid.playlistVideos.indexOf(nextVideo) + 1 : null;
+                  const remainingDuration = isPlaylist && vid.playlistVideos
+                    ? vid.playlistVideos.filter(s => !s.isWatched).reduce((acc, s) => acc + (s.durationMinutes || 0), 0)
+                    : 0;
+
+                  const isExpanded = Boolean(expandedPlaylists[vid.id]);
+
+                  // How many subvideos are currently selected for plan from this playlist
+                  const selectedSubCount = isPlaylist && vid.playlistVideos
+                    ? vid.playlistVideos.filter(s => Boolean(selectedItems[`sub-${vid.id}-${s.id}`])).length
+                    : 0;
 
                   return (
                     <div 
                       key={vid.id}
-                      className="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2 hover:border-slate-700 transition-all"
+                      className="bg-slate-950/90 p-3.5 rounded-2xl border border-slate-800 space-y-3 hover:border-slate-700 transition-all shadow-md"
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center space-x-3 min-w-0">
+                      {/* Top Video Header */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start space-x-3 min-w-0 flex-1">
                           {/* Thumbnail */}
-                          <div className="w-20 h-12 shrink-0 rounded-xl overflow-hidden bg-slate-900 border border-slate-800 relative">
+                          <div className="w-24 h-14 shrink-0 rounded-xl overflow-hidden bg-slate-900 border border-slate-800 relative group">
                             {thumb ? (
                               <img src={thumb} alt={vid.topicName} className="w-full h-full object-cover" />
                             ) : (
@@ -394,24 +539,35 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
                                 <Youtube className="w-5 h-5" />
                               </div>
                             )}
+                            
+                            {/* Duration / Video Count Badge */}
+                            <div className="absolute bottom-1 right-1 bg-slate-950/90 px-1.5 py-0.5 rounded text-[9px] font-mono font-bold text-white border border-white/10">
+                              {isPlaylist ? `${totalSubCount} Video` : formatDuration(vid.durationMinutes)}
+                            </div>
                           </div>
 
                           {/* Info */}
-                          <div className="min-w-0 space-y-0.5">
+                          <div className="min-w-0 space-y-1 flex-1">
                             <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
                               <span className="text-[9px] font-black text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 uppercase tracking-wider">
                                 {vid.subject}
                               </span>
 
+                              {isPlaylist && (
+                                <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                  Oynatma Listesi
+                                </span>
+                              )}
+
                               {/* Watch Status Badge */}
-                              {vid.isWatched ? (
+                              {vid.isWatched || (isPlaylist && watchedSubCount === totalSubCount && totalSubCount > 0) ? (
                                 <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 flex items-center space-x-1">
                                   <CheckCircle className="w-2.5 h-2.5" />
-                                  <span>İzlendi</span>
+                                  <span>Tamamlandı</span>
                                 </span>
                               ) : isPlaylist ? (
                                 <span className="text-[9px] font-bold text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                                  {watchedSubCount}/{totalSubCount} İzlendi
+                                  {watchedSubCount}/{totalSubCount} İzlendi (%{progressPct})
                                 </span>
                               ) : (
                                 <span className="text-[9px] font-black text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-400/30">
@@ -421,11 +577,16 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
                             </div>
 
                             <h4 className="text-xs font-bold text-white truncate">{vid.topicName}</h4>
-                            <p className="text-[10px] text-slate-400 truncate">{vid.channelName}</p>
+                            <p className="text-[11px] text-slate-400 truncate flex items-center space-x-1">
+                              <span>{vid.channelName}</span>
+                              {vid.playlistTitle && vid.playlistTitle !== vid.topicName && (
+                                <span className="text-slate-500 italic truncate">• {vid.playlistTitle}</span>
+                              )}
+                            </p>
                           </div>
                         </div>
 
-                        {/* Select Button for Main Video */}
+                        {/* Select Button for Main Video (Single items only) */}
                         {!isPlaylist && (
                           <button
                             type="button"
@@ -438,83 +599,263 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
                             })}
                             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1 shrink-0 cursor-pointer ${
                               isMainSelected
-                                ? 'bg-emerald-600 text-white shadow-md'
+                                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
                                 : vid.isWatched
-                                ? 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
-                                : 'bg-red-600/90 text-white hover:bg-red-500 border border-red-500/40 shadow-sm'
+                                ? 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                                : 'bg-red-600 hover:bg-red-500 text-white border border-red-500/40 shadow-sm'
                             }`}
                           >
                             <Check className="w-3.5 h-3.5" />
-                            <span>{isMainSelected ? 'Seçildi' : vid.isWatched ? 'İzlendi (Tekrar Seç)' : 'Plana Seç'}</span>
+                            <span>{isMainSelected ? 'Seçildi' : 'Plana Seç'}</span>
                           </button>
                         )}
                       </div>
 
-                      {/* Sub-videos Checklist for Playlists */}
+                      {/* 📋 Playlist Collapsible Section */}
                       {isPlaylist && vid.playlistVideos && vid.playlistVideos.length > 0 && (
-                        <div className="pt-2 border-t border-slate-900 space-y-1.5 pl-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold text-amber-400 flex items-center space-x-1">
-                              <ListVideo className="w-3 h-3" />
-                              <span>Kamp Videolarından Seç:</span>
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              İzlenen: {watchedSubCount} / {totalSubCount}
-                            </span>
-                          </div>
-                          <div className="max-h-40 overflow-y-auto custom-scrollbar space-y-1 pr-1">
-                            {vid.playlistVideos.map((sub, idx) => {
-                              const subKey = `sub-${vid.id}-${sub.id}`;
-                              const isSubSelected = Boolean(selectedItems[subKey]);
+                        <div className="pt-2 border-t border-slate-850 space-y-2">
+                          
+                          {/* Accordion Trigger Banner */}
+                          <div 
+                            onClick={() => toggleExpandPlaylist(vid.id)}
+                            className={`w-full p-2.5 sm:p-3 rounded-xl border transition-all cursor-pointer select-none group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 ${
+                              isExpanded
+                                ? 'bg-slate-900 border-amber-500/40 ring-1 ring-amber-500/20'
+                                : 'bg-slate-900/60 hover:bg-slate-900 border-slate-800 hover:border-amber-500/30'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2.5 min-w-0">
+                              <div className={`p-1.5 rounded-lg transition-all shrink-0 ${
+                                isExpanded
+                                  ? 'bg-amber-500/20 text-amber-400'
+                                  : 'bg-slate-950 text-slate-400 group-hover:text-amber-400'
+                              }`}>
+                                <ListVideo className="w-3.5 h-3.5" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs font-bold text-white group-hover:text-amber-200">
+                                    Kamp İçeriği ({vid.playlistVideos.length} Video)
+                                  </span>
+                                  {selectedSubCount > 0 && (
+                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                      {selectedSubCount} Seçildi
+                                    </span>
+                                  )}
+                                </div>
 
-                              const isNextTarget = !sub.isWatched && !firstUnwatchedFound;
-                              if (isNextTarget) firstUnwatchedFound = true;
-
-                              return (
-                                <div 
-                                  key={sub.id}
-                                  onClick={() => toggleSelectItem(subKey, {
-                                    subject: vid.subject,
-                                    title: `${sub.title}`,
-                                    channelName: vid.channelName,
-                                    videoUrl: sub.videoUrl || vid.videoUrl || '',
-                                    duration: sub.durationMinutes
-                                  })}
-                                  className={`flex items-center justify-between p-2 rounded-xl text-xs cursor-pointer border transition-all ${
-                                    isSubSelected
-                                      ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300 font-bold'
-                                      : isNextTarget
-                                      ? 'bg-amber-950/40 border-amber-500/40 text-amber-200 font-bold shadow-sm'
-                                      : sub.isWatched
-                                      ? 'bg-slate-900/40 border-slate-850 text-slate-400 opacity-75'
-                                      : 'bg-slate-900/70 border-slate-800 text-slate-200 hover:bg-slate-900'
-                                  }`}
-                                >
-                                  <div className="flex items-center space-x-2 truncate pr-2">
-                                    <span className="truncate">{idx + 1}. {sub.title}</span>
-                                    {sub.isWatched ? (
-                                      <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 shrink-0">
-                                        ✓ İzlendi
-                                      </span>
-                                    ) : isNextTarget ? (
-                                      <span className="text-[9px] font-extrabold text-amber-300 bg-amber-500/20 px-1.5 py-0.2 rounded border border-amber-400/40 shrink-0 animate-pulse">
-                                        🎯 Sıradaki
-                                      </span>
+                                {/* Contextual Next Video Preview when Collapsed */}
+                                {!isExpanded && nextVideo && (
+                                  <div className="flex items-center space-x-1.5 mt-0.5 text-[11px] text-amber-300/90 truncate">
+                                    <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
+                                    <span className="font-semibold text-slate-400">Sıradaki:</span>
+                                    <span className="font-medium text-slate-200 truncate">{nextVideoIdx}. {nextVideo.title}</span>
+                                    {nextVideo.durationMinutes ? (
+                                      <span className="text-slate-400 font-mono">({nextVideo.durationMinutes} dk)</span>
                                     ) : null}
                                   </div>
+                                )}
 
-                                  <div className="flex items-center space-x-2 shrink-0">
-                                    {sub.durationMinutes > 0 && (
-                                      <span className="text-[10px] font-mono text-slate-400">{sub.durationMinutes} dk</span>
-                                    )}
-                                    <div className={`w-4 h-4 rounded-md flex items-center justify-center ${isSubSelected ? 'bg-emerald-500 text-slate-950' : 'border border-slate-700'}`}>
-                                      {isSubSelected && <Check className="w-3 h-3 stroke-[3]" />}
-                                    </div>
+                                {!isExpanded && !nextVideo && totalSubCount > 0 && (
+                                  <div className="flex items-center space-x-1 mt-0.5 text-[11px] text-emerald-400 font-semibold">
+                                    <CheckCircle className="w-3 h-3 text-emerald-400 shrink-0" />
+                                    <span>Tüm kamp dersleri tamamlandı! ✨</span>
                                   </div>
-                                </div>
-                              );
-                            })}
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Trigger Actions */}
+                            <div className="flex items-center space-x-2 shrink-0 self-end sm:self-center">
+                              {/* Quick Select Next Video when Collapsed */}
+                              {!isExpanded && nextVideo && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const nextKey = `sub-${vid.id}-${nextVideo.id}`;
+                                    toggleSelectItem(nextKey, {
+                                      subject: vid.subject,
+                                      title: nextVideo.title,
+                                      channelName: vid.channelName,
+                                      videoUrl: nextVideo.videoUrl || vid.videoUrl || '',
+                                      duration: nextVideo.durationMinutes
+                                    });
+                                  }}
+                                  className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all flex items-center space-x-1 cursor-pointer ${
+                                    selectedItems[`sub-${vid.id}-${nextVideo.id}`]
+                                      ? 'bg-emerald-600 text-white border-emerald-500'
+                                      : 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
+                                  }`}
+                                  title="Sıradaki dersi doğrudan plana seç"
+                                >
+                                  {selectedItems[`sub-${vid.id}-${nextVideo.id}`] ? (
+                                    <>
+                                      <Check className="w-3 h-3" />
+                                      <span>Sıradaki Seçildi</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkles className="w-3 h-3 text-amber-400" />
+                                      <span>Sıradakini Seç</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
+
+                              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all flex items-center space-x-1 ${
+                                isExpanded
+                                  ? 'bg-amber-600 text-white border-amber-500'
+                                  : 'bg-slate-950 text-slate-300 border-slate-800 group-hover:border-amber-500/40'
+                              }`}>
+                                <span>{isExpanded ? 'Gizle' : 'Videoları İncele'}</span>
+                                {isExpanded ? (
+                                  <ChevronUp className="w-3 h-3" />
+                                ) : (
+                                  <ChevronDown className="w-3 h-3" />
+                                )}
+                              </span>
+                            </div>
                           </div>
+
+                          {/* Expanded Checklist Drawer */}
+                          {isExpanded && (
+                            <div className="space-y-2 animate-fade-in pt-1">
+                              {/* Sub-videos Toolbar */}
+                              <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px]">
+                                <div className="flex items-center space-x-2 text-slate-400">
+                                  <span>Kalan: <strong className="text-amber-300 font-bold">{totalSubCount - watchedSubCount} Video</strong></span>
+                                  {remainingDuration > 0 && (
+                                    <span>• Kalan Süre: <strong className="text-slate-200 font-mono">{formatDuration(remainingDuration)}</strong></span>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center space-x-1.5">
+                                  {nextVideo && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const nextKey = `sub-${vid.id}-${nextVideo.id}`;
+                                        toggleSelectItem(nextKey, {
+                                          subject: vid.subject,
+                                          title: nextVideo.title,
+                                          channelName: vid.channelName,
+                                          videoUrl: nextVideo.videoUrl || vid.videoUrl || '',
+                                          duration: nextVideo.durationMinutes
+                                        });
+                                      }}
+                                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all border cursor-pointer ${
+                                        selectedItems[`sub-${vid.id}-${nextVideo.id}`]
+                                          ? 'bg-emerald-600 text-white border-emerald-500'
+                                          : 'bg-amber-500/20 text-amber-300 border-amber-500/30 hover:bg-amber-500/30'
+                                      }`}
+                                    >
+                                      🎯 Sıradakini Seç
+                                    </button>
+                                  )}
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedItems(prev => {
+                                        const next = { ...prev };
+                                        vid.playlistVideos!.forEach(s => {
+                                          const subKey = `sub-${vid.id}-${s.id}`;
+                                          next[subKey] = {
+                                            subject: vid.subject,
+                                            title: s.title,
+                                            channelName: vid.channelName,
+                                            videoUrl: s.videoUrl || vid.videoUrl || '',
+                                            duration: s.durationMinutes
+                                          };
+                                        });
+                                        return next;
+                                      });
+                                    }}
+                                    className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-[10px] font-semibold cursor-pointer"
+                                  >
+                                    Tümünü Seç
+                                  </button>
+
+                                  {selectedSubCount > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedItems(prev => {
+                                          const next = { ...prev };
+                                          vid.playlistVideos!.forEach(s => {
+                                            delete next[`sub-${vid.id}-${s.id}`];
+                                          });
+                                          return next;
+                                        });
+                                      }}
+                                      className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 text-[10px] font-semibold cursor-pointer"
+                                    >
+                                      Seçimi Kaldır
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Checklist Items Container */}
+                              <div className="max-h-52 overflow-y-auto custom-scrollbar space-y-1.5 pr-1 bg-slate-950 p-2 rounded-xl border border-slate-850">
+                                {vid.playlistVideos.map((sub, idx) => {
+                                  const subKey = `sub-${vid.id}-${sub.id}`;
+                                  const isSubSelected = Boolean(selectedItems[subKey]);
+                                  const isNextTarget = nextVideo && nextVideo.id === sub.id;
+
+                                  return (
+                                    <div 
+                                      key={sub.id || idx}
+                                      onClick={() => toggleSelectItem(subKey, {
+                                        subject: vid.subject,
+                                        title: `${sub.title}`,
+                                        channelName: vid.channelName,
+                                        videoUrl: sub.videoUrl || vid.videoUrl || '',
+                                        duration: sub.durationMinutes
+                                      })}
+                                      className={`flex items-center justify-between p-2 rounded-xl text-xs cursor-pointer border transition-all ${
+                                        isSubSelected
+                                          ? 'bg-emerald-950/70 border-emerald-500/60 text-emerald-200 font-bold shadow-sm'
+                                          : isNextTarget
+                                          ? 'bg-amber-950/40 border-amber-500/40 text-amber-200 font-bold shadow-sm'
+                                          : sub.isWatched
+                                          ? 'bg-slate-900/40 border-slate-850 text-slate-400 opacity-75'
+                                          : 'bg-slate-900/70 border-slate-800 text-slate-200 hover:bg-slate-850'
+                                      }`}
+                                    >
+                                      <div className="flex items-center space-x-2 truncate pr-2">
+                                        <span className="text-[10px] font-bold text-slate-500 w-5 shrink-0">{idx + 1}.</span>
+                                        <span className="truncate">{sub.title}</span>
+                                        {sub.isWatched ? (
+                                          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 shrink-0">
+                                            ✓ İzlendi
+                                          </span>
+                                        ) : isNextTarget ? (
+                                          <span className="text-[9px] font-extrabold text-amber-300 bg-amber-500/20 px-1.5 py-0.2 rounded border border-amber-400/40 shrink-0 animate-pulse">
+                                            🎯 Sıradaki
+                                          </span>
+                                        ) : null}
+                                      </div>
+
+                                      <div className="flex items-center space-x-2 shrink-0">
+                                        {sub.durationMinutes && sub.durationMinutes > 0 ? (
+                                          <span className="text-[10px] font-mono text-slate-400">{formatDuration(sub.durationMinutes)}</span>
+                                        ) : null}
+                                        <div className={`w-4 h-4 rounded-md flex items-center justify-center transition-all ${
+                                          isSubSelected 
+                                            ? 'bg-emerald-500 text-slate-950 font-bold shadow' 
+                                            : 'border border-slate-700 bg-slate-950'
+                                        }`}>
+                                          {isSubSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -523,16 +864,24 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
               )}
             </div>
 
-            {/* Bottom Actions */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-800">
-              <span className="text-xs font-bold text-slate-400">
-                Seçilen: <strong className="text-emerald-400">{selectedCount} Video</strong>
-              </span>
-              <div className="flex items-center space-x-2">
+            {/* Bottom Actions Bar */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center space-x-2 text-xs">
+                <span className="font-bold text-slate-400">
+                  Seçilen: <strong className="text-emerald-400">{selectedCount} Video</strong>
+                </span>
+                {totalSelectedMinutes > 0 && (
+                  <span className="text-slate-500">
+                    • Toplam Süre: <strong className="text-amber-300 font-mono">{formatDuration(totalSelectedMinutes)}</strong>
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white"
+                  className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white cursor-pointer"
                 >
                   İptal
                 </button>
@@ -628,7 +977,7 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white"
+                className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white cursor-pointer"
               >
                 İptal
               </button>
@@ -648,3 +997,4 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
     </div>
   );
 };
+
