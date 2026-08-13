@@ -1694,7 +1694,11 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   };
 
   const filteredErrors = topicErrors.filter((e) => {
-    if (filterExamId) return e.examId === filterExamId;
+    if (filterExamId) {
+      if (e.examId === filterExamId) return true;
+      if (e.publisher && filterExamId && e.publisher.toLowerCase() === filterExamId.toLowerCase()) return true;
+      return false;
+    }
     // 1. Durum Filtresi
     if (filterRevised === 'UNREVISED') return !e.revised;
     if (filterRevised === 'REVISED') return e.revised;

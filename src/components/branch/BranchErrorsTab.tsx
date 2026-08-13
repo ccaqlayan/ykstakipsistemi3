@@ -17,7 +17,9 @@ import {
   Bot,
   RotateCcw,
   Zap,
-  Target
+  Target,
+  Info,
+  Filter
 } from 'lucide-react';
 import { TopicErrorItem, BranchExam, ResourceItem, GeneralMockExam } from '../../types';
 
@@ -314,40 +316,50 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
         })()}
 
         {/* Top Line: Status Filter Pills */}
-        <div className="flex items-center space-x-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 w-fit overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => { setFilterRevised('UNREVISED'); setFilterExamId(null); }}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-              filterRevised === 'UNREVISED' && !filterExamId
-                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            ⏳ Bekleyenler ({topicErrors.filter(e => !e.revised).length})
-          </button>
-          <button
-            type="button"
-            onClick={() => { setFilterRevised('REVISED'); setFilterExamId(null); }}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-              filterRevised === 'REVISED' && !filterExamId
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            ✅ Tekrar Edilenler ({topicErrors.filter(e => e.revised).length})
-          </button>
-          <button
-            type="button"
-            onClick={() => { setFilterRevised('ALL'); setFilterExamId(null); }}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-              filterRevised === 'ALL' && !filterExamId
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            📋 Tümü ({topicErrors.length})
-          </button>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 w-fit overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => { setFilterRevised('UNREVISED'); setFilterExamId(null); }}
+              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                filterRevised === 'UNREVISED' && !filterExamId
+                  ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              ⏳ Bekleyenler ({topicErrors.filter(e => !e.revised).length})
+            </button>
+            <button
+              type="button"
+              onClick={() => { setFilterRevised('REVISED'); setFilterExamId(null); }}
+              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                filterRevised === 'REVISED' && !filterExamId
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              ✅ Tekrar Edilenler ({topicErrors.filter(e => e.revised).length})
+            </button>
+            <button
+              type="button"
+              onClick={() => { setFilterRevised('ALL'); setFilterExamId(null); }}
+              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                filterRevised === 'ALL' && !filterExamId
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              📋 Tümü ({topicErrors.length})
+            </button>
+          </div>
+
+          {/* Info Tip Note */}
+          <div className="flex items-center space-x-2 text-[11px] text-slate-400 bg-slate-950/70 border border-slate-800/80 px-3.5 py-2 rounded-2xl">
+            <Info className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span>
+              <strong>Hızlı Filtreleme:</strong> Kartlardaki <span className="text-emerald-300 font-bold">📖 Kitap</span> veya <span className="text-indigo-300 font-bold">🎯 Deneme</span> simgesine tıklayarak yalnızca o kaynağa ait yanlışlarınızı filtreleyebilirsiniz.
+            </span>
+          </div>
         </div>
 
         {/* Bottom Line: Select Dropdowns (Ders, Eşleşme, Sırala Yanyana) */}
@@ -501,19 +513,31 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                       {item.topicName}
                     </h3>
                     {item.publisher && (
-                      <p className="text-xs text-slate-400 font-medium flex items-center gap-2 flex-wrap">
+                      <div className="text-xs text-slate-400 font-medium flex items-center gap-2 flex-wrap pt-0.5">
                         <span>Kaynak / Yayın: <span className="text-slate-200 font-bold">{item.publisher}</span></span>
-                        {item.examTypeRef === 'book' && (
-                          <span className="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold">
-                            📖 Kitap Eşleşmeli
-                          </span>
+                        {isBookMatch(item) && (
+                          <button
+                            type="button"
+                            onClick={() => setFilterExamId(item.examId || item.publisher || null)}
+                            className="inline-flex items-center space-x-1.5 text-[10px] bg-emerald-500/15 hover:bg-emerald-500/30 active:bg-emerald-500/40 text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/60 px-2.5 py-0.5 rounded-lg font-bold transition-all cursor-pointer shadow-sm hover:scale-105"
+                            title={`"${item.publisher}" kitabına ait tüm hataları filtrele`}
+                          >
+                            <span>📖 Kitap Eşleşmeli</span>
+                            <Filter className="w-3 h-3 text-emerald-400" />
+                          </button>
                         )}
-                        {(item.examTypeRef === 'branch' || item.examTypeRef === 'general') && (
-                          <span className="text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-semibold">
-                            🎯 Deneme Eşleşmeli
-                          </span>
+                        {isExamMatch(item) && (
+                          <button
+                            type="button"
+                            onClick={() => setFilterExamId(item.examId || item.publisher || null)}
+                            className="inline-flex items-center space-x-1.5 text-[10px] bg-indigo-500/15 hover:bg-indigo-500/30 active:bg-indigo-500/40 text-indigo-300 border border-indigo-500/30 hover:border-indigo-500/60 px-2.5 py-0.5 rounded-lg font-bold transition-all cursor-pointer shadow-sm hover:scale-105"
+                            title={`"${item.publisher}" denemesine ait tüm hataları filtrele`}
+                          >
+                            <span>🎯 Deneme Eşleşmeli</span>
+                            <Filter className="w-3 h-3 text-indigo-400" />
+                          </button>
                         )}
-                      </p>
+                      </div>
                     )}
                   </div>
 
