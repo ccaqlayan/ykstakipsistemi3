@@ -1514,7 +1514,10 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   }, 0);
   const totalWeeklyTasks = activePlans.length;
   const completedWeeklyTasks = activePlans.filter((p) => p.status === 'completed').length;
-  const weeklyCompletionRate = totalWeeklyPlannedMins > 0 
+  const weeklyTaskCompletionRate = totalWeeklyTasks > 0 
+    ? Math.round((completedWeeklyTasks / totalWeeklyTasks) * 100) 
+    : 0;
+  const weeklyDurationCompletionRate = totalWeeklyPlannedMins > 0 
     ? Math.round((effectiveWeeklyCompletedMins / totalWeeklyPlannedMins) * 100) 
     : 0;
 
@@ -1527,7 +1530,10 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   const effectiveDailyCompletedMins = effectiveDailyLog.minutes;
   const totalDailyTasks = currentDayPlans.length;
   const completedDailyTasks = currentDayPlans.filter((p) => p.status === 'completed').length;
-  const dailyCompletionRate = totalDailyPlannedMins > 0 
+  const dailyTaskCompletionRate = totalDailyTasks > 0 
+    ? Math.round((completedDailyTasks / totalDailyTasks) * 100) 
+    : 0;
+  const dailyDurationCompletionRate = totalDailyPlannedMins > 0 
     ? Math.round((effectiveDailyCompletedMins / totalDailyPlannedMins) * 100) 
     : 0;
 
@@ -1806,8 +1812,13 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
             <Clock className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-bold text-slate-400 uppercase">
-              {viewMode === 'daily' ? `Günün Çalışma Süresi (${selectedDay})` : 'Haftalık Çalışma Süresi'}
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[10px] font-bold text-slate-400 uppercase truncate">
+                {viewMode === 'daily' ? `Günün Çalışma Süresi (${selectedDay})` : 'Haftalık Çalışma Süresi'}
+              </div>
+              <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 shrink-0">
+                %{viewMode === 'daily' ? dailyDurationCompletionRate : weeklyDurationCompletionRate} Süre Uyumu
+              </span>
             </div>
             <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1 mt-1">
               <div className="text-base font-black text-white font-mono">
@@ -1833,7 +1844,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
               {viewMode === 'daily' ? `Tamamlanan Görev (${selectedDay})` : 'Tamamlanan Görev (Haftalık)'}
             </div>
             <div className="text-base font-black text-white font-mono">
-              {viewMode === 'daily' ? completedDailyTasks : completedWeeklyTasks} / {viewMode === 'daily' ? totalDailyTasks : totalWeeklyTasks} <span className="text-xs font-semibold text-purple-300">({viewMode === 'daily' ? dailyCompletionRate : weeklyCompletionRate}%)</span>
+              {viewMode === 'daily' ? completedDailyTasks : completedWeeklyTasks} / {viewMode === 'daily' ? totalDailyTasks : totalWeeklyTasks} <span className="text-xs font-semibold text-purple-300">({viewMode === 'daily' ? dailyTaskCompletionRate : weeklyTaskCompletionRate}%)</span>
             </div>
           </div>
         </div>
