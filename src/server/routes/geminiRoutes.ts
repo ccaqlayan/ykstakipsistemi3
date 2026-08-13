@@ -515,29 +515,34 @@ router.post('/analyze-error-priority', async (req, res) => {
     });
 
     const prompt = `
-Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecinde öğrencilerin deneme analizlerini yapan uzman bir Rehberlik ve Sınav Koçusun.
-Öğrencinin eklemek istediği eksik konunun önemini, çıkmış sınav soruları ağırlığını, hata nedenini ve çözüm notlarını analiz ederek 1 ile 5 yıldız (1: En düşük öncelik, 5: En yüksek / acil çalışma gerektiren öncelik) arasında bir öncelik puanı belirlemen gerekiyor.
+Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı - TYT & AYT) hazırlık sürecinde öğrencilerin deneme sınavı ve soru bankası yanlışlarını derinlemesine analiz eden uzman bir YKS Rehberlik ve Branş Koçusun.
 
 GİRİŞ VERİLERİ:
-- Ders (Ders Grubu): ${subject || 'Bilinmiyor'}
+- Ders: ${subject || 'Bilinmiyor'}
 - Konu Adı: ${topicName || 'Bilinmiyor'}
-- Yayınevi / Deneme Adı: ${publisher || 'Bilinmiyor'}
-- Hata Nedeni: ${errorReason || 'Bilinmiyor'} (bilgi_eksigi: Bilgi Eksikliği, dikkat_hatasi: Dikkat/İşlem Hatası, zaman_yetmedi: Süre yetmedi, iki_sik_arasinda: İki Şık Arasında Kalma, soru_kokunu_yanlis_okuma: Soru Kökünü Yanlış Okuma)
-- Çözüm Notu / Hatırlatma: ${solutionNotes || 'Belirtilmemiş'}
+- Kaynak / Deneme / Yayın: ${publisher || 'Belirtilmemiş'}
+- Hata Nedeni: ${errorReason || 'Bilinmiyor'} (bilgi_eksigi: Konu / Bilgi Eksikliği, dikkat_hatasi: Dikkat / İşlem Hatası, zaman_yetmedi: Süre / Zaman Baskısı, iki_sik_arasinda: İki Şık Arasında Kalma / Çeldiriciye Düşme, soru_kokunu_yanlis_okuma: Soru Kökünü Yanlış Okuma)
+- Çözüm Notları / Hatırlatma: ${solutionNotes || 'Belirtilmemiş'}
 
-ÖNCELİK PUANLAMA KRİTERLERİ (1 - 5 YILDIZ):
-1. Çıkmış Sorulardaki Sıklık (YKS Soru AğıRLIĞI): Konu ÖSYM'nin son yıllardaki TYT/AYT sınavlarında çok sık sorduğu bir konu ise (örn: Paragraf, Problemler, Türev, İntegral, Trigonometri, Optik, Hücre Bölünmeleri, Cümlenin Ögeleri, Gazlar vb.) puanı artır. Nadiren sorulan bir konu ise puanı düşük tut.
-2. Hata Nedeni: Eğer hata nedeni "bilgi_eksigi" (Bilgi Eksikliği) ise bu acil bir konu çalışması gerektirdiği için puanı yükselt. "dikkat_hatasi" ise daha düşük tutulabilir.
-3. Çözüm Notu & Analiz: Çözüm notundaki ciddiyet seviyesini ve öğrencinin konudaki kafa karışıklığını değerlendir.
+GÖREVİN:
+1. Bu konunun ÖSYM YKS (TYT/AYT) son yıllardaki çıkma sıklığını ve soru potansiyelini değerlendir.
+2. Hatanın nedenini ve kaynağını göz önüne alarak 1 ile 5 yıldız arasında bir Öncelik Puanı ("rating") belirle (5 Yıldız: Acil ve kritik çalışma gerektiren en yüksek öncelik; 1 Yıldız: Düşük öncelikli/basit işlem hatası).
+3. Öğrenci için çok bilgilendirici, samimi, pedagojik ve doğrudan uygulanabilir zengin bir Koçluk Analiz Raporu ("analysis") hazırla.
 
-Lütfen bu verileri detaylıca analiz et ve sonucu YALNIZCA geçerli bir JSON objesi olarak dön. Başka açıklama veya markdown yazma. Şema:
+RAPOR FORMATI:
+Analiz metninde şu başlıkları kullanarak zengin, motive edici ve yol gösterici bir Türkçe metin yaz:
+- 🎯 **ÖSYM YKS Sınav Ağırlığı & Önemi:** (Konunun sınavdaki soru değeri ve kritikliği)
+- 🔍 **Hata Teşhisi:** (Hata nedenine ve konunun püf noktalarına göre detaylı teşhis)
+- ⚡ **Hızlı Aksiyon & Çalışma Tavsiyesi:** (Öğrencinin bu eksiği kapatmak için atması gereken somut adımlar)
+
+Lütfen cevabını YALNIZCA geçerli bir JSON objesi olarak ver:
 {
   "rating": 5,
-  "analysis": "Seçilen konunun geçmiş YKS (ÖSYM) sınavlarındaki çıkma sıklığı ve hata analizinize göre hazırlanan 2-3 cümlelik Türkçe gerekçeli koç açıklaması."
+  "analysis": "🎯 **ÖSYM YKS Sınav Ağırlığı & Önemi:** ...\\n\\n🔍 **Hata Teşhisi:** ...\\n\\n⚡ **Hızlı Aksiyon & Çalışma Tavsiyesi:** ..."
 }
     `;
 
-    const targetModel = featureModelConfig['ERROR_PRIORITY'] || 'gemini-3.1-flash-lite';
+    const targetModel = featureModelConfig['ERROR_PRIORITY'] || 'gemini-2.5-flash';
     const { response, modelUsed } = await generateContentWithFallback(ai, {
       model: targetModel,
       contents: prompt,

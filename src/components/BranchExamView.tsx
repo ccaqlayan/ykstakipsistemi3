@@ -1270,11 +1270,8 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       if (data.success) {
         setPriority(data.rating);
         setAiSuccess(true);
-        // Delay of 1.5 seconds to transition smoothly
-        setTimeout(() => {
-          setAiFeedback(data.analysis);
-          setAiButtonFaded(true);
-        }, 1500);
+        setAiFeedback(data.analysis);
+        setAiButtonFaded(true);
         if (onAddAuditLog) {
           onAddAuditLog(
             `Hata Defterinde "${errorSubject} - ${topicName}" için Yapay Zeka Öncelik Analizi yapıldı.`,
@@ -1302,10 +1299,8 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       setPriority(fallbackRating);
       
       setAiSuccess(true);
-      setTimeout(() => {
-        setAiFeedback(`Yapay zeka analiz servisiyle bağlantı kurulamadı. Hataya ve konuya göre otomatik olarak ${fallbackRating} yıldız belirlendi.`);
-        setAiButtonFaded(true);
-      }, 1500);
+      setAiFeedback(`Yapay zeka analiz servisiyle bağlantı kurulamadı. Hataya ve konuya göre otomatik olarak ${fallbackRating} yıldız belirlendi.`);
+      setAiButtonFaded(true);
     } finally {
       setIsAnalyzing(false);
     }
@@ -2069,6 +2064,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
           ERROR_REASON_LABELS={ERROR_REASON_LABELS}
           ERROR_REASON_COLORS={ERROR_REASON_COLORS}
           hideHeroHeader={mode !== 'errors'}
+          onUpdateTopicError={onUpdateTopicError}
         />
       )}
 

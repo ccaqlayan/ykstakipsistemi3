@@ -11,7 +11,13 @@ import {
   Image as ImageIcon,
   Brain,
   X,
-  FileText
+  FileText,
+  Star,
+  Loader2,
+  Bot,
+  RotateCcw,
+  Zap,
+  Target
 } from 'lucide-react';
 import { TopicErrorItem, BranchExam, ResourceItem } from '../../types';
 
@@ -43,6 +49,7 @@ interface BranchErrorsTabProps {
   ERROR_REASON_LABELS: Record<string, string>;
   ERROR_REASON_COLORS: Record<string, string>;
   hideHeroHeader?: boolean;
+  onUpdateTopicError?: (err: TopicErrorItem) => void;
 }
 
 export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
@@ -73,8 +80,55 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   ERROR_REASON_LABELS,
   ERROR_REASON_COLORS,
   hideHeroHeader = false,
+  onUpdateTopicError,
 }) => {
-  const [activeAiAnalysis, setActiveAiAnalysis] = useState<{ topicName: string; subject: string; text: string } | null>(null);
+  const [activeAiErrorItem, setActiveAiErrorItem] = useState<TopicErrorItem | null>(null);
+  const [isAnalyzingActiveError, setIsAnalyzingActiveError] = useState(false);
+  const [analysisErrorMsg, setAnalysisErrorMsg] = useState<string | null>(null);
+
+  const handleRunAiAnalysis = async (errItem: TopicErrorItem) => {
+    setIsAnalyzingActiveError(true);
+    setAnalysisErrorMsg(null);
+    try {
+      const res = await fetch('/api/gemini/analyze-error-priority', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: errItem.subject,
+          topicName: errItem.topicName,
+          errorReason: errItem.errorReason,
+          solutionNotes: errItem.solutionNotes,
+          publisher: errItem.publisher
+        })
+      });
+      if (!res.ok) {
+        let errStr = 'Yapay zeka analiz servisine bağlanılamadı.';
+        try {
+          const errData = await res.json();
+          if (errData.error) errStr = errData.error;
+        } catch {}
+        throw new Error(errStr);
+      }
+      const data = await res.json();
+      if (data.success) {
+        const updated: TopicErrorItem = {
+          ...errItem,
+          priority: data.rating || errItem.priority || 3,
+          aiFeedback: data.analysis
+        };
+        if (onUpdateTopicError) {
+          onUpdateTopicError(updated);
+        }
+        setActiveAiErrorItem(updated);
+      } else {
+        throw new Error(data.error || 'Analiz sonucu alınamadı.');
+      }
+    } catch (err: any) {
+      setAnalysisErrorMsg(err.message || 'Yapay zeka analizi oluşturulurken bir hata oluştu.');
+    } finally {
+      setIsAnalyzingActiveError(false);
+    }
+  };
 
   const renderPriorityBar = (p: any) => {
     let val = parseInt(p, 10);
@@ -496,20 +550,26 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                 {/* Alt Aksiyon Butonları */}
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/60">
                   <div className="flex flex-wrap items-center gap-2">
-                    {(item.aiFeedback || item.aiAnalysis) && (
-                      <button
-                        type="button"
-                        onClick={() => setActiveAiAnalysis({
-                          subject: item.subject,
-                          topicName: item.topicName,
-                          text: item.aiFeedback || item.aiAnalysis || ''
-                        })}
-                        className="px-3 py-1.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm"
-                      >
-                        <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-                        <span>Hata Analizi</span>
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveAiErrorItem(item);
+                        setAnalysisErrorMsg(null);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm border ${
+                        (item.aiFeedback || item.aiAnalysis)
+                          ? 'bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border-purple-500/40'
+                          : 'bg-slate-900 hover:bg-purple-950/40 text-slate-400 hover:text-purple-300 border-slate-800 hover:border-purple-500/30'
+                      }`}
+                      title="Yapay Zeka Hata Analizi ve Koçluk Tavsiyesi"
+                    >
+                      <Sparkles className={`w-3.5 h-3.5 ${item.aiFeedback || item.aiAnalysis ? 'text-purple-400' : 'text-slate-500'}`} />
+                      <span>Hata Analizi</span>
+                      {!(item.aiFeedback || item.aiAnalysis) && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      )}
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => handleOpenTipModal(item.subject, item.topicName)}
@@ -540,45 +600,147 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
         </div>
       )}
 
-      {/* Modal: Kaydedilmiş Hata Analizi Görünümü */}
-      {activeAiAnalysis && (
+      {/* Modal: Hata Analizi (Kayıtlı veya Talep Üzerine Analiz) */}
+      {activeAiErrorItem && (
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) setActiveAiAnalysis(null); }}
+          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          onClick={(e) => { if (e.target === e.currentTarget && !isAnalyzingActiveError) setActiveAiErrorItem(null); }}
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 md:p-6 shadow-2xl space-y-4 animate-fade-in max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-              <div className="flex items-center space-x-2">
-                <Sparkles className="w-5 h-5 text-purple-400" />
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl space-y-4 animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-2xl text-white shadow-lg shadow-purple-600/30">
+                  <Sparkles className="w-5 h-5" />
+                </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">{activeAiAnalysis.topicName}</h3>
-                  <p className="text-[10px] text-purple-400 font-bold uppercase">{activeAiAnalysis.subject} - Kaydedilmiş Hata Analizi</p>
+                  <h3 className="text-sm sm:text-base font-black text-white">{activeAiErrorItem.topicName}</h3>
+                  <div className="flex items-center space-x-2 mt-0.5">
+                    <span className="text-[10px] text-purple-400 font-bold uppercase">{activeAiErrorItem.subject}</span>
+                    {activeAiErrorItem.publisher && (
+                      <>
+                        <span className="text-slate-600 text-xs">•</span>
+                        <span className="text-[10px] text-slate-400 font-medium">{activeAiErrorItem.publisher}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
               <button 
                 type="button" 
-                onClick={() => setActiveAiAnalysis(null)}
-                className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+                disabled={isAnalyzingActiveError}
+                onClick={() => setActiveAiErrorItem(null)}
+                className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3.5 bg-indigo-950/40 border border-indigo-500/30 rounded-xl space-y-2 text-xs">
-              <p className="text-slate-200 leading-relaxed whitespace-pre-line font-medium">
-                {activeAiAnalysis.text}
-              </p>
+            {/* Error Meta Badges */}
+            <div className="flex flex-wrap items-center gap-2 p-2.5 bg-slate-950/60 rounded-2xl border border-slate-850 text-xs">
+              <span className="text-slate-400 font-bold text-[11px]">Hata Nedeni:</span>
+              <span className={`px-2.5 py-0.5 rounded-lg font-bold text-[11px] border ${ERROR_REASON_COLORS[activeAiErrorItem.errorReason] || 'bg-slate-800 text-slate-300 border-slate-700'}`}>
+                {ERROR_REASON_LABELS[activeAiErrorItem.errorReason] || activeAiErrorItem.errorReason}
+              </span>
+              {activeAiErrorItem.priority && (
+                <div className="ml-auto flex items-center space-x-1">
+                  <span className="text-slate-400 font-bold text-[11px]">Öncelik:</span>
+                  <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-bold text-[11px] flex items-center space-x-1 font-mono">
+                    <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                    <span>{activeAiErrorItem.priority}/5 Yıldız</span>
+                  </span>
+                </div>
+              )}
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-slate-800">
-              <button
-                type="button"
-                onClick={() => setActiveAiAnalysis(null)}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
-              >
-                Kapat
-              </button>
-            </div>
+            {/* CASE A: Analysis Exists */}
+            {(activeAiErrorItem.aiFeedback || activeAiErrorItem.aiAnalysis) ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-indigo-950/30 border border-indigo-500/25 rounded-2xl space-y-2 text-xs leading-relaxed">
+                  <div className="text-slate-200 whitespace-pre-line font-medium leading-relaxed">
+                    {activeAiErrorItem.aiFeedback || activeAiErrorItem.aiAnalysis}
+                  </div>
+                </div>
+
+                {analysisErrorMsg && (
+                  <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300">
+                    {analysisErrorMsg}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
+                  <button
+                    type="button"
+                    disabled={isAnalyzingActiveError}
+                    onClick={() => handleRunAiAnalysis(activeAiErrorItem)}
+                    className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 disabled:opacity-50"
+                  >
+                    {isAnalyzingActiveError ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400" />
+                        <span>Yeniden Analiz Ediliyor...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Analizi Yenile</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveAiErrorItem(null)}
+                    className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-lg shadow-purple-600/25"
+                  >
+                    Kapat
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* CASE B: No Analysis Yet (Empty State with Button) */
+              <div className="py-6 text-center space-y-4">
+                <div className="w-16 h-16 mx-auto rounded-3xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shadow-inner">
+                  <Bot className="w-8 h-8" />
+                </div>
+                
+                <div className="space-y-1.5 max-w-md mx-auto">
+                  <h4 className="text-sm font-bold text-white">Henüz Yapay Zeka Hata Analizi Alınmamış</h4>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Bu sorunun kaynak yayın bilgisi, konu kazanımı ve hata türüne göre ÖSYM sınav ağırlığını, hata teşhisini ve çalışma tavsiyesini içeren detaylı koçluk analizini tek tıkla oluşturabilirsiniz.
+                  </p>
+                </div>
+
+                {analysisErrorMsg && (
+                  <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs text-rose-300 max-w-md mx-auto">
+                    {analysisErrorMsg}
+                  </div>
+                )}
+
+                <div className="pt-2 flex justify-center">
+                  <button
+                    type="button"
+                    disabled={isAnalyzingActiveError}
+                    onClick={() => handleRunAiAnalysis(activeAiErrorItem)}
+                    className="px-6 py-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-black transition-all cursor-pointer shadow-xl shadow-purple-600/30 flex items-center space-x-2 disabled:opacity-50"
+                  >
+                    {isAnalyzingActiveError ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Yapay Zeka Analizi Yapılıyor...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 text-amber-300" />
+                        <span>🤖 Yapay Zeka Analizi Başlat</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       )}
