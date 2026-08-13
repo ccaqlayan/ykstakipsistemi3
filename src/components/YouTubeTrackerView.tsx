@@ -22,7 +22,12 @@ import {
   CheckSquare,
   Search,
   Award,
-  Tv
+  Tv,
+  ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
+  CheckCheck,
+  RotateCcw
 } from 'lucide-react';
 import { YouTubeVideoItem } from '../types';
 import { YKS_SUBJECTS } from '../data/initialData';
@@ -233,6 +238,22 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
       ...prev,
       [id]: !prev[id]
     }));
+  };
+
+  const isAnyPlaylistExpanded = Object.values(expandedPlaylists).some(Boolean);
+
+  const toggleAllPlaylists = () => {
+    if (isAnyPlaylistExpanded) {
+      setExpandedPlaylists({});
+    } else {
+      const allOpen: Record<string, boolean> = {};
+      videos.forEach((v) => {
+        if (isPlaylistItem(v)) {
+          allOpen[v.id] = true;
+        }
+      });
+      setExpandedPlaylists(allOpen);
+    }
   };
 
   const handleStartEditNotes = (vid: YouTubeVideoItem) => {
@@ -673,6 +694,22 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                     <span>Playlists ({playlistCount})</span>
                   </button>
 
+                  {playlistCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={toggleAllPlaylists}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 border cursor-pointer ${
+                        isAnyPlaylistExpanded
+                          ? 'bg-amber-600/20 border-amber-500/40 text-amber-300 hover:bg-amber-600/30'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-amber-300 hover:border-amber-500/30'
+                      }`}
+                      title={isAnyPlaylistExpanded ? 'Tüm Kamp Listelerini Kapat' : 'Tüm Kamp Listelerini Aç'}
+                    >
+                      <ChevronsUpDown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>{isAnyPlaylistExpanded ? 'Tüm Listeleri Kapat' : 'Tüm Listeleri Aç'}</span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => setHideWatched(!hideWatched)}
@@ -751,7 +788,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                   const progressPct = Math.round((watchedVideosCount / (totalVideosCount || 1)) * 100);
 
                   const isEditingThisCard = editingCardId === vid.id;
-                  const isExpanded = expandedPlaylists[vid.id] !== false; // default expanded for playlists
+                  const isExpanded = Boolean(expandedPlaylists[vid.id]); // default collapsed for playlists
 
                   return (
                     <div
@@ -1120,37 +1157,140 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                         </div>
                       )}
 
-                      {/* 📋 Playlist Sub-Videos Nested List */}
-                      {isPlaylist && vid.playlistVideos && vid.playlistVideos.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-slate-800">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-extrabold text-amber-300 flex items-center space-x-1.5">
-                              <ListVideo className="w-3.5 h-3.5 text-amber-400" />
-                              <span>Kamp İçeriği ({vid.playlistVideos.length} Video)</span>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => toggleExpandPlaylist(vid.id)}
-                              className="text-[11px] font-bold text-slate-400 hover:text-white bg-slate-950 border border-slate-800 px-2.5 py-1 rounded-lg cursor-pointer"
-                            >
-                              {isExpanded ? 'Gizle' : 'Listeyi Göster'}
-                            </button>
-                          </div>
+                      {/* 📋 Playlist Sub-Videos Nested List (Collapsible) */}
+                      {isPlaylist && vid.playlistVideos && vid.playlistVideos.length > 0 && (() => {
+                        const nextVideo = vid.playlistVideos.find(v => !v.isWatched);
+                        const nextVideoIndex = nextVideo ? vid.playlistVideos.indexOf(nextVideo) + 1 : null;
 
-                          {isExpanded && (
-                            <PlaylistSubVideosList
-                              playlistId={vid.id}
-                              videos={vid.playlistVideos}
-                              onToggleWatch={(idx, subVid) => {
-                                const newPlaylist = [...vid.playlistVideos!];
-                                newPlaylist[idx] = { ...subVid, isWatched: !subVid.isWatched };
-                                const allWatched = newPlaylist.every(v => v.isWatched);
-                                onUpdateVideo({ ...vid, playlistVideos: newPlaylist, isWatched: allWatched });
-                              }}
-                            />
-                          )}
-                        </div>
-                      )}
+                        return (
+                          <div className="mt-3 pt-3 border-t border-slate-800/80">
+                            {/* Collapsible Accordion Header / Trigger Bar */}
+                            <div 
+                              onClick={() => toggleExpandPlaylist(vid.id)}
+                              className={`w-full p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer select-none group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                                isExpanded
+                                  ? 'bg-slate-950/90 border-amber-500/40 shadow-md ring-1 ring-amber-500/20'
+                                  : 'bg-slate-950/60 hover:bg-slate-950 border-slate-800/90 hover:border-amber-500/40 shadow-inner'
+                              }`}
+                            >
+                              <div className="flex items-center space-x-3 min-w-0">
+                                <div className={`p-2 rounded-xl transition-all shrink-0 ${
+                                  isExpanded
+                                    ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30'
+                                    : 'bg-slate-900 text-slate-400 group-hover:text-amber-400 group-hover:bg-amber-500/10'
+                                }`}>
+                                  <ListVideo className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-xs font-bold text-white group-hover:text-amber-200 transition-colors">
+                                      Kamp İçeriği ({vid.playlistVideos.length} Video)
+                                    </span>
+                                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${
+                                      watchedVideosCount === totalVideosCount
+                                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                                        : 'bg-slate-900 border-slate-800 text-slate-400'
+                                    }`}>
+                                      {watchedVideosCount}/{totalVideosCount} İzlendi
+                                    </span>
+                                  </div>
+
+                                  {/* If collapsed and there is a next unwatched video, show context preview */}
+                                  {!isExpanded && nextVideo && (
+                                    <div className="flex items-center space-x-1.5 mt-1 text-[11px] text-amber-300/90 truncate">
+                                      <Sparkles className="w-3 h-3 text-amber-400 shrink-0" />
+                                      <span className="font-semibold text-slate-400">Sıradaki:</span>
+                                      <span className="font-medium text-slate-200 truncate">{nextVideoIndex}. {nextVideo.title}</span>
+                                    </div>
+                                  )}
+
+                                  {!isExpanded && !nextVideo && totalVideosCount > 0 && (
+                                    <div className="flex items-center space-x-1.5 mt-1 text-[11px] text-emerald-400 font-semibold">
+                                      <CheckCircle className="w-3 h-3 text-emerald-400 shrink-0" />
+                                      <span>Tüm kamp dersleri başarıyla tamamlandı! ✨</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center space-x-2 shrink-0 self-end sm:self-center">
+                                <span className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all flex items-center space-x-1.5 ${
+                                  isExpanded
+                                    ? 'bg-amber-600 text-white border-amber-500 shadow-md shadow-amber-600/30'
+                                    : 'bg-slate-900 group-hover:bg-amber-500/20 text-slate-300 group-hover:text-amber-300 border-slate-800 group-hover:border-amber-500/40'
+                                }`}>
+                                  <span>{isExpanded ? 'Listeyi Gizle' : 'Videoları İncele'}</span>
+                                  {isExpanded ? (
+                                    <ChevronUp className="w-3.5 h-3.5 transition-transform" />
+                                  ) : (
+                                    <ChevronDown className="w-3.5 h-3.5 transition-transform group-hover:translate-y-0.5" />
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Expanded Playlist Drawer */}
+                            {isExpanded && (
+                              <div className="mt-2 space-y-2 animate-fade-in">
+                                {/* Quick drawer toolbar */}
+                                <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-1 text-xs">
+                                  <div className="flex items-center space-x-2 text-slate-400 text-[11px]">
+                                    <span>Kalan: <strong className="text-amber-300 font-bold">{totalVideosCount - watchedVideosCount} Video</strong></span>
+                                    {remainingDuration > 0 && (
+                                      <span>• Kalan Süre: <strong className="text-slate-200 font-mono">{formatDuration(remainingDuration)}</strong></span>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center space-x-1.5">
+                                    {watchedVideosCount < totalVideosCount && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const newPlaylist = vid.playlistVideos!.map(v => ({ ...v, isWatched: true }));
+                                          onUpdateVideo({ ...vid, playlistVideos: newPlaylist, isWatched: true });
+                                        }}
+                                        className="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-emerald-950/60 text-slate-400 hover:text-emerald-300 border border-slate-800 hover:border-emerald-500/40 text-[10px] font-bold transition-all flex items-center space-x-1 cursor-pointer"
+                                        title="Listedeki tüm videoları izlendi olarak işaretle"
+                                      >
+                                        <CheckCheck className="w-3 h-3 text-emerald-400" />
+                                        <span>Tümünü İzlendi Yap</span>
+                                      </button>
+                                    )}
+
+                                    {watchedVideosCount > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const newPlaylist = vid.playlistVideos!.map(v => ({ ...v, isWatched: false }));
+                                          onUpdateVideo({ ...vid, playlistVideos: newPlaylist, isWatched: false });
+                                        }}
+                                        className="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 text-[10px] font-bold transition-all flex items-center space-x-1 cursor-pointer"
+                                        title="Listedeki tüm izlendi işaretlerini sıfırla"
+                                      >
+                                        <RotateCcw className="w-3 h-3 text-slate-400" />
+                                        <span>Sıfırla</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <PlaylistSubVideosList
+                                  playlistId={vid.id}
+                                  videos={vid.playlistVideos}
+                                  onToggleWatch={(idx, subVid) => {
+                                    const newPlaylist = [...vid.playlistVideos!];
+                                    newPlaylist[idx] = { ...subVid, isWatched: !subVid.isWatched };
+                                    const allWatched = newPlaylist.every(v => v.isWatched);
+                                    onUpdateVideo({ ...vid, playlistVideos: newPlaylist, isWatched: allWatched });
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })}
