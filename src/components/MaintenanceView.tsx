@@ -13,10 +13,7 @@ import {
   X, 
   AlertCircle,
   School,
-  Users,
-  UserCheck,
-  GraduationCap,
-  ShieldCheck
+  Users
 } from 'lucide-react';
 import { UserAccount } from '../types';
 
@@ -154,12 +151,6 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
     }
   };
 
-  const handleQuickAuthorizedDemo = (email: string) => {
-    setAdminUsernameOrEmail(email);
-    setAdminPassword('123');
-    handleAuthorizedLoginSubmit(undefined, email, '123');
-  };
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans selection:bg-amber-500 selection:text-black">
       
@@ -264,7 +255,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
       {/* Authorized Login Modal (When in Maintenance Mode) */}
       {showAdminLoginModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-850 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4 relative">
+          <div className="bg-slate-900 border border-slate-850 rounded-3xl p-6 sm:p-7 max-w-sm w-full shadow-2xl space-y-4 relative">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center space-x-2">
                 <div className="p-2 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-400">
@@ -294,48 +285,6 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                 <span>{loginError}</span>
               </div>
             )}
-
-            {/* Quick Demo Access Bar inside Modal */}
-            <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                <span className="flex items-center space-x-1">
-                  <Sparkles className="w-3 h-3 text-amber-400" />
-                  <span>Hızlı Yetkili Demo Girişi</span>
-                </span>
-                <span className="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-300 font-mono">Şifre: 123</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                {maintenanceAllowTeachers && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => handleQuickAuthorizedDemo('elif.hoca@okul.edu.tr')}
-                      className="py-1.5 px-2 bg-fuchsia-600/30 hover:bg-fuchsia-600/50 text-fuchsia-200 border border-fuchsia-500/30 rounded-xl text-[10px] font-semibold flex items-center justify-center space-x-1 transition-all cursor-pointer truncate"
-                    >
-                      <UserCheck className="w-3 h-3 shrink-0" />
-                      <span className="truncate">Sınıf Reh. (Elif Hoca)</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleQuickAuthorizedDemo('demo.rehber@yksdemo.local')}
-                      className="py-1.5 px-2 bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/30 rounded-xl text-[10px] font-semibold flex items-center justify-center space-x-1 transition-all cursor-pointer truncate"
-                    >
-                      <GraduationCap className="w-3 h-3 shrink-0" />
-                      <span className="truncate">Okul Reh. (Dilek Hoca)</span>
-                    </button>
-                  </>
-                )}
-                <button
-                  type="button"
-                  onClick={() => handleQuickAuthorizedDemo('caglayan.mat@gmail.com')}
-                  className={`py-1.5 px-2 bg-amber-600/30 hover:bg-amber-600/50 text-amber-200 border border-amber-500/30 rounded-xl text-[10px] font-semibold flex items-center justify-center space-x-1 transition-all cursor-pointer truncate ${!maintenanceAllowTeachers ? 'sm:col-span-2' : ''}`}
-                >
-                  <ShieldCheck className="w-3 h-3 shrink-0" />
-                  <span className="truncate">Yönetici (Admin)</span>
-                </button>
-              </div>
-            </div>
 
             <form onSubmit={(e) => handleAuthorizedLoginSubmit(e)} className="space-y-3">
               <div>
@@ -383,7 +332,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAdminLoginModal(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   İptal
                 </button>
