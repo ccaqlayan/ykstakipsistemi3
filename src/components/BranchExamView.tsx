@@ -1108,49 +1108,26 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   const renderPriorityBadge = (p: any) => {
     let numeric = parseInt(p, 10);
     if (isNaN(numeric)) {
-      numeric = p === 'high' ? 5 : p === 'low' ? 1 : 3;
+      numeric = p === 'high' ? 9 : p === 'low' ? 3 : 6;
+    } else if (numeric <= 5) {
+      numeric = numeric * 2;
     }
-    numeric = Math.max(1, Math.min(5, numeric));
+    numeric = Math.max(1, Math.min(10, numeric));
 
-    let starColor = 'text-amber-400 fill-amber-400';
-    let bgBorder = 'bg-amber-500/15 border-amber-500/30';
-    let verbalLabel = 'Orta Öncelik';
-    
-    if (numeric >= 5) {
-      starColor = 'text-rose-400 fill-rose-400';
-      bgBorder = 'bg-rose-500/15 border-rose-500/30';
-      verbalLabel = 'Çok Yüksek Öncelik';
-    } else if (numeric === 4) {
-      starColor = 'text-amber-400 fill-amber-400';
-      bgBorder = 'bg-amber-500/15 border-amber-500/30';
-      verbalLabel = 'Yüksek Öncelik';
-    } else if (numeric === 3) {
-      starColor = 'text-yellow-400 fill-yellow-400';
-      bgBorder = 'bg-yellow-500/10 border-yellow-500/20';
-      verbalLabel = 'Orta Öncelik';
-    } else if (numeric === 2) {
-      starColor = 'text-sky-400 fill-sky-400';
-      bgBorder = 'bg-sky-500/10 border-sky-500/20';
-      verbalLabel = 'Düşük Öncelik';
-    } else {
-      starColor = 'text-slate-400 fill-slate-400';
-      bgBorder = 'bg-slate-800 border-slate-700/50';
-      verbalLabel = 'Çok Düşük Öncelik';
-    }
-
-    const emptyCount = 5 - numeric;
+    const pct = (numeric / 10) * 100;
+    const barGradient = numeric >= 8 ? 'from-rose-500 to-red-600' : numeric >= 5 ? 'from-amber-500 to-orange-500' : 'from-indigo-500 to-blue-600';
+    const textColor = numeric >= 8 ? 'text-rose-400' : numeric >= 5 ? 'text-amber-400' : 'text-indigo-400';
+    const verbalLabel = numeric >= 8 ? 'Kritik Öncelik' : numeric >= 5 ? 'Orta Öncelik' : 'Düşük Öncelik';
 
     return (
       <div 
-        className={`px-1.5 py-0.5 rounded flex items-center space-x-0.5 border ${bgBorder}`}
-        title={`${numeric}/5 Öncelik - ${verbalLabel}`}
+        className="px-2 py-1 bg-slate-900/90 border border-slate-800 rounded-xl flex items-center space-x-2 shadow-sm"
+        title={`${numeric}/10 Öncelik - ${verbalLabel}`}
       >
-        {Array.from({ length: numeric }).map((_, idx) => (
-          <Star key={`filled-${idx}`} className={`w-3 h-3 ${starColor}`} />
-        ))}
-        {Array.from({ length: emptyCount }).map((_, idx) => (
-          <Star key={`empty-${idx}`} className="w-3 h-3 text-slate-600/60 fill-none" />
-        ))}
+        <span className={`text-[11px] font-bold font-mono ${textColor}`}>{numeric}/10</span>
+        <div className="w-12 h-1.5 bg-slate-800 rounded-full overflow-hidden shrink-0 border border-slate-700/50">
+          <div className={`h-full bg-gradient-to-r ${barGradient} rounded-full`} style={{ width: `${pct}%` }} />
+        </div>
       </div>
     );
   };

@@ -526,7 +526,7 @@ GİRİŞ VERİLERİ:
 
 GÖREVİN:
 1. Bu konunun ÖSYM YKS (TYT/AYT) son yıllardaki çıkma sıklığını ve soru potansiyelini değerlendir.
-2. Hatanın nedenini ve kaynağını göz önüne alarak 1 ile 5 yıldız arasında bir Öncelik Puanı ("rating") belirle (5 Yıldız: Acil ve kritik çalışma gerektiren en yüksek öncelik; 1 Yıldız: Düşük öncelikli/basit işlem hatası).
+2. Hatanın nedenini ve kaynağını göz önüne alarak 1 ile 10 arasında bir Öncelik Puanı ("rating") belirle (10: Acil ve kritik çalışma gerektiren en yüksek öncelik; 1: Düşük öncelikli/basit işlem hatası).
 3. Öğrenci için çok bilgilendirici, samimi, pedagojik ve doğrudan uygulanabilir zengin bir Koçluk Analiz Raporu ("analysis") hazırla.
 
 RAPOR FORMATI:
@@ -537,7 +537,7 @@ Analiz metninde şu başlıkları kullanarak zengin, motive edici ve yol göster
 
 Lütfen cevabını YALNIZCA geçerli bir JSON objesi olarak ver:
 {
-  "rating": 5,
+  "rating": 8,
   "analysis": "🎯 **ÖSYM YKS Sınav Ağırlığı & Önemi:** ...\\n\\n🔍 **Hata Teşhisi:** ...\\n\\n⚡ **Hızlı Aksiyon & Çalışma Tavsiyesi:** ..."
 }
     `;
@@ -570,9 +570,12 @@ Lütfen cevabını YALNIZCA geçerli bir JSON objesi olarak ver:
       userRole
     });
 
+    const parsedRating = parseInt(parsedData.rating, 10);
+    const finalRating = isNaN(parsedRating) ? 7 : Math.min(10, Math.max(1, parsedRating));
+
     res.json({
       success: true,
-      rating: parsedData.rating || 3,
+      rating: finalRating,
       analysis: parsedData.analysis || 'Konu önemi analiz edildi.',
       aiUsage: usageRecord
     });

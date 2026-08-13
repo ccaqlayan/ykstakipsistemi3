@@ -113,7 +113,7 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
       if (data.success) {
         const updated: TopicErrorItem = {
           ...errItem,
-          priority: data.rating || errItem.priority || 3,
+          priority: data.rating || errItem.priority || 7,
           aiFeedback: data.analysis
         };
         if (onUpdateTopicError) {
@@ -133,17 +133,17 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   const renderPriorityBar = (p: any) => {
     let val = parseInt(p, 10);
     if (isNaN(val)) {
-      val = p === 'high' ? 8 : p === 'low' ? 3 : 5;
+      val = p === 'high' ? 9 : p === 'low' ? 3 : 6;
     }
     const pct = Math.min(100, Math.max(10, (val / 10) * 100));
-    const solidBg = val >= 7 ? 'bg-rose-500' : val >= 4 ? 'bg-amber-500' : 'bg-indigo-500';
-    const textColor = val >= 7 ? 'text-rose-400' : val >= 4 ? 'text-amber-400' : 'text-indigo-400';
+    const barGradient = val >= 8 ? 'from-rose-500 to-red-600' : val >= 5 ? 'from-amber-500 to-orange-500' : 'from-indigo-500 to-blue-600';
+    const textColor = val >= 8 ? 'text-rose-400' : val >= 5 ? 'text-amber-400' : 'text-indigo-400';
 
     return (
       <div className="flex items-center space-x-2 shrink-0">
-        <span className={`text-xs font-bold ${textColor}`}>Öncelik: {val}/10</span>
-        <div className="w-16 h-2 bg-slate-800 rounded-full overflow-hidden shrink-0">
-          <div className={`h-full ${solidBg} rounded-full transition-all duration-300`} style={{ width: `${pct}%` }} />
+        <span className={`text-xs font-bold font-mono ${textColor}`}>Öncelik: {val}/10</span>
+        <div className="w-16 h-2 bg-slate-800 rounded-full overflow-hidden shrink-0 border border-slate-700/50 p-0.5">
+          <div className={`h-full bg-gradient-to-r ${barGradient} rounded-full transition-all duration-300 shadow-sm`} style={{ width: `${pct}%` }} />
         </div>
       </div>
     );
@@ -637,21 +637,42 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
               </button>
             </div>
 
-            {/* Error Meta Badges */}
-            <div className="flex flex-wrap items-center gap-2 p-2.5 bg-slate-950/60 rounded-2xl border border-slate-850 text-xs">
-              <span className="text-slate-400 font-bold text-[11px]">Hata Nedeni:</span>
-              <span className={`px-2.5 py-0.5 rounded-lg font-bold text-[11px] border ${ERROR_REASON_COLORS[activeAiErrorItem.errorReason] || 'bg-slate-800 text-slate-300 border-slate-700'}`}>
-                {ERROR_REASON_LABELS[activeAiErrorItem.errorReason] || activeAiErrorItem.errorReason}
-              </span>
-              {activeAiErrorItem.priority && (
-                <div className="ml-auto flex items-center space-x-1">
-                  <span className="text-slate-400 font-bold text-[11px]">Öncelik:</span>
-                  <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-bold text-[11px] flex items-center space-x-1 font-mono">
-                    <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                    <span>{activeAiErrorItem.priority}/5 Yıldız</span>
-                  </span>
-                </div>
-              )}
+            {/* Error Meta Badges & Priority Progress Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-950/70 rounded-2xl border border-slate-800 text-xs">
+              <div className="flex items-center space-x-2">
+                <span className="text-slate-400 font-bold text-[11px]">Hata Nedeni:</span>
+                <span className={`px-2.5 py-1 rounded-xl font-bold text-[11px] border ${ERROR_REASON_COLORS[activeAiErrorItem.errorReason] || 'bg-slate-800 text-slate-300 border-slate-700'}`}>
+                  {ERROR_REASON_LABELS[activeAiErrorItem.errorReason] || activeAiErrorItem.errorReason}
+                </span>
+              </div>
+
+              {activeAiErrorItem.priority !== undefined && (() => {
+                let val = parseInt(activeAiErrorItem.priority as any, 10);
+                if (isNaN(val)) {
+                  val = activeAiErrorItem.priority === 'high' ? 9 : activeAiErrorItem.priority === 'low' ? 3 : 6;
+                }
+                const pct = Math.min(100, Math.max(10, (val / 10) * 100));
+                const barGradient = val >= 8 ? 'from-rose-500 to-red-600' : val >= 5 ? 'from-amber-500 to-orange-500' : 'from-indigo-500 to-blue-600';
+                const textColor = val >= 8 ? 'text-rose-400' : val >= 5 ? 'text-amber-400' : 'text-indigo-400';
+                const labelText = val >= 8 ? 'Kritik Öncelik' : val >= 5 ? 'Orta Öncelik' : 'Düşük Öncelik';
+
+                return (
+                  <div className="flex items-center space-x-3 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl ml-auto">
+                    <div className="flex flex-col text-right">
+                      <span className="text-[9.5px] uppercase tracking-wider text-slate-400 font-bold">{labelText}</span>
+                      <span className={`text-xs font-black font-mono ${textColor}`}>
+                        {val} <span className="text-[10px] text-slate-400 font-normal">/ 10</span>
+                      </span>
+                    </div>
+                    <div className="w-24 sm:w-28 h-2.5 bg-slate-800/90 rounded-full overflow-hidden p-0.5 border border-slate-700/50 shrink-0">
+                      <div 
+                        className={`h-full bg-gradient-to-r ${barGradient} rounded-full transition-all duration-500 shadow-sm`} 
+                        style={{ width: `${pct}%` }} 
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* CASE A: Analysis Exists */}
