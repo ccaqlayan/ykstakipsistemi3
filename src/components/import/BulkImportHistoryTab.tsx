@@ -188,6 +188,7 @@ export const BulkImportHistoryTab: React.FC<BulkImportHistoryTabProps> = ({
       <MockInstitutionalDetailView
         selectedInstitutionalExam={selectedExamRecord}
         setSelectedInstitutionalExam={(exam) => setSelectedExamRecordId(exam ? exam.id : null)}
+        allInstitutionalExams={examsToUse}
       />
     );
   }

@@ -36,24 +36,33 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
       .replace(/[^a-z0-9]/g, '');
   };
 
-  // Find all exams belonging to the current student
+  // Find all exams belonging to the current student (always includes current exam)
   const studentExams = useMemo(() => {
-    if (!selectedInstitutionalExam || !allInstitutionalExams.length) return [];
-    return allInstitutionalExams.filter(ex => {
-      if (selectedInstitutionalExam.studentId && ex.studentId) {
-        return ex.studentId === selectedInstitutionalExam.studentId;
-      }
-      if (selectedInstitutionalExam.schoolNumber && ex.schoolNumber) {
-        return ex.schoolNumber === selectedInstitutionalExam.schoolNumber;
-      }
-      return normalizeText(ex.studentName) === normalizeText(selectedInstitutionalExam.studentName);
-    }).sort((a, b) => new Date(b.examDate).getTime() - new Date(a.examDate).getTime());
+    if (!selectedInstitutionalExam) return [];
+    const examMap = new Map<string, InstitutionalMockExam>();
+    // Always include current exam
+    examMap.set(selectedInstitutionalExam.id, selectedInstitutionalExam);
+
+    if (Array.isArray(allInstitutionalExams)) {
+      allInstitutionalExams.forEach(ex => {
+        if (!ex || !ex.id) return;
+        const sameStudent =
+          (selectedInstitutionalExam.studentId && ex.studentId && ex.studentId === selectedInstitutionalExam.studentId) ||
+          (selectedInstitutionalExam.schoolNumber && ex.schoolNumber && ex.schoolNumber === selectedInstitutionalExam.schoolNumber) ||
+          (normalizeText(ex.studentName) === normalizeText(selectedInstitutionalExam.studentName));
+        if (sameStudent) {
+          examMap.set(ex.id, ex);
+        }
+      });
+    }
+    return Array.from(examMap.values()).sort((a, b) => new Date(b.examDate || 0).getTime() - new Date(a.examDate || 0).getTime());
   }, [selectedInstitutionalExam, allInstitutionalExams]);
 
   // Extract performance history for selected topic
   const topicHistoryList = useMemo(() => {
     if (!selectedTopicHistory) return [];
     const normTarget = normalizeText(selectedTopicHistory.topicName);
+    const targetWords = normTarget.split(/\s+/).filter(w => w.length > 2);
 
     const results: Array<{
       examId: string;
@@ -72,7 +81,11 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
       ex.subjects?.forEach(sub => {
         sub.topics?.forEach(top => {
           const normTop = normalizeText(top.topicName);
-          if (normTop === normTarget || normTop.includes(normTarget) || normTarget.includes(normTop)) {
+          const isExact = normTop === normTarget;
+          const isSubstring = normTop.length > 3 && normTarget.length > 3 && (normTop.includes(normTarget) || normTarget.includes(normTop));
+          const isKeywordMatch = targetWords.length > 0 && targetWords.every(w => normTop.includes(w));
+
+          if (isExact || isSubstring || isKeywordMatch) {
             results.push({
               examId: ex.id,
               examTitle: ex.examTitle,

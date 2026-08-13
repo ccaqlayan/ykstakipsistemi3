@@ -947,6 +947,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
       <MockInstitutionalDetailView
         selectedInstitutionalExam={selectedInstitutionalExam}
         setSelectedInstitutionalExam={setSelectedInstitutionalExam}
+        allInstitutionalExams={institutionalMocks}
       />
     );
   }
