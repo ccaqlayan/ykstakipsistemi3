@@ -84,7 +84,6 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
   const [subjectFilter, setSubjectFilter] = useState<string>('Tümü');
   const [watchStatusFilter, setWatchStatusFilter] = useState<'all' | 'unwatched' | 'watched'>('unwatched');
   const [contentTypeFilter, setContentTypeFilter] = useState<'all' | 'single' | 'playlist'>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedItems, setSelectedItems] = useState<Record<string, { subject: string; title: string; channelName: string; videoUrl: string; duration?: number }>>({});
   const [expandedPlaylists, setExpandedPlaylists] = useState<Record<string, boolean>>({});
 
@@ -132,10 +131,6 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
   const filteredVideos = youtubeVideos.filter(v => {
     const isPlaylist = isPlaylistItem(v);
     const matchesSubject = subjectFilter === 'Tümü' || v.subject === subjectFilter;
-    const matchesSearch = !searchQuery.trim() || 
-      v.topicName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      v.channelName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (v.playlistTitle && v.playlistTitle.toLowerCase().includes(searchQuery.toLowerCase()));
     
     let matchesWatchStatus = true;
     if (watchStatusFilter === 'unwatched') {
@@ -159,7 +154,7 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
       matchesContentType = isPlaylist;
     }
 
-    return matchesSubject && matchesSearch && matchesWatchStatus && matchesContentType;
+    return matchesSubject && matchesWatchStatus && matchesContentType;
   });
 
   const toggleSelectItem = (key: string, itemData: { subject: string; title: string; channelName: string; videoUrl: string; duration?: number }) => {
@@ -167,8 +162,16 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
       const next = { ...prev };
       if (next[key]) {
         delete next[key];
+        const remaining = Object.values(next);
+        if (remaining.length === 1 && remaining[0].duration && remaining[0].duration > 0) {
+          setTargetMinutes(remaining[0].duration);
+        }
       } else {
         next[key] = itemData;
+        // Auto-fill target duration if the selected video has a duration
+        if (itemData.duration && itemData.duration > 0) {
+          setTargetMinutes(itemData.duration);
+        }
       }
       return next;
     });
@@ -217,6 +220,7 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
         if (data.title) setTopicName(data.title);
         if (data.channelName) setChannelName(data.channelName);
         if (data.subject) setManualSubject(data.subject);
+        if (data.durationMinutes && data.durationMinutes > 0) setTargetMinutes(data.durationMinutes);
       } else {
         alert('Video bilgisi çekilemedi: ' + (data.error || 'Bilinmeyen hata'));
       }
@@ -449,34 +453,25 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
                 </div>
               </div>
 
-              {/* Row 3: Search & Subject Filter Chips */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
-                <div className="relative flex-1">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-                  <input
-                    type="text"
-                    placeholder="Video, kamp veya kanal adı ara..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-1.5 text-xs text-white outline-none focus:border-red-500 font-medium"
-                  />
-                </div>
-                <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full sm:max-w-xs">
-                  {subjectsList.map(sub => (
-                    <button
-                      key={sub}
-                      type="button"
-                      onClick={() => setSubjectFilter(sub)}
-                      className={`text-[11px] px-2.5 py-1 rounded-lg border font-bold whitespace-nowrap cursor-pointer transition-all ${
-                        subjectFilter === sub
-                          ? 'bg-red-950 border-red-500 text-red-300'
-                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-                      }`}
-                    >
-                      {sub}
-                    </button>
-                  ))}
-                </div>
+              {/* Row 3: Ders Seçim Filtreleri (Pencereye Tam Sığan ve Katlanan Görünüm) */}
+              <div className="pt-2 border-t border-slate-850 flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-bold text-slate-400 mr-1 uppercase tracking-wider flex items-center space-x-1 shrink-0">
+                  <span>Ders:</span>
+                </span>
+                {subjectsList.map(sub => (
+                  <button
+                    key={sub}
+                    type="button"
+                    onClick={() => setSubjectFilter(sub)}
+                    className={`text-[11px] px-2.5 py-1 rounded-lg border font-bold transition-all cursor-pointer ${
+                      subjectFilter === sub
+                        ? 'bg-red-950 border-red-500 text-red-300 shadow-sm'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                    }`}
+                  >
+                    {sub}
+                  </button>
+                ))}
               </div>
             </div>
 
