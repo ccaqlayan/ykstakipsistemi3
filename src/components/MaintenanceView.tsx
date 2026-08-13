@@ -12,7 +12,8 @@ import {
   Loader2, 
   X, 
   AlertCircle,
-  School
+  School,
+  Users
 } from 'lucide-react';
 import { UserAccount } from '../types';
 
@@ -24,6 +25,7 @@ interface MaintenanceViewProps {
   schoolName?: string;
   maintenanceMessage?: string;
   maintenanceEndTime?: string;
+  maintenanceAllowTeachers?: boolean;
 }
 
 export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
@@ -34,6 +36,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
   schoolName = 'YKS Hazırlık & Koçluk Sistemi',
   maintenanceMessage,
   maintenanceEndTime,
+  maintenanceAllowTeachers = false,
 }) => {
   const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
   const [adminUsernameOrEmail, setAdminUsernameOrEmail] = useState('');
@@ -46,7 +49,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
   const displayEndTime = maintenanceEndTime || localStorage.getItem('maintenance_end_time') || '';
   const displaySchool = schoolName || localStorage.getItem('school_name') || 'YKS Hazırlık & Takip Sistemi';
 
-  const handleAdminLoginSubmit = async (e: React.FormEvent) => {
+  const handleAuthorizedLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
 
@@ -54,20 +57,33 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
     const pass = adminPassword.trim();
 
     if (!identifier || !pass) {
-      setLoginError('Lütfen yönetici kullanıcı adı/e-posta ve şifrenizi girin.');
+      setLoginError('Lütfen kullanıcı adı / e-posta ve şifrenizi girin.');
       return;
     }
 
     setIsLoggingIn(true);
     try {
-      // Find matching admin user
+      // Find matching user (email, name, or id)
       const foundUser = users.find(u => 
-        (u.email?.toLowerCase() === identifier || u.name?.toLowerCase() === identifier || u.id?.toLowerCase() === identifier) &&
-        u.role === 'admin'
+        (u.email?.toLowerCase() === identifier || u.name?.toLowerCase() === identifier || u.id?.toLowerCase() === identifier)
       );
 
       if (!foundUser) {
-        setLoginError('Yönetici hesabı bulunamadı veya bu hesaba yönetici yetkisi verilmemiş.');
+        setLoginError('Kullanıcı hesabı bulunamadı. Lütfen bilgilerinizi kontrol edin.');
+        setIsLoggingIn(false);
+        return;
+      }
+
+      // Check role authorization under maintenance
+      const isTeacher = foundUser.role === 'teacher' || foundUser.role === 'class_teacher' || foundUser.role === 'school_counselor';
+      const isAdmin = foundUser.role === 'admin';
+
+      if (!isAdmin && !(isTeacher && maintenanceAllowTeachers)) {
+        if (isTeacher) {
+          setLoginError('Sistem bakım modundadır ve öğretmen giriş izni şu anda kapalıdır. Yalnızca yöneticiler giriş yapabilir.');
+        } else {
+          setLoginError('Sistem şu anda planlı bakım modundadır. Yalnızca yetkili personel (yönetici / izinli öğretmenler) giriş yapabilir.');
+        }
         setIsLoggingIn(false);
         return;
       }
@@ -153,7 +169,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
           </div>
         )}
 
-        {/* Current User Session or Admin Login Button */}
+        {/* Current User Session or Authorized Login Button */}
         <div className="pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3">
           {currentUser ? (
             <div className="w-full flex items-center justify-between bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800">
@@ -186,7 +202,11 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                 className="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer border border-slate-700 flex items-center justify-center space-x-2 shadow-sm"
               >
                 <Lock className="w-3.5 h-3.5 text-amber-400" />
-                <span>Yönetici Girişi (Admin Bypass)</span>
+                <span>
+                  {maintenanceAllowTeachers 
+                    ? 'Yetkili Girişi (Yönetici / Öğretmen)' 
+                    : 'Yönetici Girişi (Admin Bypass)'}
+                </span>
               </button>
             </div>
           )}
@@ -199,16 +219,23 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
 
       </div>
 
-      {/* Admin Login Modal (When in Maintenance Mode) */}
+      {/* Authorized Login Modal (When in Maintenance Mode) */}
       {showAdminLoginModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-slate-900 border border-slate-850 rounded-3xl p-6 sm:p-7 max-w-sm w-full shadow-2xl space-y-4 relative">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center space-x-2">
                 <div className="p-2 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-400">
-                  <Lock className="w-4 h-4" />
+                  {maintenanceAllowTeachers ? <Users className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                 </div>
-                <h3 className="text-sm font-bold text-white">Yönetici Girişi</h3>
+                <div>
+                  <h3 className="text-sm font-bold text-white">
+                    {maintenanceAllowTeachers ? 'Yetkili Personel Girişi' : 'Yönetici Girişi'}
+                  </h3>
+                  <p className="text-[10px] text-slate-400">
+                    {maintenanceAllowTeachers ? 'Yönetici ve öğretmen hesapları' : 'Yalnızca yönetici (admin) hesapları'}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -220,16 +247,16 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
             </div>
 
             {loginError && (
-              <div className="p-3 bg-rose-500/15 border border-rose-500/30 rounded-xl text-xs text-rose-300 flex items-center space-x-2">
+              <div className="p-3 bg-rose-500/15 border border-rose-500/30 rounded-xl text-xs text-rose-300 flex items-center space-x-2 leading-relaxed">
                 <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
                 <span>{loginError}</span>
               </div>
             )}
 
-            <form onSubmit={handleAdminLoginSubmit} className="space-y-3">
+            <form onSubmit={handleAuthorizedLoginSubmit} className="space-y-3">
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                  Yönetici Kullanıcı Adı veya E-posta
+                  Kullanıcı Adı veya E-posta
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
@@ -238,7 +265,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                     required
                     value={adminUsernameOrEmail}
                     onChange={(e) => setAdminUsernameOrEmail(e.target.value)}
-                    placeholder="admin / e-posta..."
+                    placeholder="kullanici@okul.edu.tr / e-posta..."
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-amber-500"
                   />
                 </div>

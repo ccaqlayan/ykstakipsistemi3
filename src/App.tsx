@@ -2628,11 +2628,12 @@ export default function App() {
   const unreadMessageCount = currentUser ? (globalState.messages || []).filter(m => isMessageUnreadForUser(m, currentUser)).length : 0;
 
   const isAdmin = currentUser?.role === 'admin';
-  const isTeacherAllowed = currentUser?.role === 'teacher' && maintenanceAllowTeachers;
-  const isMaintenanceBlocked = maintenanceMode && !isAdmin && !isTeacherAllowed;
+  const isTeacher = currentUser?.role === 'teacher' || currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor';
+  const isTeacherAllowed = isTeacher && maintenanceAllowTeachers;
+  const isAllowedToAccess = isAdmin || isTeacherAllowed;
 
-  // IF MAINTENANCE MODE IS ACTIVE AND USER NOT ALLOWED -> RENDER MAINTENANCE VIEW
-  if (isMaintenanceBlocked) {
+  // IF MAINTENANCE MODE IS ACTIVE AND USER NOT LOGGED IN OR NOT ALLOWED -> RENDER MAINTENANCE VIEW
+  if (maintenanceMode && (!currentUser || !isAllowedToAccess)) {
     return (
       <MaintenanceView
         currentUser={currentUser}
@@ -2642,6 +2643,7 @@ export default function App() {
         schoolName={currentSchoolName}
         maintenanceMessage={maintenanceMessage}
         maintenanceEndTime={maintenanceEndTime}
+        maintenanceAllowTeachers={maintenanceAllowTeachers}
       />
     );
   }
@@ -2664,20 +2666,30 @@ export default function App() {
   // IF LOGGED IN -> MAIN APPLICATION VIEW
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white relative overflow-x-hidden">
-      {/* Top Warning Banner for Admin during Maintenance Mode */}
-      {isAdmin && maintenanceMode && (
-        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 text-slate-950 px-4 py-2 text-xs font-black flex items-center justify-between shadow-lg sticky top-0 z-50 animate-pulse">
+      {/* Top Warning Banner for Admin and Teachers during Maintenance Mode */}
+      {maintenanceMode && (
+        <div className={`text-slate-950 px-4 py-2 text-xs font-black flex items-center justify-between shadow-lg sticky top-0 z-50 animate-pulse ${
+          isAdmin 
+            ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500' 
+            : 'bg-gradient-to-r from-sky-400 via-teal-400 to-emerald-400'
+        }`}>
           <div className="flex items-center space-x-2">
             <span className="text-sm font-black">🚧</span>
-            <span>DİKKAT: Sistem şu anda BAKIM MODUNDA! Öğrenciler bakım ekranını görmektedir.</span>
+            <span>
+              {isAdmin 
+                ? 'DİKKAT: Sistem şu anda BAKIM MODUNDA! Öğrenciler bakım ekranını görmektedir.' 
+                : 'BİLGİ: Sistem şu anda BAKIM MODUNDA. (Öğretmen erişim izni açık)'}
+            </span>
           </div>
-          <button
-            type="button"
-            onClick={() => setActiveTab('teacher_system')}
-            className="bg-slate-950 text-amber-400 hover:text-white px-3 py-1 rounded-xl text-[11px] font-black transition-all cursor-pointer shadow-md"
-          >
-            Bakım Modu Ayarlarını Aç
-          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('teacher_system')}
+              className="bg-slate-950 text-amber-400 hover:text-white px-3 py-1 rounded-xl text-[11px] font-black transition-all cursor-pointer shadow-md"
+            >
+              Bakım Modu Ayarlarını Aç
+            </button>
+          )}
         </div>
       )}
 
