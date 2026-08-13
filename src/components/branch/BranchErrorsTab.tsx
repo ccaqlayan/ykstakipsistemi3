@@ -379,27 +379,6 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
       {/* ── FILTER & SORT HUB ── */}
       <div className="bg-slate-900 p-5 rounded-3xl border border-slate-800 shadow-xl space-y-4">
         
-        {/* Source Filter Badge Banner */}
-        {filterExamId && (() => {
-          const sourceName = getFilterSourceDisplayName(filterExamId);
-          const count = topicErrors.filter(e => isErrorMatchingFilterSource(e, filterExamId)).length;
-          return (
-            <div className="flex items-center justify-between bg-indigo-950/40 border border-indigo-500/30 px-4 py-2.5 rounded-2xl text-xs text-indigo-200 shadow-sm animate-fade-in">
-              <span className="font-bold flex items-center space-x-2">
-                <span>📌 Özel Kaynak Filtresi Aktif:</span>
-                <span className="text-indigo-300 font-mono bg-indigo-500/20 px-2.5 py-0.5 rounded-lg">{sourceName}</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => setFilterExamId(null)}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-3 py-1 rounded-xl transition-all cursor-pointer shadow-sm"
-              >
-                Filtreyi Temizle ({count} Soru)
-              </button>
-            </div>
-          );
-        })()}
-
         {/* Top Line: Status Filter Pills */}
         <div className="space-y-3">
           <div className="flex items-center space-x-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 w-fit overflow-x-auto">
@@ -519,6 +498,39 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ── AYRI KUTUCUK: ÖZEL KAYNAK FİLTRESİ AKTİF BİLGİ ALANI ── */}
+      {filterExamId && (() => {
+        const sourceName = getFilterSourceDisplayName(filterExamId);
+        const count = topicErrors.filter(e => isErrorMatchingFilterSource(e, filterExamId)).length;
+        return (
+          <div className="bg-indigo-950/60 border border-indigo-500/40 p-4 sm:p-5 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl backdrop-blur-md animate-fade-in">
+            <div className="flex items-center space-x-3 min-w-0">
+              <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0 text-indigo-300 shadow-sm">
+                <Filter className="w-5 h-5" />
+              </div>
+              <div className="min-w-0 space-y-0.5">
+                <span className="text-[11px] font-black text-indigo-300 uppercase tracking-wider block">
+                  📌 Özel Kaynak Filtresi Aktif:
+                </span>
+                <p className="text-sm sm:text-base font-extrabold text-white truncate">
+                  {sourceName}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setFilterExamId(null)}
+              className="bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-bold px-4 py-2.5 rounded-2xl transition-all cursor-pointer shadow-lg shadow-indigo-600/30 shrink-0 flex items-center justify-center space-x-2 self-start sm:self-auto"
+            >
+              <span>Filtreyi Temizle</span>
+              <span className="bg-indigo-950/60 px-2 py-0.5 rounded-xl text-[11px] font-mono">
+                {count} Soru
+              </span>
+            </button>
+          </div>
+        );
+      })()}
 
       {filteredErrors.length === 0 ? (
         <div className="p-12 text-center bg-slate-900/60 rounded-3xl border border-slate-800 space-y-3 shadow-xl">
