@@ -448,7 +448,10 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
             const isFormValid = errorPublisher.trim() !== '' && errorSubject !== '' && topicName.trim() !== '' && Boolean(errorReason);
 
             const matchingBooks = resources.filter(r => r.subject === errorSubject);
-            const matchingBranchExams = branchExams.filter(b => b.subject === errorSubject);
+            const matchingBranchExams = branchExams
+              .filter(b => b.subject === errorSubject)
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+              .slice(0, 3);
 
             return (
               <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 md:p-6 shadow-2xl space-y-3 max-h-[90vh] overflow-y-auto animate-fade-in">
@@ -523,7 +526,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                             )}
 
                             {matchingBranchExams.length > 0 && (
-                              <optgroup label="Branş Denemelerim">
+                              <optgroup label="Branş Denemelerim (Son 3)">
                                 {matchingBranchExams.map(b => (
                                   <option key={b.id} value={`branch:${b.id}`} data-publisher={b.publisher || `${b.subject} Branş Denemesi`}>
                                     🎯 {b.date} - {b.publisher || b.subject} ({b.net} Net)
