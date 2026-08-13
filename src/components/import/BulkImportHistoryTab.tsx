@@ -21,6 +21,7 @@ import {
   X
 } from 'lucide-react';
 import { InstitutionalMockExam, UserAccount, YKSDataState, formatRankWithTotal } from '../../types';
+import { MockInstitutionalDetailView } from '../mocks/MockInstitutionalDetailView';
 
 interface BulkImportHistoryTabProps {
   examsToUse: InstitutionalMockExam[];
@@ -181,6 +182,15 @@ export const BulkImportHistoryTab: React.FC<BulkImportHistoryTabProps> = ({
     if (!selectedExamRecordId) return null;
     return examsToUse.find(e => e.id === selectedExamRecordId) || null;
   }, [examsToUse, selectedExamRecordId]);
+
+  if (selectedExamRecord) {
+    return (
+      <MockInstitutionalDetailView
+        selectedInstitutionalExam={selectedExamRecord}
+        setSelectedInstitutionalExam={(exam) => setSelectedExamRecordId(exam ? exam.id : null)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 w-full animate-fade-in">
@@ -379,11 +389,11 @@ export const BulkImportHistoryTab: React.FC<BulkImportHistoryTabProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 overflow-x-auto pb-1 pt-1 scrollbar-thin">
+          <div className="flex flex-wrap items-center gap-2.5 pb-1 pt-1">
             <button
               type="button"
               onClick={() => setSelectedClassFilter('all')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all shrink-0 flex items-center space-x-2 ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center space-x-2 ${
                 selectedClassFilter === 'all'
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                   : 'bg-slate-950/80 border border-white/10 text-slate-300 hover:text-white hover:bg-slate-950'
@@ -402,7 +412,7 @@ export const BulkImportHistoryTab: React.FC<BulkImportHistoryTabProps> = ({
                   key={cls.className}
                   type="button"
                   onClick={() => setSelectedClassFilter(cls.className)}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all shrink-0 flex items-center space-x-2 ${
+                  className={`px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center space-x-2 ${
                     isSelected
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                       : 'bg-slate-950/80 border border-white/10 text-slate-300 hover:text-white hover:bg-slate-950'
@@ -507,23 +517,12 @@ export const BulkImportHistoryTab: React.FC<BulkImportHistoryTabProps> = ({
               className="w-full bg-slate-950 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
             />
           </div>
-
-          {onDeleteAllInstitutionalExams && examsToUse.length > 0 && (
-            <button
-              onClick={() => setShowDeleteAllConfirm(true)}
-              className="px-3 py-2 rounded-xl text-xs font-bold text-rose-300 hover:text-white bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-all shrink-0 flex items-center space-x-1"
-              title="Sistemdeki Tüm Kurumsal Denemeleri Temizle"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Hepsini Sil</span>
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Reports Table & Inspect Drawer */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        <div className={`${selectedExamRecord ? 'lg:col-span-7' : 'lg:col-span-12'} transition-all`}>
+      {/* Reports Table */}
+      <div className="w-full">
+        <div className="w-full">
           <div className="bg-slate-900/90 border border-white/10 rounded-2xl p-4 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-3 gap-2">
               <div className="flex items-center space-x-2">
@@ -712,75 +711,6 @@ export const BulkImportHistoryTab: React.FC<BulkImportHistoryTabProps> = ({
             )}
           </div>
         </div>
-
-        {/* Selected Exam Drawer */}
-        {selectedExamRecord && (
-          <div className="lg:col-span-5 bg-slate-900/90 border border-indigo-500/30 rounded-2xl p-5 space-y-4 backdrop-blur-xl shadow-2xl sticky top-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="flex items-center space-x-2 text-white font-bold text-sm">
-                <BarChart3 className="w-4 h-4 text-indigo-400" />
-                <span>Karne Detayı & Konu Analizi</span>
-              </div>
-              <button
-                onClick={() => setSelectedExamRecordId(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="bg-slate-950 p-4 rounded-xl border border-white/10 space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="font-extrabold text-sm text-white">{selectedExamRecord.studentName}</span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  {selectedExamRecord.className || 'Sınıf Yok'}
-                </span>
-              </div>
-              <p className="text-slate-400">{selectedExamRecord.examTitle} ({selectedExamRecord.examDate})</p>
-
-              {/* Ranks & Scores */}
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/10 text-center font-mono">
-                <div className="bg-white/5 p-2 rounded-lg">
-                  <span className="text-[10px] text-slate-400 block font-sans">SAY Puan</span>
-                  <span className="font-bold text-amber-400">
-                    {selectedExamRecord.scores?.sayScore ? selectedExamRecord.scores.sayScore.toFixed(2) : '-'}
-                  </span>
-                </div>
-                <div className="bg-white/5 p-2 rounded-lg">
-                  <span className="text-[10px] text-slate-400 block font-sans">Kurum Sırası</span>
-                  <span className="font-bold text-indigo-300">
-                    {formatRankWithTotal(selectedExamRecord.scores?.sayInstitutionRank, selectedExamRecord.scores?.sayInstitutionTotal)}
-                  </span>
-                </div>
-                <div className="bg-white/5 p-2 rounded-lg">
-                  <span className="text-[10px] text-slate-400 block font-sans">Genel Sıra</span>
-                  <span className="font-bold text-emerald-300">
-                    {formatRankWithTotal(selectedExamRecord.scores?.sayGeneralRank, selectedExamRecord.scores?.sayGeneralTotal)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Subject Net Table */}
-            {selectedExamRecord.subjects && selectedExamRecord.subjects.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Ders Net Detayları</h4>
-                <div className="max-h-64 overflow-y-auto border border-white/10 rounded-xl bg-slate-950 p-2 space-y-1">
-                  {selectedExamRecord.subjects.map((sub, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-2 bg-white/5 rounded-lg text-xs">
-                      <span className="font-semibold text-slate-200">{sub.subjectName}</span>
-                      <div className="flex items-center space-x-3 font-mono">
-                        <span className="text-emerald-400">{sub.correct}D</span>
-                        <span className="text-rose-400">{sub.wrong}Y</span>
-                        <span className="font-bold text-amber-400">{(sub.net ?? 0).toFixed(2)} Net</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

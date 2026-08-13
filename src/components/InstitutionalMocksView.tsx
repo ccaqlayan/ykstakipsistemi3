@@ -51,6 +51,31 @@ export const InstitutionalMocksView: React.FC<InstitutionalMocksViewProps> = ({
 
   const [showClassMappingModal, setShowClassMappingModal] = useState(false);
 
+  // Persistent class mappings state (e.g. "12-A" -> "12-A SAY")
+  const [classMappings, setClassMappings] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem('yks_class_mappings');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Error reading class mappings from localStorage", e);
+    }
+    return {
+      '12-A': '12-A SAY',
+      '12A': '12-A SAY',
+      '12-B': '12-B EA',
+      '12B': '12-B EA'
+    };
+  });
+
+  // Sync class mappings to localStorage
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('yks_class_mappings', JSON.stringify(classMappings));
+    } catch (e) {
+      console.error("Error saving class mappings to localStorage", e);
+    }
+  }, [classMappings]);
+
   // Merge institutionalMockExams prop with any exams from studentsData
   const examsToUse = useMemo(() => {
     const examMap = new Map<string, InstitutionalMockExam>();
@@ -181,6 +206,15 @@ export const InstitutionalMocksView: React.FC<InstitutionalMocksViewProps> = ({
           onClose={() => setEditingSeriesExam(null)}
           onSaveSeries={handleSaveSeries}
           onDeleteSeries={handleDeleteSeries}
+        />
+      )}
+
+      {showClassMappingModal && (
+        <ClassMappingModal
+          classMappings={classMappings}
+          availableClasses={availableClasses}
+          onClose={() => setShowClassMappingModal(false)}
+          onSaveMappings={(newMappings) => setClassMappings(newMappings)}
         />
       )}
 
