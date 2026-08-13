@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'planner', label: 'Haftalık Çalışma Planı', icon: CalendarCheck },
     { id: 'questions', label: 'Soru Takibi', icon: CheckSquare },
     { id: 'resources', label: 'Kaynak Takibi', icon: BookOpenCheck },
-    { id: 'past_questions', label: 'Çıkmış Sorular Tablosu', icon: FileSpreadsheet, highlight: true },
+    { id: 'past_questions', label: 'Çıkmış Sorular', icon: FileSpreadsheet, highlight: true },
     { 
       id: 'errors', 
       label: 'Hata Defteri', 
@@ -122,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     ...(isSchoolCounselor ? [{ id: 'bulk_exam_import' as TabType, label: 'Toplu Liste Girişi', icon: FileSpreadsheet, highlight: true }] : []),
     ...(isSchoolCounselor ? [{ id: 'institutional_mocks' as TabType, label: 'Kurumsal Deneme Takip', icon: BarChart3, highlight: true }] : []),
     { id: 'teacher_templates', label: 'Çalışma Programı Şablonları', icon: Layers },
-    { id: 'past_questions', label: 'Çıkmış Sorular Analizi', icon: FileSpreadsheet, highlight: true },
+    { id: 'past_questions', label: 'Çıkmış Sorular', icon: FileSpreadsheet, highlight: true },
     { id: 'recommendations', label: 'Öneriler & Tavsiyeler', icon: Sparkles, highlight: true },
     { id: 'ai_coach', label: 'YKS Yapay Zeka Koçu', icon: Bot, highlight: true },
     ...(isAdmin ? [{ id: 'teacher_system' as TabType, label: 'Sistem Yönetimi', icon: Sliders, highlight: true }] : []),

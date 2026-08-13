@@ -312,7 +312,7 @@ export const renderPastExamsWidget = (
         onClick={() => onNavigateTab('past_questions')}
         className="text-[11px] text-amber-300 hover:text-amber-200 font-medium flex items-center mt-3 transition-colors cursor-pointer"
       >
-        <span>Çıkmış Sorular Tablosuna Git</span>
+        <span>Çıkmış Sorulara Git</span>
         <ArrowUpRight className="w-3 h-3 ml-0.5" />
       </button>
     </div>
