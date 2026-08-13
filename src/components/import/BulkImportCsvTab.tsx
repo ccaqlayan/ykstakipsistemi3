@@ -594,9 +594,9 @@ export const BulkImportCsvTab: React.FC<BulkImportCsvTabProps> = ({
           sozInstitutionTotal: row.sozInstitutionTotal,
           sozGeneralRank: row.sozGeneralRank,
           sozGeneralTotal: row.sozGeneralTotal,
-          classParticipantCount: row.sayClassTotal,
-          institutionParticipantCount: row.sayInstitutionTotal,
-          generalParticipantCount: row.sayGeneralTotal
+          classParticipantCount: row.sayClassTotal || row.eaClassTotal || row.sozClassTotal,
+          institutionParticipantCount: row.sayInstitutionTotal || row.eaInstitutionTotal || row.sozInstitutionTotal,
+          generalParticipantCount: row.sayGeneralTotal || row.eaGeneralTotal || row.sozGeneralTotal
         },
         subjects: row.subjects
       };

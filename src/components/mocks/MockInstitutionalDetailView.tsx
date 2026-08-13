@@ -113,73 +113,102 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
           let bestScoreType = 'SAY';
           let bestScore = selectedInstitutionalExam.scores.sayScore || 0;
           let classRank = selectedInstitutionalExam.scores.sayClassRank;
-          let classTotal = selectedInstitutionalExam.scores.sayClassTotal || selectedInstitutionalExam.scores.classParticipantCount;
+          let classTotal = selectedInstitutionalExam.scores.sayClassTotal;
           let instRank = selectedInstitutionalExam.scores.sayInstitutionRank;
-          let instTotal = selectedInstitutionalExam.scores.sayInstitutionTotal || selectedInstitutionalExam.scores.institutionParticipantCount;
+          let instTotal = selectedInstitutionalExam.scores.sayInstitutionTotal;
           let genRank = selectedInstitutionalExam.scores.sayGeneralRank;
-          let genTotal = selectedInstitutionalExam.scores.sayGeneralTotal || selectedInstitutionalExam.scores.generalParticipantCount;
+          let genTotal = selectedInstitutionalExam.scores.sayGeneralTotal;
 
           if ((selectedInstitutionalExam.scores.eaScore || 0) > bestScore) {
             bestScoreType = 'EA';
             bestScore = selectedInstitutionalExam.scores.eaScore || 0;
             classRank = selectedInstitutionalExam.scores.eaClassRank;
-            classTotal = selectedInstitutionalExam.scores.eaClassTotal || selectedInstitutionalExam.scores.classParticipantCount;
+            classTotal = selectedInstitutionalExam.scores.eaClassTotal;
             instRank = selectedInstitutionalExam.scores.eaInstitutionRank;
-            instTotal = selectedInstitutionalExam.scores.eaInstitutionTotal || selectedInstitutionalExam.scores.institutionParticipantCount;
+            instTotal = selectedInstitutionalExam.scores.eaInstitutionTotal;
             genRank = selectedInstitutionalExam.scores.eaGeneralRank;
-            genTotal = selectedInstitutionalExam.scores.eaGeneralTotal || selectedInstitutionalExam.scores.generalParticipantCount;
+            genTotal = selectedInstitutionalExam.scores.eaGeneralTotal;
           }
           if ((selectedInstitutionalExam.scores.sozScore || 0) > bestScore) {
             bestScoreType = 'SÖZ';
             bestScore = selectedInstitutionalExam.scores.sozScore || 0;
             classRank = selectedInstitutionalExam.scores.sozClassRank;
-            classTotal = selectedInstitutionalExam.scores.sozClassTotal || selectedInstitutionalExam.scores.classParticipantCount;
+            classTotal = selectedInstitutionalExam.scores.sozClassTotal;
             instRank = selectedInstitutionalExam.scores.sozInstitutionRank;
-            instTotal = selectedInstitutionalExam.scores.sozInstitutionTotal || selectedInstitutionalExam.scores.institutionParticipantCount;
+            instTotal = selectedInstitutionalExam.scores.sozInstitutionTotal;
             genRank = selectedInstitutionalExam.scores.sozGeneralRank;
-            genTotal = selectedInstitutionalExam.scores.sozGeneralTotal || selectedInstitutionalExam.scores.generalParticipantCount;
+            genTotal = selectedInstitutionalExam.scores.sozGeneralTotal;
           }
 
           if (bestScore === 0 && selectedInstitutionalExam.scores.sayScore !== undefined) {
             bestScoreType = 'SAY';
             bestScore = selectedInstitutionalExam.scores.sayScore;
             classRank = selectedInstitutionalExam.scores.sayClassRank;
-            classTotal = selectedInstitutionalExam.scores.sayClassTotal || selectedInstitutionalExam.scores.classParticipantCount;
+            classTotal = selectedInstitutionalExam.scores.sayClassTotal;
             instRank = selectedInstitutionalExam.scores.sayInstitutionRank;
-            instTotal = selectedInstitutionalExam.scores.sayInstitutionTotal || selectedInstitutionalExam.scores.institutionParticipantCount;
+            instTotal = selectedInstitutionalExam.scores.sayInstitutionTotal;
             genRank = selectedInstitutionalExam.scores.sayGeneralRank;
-            genTotal = selectedInstitutionalExam.scores.sayGeneralTotal || selectedInstitutionalExam.scores.generalParticipantCount;
+            genTotal = selectedInstitutionalExam.scores.sayGeneralTotal;
           }
 
-          const calculateRankStats = (rank?: number, total?: number) => {
+          // Fallbacks for participant counts if specific area total is not defined, BUT verify fallback is >= rank
+          const generalParticipantFallback = selectedInstitutionalExam.scores.generalParticipantCount;
+          const institutionParticipantFallback = selectedInstitutionalExam.scores.institutionParticipantCount;
+          const classParticipantFallback = selectedInstitutionalExam.scores.classParticipantCount;
+
+          if (!classTotal && classParticipantFallback && (!classRank || classParticipantFallback >= classRank)) {
+            classTotal = classParticipantFallback;
+          }
+          if (!instTotal && institutionParticipantFallback && (!instRank || institutionParticipantFallback >= instRank)) {
+            instTotal = institutionParticipantFallback;
+          }
+          if (!genTotal && generalParticipantFallback && (!genRank || generalParticipantFallback >= genRank)) {
+            genTotal = generalParticipantFallback;
+          }
+
+          const calculateRankStats = (rank?: number, rawTotal?: number) => {
             if (!rank || rank <= 0) {
               return {
                 displayRank: 'Derece Yok',
                 percentileStr: '-',
                 percentileVal: 0,
                 fillPercentage: 0,
-                hasData: false
+                hasData: false,
+                totalNum: undefined
               };
             }
-            if (!total || total <= 0) {
+
+            let validTotal = rawTotal && rawTotal > 0 ? rawTotal : undefined;
+            const isTotalInconsistent = !!(validTotal && validTotal < rank);
+
+            if (isTotalInconsistent) {
+              // Cap validTotal to rank if rawTotal was smaller than rank (data inconsistency)
+              validTotal = rank;
+            }
+
+            if (!validTotal) {
               return {
                 displayRank: `${rank}. Derece`,
                 percentileStr: 'Katılımcı Sayısı Yok',
                 percentileVal: 0,
                 fillPercentage: 100,
-                hasData: true
+                hasData: true,
+                totalNum: undefined
               };
             }
 
-            const percentile = (rank / total) * 100;
-            const fillPercentage = Math.max(4, Math.min(100, ((total - rank + 1) / total) * 100));
+            const percentile = Math.min(100, Math.max(0.01, (rank / validTotal) * 100));
+            const fillPercentage = Math.max(4, Math.min(100, ((validTotal - rank + 1) / validTotal) * 100));
 
             return {
-              displayRank: `${rank}. / ${total.toLocaleString('tr-TR')} Kişi`,
+              displayRank: rawTotal && !isTotalInconsistent
+                ? `${rank}. / ${rawTotal.toLocaleString('tr-TR')} Kişi`
+                : `${rank}. Derece (En az ${rank} Kişi)`,
               percentileStr: `%${percentile < 1 ? percentile.toFixed(2) : percentile.toFixed(1)} Dilim`,
               percentileVal: percentile,
               fillPercentage,
-              hasData: true
+              hasData: true,
+              totalNum: validTotal
             };
           };
 
@@ -215,7 +244,7 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
                     </div>
                     <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
                       <span>1. Sıra</span>
-                      <span>{classTotal ? `${classTotal} Kişi` : 'Son Sıra'}</span>
+                      <span>{classStats.totalNum ? `${classStats.totalNum} Kişi` : 'Son Sıra'}</span>
                     </div>
                   </div>
                 </div>
@@ -240,7 +269,7 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
                     </div>
                     <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
                       <span>1. Sıra</span>
-                      <span>{instTotal ? `${instTotal} Kişi` : 'Son Sıra'}</span>
+                      <span>{instStats.totalNum ? `${instStats.totalNum} Kişi` : 'Son Sıra'}</span>
                     </div>
                   </div>
                 </div>
@@ -265,7 +294,7 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
                     </div>
                     <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
                       <span>1. Sıra</span>
-                      <span>{genTotal ? `${genTotal.toLocaleString('tr-TR')} Kişi` : 'Son Sıra'}</span>
+                      <span>{genStats.totalNum ? `${genStats.totalNum.toLocaleString('tr-TR')} Kişi` : 'Son Sıra'}</span>
                     </div>
                   </div>
                 </div>
