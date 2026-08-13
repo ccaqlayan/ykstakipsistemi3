@@ -13,7 +13,10 @@ import {
   X, 
   AlertCircle,
   School,
-  Users
+  Users,
+  UserCheck,
+  GraduationCap,
+  ShieldCheck
 } from 'lucide-react';
 import { UserAccount } from '../types';
 
@@ -49,12 +52,12 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
   const displayEndTime = maintenanceEndTime || localStorage.getItem('maintenance_end_time') || '';
   const displaySchool = schoolName || localStorage.getItem('school_name') || 'YKS Hazırlık & Takip Sistemi';
 
-  const handleAuthorizedLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAuthorizedLoginSubmit = async (e?: React.FormEvent, customIdentifier?: string, customPass?: string) => {
+    if (e) e.preventDefault();
     setLoginError(null);
 
-    const identifier = adminUsernameOrEmail.trim().toLowerCase();
-    const pass = adminPassword.trim();
+    const identifier = (customIdentifier || adminUsernameOrEmail).trim().toLowerCase();
+    const pass = (customPass || adminPassword).trim();
 
     if (!identifier || !pass) {
       setLoginError('Lütfen kullanıcı adı / e-posta ve şifrenizi girin.');
@@ -63,59 +66,98 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
 
     setIsLoggingIn(true);
     try {
-      // Find matching user (email, name, or id)
-      const foundUser = users.find(u => 
-        (u.email?.toLowerCase() === identifier || u.name?.toLowerCase() === identifier || u.id?.toLowerCase() === identifier)
-      );
+      // 1. Authenticate via backend API endpoint (handles password hashes and verify logic)
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: identifier, password: pass })
+      });
 
-      if (!foundUser) {
-        setLoginError('Kullanıcı hesabı bulunamadı. Lütfen bilgilerinizi kontrol edin.');
-        setIsLoggingIn(false);
-        return;
-      }
+      const data = await res.json();
 
-      // Check role authorization under maintenance
-      const isTeacher = foundUser.role === 'teacher' || foundUser.role === 'class_teacher' || foundUser.role === 'school_counselor';
-      const isAdmin = foundUser.role === 'admin';
+      if (res.ok && data.success && data.user) {
+        const loggedUser: UserAccount = data.user;
+        const isTeacher = loggedUser.role === 'teacher' || loggedUser.role === 'class_teacher' || loggedUser.role === 'school_counselor';
+        const isAdmin = loggedUser.role === 'admin';
 
-      if (!isAdmin && !(isTeacher && maintenanceAllowTeachers)) {
-        if (isTeacher) {
-          setLoginError('Sistem bakım modundadır ve öğretmen giriş izni şu anda kapalıdır. Yalnızca yöneticiler giriş yapabilir.');
-        } else {
-          setLoginError('Sistem şu anda planlı bakım modundadır. Yalnızca yetkili personel (yönetici / izinli öğretmenler) giriş yapabilir.');
+        if (!isAdmin && !(isTeacher && maintenanceAllowTeachers)) {
+          if (isTeacher) {
+            setLoginError('Sistem bakım modundadır ve öğretmen giriş izni şu anda kapalıdır. Yalnızca yöneticiler giriş yapabilir.');
+          } else {
+            setLoginError('Sistem şu anda planlı bakım modundadır. Yalnızca yetkili personel (yönetici / izinli öğretmenler) giriş yapabilir.');
+          }
+          setIsLoggingIn(false);
+          return;
         }
-        setIsLoggingIn(false);
-        return;
-      }
 
-      // Check password
-      let isValid = false;
-      if (foundUser.password === pass) {
-        isValid = true;
-      } else {
-        try {
-          const bcrypt = await import('bcryptjs');
-          isValid = await bcrypt.compare(pass, foundUser.password);
-        } catch {
-          isValid = foundUser.password === pass;
+        const now = Date.now().toString();
+        localStorage.setItem('yks_last_active_time', now);
+        localStorage.setItem('yks_remember_me', 'true');
+        sessionStorage.setItem('yks_session_active', 'true');
+
+        if (onAdminLogin) {
+          onAdminLogin(loggedUser);
+          setShowAdminLoginModal(false);
         }
-      }
-
-      if (!isValid) {
-        setLoginError('Hatalı şifre girdiniz.');
-        setIsLoggingIn(false);
         return;
       }
 
-      if (onAdminLogin) {
-        onAdminLogin(foundUser);
-        setShowAdminLoginModal(false);
+      // If backend returned a specific authentication error (e.g. wrong password)
+      if (data && data.error) {
+        // Fallback: check if local demo user matches
+        const localMatch = users.find(u => 
+          (u.email?.toLowerCase() === identifier || u.name?.toLowerCase() === identifier || u.id?.toLowerCase() === identifier)
+        );
+        if (localMatch && localMatch.password === pass) {
+          const isTeacher = localMatch.role === 'teacher' || localMatch.role === 'class_teacher' || localMatch.role === 'school_counselor';
+          const isAdmin = localMatch.role === 'admin';
+
+          if (!isAdmin && !(isTeacher && maintenanceAllowTeachers)) {
+            setLoginError(isTeacher 
+              ? 'Sistem bakım modundadır ve öğretmen giriş izni şu anda kapalıdır.' 
+              : 'Sistem bakım modundadır. Yalnızca yetkili personel giriş yapabilir.');
+            setIsLoggingIn(false);
+            return;
+          }
+
+          if (onAdminLogin) {
+            onAdminLogin(localMatch);
+            setShowAdminLoginModal(false);
+            return;
+          }
+        }
+
+        setLoginError(data.error || 'Giriş yapılamadı. Lütfen bilgilerinizi kontrol edin.');
+        setIsLoggingIn(false);
+        return;
       }
     } catch (err: any) {
-      setLoginError(err.message || 'Giriş yapılırken bir hata oluştu.');
+      // Local fallback for offline/demo
+      const localMatch = users.find(u => 
+        (u.email?.toLowerCase() === identifier || u.name?.toLowerCase() === identifier || u.id?.toLowerCase() === identifier) &&
+        u.password === pass
+      );
+      if (localMatch) {
+        const isTeacher = localMatch.role === 'teacher' || localMatch.role === 'class_teacher' || localMatch.role === 'school_counselor';
+        const isAdmin = localMatch.role === 'admin';
+        if (isAdmin || (isTeacher && maintenanceAllowTeachers)) {
+          if (onAdminLogin) {
+            onAdminLogin(localMatch);
+            setShowAdminLoginModal(false);
+            return;
+          }
+        }
+      }
+      setLoginError('Sunucuya bağlanılamadı veya şifre hatalı.');
     } finally {
       setIsLoggingIn(false);
     }
+  };
+
+  const handleQuickAuthorizedDemo = (email: string) => {
+    setAdminUsernameOrEmail(email);
+    setAdminPassword('123');
+    handleAuthorizedLoginSubmit(undefined, email, '123');
   };
 
   return (
@@ -222,7 +264,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
       {/* Authorized Login Modal (When in Maintenance Mode) */}
       {showAdminLoginModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-850 rounded-3xl p-6 sm:p-7 max-w-sm w-full shadow-2xl space-y-4 relative">
+          <div className="bg-slate-900 border border-slate-850 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-4 relative">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center space-x-2">
                 <div className="p-2 bg-amber-500/15 border border-amber-500/30 rounded-xl text-amber-400">
@@ -233,7 +275,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                     {maintenanceAllowTeachers ? 'Yetkili Personel Girişi' : 'Yönetici Girişi'}
                   </h3>
                   <p className="text-[10px] text-slate-400">
-                    {maintenanceAllowTeachers ? 'Yönetici ve öğretmen hesapları' : 'Yalnızca yönetici (admin) hesapları'}
+                    {maintenanceAllowTeachers ? 'Yönetici ve öğretmen hesapları giriş yapabilir' : 'Yalnızca yönetici (admin) hesapları'}
                   </p>
                 </div>
               </div>
@@ -253,7 +295,49 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
               </div>
             )}
 
-            <form onSubmit={handleAuthorizedLoginSubmit} className="space-y-3">
+            {/* Quick Demo Access Bar inside Modal */}
+            <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                <span className="flex items-center space-x-1">
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  <span>Hızlı Yetkili Demo Girişi</span>
+                </span>
+                <span className="text-[9px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-300 font-mono">Şifre: 123</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {maintenanceAllowTeachers && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickAuthorizedDemo('elif.hoca@okul.edu.tr')}
+                      className="py-1.5 px-2 bg-fuchsia-600/30 hover:bg-fuchsia-600/50 text-fuchsia-200 border border-fuchsia-500/30 rounded-xl text-[10px] font-semibold flex items-center justify-center space-x-1 transition-all cursor-pointer truncate"
+                    >
+                      <UserCheck className="w-3 h-3 shrink-0" />
+                      <span className="truncate">Sınıf Reh. (Elif Hoca)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleQuickAuthorizedDemo('demo.rehber@yksdemo.local')}
+                      className="py-1.5 px-2 bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/30 rounded-xl text-[10px] font-semibold flex items-center justify-center space-x-1 transition-all cursor-pointer truncate"
+                    >
+                      <GraduationCap className="w-3 h-3 shrink-0" />
+                      <span className="truncate">Okul Reh. (Dilek Hoca)</span>
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleQuickAuthorizedDemo('caglayan.mat@gmail.com')}
+                  className={`py-1.5 px-2 bg-amber-600/30 hover:bg-amber-600/50 text-amber-200 border border-amber-500/30 rounded-xl text-[10px] font-semibold flex items-center justify-center space-x-1 transition-all cursor-pointer truncate ${!maintenanceAllowTeachers ? 'sm:col-span-2' : ''}`}
+                >
+                  <ShieldCheck className="w-3 h-3 shrink-0" />
+                  <span className="truncate">Yönetici (Admin)</span>
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={(e) => handleAuthorizedLoginSubmit(e)} className="space-y-3">
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 mb-1">
                   Kullanıcı Adı veya E-posta
@@ -299,7 +383,7 @@ export const MaintenanceView: React.FC<MaintenanceViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAdminLoginModal(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   İptal
                 </button>
