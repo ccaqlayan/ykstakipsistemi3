@@ -352,22 +352,37 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
         <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-800/80">
           <div className="flex items-center space-x-2 bg-slate-950/90 border border-slate-800 px-3.5 py-2 rounded-2xl shadow-sm">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ders:</span>
-            <select
-              value={filterSubject}
-              onChange={(e) => { setFilterSubject(e.target.value); setFilterExamId(null); }}
-              className="bg-transparent text-xs font-bold text-slate-200 focus:outline-none cursor-pointer max-w-[200px] truncate"
-            >
-              <option value="ALL" className="bg-slate-900 text-white">Tüm Dersler ({topicErrors.length})</option>
-              {Array.from(new Set(topicErrors.map((err) => err.subject)))
+            {(() => {
+              const statusPool = topicErrors.filter((err) => {
+                if (filterRevised === 'UNREVISED') return !err.revised;
+                if (filterRevised === 'REVISED') return err.revised;
+                return true;
+              });
+
+              const subjectOptions = Array.from(new Set(statusPool.map((err) => err.subject)))
                 .filter((sub): sub is string => typeof sub === 'string')
-                .sort((a, b) => a.localeCompare(b, 'tr'))
-                .map((sub) => {
-                  const count = topicErrors.filter(e => e.subject === sub).length;
-                  return (
-                    <option key={sub} value={sub} className="bg-slate-900 text-white">{sub} ({count})</option>
-                  );
-                })}
-            </select>
+                .map((sub) => ({
+                  subject: sub,
+                  count: statusPool.filter(e => e.subject === sub).length
+                }))
+                .filter(item => item.count > 0)
+                .sort((a, b) => a.subject.localeCompare(b.subject, 'tr'));
+
+              return (
+                <select
+                  value={filterSubject}
+                  onChange={(e) => { setFilterSubject(e.target.value); setFilterExamId(null); }}
+                  className="bg-transparent text-xs font-bold text-slate-200 focus:outline-none cursor-pointer max-w-[200px] truncate"
+                >
+                  <option value="ALL" className="bg-slate-900 text-white">Tüm Dersler ({statusPool.length})</option>
+                  {subjectOptions.map(({ subject, count }) => (
+                    <option key={subject} value={subject} className="bg-slate-900 text-white">
+                      {subject} ({count})
+                    </option>
+                  ))}
+                </select>
+              );
+            })()}
           </div>
 
           <div className="flex items-center space-x-2 bg-slate-950/90 border border-slate-800 px-3.5 py-2 rounded-2xl shadow-sm">
