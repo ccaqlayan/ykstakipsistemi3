@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Award, 
   Sparkles, 
@@ -60,6 +60,10 @@ export const BulkImportHistoryTab: React.FC<BulkImportHistoryTabProps> = ({
   const [matchFilter, setMatchFilter] = useState<'all' | 'matched' | 'unmatched'>('all');
   const [selectedExamRecordId, setSelectedExamRecordId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Pagination states
+  const [itemsPerPage, setItemsPerPage] = useState<number>(30);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Summaries calculation
   const examSummaries = useMemo(() => {
@@ -136,6 +140,42 @@ export const BulkImportHistoryTab: React.FC<BulkImportHistoryTabProps> = ({
       return true;
     });
   }, [examsToUse, examTypeFilter, selectedExamId, selectedClassFilter, matchFilter, searchTerm]);
+
+  // Reset page when filters or itemsPerPage change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [examTypeFilter, selectedExamId, selectedClassFilter, matchFilter, searchTerm, itemsPerPage]);
+
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(filteredExams.length / itemsPerPage));
+  }, [filteredExams.length, itemsPerPage]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedExams = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredExams.slice(start, start + itemsPerPage);
+  }, [filteredExams, currentPage, itemsPerPage]);
+
+  const startItemIndex = filteredExams.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endItemIndex = Math.min(currentPage * itemsPerPage, filteredExams.length);
+
+  const getPageNumbers = (current: number, total: number) => {
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 4) {
+      return [1, 2, 3, 4, 5, '...', total];
+    }
+    if (current >= total - 3) {
+      return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total];
+  };
 
   const selectedExamRecord = useMemo(() => {
     if (!selectedExamRecordId) return null;
@@ -485,12 +525,36 @@ export const BulkImportHistoryTab: React.FC<BulkImportHistoryTabProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         <div className={`${selectedExamRecord ? 'lg:col-span-7' : 'lg:col-span-12'} transition-all`}>
           <div className="bg-slate-900/90 border border-white/10 rounded-2xl p-4 space-y-3">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-sm font-bold text-white flex items-center space-x-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-3 gap-2">
+              <div className="flex items-center space-x-2">
                 <FileText className="w-4 h-4 text-amber-400" />
-                <span>Karne Listesi ({filteredExams.length})</span>
-              </h3>
-              <span className="text-xs text-slate-400">Detay ve konu analizi için satıra tıklayın</span>
+                <h3 className="text-sm font-bold text-white flex items-center space-x-2">
+                  <span>Karne Listesi ({filteredExams.length})</span>
+                  {filteredExams.length > 0 && (
+                    <span className="text-xs text-slate-400 font-mono font-normal">
+                      ({startItemIndex}-{endItemIndex})
+                    </span>
+                  )}
+                </h3>
+              </div>
+
+              <div className="flex items-center space-x-3 text-xs">
+                <div className="flex items-center space-x-1.5 text-slate-400 font-medium">
+                  <span>Sayfa başına:</span>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                    className="bg-slate-950 border border-white/15 rounded-lg px-2 py-1 text-xs text-white font-bold focus:outline-none focus:border-amber-500 cursor-pointer"
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={30}>30 (Varsayılan)</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                    <option value={200}>200</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
             {filteredExams.length === 0 ? (
@@ -498,91 +562,153 @@ export const BulkImportHistoryTab: React.FC<BulkImportHistoryTabProps> = ({
                 <p className="text-xs font-semibold">Seçili filtrelere uygun sınav karnesi bulunamadı.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-white/10">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-950/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-white/10">
-                      <th className="p-3">Öğrenci & Okul No</th>
-                      <th className="p-3">Sınıf</th>
-                      <th className="p-3">Deneme Sınavı</th>
-                      <th className="p-3 text-center">Tür</th>
-                      <th className="p-3 text-right">Puan / Derece</th>
-                      <th className="p-3 text-center">İşlem</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5 text-xs text-slate-300">
-                    {filteredExams.map((ex) => {
-                      const isSelected = selectedExamRecordId === ex.id;
-                      const hasAccount = !!ex.studentId;
-                      const primaryScore = ex.scores?.sayScore || ex.scores?.eaScore || ex.scores?.sozScore || 0;
+              <>
+                <div className="overflow-x-auto rounded-xl border border-white/10">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-950/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-white/10">
+                        <th className="p-3">Öğrenci & Okul No</th>
+                        <th className="p-3">Sınıf</th>
+                        <th className="p-3">Deneme Sınavı</th>
+                        <th className="p-3 text-center">Tür</th>
+                        <th className="p-3 text-right">Puan / Derece</th>
+                        <th className="p-3 text-center">İşlem</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5 text-xs text-slate-300">
+                      {paginatedExams.map((ex) => {
+                        const isSelected = selectedExamRecordId === ex.id;
+                        const hasAccount = !!ex.studentId;
+                        const primaryScore = ex.scores?.sayScore || ex.scores?.eaScore || ex.scores?.sozScore || 0;
 
-                      return (
-                        <tr
-                          key={ex.id}
-                          onClick={() => setSelectedExamRecordId(ex.id)}
-                          className={`cursor-pointer transition-colors ${
-                            isSelected
-                              ? 'bg-indigo-600/20 border-l-4 border-l-indigo-500'
-                              : 'hover:bg-white/5'
-                          }`}
-                        >
-                          <td className="p-3 font-semibold text-white">
-                            <div className="flex items-center space-x-2">
-                              <span>{ex.studentName}</span>
-                              {ex.schoolNumber && (
-                                <span className="text-[10px] text-indigo-400 font-mono">#{ex.schoolNumber}</span>
-                              )}
-                              {!hasAccount && (
-                                <span
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setMatchModalExam(ex);
-                                  }}
-                                  className="text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded hover:bg-amber-500/30 transition-all cursor-pointer"
-                                  title="Hesapla Eşleştir"
+                        return (
+                          <tr
+                            key={ex.id}
+                            onClick={() => setSelectedExamRecordId(ex.id)}
+                            className={`cursor-pointer transition-colors ${
+                              isSelected
+                                ? 'bg-indigo-600/20 border-l-4 border-l-indigo-500'
+                                : 'hover:bg-white/5'
+                            }`}
+                          >
+                            <td className="p-3 font-semibold text-white">
+                              <div className="flex items-center space-x-2">
+                                <span>{ex.studentName}</span>
+                                {ex.schoolNumber && (
+                                  <span className="text-[10px] text-indigo-400 font-mono">#{ex.schoolNumber}</span>
+                                )}
+                                {!hasAccount && (
+                                  <span
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setMatchModalExam(ex);
+                                    }}
+                                    className="text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded hover:bg-amber-500/30 transition-all cursor-pointer"
+                                    title="Hesapla Eşleştir"
+                                  >
+                                    Hesap Yok
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3 text-slate-400">{ex.className || '-'}</td>
+                            <td className="p-3 font-medium text-slate-200">
+                              <div>{ex.examTitle}</div>
+                              <span className="text-[10px] text-slate-500">{ex.examDate}</span>
+                            </td>
+                            <td className="p-3 text-center">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                {ex.examType}
+                              </span>
+                            </td>
+                            <td className="p-3 text-right font-mono font-bold text-amber-400">
+                              {primaryScore ? primaryScore.toFixed(2) : '-'}
+                            </td>
+                            <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-center space-x-1">
+                                <button
+                                  onClick={() => setEditModalExam(ex)}
+                                  className="p-1 text-slate-400 hover:text-white rounded hover:bg-white/10"
+                                  title="Düzenle"
                                 >
-                                  Hesap Yok
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="p-3 text-slate-400">{ex.className || '-'}</td>
-                          <td className="p-3 font-medium text-slate-200">
-                            <div>{ex.examTitle}</div>
-                            <span className="text-[10px] text-slate-500">{ex.examDate}</span>
-                          </td>
-                          <td className="p-3 text-center">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                              {ex.examType}
-                            </span>
-                          </td>
-                          <td className="p-3 text-right font-mono font-bold text-amber-400">
-                            {primaryScore ? primaryScore.toFixed(2) : '-'}
-                          </td>
-                          <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-center space-x-1">
-                              <button
-                                onClick={() => setEditModalExam(ex)}
-                                className="p-1 text-slate-400 hover:text-white rounded hover:bg-white/10"
-                                title="Düzenle"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => setDeleteConfirmExam(ex)}
-                                className="p-1 text-slate-400 hover:text-rose-400 rounded hover:bg-rose-500/10"
-                                title="Sil"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirmExam(ex)}
+                                  className="p-1 text-slate-400 hover:text-rose-400 rounded hover:bg-rose-500/10"
+                                  title="Sil"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between pt-3 border-t border-white/10 text-xs gap-3">
+                    <div className="text-slate-400 font-medium">
+                      Gösterilen: <strong className="text-amber-300 font-mono">{startItemIndex}-{endItemIndex}</strong> / <strong className="text-slate-200 font-mono">{filteredExams.length}</strong> karne
+                    </div>
+
+                    <div className="flex items-center space-x-1 overflow-x-auto max-w-full pb-1 sm:pb-0">
+                      <button
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(1)}
+                        className="px-2 py-1 rounded-lg bg-slate-950 border border-white/10 text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold transition-all cursor-pointer"
+                        title="İlk Sayfa"
+                      >
+                        «
+                      </button>
+                      <button
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        className="px-2.5 py-1 rounded-lg bg-slate-950 border border-white/10 text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold transition-all cursor-pointer"
+                      >
+                        Önceki
+                      </button>
+
+                      {getPageNumbers(currentPage, totalPages).map((p, idx) => (
+                        typeof p === 'number' ? (
+                          <button
+                            key={idx}
+                            onClick={() => setCurrentPage(p)}
+                            className={`min-w-[28px] h-7 px-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
+                              currentPage === p
+                                ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20'
+                                : 'bg-slate-950 border border-white/10 text-slate-300 hover:text-white hover:bg-slate-800'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        ) : (
+                          <span key={idx} className="px-1 text-slate-500 font-bold select-none">...</span>
+                        )
+                      ))}
+
+                      <button
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        className="px-2.5 py-1 rounded-lg bg-slate-950 border border-white/10 text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold transition-all cursor-pointer"
+                      >
+                        Sonraki
+                      </button>
+                      <button
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage(totalPages)}
+                        className="px-2 py-1 rounded-lg bg-slate-950 border border-white/10 text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold transition-all cursor-pointer"
+                        title="Son Sayfa"
+                      >
+                        »
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
