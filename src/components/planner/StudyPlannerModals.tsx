@@ -297,23 +297,18 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
                         const status = topicStatuses?.[t];
                         const isPastDone = completedPastTopics?.includes(t);
                         let badge = '';
-                        let suffix = '';
                         if (status === 'Uzmanlaştım') {
                           badge = '🌟 ';
-                          suffix = ' (Uzmanlaştım)';
                         } else if (status === 'Çalıştım') {
                           badge = '✅ ';
-                          suffix = ' (Çalıştım)';
                         } else if (status === 'Zor Geldi') {
                           badge = '⚡ ';
-                          suffix = ' (Zor Geldi)';
                         } else if (isPastDone) {
                           badge = '✅ ';
-                          suffix = ' (Çalışıldı)';
                         }
                         return (
                           <option key={t} value={t}>
-                            {badge ? `${badge}${t}${suffix}` : t}
+                            {badge ? `${badge}${t}` : t}
                           </option>
                         );
                       })}
@@ -561,23 +556,18 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
                     const status = topicStatuses?.[t];
                     const isPastDone = completedPastTopics?.includes(t);
                     let badge = '';
-                    let suffix = '';
                     if (status === 'Uzmanlaştım') {
                       badge = '🌟 ';
-                      suffix = ' (Uzmanlaştım)';
                     } else if (status === 'Çalıştım') {
                       badge = '✅ ';
-                      suffix = ' (Çalıştım)';
                     } else if (status === 'Zor Geldi') {
                       badge = '⚡ ';
-                      suffix = ' (Zor Geldi)';
                     } else if (isPastDone) {
                       badge = '✅ ';
-                      suffix = ' (Çalışıldı)';
                     }
                     return (
                       <option key={t} value={t}>
-                        {badge ? `${badge}${t}${suffix}` : t}
+                        {badge ? `${badge}${t}` : t}
                       </option>
                     );
                   })}
