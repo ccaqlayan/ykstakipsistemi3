@@ -311,97 +311,93 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
           );
         })()}
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          
-          {/* Status Filter Pills */}
-          <div className="flex items-center space-x-1.5 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 shrink-0">
-            <button
-              type="button"
-              onClick={() => { setFilterRevised('UNREVISED'); setFilterExamId(null); }}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-                filterRevised === 'UNREVISED' && !filterExamId
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
-              }`}
+        {/* Top Line: Status Filter Pills */}
+        <div className="flex items-center space-x-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 w-fit overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => { setFilterRevised('UNREVISED'); setFilterExamId(null); }}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+              filterRevised === 'UNREVISED' && !filterExamId
+                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            ⏳ Bekleyenler ({topicErrors.filter(e => !e.revised).length})
+          </button>
+          <button
+            type="button"
+            onClick={() => { setFilterRevised('REVISED'); setFilterExamId(null); }}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+              filterRevised === 'REVISED' && !filterExamId
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            ✅ Tekrar Edilenler ({topicErrors.filter(e => e.revised).length})
+          </button>
+          <button
+            type="button"
+            onClick={() => { setFilterRevised('ALL'); setFilterExamId(null); }}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+              filterRevised === 'ALL' && !filterExamId
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            📋 Tümü ({topicErrors.length})
+          </button>
+        </div>
+
+        {/* Bottom Line: Select Dropdowns (Ders, Eşleşme, Sırala Yanyana) */}
+        <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-800/80">
+          <div className="flex items-center space-x-2 bg-slate-950/90 border border-slate-800 px-3.5 py-2 rounded-2xl shadow-sm">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ders:</span>
+            <select
+              value={filterSubject}
+              onChange={(e) => { setFilterSubject(e.target.value); setFilterExamId(null); }}
+              className="bg-transparent text-xs font-bold text-slate-200 focus:outline-none cursor-pointer max-w-[200px] truncate"
             >
-              ⏳ Bekleyenler ({topicErrors.filter(e => !e.revised).length})
-            </button>
-            <button
-              type="button"
-              onClick={() => { setFilterRevised('REVISED'); setFilterExamId(null); }}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-                filterRevised === 'REVISED' && !filterExamId
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
-              }`}
-            >
-              ✅ Tekrar Edilenler ({topicErrors.filter(e => e.revised).length})
-            </button>
-            <button
-              type="button"
-              onClick={() => { setFilterRevised('ALL'); setFilterExamId(null); }}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-                filterRevised === 'ALL' && !filterExamId
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
-              }`}
-            >
-              📋 Tümü ({topicErrors.length})
-            </button>
+              <option value="ALL" className="bg-slate-900 text-white">Tüm Dersler ({topicErrors.length})</option>
+              {Array.from(new Set(topicErrors.map((err) => err.subject)))
+                .filter((sub): sub is string => typeof sub === 'string')
+                .sort((a, b) => a.localeCompare(b, 'tr'))
+                .map((sub) => {
+                  const count = topicErrors.filter(e => e.subject === sub).length;
+                  return (
+                    <option key={sub} value={sub} className="bg-slate-900 text-white">{sub} ({count})</option>
+                  );
+                })}
+            </select>
           </div>
 
-          {/* Select Dropdowns */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center space-x-2">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ders:</span>
-              <select
-                value={filterSubject}
-                onChange={(e) => { setFilterSubject(e.target.value); setFilterExamId(null); }}
-                className="bg-slate-950 border border-slate-800 text-xs font-bold text-slate-200 rounded-2xl px-3 py-2 focus:outline-none focus:border-indigo-500 max-w-[180px] truncate cursor-pointer shadow-sm"
-              >
-                <option value="ALL">Tüm Dersler ({topicErrors.length})</option>
-                {Array.from(new Set(topicErrors.map((err) => err.subject)))
-                  .filter((sub): sub is string => typeof sub === 'string')
-                  .sort((a, b) => a.localeCompare(b, 'tr'))
-                  .map((sub) => {
-                    const count = topicErrors.filter(e => e.subject === sub).length;
-                    return (
-                      <option key={sub} value={sub}>{sub} ({count})</option>
-                    );
-                  })}
-              </select>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Eşleşme:</span>
-              <select
-                value={filterMatchStatus}
-                onChange={(e) => { setFilterMatchStatus(e.target.value); setFilterExamId(null); }}
-                className="bg-slate-950 border border-slate-800 text-xs font-bold text-slate-200 rounded-2xl px-3 py-2 focus:outline-none focus:border-indigo-500 cursor-pointer shadow-sm"
-              >
-                <option value="ALL">Tüm Kaynaklar</option>
-                <option value="MATCHED">Eşleşme Olanlar</option>
-                <option value="BOOK">Kitap Eşleşmeleri</option>
-                <option value="EXAM">Deneme Eşleşmeleri</option>
-                <option value="NOT_MATCHED">Eşleşme Olmayanlar</option>
-              </select>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sırala:</span>
-              <select
-                value={sortOption}
-                onChange={(e) => setSortOption(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-xs font-bold text-slate-200 rounded-2xl px-3 py-2 focus:outline-none focus:border-indigo-500 cursor-pointer shadow-sm"
-              >
-                <option value="NEWEST">Yeniden Eskiye</option>
-                <option value="OLDEST">Eskiden Yeniye</option>
-                <option value="PRIORITY_DESC">Öncelik (Yüksek - Düşük)</option>
-                <option value="PRIORITY_ASC">Öncelik (Düşük - Yüksek)</option>
-              </select>
-            </div>
+          <div className="flex items-center space-x-2 bg-slate-950/90 border border-slate-800 px-3.5 py-2 rounded-2xl shadow-sm">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Eşleşme:</span>
+            <select
+              value={filterMatchStatus}
+              onChange={(e) => { setFilterMatchStatus(e.target.value); setFilterExamId(null); }}
+              className="bg-transparent text-xs font-bold text-slate-200 focus:outline-none cursor-pointer"
+            >
+              <option value="ALL" className="bg-slate-900 text-white">Tüm Kaynaklar</option>
+              <option value="MATCHED" className="bg-slate-900 text-white">Eşleşme Olanlar</option>
+              <option value="BOOK" className="bg-slate-900 text-white">Kitap Eşleşmeleri</option>
+              <option value="EXAM" className="bg-slate-900 text-white">Deneme Eşleşmeleri</option>
+              <option value="NOT_MATCHED" className="bg-slate-900 text-white">Eşleşme Olmayanlar</option>
+            </select>
           </div>
 
+          <div className="flex items-center space-x-2 bg-slate-950/90 border border-slate-800 px-3.5 py-2 rounded-2xl shadow-sm">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sırala:</span>
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className="bg-transparent text-xs font-bold text-slate-200 focus:outline-none cursor-pointer"
+            >
+              <option value="NEWEST" className="bg-slate-900 text-white">Yeniden Eskiye</option>
+              <option value="OLDEST" className="bg-slate-900 text-white">Eskiden Yeniye</option>
+              <option value="PRIORITY_DESC" className="bg-slate-900 text-white">Öncelik (Yüksek - Düşük)</option>
+              <option value="PRIORITY_ASC" className="bg-slate-900 text-white">Öncelik (Düşük - Yüksek)</option>
+            </select>
+          </div>
         </div>
       </div>
 
