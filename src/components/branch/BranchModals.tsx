@@ -693,7 +693,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                       <div className="space-y-2">
                         <div className="flex items-center justify-between mb-1">
                           <label className="block text-[11px] font-bold text-slate-300">
-                            Çözüm Notları / Yapay Zeka Analizi
+                            Hata Notu:
                           </label>
                           <button
                             type="button"
@@ -721,7 +721,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
 
                         <textarea
                           rows={3}
-                          placeholder="Çözüm notlarınızı girin veya yapay zeka analizini kullanın..."
+                          placeholder="Hata veya çözüm notlarınızı girin ya da yapay zeka analizini kullanın..."
                           value={solutionNotes}
                           onChange={(e) => setSolutionNotes(e.target.value)}
                           className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-medium transition-colors"

@@ -89,6 +89,18 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   const [activeAiErrorItem, setActiveAiErrorItem] = useState<TopicErrorItem | null>(null);
   const [isAnalyzingActiveError, setIsAnalyzingActiveError] = useState(false);
   const [analysisErrorMsg, setAnalysisErrorMsg] = useState<string | null>(null);
+  const [inlineEditingErrorId, setInlineEditingErrorId] = useState<string | null>(null);
+  const [inlineNotesText, setInlineNotesText] = useState<string>('');
+
+  const handleSaveInlineNote = (errItem: TopicErrorItem) => {
+    if (!onUpdateTopicError) return;
+    const updated: TopicErrorItem = {
+      ...errItem,
+      solutionNotes: inlineNotesText.trim()
+    };
+    onUpdateTopicError(updated);
+    setInlineEditingErrorId(null);
+  };
 
   const isBookMatch = (e: TopicErrorItem) => {
     if (e.examTypeRef === 'book') return true;
@@ -664,11 +676,70 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                   </div>
                 )}
 
-                {/* Çözüm / Notlar */}
-                {item.solutionNotes && (
-                  <div className="bg-slate-950/70 border border-slate-800/80 p-3.5 rounded-2xl space-y-1">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Çözüm Notları & Püf Noktaları</span>
-                    <p className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed font-medium">{item.solutionNotes}</p>
+                {/* Hata Notu (İnline Düzenlenebilir) */}
+                {inlineEditingErrorId === item.id ? (
+                  <div className="bg-slate-950 p-3 rounded-2xl border border-indigo-500/50 space-y-2 animate-fade-in shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Edit2 className="w-3 h-3" />
+                        <span>Hata Notunu Düzenle</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">Enter: Kaydet | Esc: İptal</span>
+                    </div>
+                    <textarea
+                      rows={2}
+                      value={inlineNotesText}
+                      onChange={(e) => setInlineNotesText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSaveInlineNote(item);
+                        } else if (e.key === 'Escape') {
+                          setInlineEditingErrorId(null);
+                        }
+                      }}
+                      className="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-medium transition-colors resize-y"
+                      placeholder="Hata veya çözüm notu yazın..."
+                      autoFocus
+                    />
+                    <div className="flex items-center justify-end space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => setInlineEditingErrorId(null)}
+                        className="px-2.5 py-1 text-slate-400 hover:text-white text-[11px] font-semibold transition-colors cursor-pointer rounded-lg hover:bg-slate-900"
+                      >
+                        İptal
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveInlineNote(item)}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-3 py-1 rounded-lg transition-all shrink-0 cursor-pointer shadow-sm"
+                      >
+                        Kaydet
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => {
+                      setInlineEditingErrorId(item.id);
+                      setInlineNotesText(item.solutionNotes || '');
+                    }}
+                    className="bg-slate-950/70 hover:bg-slate-950 border border-slate-800/80 hover:border-indigo-500/40 p-3 rounded-2xl space-y-1 cursor-pointer transition-all group/note shadow-sm"
+                    title="Hata notunu düzenlemek için tıklayın"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-400 group-hover/note:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5 transition-colors">
+                        <span>Hata Notu:</span>
+                      </span>
+                      <span className="text-[10px] text-slate-500 group-hover/note:text-indigo-400 flex items-center gap-1 opacity-0 group-hover/note:opacity-100 transition-all font-medium">
+                        <Edit2 className="w-3 h-3" />
+                        <span>Düzenle</span>
+                      </span>
+                    </div>
+                    <p className={`text-xs whitespace-pre-wrap leading-relaxed font-medium ${item.solutionNotes ? 'text-slate-300' : 'text-slate-500 italic'}`}>
+                      {item.solutionNotes || 'Not eklemek için tıklayın...'}
+                    </p>
                   </div>
                 )}
 
