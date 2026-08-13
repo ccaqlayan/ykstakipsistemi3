@@ -272,6 +272,21 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
     setShowSolutionMap({});
   }, [previewImage]);
 
+  const getMatchingErrorItem = () => {
+    if (!previewImage) return null;
+    return (topicErrors || []).find(e => e.imageUrl === previewImage.url || `${e.subject} - ${e.topicName}` === previewImage.title) || null;
+  };
+
+  const triggerFullPhotoAnalysis = (targetTab: 'solution' | 'similar' | 'report') => {
+    const matchingError = getMatchingErrorItem();
+    if (matchingError && handleFetchFullPhotoAnalysis) {
+      handleFetchFullPhotoAnalysis(matchingError, targetTab);
+    } else if (previewImage) {
+      if (targetTab === 'solution') handleSolveQuestion(previewImage.url, previewImage.title);
+      else if (targetTab === 'similar') handleGenerateSimilarQuestions(previewImage.url, previewImage.title);
+    }
+  };
+
   const formatSolutionText = (text: string) => {
     if (!text) return null;
     let formattedText = text

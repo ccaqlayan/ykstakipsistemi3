@@ -40,7 +40,7 @@ async function resolveImagePart(imageUrl: string): Promise<{ inlineData: { mimeT
   // 2. Extract clean path without query parameters (?t=...)
   const cleanUrl = imageUrl.split('?')[0];
 
-  // 3. Check for local upload relative path or URL containing /uploads/
+  // 3. Check local filesystem candidate paths
   let relativePath = cleanUrl;
   if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
     try {
@@ -49,13 +49,30 @@ async function resolveImagePart(imageUrl: string): Promise<{ inlineData: { mimeT
     } catch {}
   }
 
+  const cleanRel = relativePath.replace(/^\/+/, '');
+  const candidatePaths = [
+    cleanRel,
+    path.join(uploadsDir, cleanRel),
+    path.join(process.cwd(), 'public', cleanRel),
+    path.join(process.cwd(), cleanRel),
+  ];
+
   if (relativePath.includes('/uploads/')) {
-    const relSubPath = relativePath.split('/uploads/')[1];
-    if (relSubPath) {
-      const fullPath = path.join(uploadsDir, relSubPath);
-      if (fs.existsSync(fullPath)) {
-        const buffer = fs.readFileSync(fullPath);
-        const ext = path.extname(relSubPath).toLowerCase();
+    const relSub = relativePath.split('/uploads/')[1];
+    if (relSub) {
+      candidatePaths.push(
+        path.join(uploadsDir, relSub),
+        path.join(process.cwd(), 'public', 'uploads', relSub),
+        path.join(process.cwd(), 'uploads', relSub)
+      );
+    }
+  }
+
+  for (const cand of candidatePaths) {
+    if (cand && fs.existsSync(cand)) {
+      try {
+        const buffer = fs.readFileSync(cand);
+        const ext = path.extname(cand).toLowerCase();
         let mimeType = 'image/jpeg';
         if (ext === '.png') mimeType = 'image/png';
         else if (ext === '.webp') mimeType = 'image/webp';
@@ -63,6 +80,8 @@ async function resolveImagePart(imageUrl: string): Promise<{ inlineData: { mimeT
         return {
           inlineData: { mimeType, data: buffer.toString('base64') }
         };
+      } catch (err) {
+        console.error('Error reading local image candidate:', cand, err);
       }
     }
   }
@@ -1060,6 +1079,7 @@ Cevabını YALNIZCA aşağıdaki JSON şemasında döndür. Başka açıklama ve
       model: targetModel,
       contents,
       config: {
+        maxOutputTokens: 8192,
         responseMimeType: 'application/json',
         responseSchema: {
           type: 'OBJECT',
@@ -1099,7 +1119,12 @@ Cevabını YALNIZCA aşağıdaki JSON şemasında döndür. Başka açıklama ve
     const responseText = extractResponseText(response);
     let parsedData: any = {};
     try {
-      parsedData = JSON.parse(responseText);
+      let cleanJson = (responseText || '').trim();
+      const codeBlockMatch = cleanJson.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (codeBlockMatch) {
+        cleanJson = codeBlockMatch[1].trim();
+      }
+      parsedData = JSON.parse(cleanJson);
     } catch (parseErr) {
       console.error('Failed to parse full question analysis JSON:', responseText);
       parsedData = {
