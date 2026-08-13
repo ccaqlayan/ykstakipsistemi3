@@ -59,13 +59,13 @@ import {
   CartesianGrid,
   Legend
 } from 'recharts';
-import { StudyPlanItem, DayOfWeek, QuestionLog, YouTubeVideoItem } from '../types';
+import { StudyPlanItem, DayOfWeek, QuestionLog, YouTubeVideoItem, DailyStudyTimeLog } from '../types';
 import { YKS_SUBJECTS, YKS_CURRICULUM_TOPICS, DEFAULT_TASK_TYPES } from '../data/initialData';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { StudyPlannerWeeklyBoard } from './planner/StudyPlannerWeeklyBoard';
 import { StudyPlannerDailyView } from './planner/StudyPlannerDailyView';
 import { StudyPlannerStatsView } from './planner/StudyPlannerStatsView';
-import { StudyPlannerModals } from './planner/StudyPlannerModals';
+import { StudyPlannerModals, DailyStudyLogModalData } from './planner/StudyPlannerModals';
 import { AddVideoTaskModal } from './planner/AddVideoTaskModal';
 
 interface StudyPlannerViewProps {
@@ -90,6 +90,8 @@ interface StudyPlannerViewProps {
   youtubeVideos?: YouTubeVideoItem[];
   topicStatuses?: Record<string, 'Çalışmadım' | 'Erteledim' | 'Zor Geldi' | 'Çalıştım' | 'Uzmanlaştım'>;
   completedPastTopics?: string[];
+  dailyStudyLogs?: Record<string, DailyStudyTimeLog>;
+  onSaveDailyStudyLog?: (dateKey: string, log: DailyStudyTimeLog | null) => void;
 }
 
 const DAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
@@ -339,7 +341,9 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   coachDataSettings,
   youtubeVideos = [],
   topicStatuses,
-  completedPastTopics
+  completedPastTopics,
+  dailyStudyLogs,
+  onSaveDailyStudyLog
 }) => {
   const today = getTodayName();
   const [viewMode, setViewMode] = useState<'board' | 'daily' | 'stats'>('daily');
@@ -1418,23 +1422,87 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     return [];
   }, [studyPlans, selectedMondayDate, currentWeekLabel, isCurrentWeek, isPastWeek, isFutureWeek, selectedWeekDays]);
 
+  // Daily Net Study Time Modal & State
+  const [dailyStudyLogModalData, setDailyStudyLogModalData] = useState<DailyStudyLogModalData | null>(null);
+
+  const getEffectiveDayStudyMinutes = (day: DayOfWeek, dateKey?: string): { minutes: number; isManual: boolean; notes?: string } => {
+    if (dateKey && dailyStudyLogs?.[dateKey]) {
+      return { minutes: dailyStudyLogs[dateKey].minutes, isManual: true, notes: dailyStudyLogs[dateKey].notes };
+    }
+    const altKey = `${currentWeekLabel}_${day}`;
+    if (dailyStudyLogs?.[altKey]) {
+      return { minutes: dailyStudyLogs[altKey].minutes, isManual: true, notes: dailyStudyLogs[altKey].notes };
+    }
+    const dayPlans = activePlans.filter(p => p.day === day);
+    const taskMinutes = dayPlans.reduce((sum, p) => sum + (p.completedMinutes || 0), 0);
+    return { minutes: taskMinutes, isManual: false, notes: undefined };
+  };
+
+  const openDailyStudyLogModal = (day: DayOfWeek) => {
+    const dateInfo = selectedWeekDaysMap?.[day];
+    const dateStr = dateInfo?.isoDate || getPlanDateAndWeekLabel(day).date;
+    const displayDate = dateInfo?.displayDate || '';
+    const { minutes, isManual, notes } = getEffectiveDayStudyMinutes(day, dateStr);
+    const dayPlans = activePlans.filter(p => p.day === day);
+    const taskMinutes = dayPlans.reduce((sum, p) => sum + (p.completedMinutes || 0), 0);
+
+    setDailyStudyLogModalData({
+      day,
+      dateStr,
+      displayDate,
+      currentMinutes: isManual ? minutes : 0,
+      currentNotes: notes || '',
+      isManual,
+      taskMinutes
+    });
+  };
+
+  const handleSaveDailyStudyLogModal = (minutes: number, notes?: string) => {
+    if (!dailyStudyLogModalData || !onSaveDailyStudyLog) return;
+    const dateKey = dailyStudyLogModalData.dateStr;
+    if (minutes <= 0) {
+      onSaveDailyStudyLog(dateKey, null);
+    } else {
+      onSaveDailyStudyLog(dateKey, {
+        date: dateKey,
+        day: dailyStudyLogModalData.day,
+        weekLabel: currentWeekLabel,
+        minutes,
+        notes,
+        updatedAt: new Date().toISOString()
+      });
+    }
+  };
+
+  const handleDeleteDailyStudyLogModal = () => {
+    if (!dailyStudyLogModalData || !onSaveDailyStudyLog) return;
+    onSaveDailyStudyLog(dailyStudyLogModalData.dateStr, null);
+  };
+
   // Weekly Stats Calculation
   const totalWeeklyPlannedMins = activePlans.reduce((acc, curr) => acc + (curr.plannedMinutes || 0), 0);
   const totalWeeklyCompletedMins = activePlans.reduce((acc, curr) => acc + (curr.completedMinutes || 0), 0);
+  const effectiveWeeklyCompletedMins = DAYS.reduce((sum, d) => {
+    const dateKey = selectedWeekDaysMap?.[d]?.isoDate;
+    return sum + getEffectiveDayStudyMinutes(d, dateKey).minutes;
+  }, 0);
   const totalWeeklyTasks = activePlans.length;
   const completedWeeklyTasks = activePlans.filter((p) => p.status === 'completed').length;
   const weeklyCompletionRate = totalWeeklyPlannedMins > 0 
-    ? Math.round((totalWeeklyCompletedMins / totalWeeklyPlannedMins) * 100) 
+    ? Math.round((effectiveWeeklyCompletedMins / totalWeeklyPlannedMins) * 100) 
     : 0;
 
   // Daily Stats Calculation
   const currentDayPlans = activePlans.filter((p) => p.day === selectedDay);
   const totalDailyPlannedMins = currentDayPlans.reduce((acc, curr) => acc + (curr.plannedMinutes || 0), 0);
   const totalDailyCompletedMins = currentDayPlans.reduce((acc, curr) => acc + (curr.completedMinutes || 0), 0);
+  const selectedDayDateKey = selectedWeekDaysMap?.[selectedDay]?.isoDate;
+  const effectiveDailyLog = getEffectiveDayStudyMinutes(selectedDay, selectedDayDateKey);
+  const effectiveDailyCompletedMins = effectiveDailyLog.minutes;
   const totalDailyTasks = currentDayPlans.length;
   const completedDailyTasks = currentDayPlans.filter((p) => p.status === 'completed').length;
   const dailyCompletionRate = totalDailyPlannedMins > 0 
-    ? Math.round((totalDailyCompletedMins / totalDailyPlannedMins) * 100) 
+    ? Math.round((effectiveDailyCompletedMins / totalDailyPlannedMins) * 100) 
     : 0;
 
   return (
@@ -1723,7 +1791,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
               <span className="hidden sm:inline text-slate-700">|</span>
               <div className="text-base font-black text-emerald-400 font-mono">
                 <span className="text-xs font-semibold text-slate-400 mr-1.5">Gerçekleşen:</span>
-                {Math.floor((viewMode === 'daily' ? totalDailyCompletedMins : totalWeeklyCompletedMins) / 60)}<span className="text-xs font-semibold text-slate-400">sa</span> {(viewMode === 'daily' ? totalDailyCompletedMins : totalWeeklyCompletedMins) % 60}<span className="text-xs font-semibold text-slate-400">dk</span>
+                {Math.floor((viewMode === 'daily' ? effectiveDailyCompletedMins : effectiveWeeklyCompletedMins) / 60)}<span className="text-xs font-semibold text-slate-400">sa</span> {(viewMode === 'daily' ? effectiveDailyCompletedMins : effectiveWeeklyCompletedMins) % 60}<span className="text-xs font-semibold text-slate-400">dk</span>
               </div>
             </div>
           </div>
@@ -1904,6 +1972,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                 weekDaysMap={selectedWeekDaysMap}
                 isArchivedWeek={isPastWeek}
                 isFutureWeek={isFutureWeek}
+                getEffectiveDayStudyMinutes={getEffectiveDayStudyMinutes}
+                openDailyStudyLogModal={openDailyStudyLogModal}
               />
             </motion.div>
           </AnimatePresence>
@@ -1929,6 +1999,9 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
           removeLinkedQuestionLog={removeLinkedQuestionLog}
           setUncompleteConfirm={setUncompleteConfirm}
           isArchivedWeek={isPastWeek}
+          getEffectiveDayStudyMinutes={getEffectiveDayStudyMinutes}
+          openDailyStudyLogModal={openDailyStudyLogModal}
+          weekDaysMap={selectedWeekDaysMap}
         />
       )}
 
@@ -1953,6 +2026,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         getWeeklyStats={getWeeklyStats}
         getSubjectDistributionStats={getSubjectDistributionStats}
         getPlansForWeek={getPlansForWeek}
+        getEffectiveDayStudyMinutes={getEffectiveDayStudyMinutes}
+        weekDaysMap={selectedWeekDaysMap}
       />
 
       {/* ALL MODALS */}
@@ -2047,6 +2122,10 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         coachDataSettings={coachDataSettings}
         topicStatuses={topicStatuses}
         completedPastTopics={completedPastTopics}
+        dailyStudyLogModalData={dailyStudyLogModalData}
+        setDailyStudyLogModalData={setDailyStudyLogModalData}
+        handleSaveDailyStudyLogModal={handleSaveDailyStudyLogModal}
+        handleDeleteDailyStudyLogModal={handleDeleteDailyStudyLogModal}
       />
 
       <AddVideoTaskModal

@@ -10,7 +10,9 @@ import {
   Trash2,
   Youtube,
   ExternalLink,
-  Play
+  Play,
+  Clock,
+  Edit3
 } from 'lucide-react';
 import { StudyPlanItem, DayOfWeek } from '../../types';
 import { SubjectTheme } from '../StudyPlannerView';
@@ -46,6 +48,8 @@ interface StudyPlannerWeeklyBoardProps {
   weekDaysMap?: Record<string, { isoDate: string; displayDate: string }>;
   isArchivedWeek?: boolean;
   isFutureWeek?: boolean;
+  getEffectiveDayStudyMinutes?: (day: DayOfWeek, dateKey?: string) => { minutes: number; isManual: boolean; notes?: string };
+  openDailyStudyLogModal?: (day: DayOfWeek) => void;
 }
 
 export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = ({
@@ -77,7 +81,9 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
   touchStartRef,
   weekDaysMap,
   isArchivedWeek = false,
-  isFutureWeek = false
+  isFutureWeek = false,
+  getEffectiveDayStudyMinutes,
+  openDailyStudyLogModal
 }) => {
   return (
     <div className="space-y-4">
@@ -180,6 +186,68 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                   </div>
                 )}
               </div>
+
+              {/* Daily Study Time Badge & Quick Entry Button */}
+              {getEffectiveDayStudyMinutes && (
+                (() => {
+                  const dateKey = weekDaysMap?.[day]?.isoDate;
+                  const { minutes: effectiveMins, isManual, notes: logNotes } = getEffectiveDayStudyMinutes(day, dateKey);
+                  const hours = Math.floor(effectiveMins / 60);
+                  const mins = effectiveMins % 60;
+                  const formattedTime = `${hours > 0 ? `${hours} sa ` : ''}${mins} dk`;
+
+                  return (
+                    <div className="px-3 py-1.5 bg-slate-950/70 border-b border-slate-800/80 flex items-center justify-between gap-1.5 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => openDailyStudyLogModal && openDailyStudyLogModal(day)}
+                        className={`flex items-center space-x-1.5 px-2 py-0.5 rounded-lg transition-all cursor-pointer text-[10.5px] font-bold border truncate ${
+                          isManual
+                            ? 'bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border-emerald-500/30 shadow-sm shadow-emerald-950/40'
+                            : effectiveMins > 0
+                            ? 'bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border-indigo-500/20'
+                            : 'bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border-slate-800 border-dashed'
+                        }`}
+                        title={
+                          isManual
+                            ? `Net Çalışma: ${formattedTime}${logNotes ? ` (${logNotes})` : ''} - Süreyi düzenlemek için tıklayın`
+                            : effectiveMins > 0
+                            ? `Görev Süresi: ${formattedTime} - Günün net süresini girmek için tıklayın`
+                            : `${day} için günlük net çalışma süresi girin`
+                        }
+                      >
+                        <Clock className={`w-3 h-3 shrink-0 ${isManual ? 'text-emerald-400' : effectiveMins > 0 ? 'text-indigo-400' : 'text-slate-500'}`} />
+                        <span className="truncate">
+                          {isManual ? (
+                            <>
+                              <span className="font-extrabold">{formattedTime}</span>
+                              <span className="text-[8.5px] font-mono ml-1 px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 uppercase tracking-tighter">NET</span>
+                            </>
+                          ) : effectiveMins > 0 ? (
+                            <>
+                              <span>{formattedTime}</span>
+                              <span className="text-[8.5px] font-mono ml-1 px-1 py-0.2 rounded bg-slate-800 text-slate-400 uppercase tracking-tighter">GÖREV</span>
+                            </>
+                          ) : (
+                            <span className="text-[9.5px] text-slate-400">+ Süre Gir</span>
+                          )}
+                        </span>
+                      </button>
+
+                      {openDailyStudyLogModal && (
+                        <button
+                          type="button"
+                          onClick={() => openDailyStudyLogModal(day)}
+                          className="text-slate-500 hover:text-indigo-300 p-0.5 rounded transition-colors cursor-pointer shrink-0"
+                          title={`${day} çalışma süresini düzenle`}
+                        >
+                          <Edit3 className="w-3 h-3 opacity-60 hover:opacity-100" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()
+              )}
 
               {/* Drag Target Banner when hovering */}
               {isDragTarget && !isArchivedWeek && (

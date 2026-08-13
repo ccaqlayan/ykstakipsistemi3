@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, ClassDefinition, InstitutionalMockExam, FieldType, ClassAICoachAdvice } from '../../types';
+import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, ClassDefinition, InstitutionalMockExam, FieldType, ClassAICoachAdvice, DailyStudyTimeLog } from '../../types';
 import { AuditLogsView } from '../AuditLogsView';
 import { SystemManagementView } from '../SystemManagementView';
 import { BulkExamImportView } from '../BulkExamImportView';
@@ -78,6 +78,7 @@ interface AppTabRouterProps {
   handleAddQuestionLog: (log: any) => void;
   handleDeleteQuestionLog: (id: string) => void;
   handleUpdateAllPlans: (plans: any[], auditMessage?: string) => void;
+  handleSaveDailyStudyLog?: (dateKey: string, log: DailyStudyTimeLog | null) => void;
   handleUpdateTaskTypes: (updatedTaskTypes: string[], actionText?: string) => void;
   handleUpdateQuestionLog: (updatedLog: any) => void;
   handleAddResource: (res: any) => void;
@@ -164,6 +165,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
   handleAddQuestionLog,
   handleDeleteQuestionLog,
   handleUpdateAllPlans,
+  handleSaveDailyStudyLog,
   handleUpdateTaskTypes,
   handleUpdateQuestionLog,
   handleAddResource,
@@ -341,6 +343,8 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           youtubeVideos={currentStudentData.youtubeVideos || []}
           topicStatuses={currentStudentData.topicStatuses}
           completedPastTopics={currentStudentData.completedPastTopics}
+          dailyStudyLogs={currentStudentData.dailyStudyLogs || {}}
+          onSaveDailyStudyLog={handleSaveDailyStudyLog}
         />
       )}
 

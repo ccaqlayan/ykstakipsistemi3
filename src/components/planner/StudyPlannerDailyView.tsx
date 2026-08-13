@@ -37,6 +37,9 @@ interface StudyPlannerDailyViewProps {
   removeLinkedQuestionLog: (studyPlanId: string, planTopic?: string, planSubject?: string) => void;
   setUncompleteConfirm: (data: { plan: StudyPlanItem; targetStatus: 'pending' | 'in_progress'; linkedLogs: QuestionLog[] } | null) => void;
   isArchivedWeek?: boolean;
+  getEffectiveDayStudyMinutes?: (day: DayOfWeek, dateKey?: string) => { minutes: number; isManual: boolean; notes?: string };
+  openDailyStudyLogModal?: (day: DayOfWeek) => void;
+  weekDaysMap?: Record<string, { isoDate: string; displayDate: string }>;
 }
 
 export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
@@ -55,7 +58,10 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
   getLinkedQuestionLogs,
   removeLinkedQuestionLog,
   setUncompleteConfirm,
-  isArchivedWeek = false
+  isArchivedWeek = false,
+  getEffectiveDayStudyMinutes,
+  openDailyStudyLogModal,
+  weekDaysMap
 }) => {
   const [expandedQuickControls, setExpandedQuickControls] = useState<Record<string, boolean>>({});
   const [inlineEditingNotesPlanId, setInlineEditingNotesPlanId] = useState<string | null>(null);
@@ -106,6 +112,83 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
             )}
           </div>
         </div>
+
+        {/* Daily Net Study Duration Card */}
+        {getEffectiveDayStudyMinutes && (
+          (() => {
+            const dateKey = weekDaysMap?.[selectedDay]?.isoDate;
+            const { minutes: effectiveMins, isManual, notes: logNotes } = getEffectiveDayStudyMinutes(selectedDay, dateKey);
+            const taskMins = dayPlans.reduce((sum, p) => sum + (p.completedMinutes || 0), 0);
+            const hours = Math.floor(effectiveMins / 60);
+            const mins = effectiveMins % 60;
+            const formattedTime = `${hours > 0 ? `${hours} sa ` : ''}${mins} dk`;
+
+            return (
+              <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all ${
+                isManual
+                  ? 'bg-emerald-950/40 border-emerald-500/40 shadow-lg shadow-emerald-950/30'
+                  : effectiveMins > 0
+                  ? 'bg-indigo-950/40 border-indigo-500/30 shadow-lg shadow-indigo-950/30'
+                  : 'bg-slate-950/60 border-slate-800'
+              }`}>
+                <div className="flex items-center space-x-3 min-w-0">
+                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
+                    isManual
+                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                      : effectiveMins > 0
+                      ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'
+                      : 'bg-slate-800 text-slate-400 border-slate-700'
+                  }`}>
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs font-bold text-slate-300">
+                        Günün Net Çalışma Süresi:
+                      </span>
+                      {isManual ? (
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase tracking-tight">
+                          ⏱️ NET KRONOMETRE
+                        </span>
+                      ) : effectiveMins > 0 ? (
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-tight">
+                          📋 GÖREV BAZLI
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="flex items-center space-x-3 mt-0.5">
+                      <span className="text-lg font-black text-white font-mono">
+                        {formattedTime}
+                      </span>
+                      {isManual && taskMins > 0 && (
+                        <span className="text-xs text-slate-400">
+                          (Görev Süresi: {Math.floor(taskMins / 60)} sa {taskMins % 60} dk)
+                        </span>
+                      )}
+                      {logNotes && (
+                        <span className="text-xs text-slate-400 italic truncate max-w-xs">
+                          "{logNotes}"
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {openDailyStudyLogModal && (
+                  <button
+                    type="button"
+                    onClick={() => openDailyStudyLogModal(selectedDay)}
+                    className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/30 cursor-pointer flex items-center space-x-1.5 shrink-0 self-start sm:self-auto"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>{isManual ? 'Süreyi Düzenle' : '+ Net Süre Gir'}</span>
+                  </button>
+                )}
+              </div>
+            );
+          })()
+        )}
 
         {dayPlans.length === 0 ? (
           <div className="text-center py-14 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-950/40">

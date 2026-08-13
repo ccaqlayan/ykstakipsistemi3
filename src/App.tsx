@@ -6,7 +6,7 @@ import { MaintenanceView } from './components/MaintenanceView';
 import { ProfileModal } from './components/ProfileModal';
 import { MandatoryPasswordChangeModal } from './components/MandatoryPasswordChangeModal';
 
-import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, InstitutionalMockExam, FieldType } from './types';
+import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, InstitutionalMockExam, FieldType, DailyStudyTimeLog } from './types';
 import { deleteStorageFile } from './services/storageUpload';
 import { loadGlobalState, saveGlobalState, exportDataAsJSON, resetToDefaultData } from './services/storage';
 import { isMessageUnreadForUser } from './utils/statusUtils';
@@ -1777,6 +1777,33 @@ export default function App() {
     );
   };
 
+  const handleSaveDailyStudyLog = (dateKey: string, log: DailyStudyTimeLog | null) => {
+    const prevLogs = currentStudentData.dailyStudyLogs || {};
+    const updated = { ...prevLogs };
+    if (!log || log.minutes <= 0) {
+      delete updated[dateKey];
+    } else {
+      updated[dateKey] = log;
+    }
+    updateCurrentStudentData((prev) => ({
+      ...prev,
+      dailyStudyLogs: updated
+    }));
+
+    const formattedDuration = log && log.minutes > 0 
+      ? `${Math.floor(log.minutes / 60)} sa ${log.minutes % 60} dk` 
+      : 'temizlendi';
+
+    addAuditAndUndo(
+      `${currentUser?.name || 'Öğrenci'} ${log?.date || dateKey} tarihi için günlük net çalışma süresini güncelledi (${formattedDuration}).`,
+      'study',
+      'update_daily_study_log',
+      () => {
+        updateCurrentStudentData((prev) => ({ ...prev, dailyStudyLogs: prevLogs }));
+      }
+    );
+  };
+
   const handleAddQuestionLog = (log: any) => {
     const newItem = { ...log, id: 'qlog-' + Date.now() };
     const prevLogs = currentStudentData.questionLogs || [];
@@ -2829,6 +2856,7 @@ export default function App() {
             handleAddQuestionLog={handleAddQuestionLog}
             handleDeleteQuestionLog={handleDeleteQuestionLog}
             handleUpdateAllPlans={handleUpdateAllPlans}
+            handleSaveDailyStudyLog={handleSaveDailyStudyLog}
             handleUpdateTaskTypes={handleUpdateTaskTypes}
             handleUpdateQuestionLog={handleUpdateQuestionLog}
             handleAddResource={handleAddResource}

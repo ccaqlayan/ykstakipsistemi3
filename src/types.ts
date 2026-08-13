@@ -57,6 +57,15 @@ export interface StudentProfile {
 
 export type DayOfWeek = 'Pazartesi' | 'Salı' | 'Çarşamba' | 'Perşembe' | 'Cuma' | 'Cumartesi' | 'Pazar';
 
+export interface DailyStudyTimeLog {
+  date: string; // ISO format: 'YYYY-MM-DD'
+  day?: DayOfWeek;
+  weekLabel?: string;
+  minutes: number; // Toplam net çalışma süresi (dakika)
+  notes?: string;
+  updatedAt?: string;
+}
+
 export interface StudyPlanItem {
   id: string;
   day: DayOfWeek;
@@ -441,6 +450,7 @@ export interface YKSDataState {
   quickNotes?: QuickNote[];
   taskTypes?: string[];
   institutionalMocks?: InstitutionalMockExam[];
+  dailyStudyLogs?: Record<string, DailyStudyTimeLog>;
 }
 
 export interface AuditLogItem {

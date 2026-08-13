@@ -40,7 +40,8 @@ export function createEmptyStudentData(name: string = '', className: string = ''
     },
     manuallyChangedTopicStatuses: [],
     routines: [],
-    quickNotes: []
+    quickNotes: [],
+    dailyStudyLogs: {}
   };
 }
 

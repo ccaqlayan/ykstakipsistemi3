@@ -16,13 +16,24 @@ import {
   Settings, 
   Edit2, 
   Check, 
-  Plus 
+  Plus,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { StudyPlanItem, DayOfWeek, QuestionLog } from '../../types';
+import { StudyPlanItem, DayOfWeek, QuestionLog, DailyStudyTimeLog } from '../../types';
 import { YKS_SUBJECTS, YKS_CURRICULUM_TOPICS, DEFAULT_TASK_TYPES } from '../../data/initialData';
 import { ConfirmDeleteModal } from '../ConfirmDeleteModal';
 import { isSameWeekLabel, formatWeekLabelWithYear } from '../../utils/dateUtils';
+
+export interface DailyStudyLogModalData {
+  day: DayOfWeek;
+  dateStr: string; // ISO format 'YYYY-MM-DD'
+  displayDate: string; // '14 Ağu'
+  currentMinutes: number;
+  currentNotes?: string;
+  isManual: boolean;
+  taskMinutes: number;
+}
 
 interface StudyPlannerModalsProps {
   showAddModal: boolean;
@@ -121,6 +132,11 @@ interface StudyPlannerModalsProps {
   coachDataSettings?: any;
   topicStatuses?: Record<string, 'Çalışmadım' | 'Erteledim' | 'Zor Geldi' | 'Çalıştım' | 'Uzmanlaştım'>;
   completedPastTopics?: string[];
+
+  dailyStudyLogModalData?: DailyStudyLogModalData | null;
+  setDailyStudyLogModalData?: (data: DailyStudyLogModalData | null) => void;
+  handleSaveDailyStudyLogModal?: (minutes: number, notes?: string) => void;
+  handleDeleteDailyStudyLogModal?: () => void;
 }
 
 export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
@@ -214,8 +230,29 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
   aiSuggestReason = null,
   coachDataSettings,
   topicStatuses,
-  completedPastTopics
+  completedPastTopics,
+  dailyStudyLogModalData,
+  setDailyStudyLogModalData,
+  handleSaveDailyStudyLogModal,
+  handleDeleteDailyStudyLogModal
 }) => {
+  const [modalHours, setModalHours] = React.useState<number>(0);
+  const [modalMinutes, setModalMinutes] = React.useState<number>(0);
+  const [modalNotes, setModalNotes] = React.useState<string>('');
+
+  React.useEffect(() => {
+    if (dailyStudyLogModalData) {
+      const totalMins = dailyStudyLogModalData.currentMinutes > 0 
+        ? dailyStudyLogModalData.currentMinutes 
+        : dailyStudyLogModalData.taskMinutes > 0 
+        ? dailyStudyLogModalData.taskMinutes 
+        : 60;
+      setModalHours(Math.floor(totalMins / 60));
+      setModalMinutes(totalMins % 60);
+      setModalNotes(dailyStudyLogModalData.currentNotes || '');
+    }
+  }, [dailyStudyLogModalData]);
+
   return (
     <>
       {/* MODAL 1: ADD NEW TASK */}
@@ -1658,6 +1695,152 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
               >
                 Kapat
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DAILY NET STUDY TIME (KRONOMETRE / SERBEST ÇALIŞMA) */}
+      {dailyStudyLogModalData && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={(e) => { if (e.target === e.currentTarget && setDailyStudyLogModalData) setDailyStudyLogModalData(null); }}
+        >
+          <div className="bg-slate-900 backdrop-blur-2xl border border-slate-700 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white">Günlük Net Çalışma Süresi</h3>
+                  <p className="text-xs text-indigo-300 font-semibold">
+                    {dailyStudyLogModalData.day} {dailyStudyLogModalData.displayDate && `(${dailyStudyLogModalData.displayDate})`}
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setDailyStudyLogModalData && setDailyStudyLogModalData(null)} 
+                className="text-slate-400 hover:text-white p-1 rounded-xl hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Task Info & Help Tip */}
+            <div className="p-3.5 bg-slate-950/80 border border-slate-800/80 rounded-2xl text-xs space-y-2">
+              <div className="flex items-center justify-between text-slate-300 font-medium">
+                <span>Tamamlanan Görev Süresi:</span>
+                <span className="font-mono font-bold text-white bg-slate-800/80 px-2 py-0.5 rounded-lg">
+                  {Math.floor(dailyStudyLogModalData.taskMinutes / 60)} sa {dailyStudyLogModalData.taskMinutes % 60} dk
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed border-t border-slate-800/60 pt-2">
+                💡 Okul, dershane, kütüphane veya kendi kronometrenizle tuttuğunuz günün toplam net çalışma süresini giriniz.
+              </p>
+            </div>
+
+            {/* Duration Pickers: Hours & Minutes */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                Günün Net Çalışma Süresi
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-3 flex items-center justify-between focus-within:border-indigo-500 transition-colors">
+                  <span className="text-xs font-bold text-slate-400">Saat</span>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="23"
+                      value={modalHours}
+                      onChange={(e) => setModalHours(Math.max(0, Math.min(23, parseInt(e.target.value) || 0)))}
+                      className="w-14 bg-transparent text-right text-lg font-black text-white font-mono focus:outline-none"
+                    />
+                    <span className="text-xs text-slate-400 font-bold">sa</span>
+                  </div>
+                </div>
+
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-3 flex items-center justify-between focus-within:border-indigo-500 transition-colors">
+                  <span className="text-xs font-bold text-slate-400">Dakika</span>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      step="5"
+                      value={modalMinutes}
+                      onChange={(e) => setModalMinutes(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                      className="w-14 bg-transparent text-right text-lg font-black text-white font-mono focus:outline-none"
+                    />
+                    <span className="text-xs text-slate-400 font-bold">dk</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] font-mono font-bold px-1">
+                <span className="text-slate-400">Toplam Dakika: {modalHours * 60 + modalMinutes} dk</span>
+                <span className="text-emerald-400">{modalHours} saat {modalMinutes} dakika</span>
+              </div>
+            </div>
+
+            {/* Optional Notes */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-300">
+                Günün Çalışma Notu <span className="text-slate-500 font-normal text-[10px]">(Opsiyonel)</span>
+              </label>
+              <textarea
+                value={modalNotes}
+                onChange={(e) => setModalNotes(e.target.value)}
+                placeholder="örn: Okulda 3 saat etüt, kütüphanede soru çözümü yapıldı..."
+                rows={2}
+                className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none font-medium"
+              />
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-800 gap-2">
+              <div>
+                {dailyStudyLogModalData.isManual && handleDeleteDailyStudyLogModal && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDeleteDailyStudyLogModal();
+                      if (setDailyStudyLogModalData) setDailyStudyLogModalData(null);
+                    }}
+                    className="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5"
+                    title="Girdiğiniz süreyi siler ve görev süresine döner"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Sıfırla</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setDailyStudyLogModalData && setDailyStudyLogModalData(null)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer border border-slate-700/50"
+                >
+                  İptal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const totalMins = modalHours * 60 + modalMinutes;
+                    if (handleSaveDailyStudyLogModal) {
+                      handleSaveDailyStudyLogModal(totalMins, modalNotes.trim() || undefined);
+                    }
+                    if (setDailyStudyLogModalData) setDailyStudyLogModalData(null);
+                  }}
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/30 cursor-pointer flex items-center space-x-1.5"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Kaydet</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

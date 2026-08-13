@@ -45,6 +45,8 @@ interface StudyPlannerStatsViewProps {
   getWeeklyStats: () => any[];
   getSubjectDistributionStats: () => any[];
   getPlansForWeek: (weekLabel: string) => StudyPlanItem[];
+  getEffectiveDayStudyMinutes?: (day: DayOfWeek, dateKey?: string) => { minutes: number; isManual: boolean; notes?: string };
+  weekDaysMap?: Record<string, { isoDate: string; displayDate: string }>;
 }
 
 export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
@@ -64,6 +66,8 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
   getWeeklyStats,
   getSubjectDistributionStats,
   getPlansForWeek,
+  getEffectiveDayStudyMinutes,
+  weekDaysMap
 }) => {
   return (
     <>
@@ -80,9 +84,10 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
               <thead className="bg-slate-950 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
                 <tr>
                   <th className="py-3.5 px-4">Gün</th>
-                  <th className="py-3.5 px-4 min-w-[280px]">Planlanan Dersler & Konular</th>
-                  <th className="py-3.5 px-4 text-center">Hedef Süre</th>
-                  <th className="py-3.5 px-4 text-center">Gerçekleşen Süre</th>
+                  <th className="py-3.5 px-4 min-w-[260px]">Planlanan Dersler & Konular</th>
+                  <th className="py-3.5 px-4 text-center">Hedef Görev</th>
+                  <th className="py-3.5 px-4 text-center">Görev Süresi</th>
+                  <th className="py-3.5 px-4 text-center">Net Çalışma Süresi</th>
                   <th className="py-3.5 px-4 text-center">İlerleme</th>
                 </tr>
               </thead>
@@ -91,11 +96,16 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
                   const dayPlans = activePlans.filter((p) => p.day === day);
                   const dayPlannedMins = dayPlans.reduce((sum, p) => sum + (p.plannedMinutes || 0), 0);
                   const dayCompletedMins = dayPlans.reduce((sum, p) => sum + (p.completedMinutes || 0), 0);
-                  const dayPercent = dayPlannedMins > 0 ? Math.round((dayCompletedMins / dayPlannedMins) * 100) : 0;
+                  const dateKey = weekDaysMap?.[day]?.isoDate;
+                  const dayLog = getEffectiveDayStudyMinutes 
+                    ? getEffectiveDayStudyMinutes(day, dateKey)
+                    : { minutes: dayCompletedMins, isManual: false };
+                  const effectiveMins = dayLog.minutes;
+                  const dayPercent = dayPlannedMins > 0 ? Math.round((effectiveMins / dayPlannedMins) * 100) : 0;
 
                   return (
                     <tr key={day} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-4 px-4 font-bold text-white">
+                      <td className="py-4 px-4 font-bold text-white whitespace-nowrap">
                         {day}
                       </td>
                       <td className="py-4 px-4">
@@ -118,13 +128,29 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
                           </div>
                         )}
                       </td>
-                      <td className="py-4 px-4 text-center font-mono font-bold">
+                      <td className="py-4 px-4 text-center font-mono font-bold text-slate-300 whitespace-nowrap">
                         {dayPlannedMins} dk
                       </td>
-                      <td className="py-4 px-4 text-center font-mono font-bold text-emerald-400">
+                      <td className="py-4 px-4 text-center font-mono font-bold text-slate-400 whitespace-nowrap">
                         {dayCompletedMins} dk
                       </td>
-                      <td className="py-4 px-4 text-center font-mono font-bold text-indigo-300">
+                      <td className="py-4 px-4 text-center whitespace-nowrap">
+                        <span className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-xs font-mono font-extrabold border ${
+                          dayLog.isManual
+                            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                            : effectiveMins > 0
+                            ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20'
+                            : 'text-slate-500 border-transparent'
+                        }`}>
+                          <span>{effectiveMins} dk</span>
+                          {dayLog.isManual ? (
+                            <span className="text-[9px] font-sans px-1 rounded bg-emerald-500/20 text-emerald-300 uppercase">NET</span>
+                          ) : effectiveMins > 0 ? (
+                            <span className="text-[9px] font-sans px-1 rounded bg-slate-800 text-slate-400 uppercase">GÖREV</span>
+                          ) : null}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-center font-mono font-bold text-indigo-300 whitespace-nowrap">
                         %{dayPercent}
                       </td>
                     </tr>
