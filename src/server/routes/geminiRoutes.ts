@@ -996,6 +996,151 @@ BİÇİMLENDİRME:
   }
 });
 
+router.post('/analyze-photo-question-full', async (req, res) => {
+  if (!isAiEnabledOrRespond(res)) return;
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
+  }
+
+  const { imageUrl, solutionText, existingAnalysis, subject, topicName } = req.body;
+  if (!imageUrl && !solutionText && !existingAnalysis) {
+    return res.status(400).json({ error: 'Soru görseli veya önceden çözülmüş soru metni gereklidir.' });
+  }
+
+  try {
+    const ai = new GoogleGenAI({ 
+      apiKey,
+      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+    });
+
+    const imagePart = imageUrl ? await resolveImagePart(imageUrl) : null;
+    if (!imagePart && !solutionText && !existingAnalysis) {
+      return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
+    }
+
+    const textPrompt = `
+Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden uzman bir branş öğretmeni ve soru analistisin.
+Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'Genel'}) TEK BİR İNCELEMEDE tam 3 farklı açıdan analiz et ve yanıtını YALNIZCA belirtilen JSON formatında dön:
+
+1. ÇÖZÜM REHBERİ (solution):
+- Görseldeki soruyu adım adım son derece anlaşılır Türkçe ile çöz.
+- ASLA "Merhaba" veya selamlama cümleleri kullanma, doğrudan 1. Konu Özeti veya çözüm adımları ile başla.
+- Konu özetini, adım adım çözümü, belirgin doğru cevabı ve 1 pratik taktiği içersin.
+- KESİNLİKLE LaTeX ($...$) kullanma, düz metin ve klavye karakterleri kullan.
+
+2. BENZER SORU (similarQuestion):
+- Görseldeki soruya ve konusuna (${subject} - ${topicName}) benzer tarzda, Türkiye YKS (TYT/AYT) müfredatına %100 uygun 1 adet özgün yeni benzer soru üret.
+- Soru metni ve şıklarını (A, B, C, D, E), adım adım detaylı çözümünü ve doğru cevabını hazırla.
+
+3. DETAYLI SORU KARNESİ (analysis):
+- Sorunun ders, konu, MEB kazanımı, müfredat uygunluğu, zorluk puanı (örn: 6/10 - Orta), okuma süresi, çözme süresi, ayırt edicilik ve TÜM ŞIKLARIN ayrı ayrı detaylı çeldirici analizini içeren tam bir Markdown Tablo oluştur.
+- Biçimlendirme şu şekilde olmalıdır:
+**SORU ANALİZİ**
+
+| Kriter | Değerlendirme |
+| :--- | :--- |
+| **Ders** | ${subject || 'YKS'} |
+| **Konu** | ${topicName || 'Genel'} |
+| **Kazanım** | [Sorunun ölçtüğü MEB kazanımı] |
+| **Müfredat Uygunluğu** | [Uygun / Uygun Değil - Açıklama] |
+| **Zorluk** | [Örn: 5/10 - Orta] |
+| **Okuma Süresi** | [Örn: 0.8 dk] |
+| **Çözme Süresi** | [Örn: 1.5 dk] |
+| **Ayırt Edicilik** | [Düşük / Orta / Yüksek] |
+| **Çeldirici Analizi** | **A Şıkkı:** ...<br>**B Şıkkı:** ...<br>**C Şıkkı:** ...<br>**D Şıkkı:** ...<br>**E Şıkkı:** ... |
+
+Cevabını YALNIZCA aşağıdaki JSON şemasında döndür. Başka açıklama veya Markdown sarmalayıcı ekleme:
+`;
+
+    const contents = imagePart ? [imagePart, { text: textPrompt }] : [{ text: textPrompt }];
+
+    const targetModel = featureModelConfig['SOLVE_QUESTION'] || featureModelConfig['SIMILAR_QUESTION'] || 'gemini-3.1-flash-lite';
+    const { response, modelUsed } = await generateContentWithFallback(ai, {
+      model: targetModel,
+      contents,
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: 'OBJECT',
+          properties: {
+            solution: {
+              type: 'STRING',
+              description: 'Adım adım detaylı Türkçe soru çözümü ve pratik taktik.'
+            },
+            similarQuestion: {
+              type: 'OBJECT',
+              properties: {
+                question: {
+                  type: 'STRING',
+                  description: 'YKS müfredatına uygun 1 adet özgün benzer soru ve şıkları (A, B, C, D, E).'
+                },
+                solution: {
+                  type: 'STRING',
+                  description: 'Benzer sorunun adım adım detaylı Türkçe çözümü.'
+                },
+                correctAnswer: {
+                  type: 'STRING',
+                  description: 'Benzer sorunun doğru cevabı (örn. C seçeneğidir).'
+                }
+              },
+              required: ['question', 'solution', 'correctAnswer']
+            },
+            analysis: {
+              type: 'STRING',
+              description: 'Detaylı soru karnesi ve çeldirici analizi Markdown tablosu.'
+            }
+          },
+          required: ['solution', 'similarQuestion', 'analysis']
+        }
+      }
+    });
+
+    const responseText = extractResponseText(response);
+    let parsedData: any = {};
+    try {
+      parsedData = JSON.parse(responseText);
+    } catch (parseErr) {
+      console.error('Failed to parse full question analysis JSON:', responseText);
+      parsedData = {
+        solution: responseText || 'Soru çözümü üretilemedi.',
+        similarQuestion: {
+          question: 'Benzer soru üretilemedi.',
+          solution: '',
+          correctAnswer: ''
+        },
+        analysis: 'Soru karnesi oluşturulamadı.'
+      };
+    }
+
+    const { userName, userRole, userId } = resolveUserInfo(req.body);
+    const usageRecord = recordApiUsage({
+      featureKey: 'PHOTO_QUESTION_FULL_ANALYSIS',
+      featureName: 'Fotoğraflı Soru Bütünleşik AI Analizi (Çözüm + Benzer Soru + Karne)',
+      category: 'QUESTION_ANALYSIS',
+      modelUsed,
+      promptTokens: response.usageMetadata?.promptTokenCount || 2500,
+      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      promptText: `Fotoğraflı Soru Bütünleşik Analiz (${subject || ''} - ${topicName || ''})`,
+      responseText,
+      userId,
+      userName,
+      userRole
+    });
+
+    res.json({
+      success: true,
+      solution: parsedData.solution,
+      similarQuestions: parsedData.similarQuestion,
+      analysis: parsedData.analysis,
+      aiUsage: usageRecord
+    });
+  } catch (err: any) {
+    console.error('Gemini full photo analysis error:', err);
+    res.status(500).json({ error: err.message || 'Bütünleşik soru analizi yapılamadı.' });
+  }
+});
+
 router.get('/usage-stats', (req, res) => {
   const totalCalls = apiUsageLogsStore.length;
   let totalTokens = 0;

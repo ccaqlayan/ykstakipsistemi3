@@ -1365,23 +1365,141 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     handleFetchTopicTips(subject, topicName);
   };
 
+  const handleFetchFullPhotoAnalysis = async (errorItem: TopicErrorItem, targetTab: 'solution' | 'similar' | 'report') => {
+    if (!errorItem.imageUrl) return;
+
+    const title = `${errorItem.subject} - ${errorItem.topicName}`;
+    openImagePreview(errorItem.imageUrl, title);
+    setAiModalTab(targetTab);
+
+    // Find current error item in state
+    const matchingError = topicErrors.find(e => e.id === errorItem.id || e.imageUrl === errorItem.imageUrl || `${e.subject} - ${e.topicName}` === title) || errorItem;
+
+    const existingSol = matchingError.aiSolution || solveSolution;
+    const existingAnalysis = matchingError.aiAnalysis || reportText || supportAnalysisText;
+    const existingSimilar = (matchingError.similarQuestionsList && matchingError.similarQuestionsList.length > 0) ? matchingError.similarQuestionsList : similarQuestionsList;
+
+    if (existingSol) setSolveSolution(existingSol);
+    if (existingAnalysis) {
+      setReportText(existingAnalysis);
+      setSupportAnalysisText(existingAnalysis);
+    }
+    if (existingSimilar && existingSimilar.length > 0) {
+      setSimilarQuestionsList(existingSimilar);
+      setActiveSimilarIdx(0);
+    }
+
+    // Check if the requested targetTab already has data generated!
+    const hasTargetData =
+      (targetTab === 'solution' && !!existingSol) ||
+      (targetTab === 'report' && !!existingAnalysis) ||
+      (targetTab === 'similar' && existingSimilar && existingSimilar.length > 0);
+
+    if (hasTargetData) {
+      return;
+    }
+
+    setSolveLoading(true);
+    setReportLoading(true);
+    setSimilarLoading(true);
+    setSolveError(null);
+    setReportError(null);
+    setSimilarError(null);
+
+    try {
+      const response = await fetch('/api/gemini/analyze-photo-question-full', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageUrl: errorItem.imageUrl,
+          subject: errorItem.subject,
+          topicName: errorItem.topicName,
+          solutionText: existingSol || existingAnalysis || undefined
+        })
+      });
+
+      if (!response.ok) {
+        let errText = 'Yapay zeka özellikleri şu an için kullanılamıyor, lütfen daha sonra tekrar deneyiniz.';
+        try {
+          const errData = await response.json();
+          if (errData && errData.error) errText = errData.error;
+        } catch {}
+        throw new Error(errText);
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        const sol = data.solution || existingSol;
+        if (sol) setSolveSolution(sol);
+
+        const rep = data.analysis || existingAnalysis;
+        if (rep) {
+          setReportText(rep);
+          setSupportAnalysisText(rep);
+        }
+
+        let simList = existingSimilar || [];
+        if (data.similarQuestions && data.similarQuestions.question) {
+          simList = [data.similarQuestions];
+          setSimilarQuestionsList(simList);
+          setActiveSimilarIdx(0);
+        }
+
+        const updatedError = {
+          ...matchingError,
+          ...(sol ? { aiSolution: sol } : {}),
+          ...(rep ? { aiAnalysis: rep } : {}),
+          ...(simList.length > 0 ? { similarQuestionsList: simList } : {})
+        };
+        onUpdateTopicError(updatedError);
+
+        if (onAddAuditLog) {
+          onAddAuditLog(
+            `Hata Defteri "${title}" sorusu için Bütünleşik Yapay Zeka Analizi (Çözüm + Benzer Soru + Soru Karnesi) tek sorgu ile üretildi.`,
+            'system',
+            'AI_FULL_PHOTO_ANALYSIS',
+            undefined,
+            undefined,
+            undefined,
+            data.aiUsage
+          );
+        }
+      } else {
+        throw new Error(data.error || 'Fotoğraflı soru bütünleşik analizi yapılamadı.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      setSolveError(err.message || 'Çözüm oluşturulamadı.');
+      setReportError(err.message || 'Soru karnesi oluşturulamadı.');
+      setSimilarError(err.message || 'Benzer soru oluşturulamadı.');
+    } finally {
+      setSolveLoading(false);
+      setReportLoading(false);
+      setSimilarLoading(false);
+    }
+  };
+
   const handleOpenSolveModal = (errorItem: TopicErrorItem) => {
     if (errorItem.imageUrl) {
-      openImagePreview(errorItem.imageUrl, `${errorItem.subject} - ${errorItem.topicName}`);
+      handleFetchFullPhotoAnalysis(errorItem, 'solution');
+    } else {
+      openImagePreview(errorItem.imageUrl || '', `${errorItem.subject} - ${errorItem.topicName}`);
       setAiModalTab('solution');
       if (!errorItem.aiSolution) {
-        handleSolveQuestion(errorItem.imageUrl, `${errorItem.subject} - ${errorItem.topicName}`);
+        handleSolveQuestion(errorItem.imageUrl || '', `${errorItem.subject} - ${errorItem.topicName}`);
       }
     }
   };
 
   const handleOpenSimilarModal = (errorItem: TopicErrorItem) => {
     if (errorItem.imageUrl) {
-      openImagePreview(errorItem.imageUrl, `${errorItem.subject} - ${errorItem.topicName}`);
+      handleFetchFullPhotoAnalysis(errorItem, 'similar');
+    } else {
+      openImagePreview(errorItem.imageUrl || '', `${errorItem.subject} - ${errorItem.topicName}`);
       setAiModalTab('similar');
       const existingList = errorItem.similarQuestionsList || [];
       if (existingList.length === 0) {
-        handleGenerateSimilarQuestions(errorItem.imageUrl, `${errorItem.subject} - ${errorItem.topicName}`);
+        handleGenerateSimilarQuestions(errorItem.imageUrl || '', `${errorItem.subject} - ${errorItem.topicName}`);
       }
     }
   };
@@ -1454,7 +1572,9 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
 
   const handleOpenQuestionReport = (errorItem: TopicErrorItem) => {
     if (errorItem.imageUrl) {
-      openImagePreview(errorItem.imageUrl, `${errorItem.subject} - ${errorItem.topicName}`);
+      handleFetchFullPhotoAnalysis(errorItem, 'report');
+    } else {
+      openImagePreview(errorItem.imageUrl || '', `${errorItem.subject} - ${errorItem.topicName}`);
       setAiModalTab('report');
       if (errorItem.aiAnalysis) {
         setReportText(errorItem.aiAnalysis);
