@@ -90,6 +90,34 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   const [isAnalyzingActiveError, setIsAnalyzingActiveError] = useState(false);
   const [analysisErrorMsg, setAnalysisErrorMsg] = useState<string | null>(null);
 
+  const isBookMatch = (e: TopicErrorItem) => {
+    if (e.examTypeRef === 'book') return true;
+    if (e.examId && resources.some(r => r.id === e.examId)) return true;
+    if (e.publisher) {
+      const pubLower = e.publisher.toLowerCase();
+      if (resources.some(r => (r.publisher && pubLower.includes(r.publisher.toLowerCase())) || (r.bookTitle && pubLower.includes(r.bookTitle.toLowerCase())))) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const isExamMatch = (e: TopicErrorItem) => {
+    if (e.examTypeRef === 'branch' || e.examTypeRef === 'general') return true;
+    if (e.examId && (branchExams.some(b => b.id === e.examId) || generalMocks.some(g => g.id === e.examId))) return true;
+    if (e.publisher) {
+      const pubLower = e.publisher.toLowerCase();
+      if (branchExams.some(b => b.publisher && pubLower.includes(b.publisher.toLowerCase()))) return true;
+      if (generalMocks.some(g => g.title && pubLower.includes(g.title.toLowerCase()))) return true;
+      if (pubLower.includes('deneme') || pubLower.includes('branş') || pubLower.includes('genel')) return true;
+    }
+    return false;
+  };
+
+  const isMatchedAny = (e: TopicErrorItem) => {
+    return isBookMatch(e) || isExamMatch(e) || !!e.examId || !!e.examTypeRef;
+  };
+
   const handleRunAiAnalysis = async (errItem: TopicErrorItem) => {
     setIsAnalyzingActiveError(true);
     setAnalysisErrorMsg(null);
@@ -367,34 +395,6 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
           <div className="flex items-center space-x-2 bg-slate-950/90 border border-slate-800 px-3.5 py-2 rounded-2xl shadow-sm">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Ders:</span>
             {(() => {
-              const isBookMatch = (e: TopicErrorItem) => {
-                if (e.examTypeRef === 'book') return true;
-                if (e.examId && resources.some(r => r.id === e.examId)) return true;
-                if (e.publisher) {
-                  const pubLower = e.publisher.toLowerCase();
-                  if (resources.some(r => (r.publisher && pubLower.includes(r.publisher.toLowerCase())) || (r.bookTitle && pubLower.includes(r.bookTitle.toLowerCase())))) {
-                    return true;
-                  }
-                }
-                return false;
-              };
-
-              const isExamMatch = (e: TopicErrorItem) => {
-                if (e.examTypeRef === 'branch' || e.examTypeRef === 'general') return true;
-                if (e.examId && (branchExams.some(b => b.id === e.examId) || generalMocks.some(g => g.id === e.examId))) return true;
-                if (e.publisher) {
-                  const pubLower = e.publisher.toLowerCase();
-                  if (branchExams.some(b => b.publisher && pubLower.includes(b.publisher.toLowerCase()))) return true;
-                  if (generalMocks.some(g => g.title && pubLower.includes(g.title.toLowerCase()))) return true;
-                  if (pubLower.includes('deneme') || pubLower.includes('branş') || pubLower.includes('genel')) return true;
-                }
-                return false;
-              };
-
-              const isMatchedAny = (e: TopicErrorItem) => {
-                return isBookMatch(e) || isExamMatch(e) || !!e.examId || !!e.examTypeRef;
-              };
-
               const statusPool = topicErrors.filter((err) => {
                 if (filterRevised === 'UNREVISED' && err.revised) return false;
                 if (filterRevised === 'REVISED' && !err.revised) return false;
