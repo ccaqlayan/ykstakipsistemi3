@@ -61,8 +61,8 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
           </button>
         </div>
 
-        {/* Student & Overall Rank Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Student & Overall Rank Stats Header */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center space-x-3.5">
             <div className="bg-sky-500/10 p-2.5 rounded-xl text-sky-400 shrink-0">
               <SlidersHorizontal className="w-5 h-5" />
@@ -74,69 +74,205 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
             </div>
           </div>
 
-          {/* Display primary score and ranks */}
+          {/* Display primary score */}
           {(() => {
-            // Determine best score
             let bestScoreType = 'SAY';
             let bestScore = selectedInstitutionalExam.scores.sayScore || 0;
-            let classRank = selectedInstitutionalExam.scores.sayClassRank;
-            let instRank = selectedInstitutionalExam.scores.sayInstitutionRank;
-            let genRank = selectedInstitutionalExam.scores.sayGeneralRank;
 
             if ((selectedInstitutionalExam.scores.eaScore || 0) > bestScore) {
               bestScoreType = 'EA';
               bestScore = selectedInstitutionalExam.scores.eaScore || 0;
-              classRank = selectedInstitutionalExam.scores.eaClassRank;
-              instRank = selectedInstitutionalExam.scores.eaInstitutionRank;
-              genRank = selectedInstitutionalExam.scores.eaGeneralRank;
             }
             if ((selectedInstitutionalExam.scores.sozScore || 0) > bestScore) {
               bestScoreType = 'SÖZ';
               bestScore = selectedInstitutionalExam.scores.sozScore || 0;
-              classRank = selectedInstitutionalExam.scores.sozClassRank;
-              instRank = selectedInstitutionalExam.scores.sozInstitutionRank;
-              genRank = selectedInstitutionalExam.scores.sozGeneralRank;
             }
 
             if (bestScore === 0 && selectedInstitutionalExam.scores.sayScore !== undefined) {
               bestScoreType = 'SAY';
               bestScore = selectedInstitutionalExam.scores.sayScore;
-              classRank = selectedInstitutionalExam.scores.sayClassRank;
-              instRank = selectedInstitutionalExam.scores.sayInstitutionRank;
-              genRank = selectedInstitutionalExam.scores.sayGeneralRank;
             }
 
             return (
-              <>
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center space-x-3.5">
-                  <div className="bg-emerald-500/10 p-2.5 rounded-xl text-emerald-400 shrink-0">
-                    <Award className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Öncelikli Başarı Puanı</span>
-                    <div className="text-sm font-extrabold text-white mt-0.5">{bestScore > 0 ? `${bestScore} Puan` : 'Hesaplanmadı'}</div>
-                    <div className="text-xs text-emerald-400 font-bold">{bestScoreType} Alan Puanı</div>
-                  </div>
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center space-x-3.5">
+                <div className="bg-emerald-500/10 p-2.5 rounded-xl text-emerald-400 shrink-0">
+                  <Award className="w-5 h-5" />
                 </div>
-
-                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center space-x-3.5">
-                  <div className="bg-amber-500/10 p-2.5 rounded-xl text-amber-400 shrink-0">
-                    <TrendingUp className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Genel & Sınıf Derecesi</span>
-                    <div className="text-sm font-extrabold text-white mt-0.5">
-                      {classRank ? `Sınıf: ${classRank}.` : 'Derece Yok'}
-                    </div>
-                    <div className="text-xs text-slate-400 font-medium">
-                      {instRank ? `Okul: ${instRank}.` : ''} {genRank ? `| İl/Genel: ${genRank}.` : ''}
-                    </div>
-                  </div>
+                <div>
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Öncelikli Başarı Puanı</span>
+                  <div className="text-sm font-extrabold text-white mt-0.5">{bestScore > 0 ? `${bestScore} Puan` : 'Hesaplanmadı'}</div>
+                  <div className="text-xs text-emerald-400 font-bold">{bestScoreType} Alan Puanı</div>
                 </div>
-              </>
+              </div>
             );
           })()}
         </div>
+
+        {/* Detailed Rank & Percentile Breakdown Cards */}
+        {(() => {
+          let bestScoreType = 'SAY';
+          let bestScore = selectedInstitutionalExam.scores.sayScore || 0;
+          let classRank = selectedInstitutionalExam.scores.sayClassRank;
+          let classTotal = selectedInstitutionalExam.scores.sayClassTotal || selectedInstitutionalExam.scores.classParticipantCount;
+          let instRank = selectedInstitutionalExam.scores.sayInstitutionRank;
+          let instTotal = selectedInstitutionalExam.scores.sayInstitutionTotal || selectedInstitutionalExam.scores.institutionParticipantCount;
+          let genRank = selectedInstitutionalExam.scores.sayGeneralRank;
+          let genTotal = selectedInstitutionalExam.scores.sayGeneralTotal || selectedInstitutionalExam.scores.generalParticipantCount;
+
+          if ((selectedInstitutionalExam.scores.eaScore || 0) > bestScore) {
+            bestScoreType = 'EA';
+            bestScore = selectedInstitutionalExam.scores.eaScore || 0;
+            classRank = selectedInstitutionalExam.scores.eaClassRank;
+            classTotal = selectedInstitutionalExam.scores.eaClassTotal || selectedInstitutionalExam.scores.classParticipantCount;
+            instRank = selectedInstitutionalExam.scores.eaInstitutionRank;
+            instTotal = selectedInstitutionalExam.scores.eaInstitutionTotal || selectedInstitutionalExam.scores.institutionParticipantCount;
+            genRank = selectedInstitutionalExam.scores.eaGeneralRank;
+            genTotal = selectedInstitutionalExam.scores.eaGeneralTotal || selectedInstitutionalExam.scores.generalParticipantCount;
+          }
+          if ((selectedInstitutionalExam.scores.sozScore || 0) > bestScore) {
+            bestScoreType = 'SÖZ';
+            bestScore = selectedInstitutionalExam.scores.sozScore || 0;
+            classRank = selectedInstitutionalExam.scores.sozClassRank;
+            classTotal = selectedInstitutionalExam.scores.sozClassTotal || selectedInstitutionalExam.scores.classParticipantCount;
+            instRank = selectedInstitutionalExam.scores.sozInstitutionRank;
+            instTotal = selectedInstitutionalExam.scores.sozInstitutionTotal || selectedInstitutionalExam.scores.institutionParticipantCount;
+            genRank = selectedInstitutionalExam.scores.sozGeneralRank;
+            genTotal = selectedInstitutionalExam.scores.sozGeneralTotal || selectedInstitutionalExam.scores.generalParticipantCount;
+          }
+
+          if (bestScore === 0 && selectedInstitutionalExam.scores.sayScore !== undefined) {
+            bestScoreType = 'SAY';
+            bestScore = selectedInstitutionalExam.scores.sayScore;
+            classRank = selectedInstitutionalExam.scores.sayClassRank;
+            classTotal = selectedInstitutionalExam.scores.sayClassTotal || selectedInstitutionalExam.scores.classParticipantCount;
+            instRank = selectedInstitutionalExam.scores.sayInstitutionRank;
+            instTotal = selectedInstitutionalExam.scores.sayInstitutionTotal || selectedInstitutionalExam.scores.institutionParticipantCount;
+            genRank = selectedInstitutionalExam.scores.sayGeneralRank;
+            genTotal = selectedInstitutionalExam.scores.sayGeneralTotal || selectedInstitutionalExam.scores.generalParticipantCount;
+          }
+
+          const calculateRankStats = (rank?: number, total?: number) => {
+            if (!rank || rank <= 0) {
+              return {
+                displayRank: 'Derece Yok',
+                percentileStr: '-',
+                percentileVal: 0,
+                fillPercentage: 0,
+                hasData: false
+              };
+            }
+            if (!total || total <= 0) {
+              return {
+                displayRank: `${rank}. Derece`,
+                percentileStr: 'Katılımcı Sayısı Yok',
+                percentileVal: 0,
+                fillPercentage: 100,
+                hasData: true
+              };
+            }
+
+            const percentile = (rank / total) * 100;
+            const fillPercentage = Math.max(4, Math.min(100, ((total - rank + 1) / total) * 100));
+
+            return {
+              displayRank: `${rank}. / ${total.toLocaleString('tr-TR')} Kişi`,
+              percentileStr: `%${percentile < 1 ? percentile.toFixed(2) : percentile.toFixed(1)} Dilim`,
+              percentileVal: percentile,
+              fillPercentage,
+              hasData: true
+            };
+          };
+
+          const classStats = calculateRankStats(classRank, classTotal);
+          const instStats = calculateRankStats(instRank, instTotal);
+          const genStats = calculateRankStats(genRank, genTotal);
+
+          return (
+            <div className="space-y-2">
+              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-2">
+                <TrendingUp className="w-4 h-4 text-indigo-400" />
+                <span>Dereceler & Yüzdelik Dilim Analizi ({bestScoreType})</span>
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Sınıf Derecesi */}
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider">Sınıf Derecesi</span>
+                    {classStats.percentileVal > 0 && (
+                      <span className="text-xs font-black text-indigo-300 bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded-md">
+                        {classStats.percentileStr}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-base sm:text-lg font-black text-white">{classStats.displayRank}</div>
+                  <div className="space-y-1">
+                    <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-white/5">
+                      <div 
+                        className="bg-gradient-to-r from-indigo-500 to-indigo-400 h-full rounded-full transition-all duration-500" 
+                        style={{ width: `${classStats.fillPercentage}%` }} 
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
+                      <span>1. Sıra</span>
+                      <span>{classTotal ? `${classTotal} Kişi` : 'Son Sıra'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Okul / Kurum Derecesi */}
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider">Okul / Kurum Derecesi</span>
+                    {instStats.percentileVal > 0 && (
+                      <span className="text-xs font-black text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                        {instStats.percentileStr}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-base sm:text-lg font-black text-white">{instStats.displayRank}</div>
+                  <div className="space-y-1">
+                    <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-white/5">
+                      <div 
+                        className="bg-gradient-to-r from-emerald-500 to-emerald-400 h-full rounded-full transition-all duration-500" 
+                        style={{ width: `${instStats.fillPercentage}%` }} 
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
+                      <span>1. Sıra</span>
+                      <span>{instTotal ? `${instTotal} Kişi` : 'Son Sıra'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* İl / Genel Derecesi */}
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-extrabold text-amber-400 uppercase tracking-wider">İl / Genel Derecesi</span>
+                    {genStats.percentileVal > 0 && (
+                      <span className="text-xs font-black text-amber-300 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                        {genStats.percentileStr}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-base sm:text-lg font-black text-white">{genStats.displayRank}</div>
+                  <div className="space-y-1">
+                    <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-white/5">
+                      <div 
+                        className="bg-gradient-to-r from-amber-500 to-amber-400 h-full rounded-full transition-all duration-500" 
+                        style={{ width: `${genStats.fillPercentage}%` }} 
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-slate-500 font-semibold">
+                      <span>1. Sıra</span>
+                      <span>{genTotal ? `${genTotal.toLocaleString('tr-TR')} Kişi` : 'Son Sıra'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Subject Net Summary Table */}
         <div className="space-y-3">
