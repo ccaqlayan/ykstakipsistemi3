@@ -514,31 +514,25 @@ router.post('/analyze-error-priority', async (req, res) => {
       }
     });
 
-    const prompt = `
-Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı - TYT & AYT) hazırlık sürecinde öğrencilerin deneme sınavı ve soru bankası yanlışlarını derinlemesine analiz eden uzman bir YKS Rehberlik ve Branş Koçusun.
+    const prompt = `YKS Sınav Koçusun. Öğrencinin deneme yanlışı için hata teşhisi yap ve 1-10 arası öncelik puanı ("rating") belirle.
 
-GİRİŞ VERİLERİ:
-- Ders: ${subject || 'Bilinmiyor'}
-- Konu Adı: ${topicName || 'Bilinmiyor'}
-- Kaynak / Deneme / Yayın: ${publisher || 'Belirtilmemiş'}
-- Hata Nedeni: ${errorReason || 'Bilinmiyor'} (bilgi_eksigi: Konu / Bilgi Eksikliği, dikkat_hatasi: Dikkat / İşlem Hatası, zaman_yetmedi: Süre / Zaman Baskısı, iki_sik_arasinda: İki Şık Arasında Kalma / Çeldiriciye Düşme, soru_kokunu_yanlis_okuma: Soru Kökünü Yanlış Okuma)
-- Çözüm Notları / Hatırlatma: ${solutionNotes || 'Belirtilmemiş'}
+GİRİŞ:
+- Ders: ${subject || '-'}
+- Konu: ${topicName || '-'}
+- Yayın: ${publisher || '-'}
+- Hata Nedeni: ${errorReason || '-'}
+- Çözüm Notu: ${solutionNotes || '-'}
 
-GÖREVİN:
-1. Bu konunun ÖSYM YKS (TYT/AYT) son yıllardaki çıkma sıklığını ve soru potansiyelini değerlendir.
-2. Hatanın nedenini ve kaynağını göz önüne alarak 1 ile 10 arasında bir Öncelik Puanı ("rating") belirle (10: Acil ve kritik çalışma gerektiren en yüksek öncelik; 1: Düşük öncelikli/basit işlem hatası).
-3. Öğrenci için çok bilgilendirici, samimi, pedagojik ve doğrudan uygulanabilir zengin bir Koçluk Analiz Raporu ("analysis") hazırla.
+KURALLAR:
+1. "analysis" metnine kesinlikle başlık/etiket EKLEME (Örn: "**Hata Teşhisi:**" yazma).
+2. "analysis" metninin İLK CÜMLESİNDE bu konunun YKS'de her yıl ortalama kaç soru çıktığını net olarak belirt (örn: "Bu konu YKS'de her yıl ortalama X soru ile karşımıza çıkmaktadır.").
+3. Ardından hata nedeni ve konunun püf noktasına göre kısa, net ve yapıcı hata teşhisi yaz (toplam 2-3 cümle).
+4. ÖSYM soru sıklığı ve hata türüne göre 1-10 arası öncelik ("rating") belirle (10: acil/kritik, 1: önemsiz).
 
-RAPOR FORMATI:
-Analiz metninde şu başlıkları kullanarak zengin, motive edici ve yol gösterici bir Türkçe metin yaz:
-- 🎯 **ÖSYM YKS Sınav Ağırlığı & Önemi:** (Konunun sınavdaki soru değeri ve kritikliği)
-- 🔍 **Hata Teşhisi:** (Hata nedenine ve konunun püf noktalarına göre detaylı teşhis)
-- ⚡ **Hızlı Aksiyon & Çalışma Tavsiyesi:** (Öğrencinin bu eksiği kapatmak için atması gereken somut adımlar)
-
-Lütfen cevabını YALNIZCA geçerli bir JSON objesi olarak ver:
+JSON FORMATI:
 {
   "rating": 8,
-  "analysis": "🎯 **ÖSYM YKS Sınav Ağırlığı & Önemi:** ...\\n\\n🔍 **Hata Teşhisi:** ...\\n\\n⚡ **Hızlı Aksiyon & Çalışma Tavsiyesi:** ..."
+  "analysis": "Bu konu YKS'de her yıl ortalama 2-3 soru ile sorulmaktadır. ..."
 }
     `;
 
@@ -573,10 +567,13 @@ Lütfen cevabını YALNIZCA geçerli bir JSON objesi olarak ver:
     const parsedRating = parseInt(parsedData.rating, 10);
     const finalRating = isNaN(parsedRating) ? 7 : Math.min(10, Math.max(1, parsedRating));
 
+    let cleanAnalysis = (parsedData.analysis || 'Konu önemi ve hata nedeni analiz edildi.').trim();
+    cleanAnalysis = cleanAnalysis.replace(/^(?:🔍\s*)?(?:\*\*)?Hata Teşhisi:?(?:\*\*)?\s*/i, '').trim();
+
     res.json({
       success: true,
       rating: finalRating,
-      analysis: parsedData.analysis || 'Konu önemi analiz edildi.',
+      analysis: cleanAnalysis,
       aiUsage: usageRecord
     });
   } catch (err: any) {
