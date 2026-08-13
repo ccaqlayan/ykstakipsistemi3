@@ -60,6 +60,10 @@ interface StudyPlannerStatsViewProps {
   getEffectiveDayStudyMinutes?: (day: DayOfWeek, dateKey?: string) => { minutes: number; isManual: boolean; notes?: string };
   weekDaysMap?: Record<string, { isoDate: string; displayDate: string }>;
   dailyStudyLogs?: Record<string, DailyStudyTimeLog>;
+  today?: DayOfWeek;
+  openDailyStudyLogModal?: (day: DayOfWeek) => void;
+  getSubjectTheme?: (subject: string) => any;
+  currentWeekLabel?: string;
 }
 
 export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
@@ -81,8 +85,187 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
   getPlansForWeek,
   getEffectiveDayStudyMinutes,
   weekDaysMap,
-  dailyStudyLogs
+  dailyStudyLogs,
+  today,
+  openDailyStudyLogModal,
+  getSubjectTheme,
+  currentWeekLabel
 }) => {
+  // Active Week Chart State & Settings
+  const [activeChartType, setActiveChartType] = useState<'bar' | 'area' | 'line'>('bar');
+  const [activeChartComparePlan, setActiveChartComparePlan] = useState<boolean>(true);
+  const [activeChartUnit, setActiveChartUnit] = useState<'hours' | 'minutes'>('hours');
+  const [activeChartShowTarget, setActiveChartShowTarget] = useState<boolean>(true);
+  const [activeChartTargetHours, setActiveChartTargetHours] = useState<number>(6);
+  const [showActiveChartSettings, setShowActiveChartSettings] = useState<boolean>(false);
+
+  // Active Week Daily Stats Calculation
+  const activeWeekDailyStats = useMemo(() => {
+    return DAYS.map(day => {
+      const dayPlans = activePlans.filter(p => p.day === day);
+      const dayPlannedMins = dayPlans.reduce((sum, p) => sum + (p.plannedMinutes || 0), 0);
+      const dayCompletedMins = dayPlans.reduce((sum, p) => sum + (p.completedMinutes || 0), 0);
+      const dateInfo = weekDaysMap?.[day];
+      const dateKey = dateInfo?.isoDate;
+      const displayDate = dateInfo?.displayDate || '';
+      
+      const effectiveLog = getEffectiveDayStudyMinutes 
+        ? getEffectiveDayStudyMinutes(day, dateKey)
+        : { minutes: dayCompletedMins, isManual: false };
+
+      const effectiveMins = effectiveLog.minutes;
+      const isManual = effectiveLog.isManual;
+      const notes = effectiveLog.notes;
+      const completedTasksCount = dayPlans.filter(p => p.status === 'completed').length;
+      const totalTasksCount = dayPlans.length;
+      const progressPercent = dayPlannedMins > 0 ? Math.round((effectiveMins / dayPlannedMins) * 100) : 0;
+
+      const effectiveVal = activeChartUnit === 'hours' ? Number((effectiveMins / 60).toFixed(1)) : effectiveMins;
+      const plannedVal = activeChartUnit === 'hours' ? Number((dayPlannedMins / 60).toFixed(1)) : dayPlannedMins;
+      const taskVal = activeChartUnit === 'hours' ? Number((dayCompletedMins / 60).toFixed(1)) : dayCompletedMins;
+
+      return {
+        day,
+        shortDay: day.substring(0, 3),
+        displayDate,
+        dateKey,
+        dayPlans,
+        dayPlannedMins,
+        dayCompletedMins,
+        effectiveMins,
+        isManual,
+        notes,
+        completedTasksCount,
+        totalTasksCount,
+        progressPercent,
+        'Çalışma Süresi': effectiveVal,
+        'Hedef Süre': plannedVal,
+        'Görev Süresi': taskVal,
+        effectiveHours: Number((effectiveMins / 60).toFixed(1)),
+        plannedHours: Number((dayPlannedMins / 60).toFixed(1)),
+        taskHours: Number((dayCompletedMins / 60).toFixed(1)),
+        isToday: day === today
+      };
+    });
+  }, [DAYS, activePlans, weekDaysMap, getEffectiveDayStudyMinutes, today, activeChartUnit]);
+
+  const activeWeekTotals = useMemo(() => {
+    const totalPlannedMins = activeWeekDailyStats.reduce((s, d) => s + d.dayPlannedMins, 0);
+    const totalCompletedTaskMins = activeWeekDailyStats.reduce((s, d) => s + d.dayCompletedMins, 0);
+    const totalEffectiveStudyMins = activeWeekDailyStats.reduce((s, d) => s + d.effectiveMins, 0);
+    const totalTasks = activeWeekDailyStats.reduce((s, d) => s + d.totalTasksCount, 0);
+    const totalCompletedTasks = activeWeekDailyStats.reduce((s, d) => s + d.completedTasksCount, 0);
+    const overallPercent = totalPlannedMins > 0 ? Math.round((totalEffectiveStudyMins / totalPlannedMins) * 100) : 0;
+    const maxStudyDay = activeWeekDailyStats.reduce((max, d) => d.effectiveMins > max.effectiveMins ? d : max, activeWeekDailyStats[0]);
+    const avgDailyMins = Math.round(totalEffectiveStudyMins / 7);
+
+    return {
+      totalPlannedMins,
+      totalCompletedTaskMins,
+      totalEffectiveStudyMins,
+      totalTasks,
+      totalCompletedTasks,
+      overallPercent,
+      maxStudyDay,
+      avgDailyMins,
+      avgDailyHours: (avgDailyMins / 60).toFixed(1),
+      totalEffectiveHours: (totalEffectiveStudyMins / 60).toFixed(1),
+      totalPlannedHours: (totalPlannedMins / 60).toFixed(1),
+      unitLabel: activeChartUnit === 'hours' ? 'sa' : 'dk'
+    };
+  }, [activeWeekDailyStats, activeChartUnit]);
+
+  const activeWeekSubjectStats = useMemo(() => {
+    const map: Record<string, { planned: number; completed: number; tasks: number; completedTasks: number }> = {};
+    activePlans.forEach(p => {
+      if (!map[p.subject]) {
+        map[p.subject] = { planned: 0, completed: 0, tasks: 0, completedTasks: 0 };
+      }
+      map[p.subject].planned += p.plannedMinutes || 0;
+      map[p.subject].completed += p.completedMinutes || 0;
+      map[p.subject].tasks += 1;
+      if (p.status === 'completed') {
+        map[p.subject].completedTasks += 1;
+      }
+    });
+    return Object.keys(map).map(subj => {
+      const p = map[subj];
+      const percent = p.planned > 0 ? Math.round((p.completed / p.planned) * 100) : 0;
+      return {
+        name: subj,
+        plannedMins: p.planned,
+        completedMins: p.completed,
+        plannedHours: Number((p.planned / 60).toFixed(1)),
+        completedHours: Number((p.completed / 60).toFixed(1)),
+        tasks: p.tasks,
+        completedTasks: p.completedTasks,
+        percent
+      };
+    }).sort((a, b) => b.completedMins - a.completedMins);
+  }, [activePlans]);
+
+  // Custom Active Chart Tooltip
+  const CustomActiveChartTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const dataPoint = payload[0].payload;
+      return (
+        <div className="bg-slate-950 border border-slate-700 rounded-2xl p-3.5 shadow-2xl backdrop-blur-md text-xs space-y-2 max-w-xs">
+          <div className="font-black text-white border-b border-slate-800 pb-1.5 flex items-center justify-between gap-2">
+            <span className="flex items-center space-x-1.5">
+              <span>{dataPoint.day}</span>
+              {dataPoint.displayDate && <span className="text-slate-400 font-normal">({dataPoint.displayDate})</span>}
+              {dataPoint.isToday && <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-bold">BUGÜN</span>}
+            </span>
+            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border whitespace-nowrap ${
+              dataPoint.isManual
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+            }`}>
+              {dataPoint.isManual ? '⏱️ NET KRONOMETRE' : '📋 GÖREV BAZLI'}
+            </span>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-emerald-400 font-bold">
+              <span className="flex items-center space-x-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+                <span>Gerçekleşen Çalışma:</span>
+              </span>
+              <span className="font-mono text-sm">
+                {Math.floor(dataPoint.effectiveMins / 60)} sa {dataPoint.effectiveMins % 60} dk
+              </span>
+            </div>
+
+            {dataPoint.dayPlannedMins > 0 && (
+              <div className="flex items-center justify-between text-indigo-300">
+                <span className="flex items-center space-x-1.5">
+                  <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block"></span>
+                  <span>Hedef Görev Süresi:</span>
+                </span>
+                <span className="font-mono">
+                  {Math.floor(dataPoint.dayPlannedMins / 60)} sa {dataPoint.dayPlannedMins % 60} dk
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between text-slate-400 text-[11px] pt-0.5 border-t border-slate-800">
+              <span>Görev İlerlemesi:</span>
+              <span className="font-mono font-bold text-white">
+                {dataPoint.completedTasksCount} / {dataPoint.totalTasksCount} Görev (%{dataPoint.progressPercent})
+              </span>
+            </div>
+          </div>
+
+          {dataPoint.notes && (
+            <div className="text-[11px] text-slate-300 italic bg-slate-900/90 p-2 rounded-lg border border-slate-800">
+              "{dataPoint.notes}"
+            </div>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
   // Net Study Duration Chart State & Settings
   const [netChartScope, setNetChartScope] = useState<'selected_week' | 'all_weeks' | 'all_days'>('selected_week');
   const [netChartType, setNetChartType] = useState<'bar' | 'area' | 'line'>('bar');
@@ -267,91 +450,606 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
     <>
       {/* VIEW 3: WEEKLY STATS OVERVIEW */}
       {viewMode === 'stats' && (
-        <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4 backdrop-blur-md">
-          <h2 className="text-base font-black text-white flex items-center space-x-2">
-            <PieChart className="w-5 h-5 text-indigo-400" />
-            <span>Haftalık Çalışma Performansı & Ders Dağılımı</span>
-          </h2>
+        <div className="space-y-6 animate-in fade-in duration-300">
+          
+          {/* ACTIVE WEEK HEADER */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/90 border border-slate-800 rounded-3xl p-5 shadow-xl backdrop-blur-md">
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+                  <PieChart className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-black text-white flex items-center space-x-2">
+                    <span>Haftalık Çalışma İstatistikleri & Performans</span>
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    {currentWeekLabel ? `${currentWeekLabel} Haftası` : 'Aktif Hafta'} gün bazlı çalışma süresi grafiği ve ders tamamlama analizi
+                  </p>
+                </div>
+              </div>
+            </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-800">
-            <table className="w-full text-left text-xs text-slate-200">
-              <thead className="bg-slate-950 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
-                <tr>
-                  <th className="py-3.5 px-4">Gün</th>
-                  <th className="py-3.5 px-4 min-w-[260px]">Planlanan Dersler & Konular</th>
-                  <th className="py-3.5 px-4 text-center">Hedef Görev</th>
-                  <th className="py-3.5 px-4 text-center">Görev Süresi</th>
-                  <th className="py-3.5 px-4 text-center">Net Çalışma Süresi</th>
-                  <th className="py-3.5 px-4 text-center">İlerleme</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/80">
-                {DAYS.map((day) => {
-                  const dayPlans = activePlans.filter((p) => p.day === day);
-                  const dayPlannedMins = dayPlans.reduce((sum, p) => sum + (p.plannedMinutes || 0), 0);
-                  const dayCompletedMins = dayPlans.reduce((sum, p) => sum + (p.completedMinutes || 0), 0);
-                  const dateKey = weekDaysMap?.[day]?.isoDate;
-                  const dayLog = getEffectiveDayStudyMinutes 
-                    ? getEffectiveDayStudyMinutes(day, dateKey)
-                    : { minutes: dayCompletedMins, isManual: false };
-                  const effectiveMins = dayLog.minutes;
-                  const dayPercent = dayPlannedMins > 0 ? Math.round((effectiveMins / dayPlannedMins) * 100) : 0;
+            <div className="flex items-center space-x-2 self-start sm:self-auto">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+                <Calendar className="w-3.5 h-3.5 mr-1.5 text-indigo-400" />
+                <span>{currentWeekLabel || 'Bu Hafta'}</span>
+              </span>
+            </div>
+          </div>
 
-                  return (
-                    <tr key={day} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="py-4 px-4 font-bold text-white whitespace-nowrap">
-                        {day}
-                      </td>
-                      <td className="py-4 px-4">
-                        {dayPlans.length === 0 ? (
-                          <span className="text-slate-600 italic">Ders planlanmadı</span>
-                        ) : (
-                          <div className="flex flex-wrap gap-2">
-                            {dayPlans.map((plan) => (
-                              <span
-                                key={plan.id}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${
-                                  plan.status === 'completed'
-                                    ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-                                    : 'bg-slate-950 border-slate-800 text-slate-200'
-                                }`}
-                              >
-                                {plan.subject}: {plan.topic} ({plan.plannedMinutes}m)
-                              </span>
-                            ))}
+          {/* ACTIVE WEEK 4 KPI CARDS */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex items-center space-x-3.5">
+              <div className="w-10 h-10 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 shrink-0">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Gerçekleşen Çalışma</div>
+                <div className="text-lg font-black text-emerald-400 font-mono">
+                  {Math.floor(activeWeekTotals.totalEffectiveStudyMins / 60)} sa {activeWeekTotals.totalEffectiveStudyMins % 60} dk
+                </div>
+                <div className="text-[10px] text-slate-400 truncate">
+                  Görev: {Math.floor(activeWeekTotals.totalCompletedTaskMins / 60)} sa {activeWeekTotals.totalCompletedTaskMins % 60} dk
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex items-center space-x-3.5">
+              <div className="w-10 h-10 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400 shrink-0">
+                <Target className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Planlanan Hedef Süre</div>
+                <div className="text-lg font-black text-white font-mono">
+                  {Math.floor(activeWeekTotals.totalPlannedMins / 60)} sa {activeWeekTotals.totalPlannedMins % 60} dk
+                </div>
+                <div className="text-[10px] text-slate-400 truncate">
+                  Toplam {activeWeekTotals.totalTasks} Görev
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex items-center space-x-3.5">
+              <div className="w-10 h-10 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-center justify-center text-purple-400 shrink-0">
+                <Award className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Haftalık Tamamlama</div>
+                <div className="text-lg font-black text-purple-300 font-mono">
+                  %{activeWeekTotals.overallPercent}
+                </div>
+                <div className="text-[10px] text-slate-400 truncate">
+                  {activeWeekTotals.totalCompletedTasks} / {activeWeekTotals.totalTasks} Görev Bitti
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex items-center space-x-3.5">
+              <div className="w-10 h-10 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-center text-amber-400 shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold text-slate-400 uppercase">En Verimli Gün</div>
+                <div className="text-sm font-black text-amber-300 truncate">
+                  {activeWeekTotals.maxStudyDay?.effectiveMins > 0 
+                    ? `${activeWeekTotals.maxStudyDay.day} (${Math.floor(activeWeekTotals.maxStudyDay.effectiveMins / 60)} sa ${activeWeekTotals.maxStudyDay.effectiveMins % 60} dk)`
+                    : 'Henüz Veri Yok'}
+                </div>
+                <div className="text-[10px] text-slate-400 truncate">
+                  Ortalama: {activeWeekTotals.avgDailyHours} sa / gün
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ACTIVE WEEK VISUALS: DAILY STUDY CHART + SUBJECT BREAKDOWN */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* HERO ACTIVE WEEK DAILY STUDY TIME CHART */}
+            <div className="lg:col-span-8 bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4 backdrop-blur-md">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3.5">
+                <div className="space-y-0.5">
+                  <h3 className="text-sm font-black text-white flex items-center space-x-2">
+                    <TrendingUp className="w-4 h-4 text-emerald-400" />
+                    <span>Günlük Çalışma Süresi Grafiği</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Net çalışma süresi girildiyse net kronometre, girilmediyse görev süresi baz alınır.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Chart Type Selector */}
+                  <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setActiveChartType('bar')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                        activeChartType === 'bar'
+                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Çubuk
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveChartType('area')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                        activeChartType === 'area'
+                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Alan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveChartType('line')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                        activeChartType === 'line'
+                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Çizgi
+                    </button>
+                  </div>
+
+                  {/* Unit Selector */}
+                  <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setActiveChartUnit('hours')}
+                      className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                        activeChartUnit === 'hours'
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Saat
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveChartUnit('minutes')}
+                      className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                        activeChartUnit === 'minutes'
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Dk
+                    </button>
+                  </div>
+
+                  {/* Settings Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowActiveChartSettings(!showActiveChartSettings)}
+                    className={`flex items-center space-x-1 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all border cursor-pointer ${
+                      showActiveChartSettings
+                        ? 'bg-indigo-600/30 border-indigo-500 text-white shadow-sm'
+                        : 'bg-slate-950 border-slate-800 text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    <Settings2 className="w-3.5 h-3.5" />
+                    <span>Ayarlar</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Active Chart Settings Subpanel */}
+              {showActiveChartSettings && (
+                <div className="bg-slate-950/90 border border-slate-800 rounded-2xl p-3.5 space-y-3 animate-in slide-in-from-top-2 duration-200 text-xs">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center space-x-3">
+                      <span className="font-bold text-slate-300 flex items-center space-x-1.5">
+                        <Target className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Günlük Hedef Çizgisi:</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setActiveChartShowTarget(!activeChartShowTarget)}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer ${
+                          activeChartShowTarget ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-slate-800 text-slate-500'
+                        }`}
+                      >
+                        {activeChartShowTarget ? 'Açık' : 'Kapalı'}
+                      </button>
+                      {activeChartShowTarget && (
+                        <div className="flex items-center gap-1">
+                          {[4, 5, 6, 7, 8].map(h => (
+                            <button
+                              key={h}
+                              type="button"
+                              onClick={() => setActiveChartTargetHours(h)}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                                activeChartTargetHours === h
+                                  ? 'bg-amber-500 text-slate-950'
+                                  : 'bg-slate-800 text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              {h} sa
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold text-slate-300">Planlanan Süre:</span>
+                      <button
+                        type="button"
+                        onClick={() => setActiveChartComparePlan(!activeChartComparePlan)}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer ${
+                          activeChartComparePlan ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40' : 'bg-slate-800 text-slate-500'
+                        }`}
+                      >
+                        {activeChartComparePlan ? 'Gösteriliyor' : 'Gizli'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Chart Canvas */}
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  {activeChartType === 'bar' ? (
+                    <BarChart data={activeWeekDailyStats} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="activeNetBarGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
+                          <stop offset="100%" stopColor="#059669" stopOpacity={0.8}/>
+                        </linearGradient>
+                        <linearGradient id="activePlanBarGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#6366f1" stopOpacity={0.7}/>
+                          <stop offset="100%" stopColor="#4338ca" stopOpacity={0.5}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                      <XAxis dataKey="day" stroke="#64748b" style={{ fontSize: '11px', fontWeight: 'bold' }} />
+                      <YAxis stroke="#64748b" style={{ fontSize: '10px' }} unit={` ${activeWeekTotals.unitLabel}`} />
+                      <Tooltip content={<CustomActiveChartTooltip />} />
+                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                      {activeChartShowTarget && (
+                        <ReferenceLine 
+                          y={activeChartUnit === 'hours' ? activeChartTargetHours : activeChartTargetHours * 60} 
+                          stroke="#f59e0b" 
+                          strokeDasharray="4 4" 
+                          strokeWidth={2}
+                          label={{ value: `🎯 Hedef: ${activeChartTargetHours} sa`, fill: '#f59e0b', fontSize: 10, position: 'top' }} 
+                        />
+                      )}
+                      <Bar name="Gerçekleşen Çalışma" dataKey="Çalışma Süresi" fill="url(#activeNetBarGrad)" radius={[6, 6, 0, 0]} />
+                      {activeChartComparePlan && (
+                        <Bar name="Hedef Süre" dataKey="Hedef Süre" fill="url(#activePlanBarGrad)" radius={[6, 6, 0, 0]} />
+                      )}
+                    </BarChart>
+                  ) : activeChartType === 'area' ? (
+                    <AreaChart data={activeWeekDailyStats} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="activeAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="activePlanAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                      <XAxis dataKey="day" stroke="#64748b" style={{ fontSize: '11px', fontWeight: 'bold' }} />
+                      <YAxis stroke="#64748b" style={{ fontSize: '10px' }} unit={` ${activeWeekTotals.unitLabel}`} />
+                      <Tooltip content={<CustomActiveChartTooltip />} />
+                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                      {activeChartShowTarget && (
+                        <ReferenceLine 
+                          y={activeChartUnit === 'hours' ? activeChartTargetHours : activeChartTargetHours * 60} 
+                          stroke="#f59e0b" 
+                          strokeDasharray="4 4" 
+                          strokeWidth={2}
+                          label={{ value: `🎯 Hedef: ${activeChartTargetHours} sa`, fill: '#f59e0b', fontSize: 10, position: 'top' }} 
+                        />
+                      )}
+                      <Area type="monotone" name="Gerçekleşen Çalışma" dataKey="Çalışma Süresi" stroke="#10b981" strokeWidth={3} fill="url(#activeAreaGrad)" />
+                      {activeChartComparePlan && (
+                        <Area type="monotone" name="Hedef Süre" dataKey="Hedef Süre" stroke="#6366f1" strokeWidth={2} strokeDasharray="3 3" fill="url(#activePlanAreaGrad)" />
+                      )}
+                    </AreaChart>
+                  ) : (
+                    <LineChart data={activeWeekDailyStats} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                      <XAxis dataKey="day" stroke="#64748b" style={{ fontSize: '11px', fontWeight: 'bold' }} />
+                      <YAxis stroke="#64748b" style={{ fontSize: '10px' }} unit={` ${activeWeekTotals.unitLabel}`} />
+                      <Tooltip content={<CustomActiveChartTooltip />} />
+                      <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                      {activeChartShowTarget && (
+                        <ReferenceLine 
+                          y={activeChartUnit === 'hours' ? activeChartTargetHours : activeChartTargetHours * 60} 
+                          stroke="#f59e0b" 
+                          strokeDasharray="4 4" 
+                          strokeWidth={2}
+                          label={{ value: `🎯 Hedef: ${activeChartTargetHours} sa`, fill: '#f59e0b', fontSize: 10, position: 'top' }} 
+                        />
+                      )}
+                      <Line type="monotone" name="Gerçekleşen Çalışma" dataKey="Çalışma Süresi" stroke="#10b981" strokeWidth={3.5} dot={{ r: 4, fill: '#10b981' }} activeDot={{ r: 6 }} />
+                      {activeChartComparePlan && (
+                        <Line type="monotone" name="Hedef Süre" dataKey="Hedef Süre" stroke="#6366f1" strokeWidth={2} strokeDasharray="4 4" dot={{ r: 3, fill: '#6366f1' }} activeDot={{ r: 5 }} />
+                      )}
+                    </LineChart>
+                  )}
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* ACTIVE WEEK SUBJECT BREAKDOWN CARD */}
+            <div className="lg:col-span-4 bg-slate-900/80 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-4 backdrop-blur-md flex flex-col justify-between">
+              <div>
+                <h3 className="text-sm font-black text-white flex items-center space-x-2 border-b border-slate-800/80 pb-3">
+                  <BarChart3 className="w-4 h-4 text-purple-400" />
+                  <span>Ders Dağılımı (Bu Hafta)</span>
+                </h3>
+
+                <div className="mt-3.5 space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                  {activeWeekSubjectStats.length === 0 ? (
+                    <div className="text-center py-8 text-xs text-slate-500 italic">
+                      Henüz bu hafta için planlanmış ders bulunmuyor.
+                    </div>
+                  ) : (
+                    activeWeekSubjectStats.map((subj) => {
+                      const theme = getSubjectTheme ? getSubjectTheme(subj.name) : null;
+                      return (
+                        <div key={subj.name} className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className={`font-bold px-2 py-0.5 rounded-lg border text-[11px] ${
+                              theme?.badgeClass || 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                            }`}>
+                              {subj.name}
+                            </span>
+                            <span className="font-mono font-bold text-emerald-400">
+                              {Math.floor(subj.completedMins / 60)} sa {subj.completedMins % 60} dk
+                            </span>
                           </div>
-                        )}
-                      </td>
-                      <td className="py-4 px-4 text-center font-mono font-bold text-slate-300 whitespace-nowrap">
-                        {dayPlannedMins} dk
-                      </td>
-                      <td className="py-4 px-4 text-center font-mono font-bold text-slate-400 whitespace-nowrap">
-                        {dayCompletedMins} dk
-                      </td>
-                      <td className="py-4 px-4 text-center whitespace-nowrap">
-                        <span className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-xs font-mono font-extrabold border ${
-                          dayLog.isManual
-                            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                            : effectiveMins > 0
-                            ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20'
-                            : 'text-slate-500 border-transparent'
-                        }`}>
-                          <span>{effectiveMins} dk</span>
-                          {dayLog.isManual ? (
-                            <span className="text-[9px] font-sans px-1 rounded bg-emerald-500/20 text-emerald-300 uppercase">NET</span>
-                          ) : effectiveMins > 0 ? (
-                            <span className="text-[9px] font-sans px-1 rounded bg-slate-800 text-slate-400 uppercase">GÖREV</span>
-                          ) : null}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 text-center font-mono font-bold text-indigo-300 whitespace-nowrap">
-                        %{dayPercent}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                          
+                          <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                              className="bg-emerald-500 h-1.5 rounded-full transition-all"
+                              style={{ width: `${Math.min(subj.percent, 100)}%` }}
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between text-[10px] text-slate-400">
+                            <span>Hedef: {Math.floor(subj.plannedMins / 60)} sa {subj.plannedMins % 60} dk</span>
+                            <span className="font-semibold text-slate-300">{subj.completedTasks}/{subj.tasks} Görev (%{subj.percent})</span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between">
+                <span>Ders Çeşidi:</span>
+                <span className="font-bold text-white font-mono">{activeWeekSubjectStats.length} Farklı Ders</span>
+              </div>
+            </div>
+          </div>
+
+          {/* REDESIGNED & ORGANIZED ACTIVE WEEK PERFORMANCE TABLE */}
+          <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4 backdrop-blur-md">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+              <div>
+                <h3 className="text-base font-black text-white flex items-center space-x-2">
+                  <CalendarDays className="w-5 h-5 text-indigo-400" />
+                  <span>Gün Bazlı Detaylı Çalışma & Görev Tablosu</span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Her gün için planlanan dersler, gerçekleşen görev süreleri ve net kronometre kayıtları
+                </p>
+              </div>
+
+              <span className="text-xs text-slate-400 italic">
+                * Süre kutucuğuna tıklayarak doğrudan net çalışma sürenizi güncelleyebilirsiniz.
+              </span>
+            </div>
+
+            <div className="overflow-x-auto rounded-2xl border border-slate-800">
+              <table className="w-full text-left text-xs text-slate-200">
+                <thead className="bg-slate-950 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
+                  <tr>
+                    <th className="py-3.5 px-4">Gün & Tarih</th>
+                    <th className="py-3.5 px-4 min-w-[280px]">Planlanan Dersler & Görevler</th>
+                    <th className="py-3.5 px-4 text-center">Hedef Görev</th>
+                    <th className="py-3.5 px-4 text-center">Görev Süresi</th>
+                    <th className="py-3.5 px-4 text-center">Günün Çalışma Süresi</th>
+                    <th className="py-3.5 px-4 text-center">Verimlilik / Durum</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/80">
+                  {activeWeekDailyStats.map((row) => {
+                    const hasTasks = row.dayPlans.length > 0;
+                    return (
+                      <tr 
+                        key={row.day} 
+                        className={`transition-colors ${
+                          row.isToday 
+                            ? 'bg-indigo-950/20 hover:bg-indigo-950/30' 
+                            : 'hover:bg-slate-800/40'
+                        }`}
+                      >
+                        {/* Day & Date */}
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <div>
+                              <div className="font-black text-white text-sm flex items-center space-x-1.5">
+                                <span>{row.day}</span>
+                                {row.isToday && (
+                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                    BUGÜN
+                                  </span>
+                                )}
+                              </div>
+                              {row.displayDate && (
+                                <div className="text-[11px] text-slate-400 font-medium">
+                                  {row.displayDate}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Subject & Topics list */}
+                        <td className="py-4 px-4">
+                          {!hasTasks ? (
+                            <span className="text-slate-600 italic text-xs">Bu gün için ders görevi planlanmadı</span>
+                          ) : (
+                            <div className="flex flex-wrap gap-1.5">
+                              {row.dayPlans.map((plan) => {
+                                const theme = getSubjectTheme ? getSubjectTheme(plan.subject) : null;
+                                return (
+                                  <span
+                                    key={plan.id}
+                                    className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold border ${
+                                      plan.status === 'completed'
+                                        ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
+                                        : plan.status === 'in_progress'
+                                        ? 'bg-amber-950/40 border-amber-500/40 text-amber-300'
+                                        : 'bg-slate-950 border-slate-800 text-slate-300'
+                                    }`}
+                                  >
+                                    <span className="text-[10px]">
+                                      {plan.status === 'completed' ? '✅' : plan.status === 'in_progress' ? '⚡' : '⏳'}
+                                    </span>
+                                    <span className="font-bold text-slate-100">{plan.subject}:</span>
+                                    <span className="truncate max-w-[140px]">{plan.topic}</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">({plan.plannedMinutes}m)</span>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Planned target time */}
+                        <td className="py-4 px-4 text-center font-mono whitespace-nowrap">
+                          <div className="font-bold text-slate-200">
+                            {Math.floor(row.dayPlannedMins / 60)} sa {row.dayPlannedMins % 60} dk
+                          </div>
+                          <div className="text-[10px] text-slate-400">
+                            {row.totalTasksCount} Görev
+                          </div>
+                        </td>
+
+                        {/* Task completed duration & progress */}
+                        <td className="py-4 px-4 text-center font-mono whitespace-nowrap">
+                          <div className="font-bold text-slate-300">
+                            {Math.floor(row.dayCompletedMins / 60)} sa {row.dayCompletedMins % 60} dk
+                          </div>
+                          <div className="w-16 mx-auto bg-slate-800 rounded-full h-1 mt-1 overflow-hidden">
+                            <div 
+                              className="bg-indigo-500 h-1 rounded-full"
+                              style={{ width: `${Math.min(row.dayPlannedMins > 0 ? (row.dayCompletedMins / row.dayPlannedMins) * 100 : 0, 100)}%` }}
+                            />
+                          </div>
+                        </td>
+
+                        {/* Günün Çalışma Süresi (Net/Görev click-to-edit badge) */}
+                        <td className="py-4 px-4 text-center whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => openDailyStudyLogModal && openDailyStudyLogModal(row.day)}
+                            className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-black border transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm ${
+                              row.isManual
+                                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25 shadow-emerald-950/40'
+                                : row.effectiveMins > 0
+                                ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/25'
+                                : 'bg-slate-800/60 text-slate-400 border-slate-700 hover:bg-slate-800'
+                            }`}
+                            title={row.notes ? `Not: ${row.notes}` : 'Net süreyi düzenle'}
+                          >
+                            <span>
+                              {Math.floor(row.effectiveMins / 60)} sa {row.effectiveMins % 60} dk
+                            </span>
+                            {row.isManual ? (
+                              <span className="text-[9px] font-sans px-1 rounded bg-emerald-500/20 text-emerald-300 uppercase tracking-tighter">
+                                NET
+                              </span>
+                            ) : row.effectiveMins > 0 ? (
+                              <span className="text-[9px] font-sans px-1 rounded bg-slate-800 text-slate-400 uppercase tracking-tighter">
+                                GÖREV
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-500">+</span>
+                            )}
+                          </button>
+                        </td>
+
+                        {/* Verimlilik / Başarı Rozeti */}
+                        <td className="py-4 px-4 text-center whitespace-nowrap">
+                          {row.dayPlannedMins === 0 && row.effectiveMins === 0 ? (
+                            <span className="text-slate-600 text-[11px] italic">—</span>
+                          ) : row.progressPercent >= 100 ? (
+                            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                              <span>🌟</span>
+                              <span>%{row.progressPercent}</span>
+                            </span>
+                          ) : row.progressPercent >= 75 ? (
+                            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-bold bg-teal-500/20 text-teal-300 border border-teal-500/40">
+                              <span>✅</span>
+                              <span>%{row.progressPercent}</span>
+                            </span>
+                          ) : row.progressPercent >= 50 ? (
+                            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              <span>⚡</span>
+                              <span>%{row.progressPercent}</span>
+                            </span>
+                          ) : row.effectiveMins > 0 ? (
+                            <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-bold bg-orange-500/20 text-orange-300 border border-orange-500/40">
+                              <span>⏳</span>
+                              <span>%{row.progressPercent}</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-800 text-slate-400">
+                              <span>⭕</span>
+                              <span>%0</span>
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+
+                {/* TABLE SUMMARY FOOTER ROW */}
+                <tfoot className="bg-slate-950 font-black text-xs border-t-2 border-slate-700">
+                  <tr>
+                    <td className="py-3.5 px-4 text-white uppercase tracking-wider">
+                      Genel Toplam (7 Gün)
+                    </td>
+                    <td className="py-3.5 px-4 text-slate-400">
+                      {activeWeekTotals.totalTasks} Görev Planlandı ({activeWeekTotals.totalCompletedTasks} Tamamlandı)
+                    </td>
+                    <td className="py-3.5 px-4 text-center font-mono text-slate-300">
+                      {Math.floor(activeWeekTotals.totalPlannedMins / 60)} sa {activeWeekTotals.totalPlannedMins % 60} dk
+                    </td>
+                    <td className="py-3.5 px-4 text-center font-mono text-slate-300">
+                      {Math.floor(activeWeekTotals.totalCompletedTaskMins / 60)} sa {activeWeekTotals.totalCompletedTaskMins % 60} dk
+                    </td>
+                    <td className="py-3.5 px-4 text-center font-mono text-emerald-400 text-sm">
+                      {Math.floor(activeWeekTotals.totalEffectiveStudyMins / 60)} sa {activeWeekTotals.totalEffectiveStudyMins % 60} dk
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-mono font-bold">
+                        %{activeWeekTotals.overallPercent}
+                      </span>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </div>
       )}
