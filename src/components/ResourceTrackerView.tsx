@@ -1193,130 +1193,234 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                       </div>
                     </div>
 
+                    {/* Kitap Notu (Çözülen Konu Oranı kutusunun altında) */}
+                    {editingNotesId === res.id ? (
+                      <div className="flex items-center gap-2 bg-slate-950 p-2 rounded-xl border border-indigo-500/50">
+                        <input
+                          type="text"
+                          value={inlineNotesText}
+                          onChange={(e) => setInlineNotesText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveInlineNotes(res);
+                            } else if (e.key === 'Escape') {
+                              setEditingNotesId(null);
+                            }
+                          }}
+                          className="flex-1 bg-transparent text-xs text-white focus:outline-none px-2 py-1"
+                          placeholder="Kitap notu yazın..."
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleSaveInlineNotes(res)}
+                          className="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all shrink-0 cursor-pointer"
+                        >
+                          Kaydet
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingNotesId(null)}
+                          className="text-slate-400 hover:text-white text-[11px] px-2 py-1.5 rounded-lg transition-all shrink-0 cursor-pointer"
+                        >
+                          İptal
+                        </button>
+                      </div>
+                    ) : (
+                      <p 
+                        onClick={() => {
+                          setEditingNotesId(res.id);
+                          setInlineNotesText(res.notes || '');
+                        }}
+                        className="text-xs text-slate-300 bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80 cursor-pointer hover:border-indigo-500/30 hover:bg-slate-950 transition-all flex items-center justify-between group/notes"
+                        title="Kitap notunu düzenlemek için tıklayın"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <span className="text-slate-400 font-semibold shrink-0">Kitap Notu:</span>
+                          <span className={res.notes ? "" : "text-slate-500 italic"}>
+                            {res.notes || 'Not eklemek için tıklayın...'}
+                          </span>
+                        </span>
+                        <Pencil className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover/notes:opacity-100 transition-all shrink-0 ml-2" />
+                      </p>
+                    )}
+
                     {/* EXPANDABLE TOPIC CHECKLIST FOR THIS BOOK WITH SLIDE DOWN/UP ANIMATION */}
                     <AnimatePresence initial={false}>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3, ease: 'easeInOut' }}
-                          className="overflow-hidden mt-4 pt-4 border-t border-slate-800 space-y-3 bg-slate-950/80 p-4 rounded-xl border border-indigo-500/20"
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <div>
-                              <h4 className="text-xs font-bold text-white flex items-center space-x-1.5">
-                                <ListChecks className="w-4 h-4 text-indigo-400" />
-                                <span>{res.subject} Müfredat Konu Çözüm Listesi</span>
-                              </h4>
-                              <p className="text-[11px] text-slate-400">
-                                Bu soru bankasında tamamladığınız konuları kutucuklara tıklayarak işaretleyin.
-                              </p>
+                      {isExpanded && (() => {
+                        const unsolvedTopics = filteredTopics.filter(t => !completedTopics.includes(t));
+                        const solvedTopics = filteredTopics.filter(t => completedTopics.includes(t));
+
+                        return (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.3, ease: 'easeInOut' }}
+                            className="overflow-hidden mt-4 pt-4 border-t border-slate-800 space-y-3 bg-slate-950/80 p-4 rounded-xl border border-indigo-500/20"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div>
+                                <h4 className="text-xs font-bold text-white flex items-center space-x-1.5">
+                                  <ListChecks className="w-4 h-4 text-indigo-400" />
+                                  <span>{res.subject} Müfredat Konu Çözüm Listesi</span>
+                                </h4>
+                                <p className="text-[11px] text-slate-400">
+                                  Bu soru bankasında tamamladığınız konuları kutucuklara tıklayarak işaretleyin.
+                                </p>
+                              </div>
+
+                              {confirmState && confirmState.bookId === res.id ? (
+                                <div className="flex items-center space-x-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-amber-500/20 shadow-sm animate-in fade-in duration-200">
+                                  <span className="text-[11px] text-amber-400 font-bold shrink-0">
+                                    {confirmState.action === 'select_all' 
+                                      ? (confirmState.step === 1 ? '1/2 Onay: Tüm konular seçilsin mi?' : '2/2 Son Onay: Emin misiniz?') 
+                                      : (confirmState.step === 1 ? '1/2 Onay: Tüm işaretlemeler silinsin mi?' : '2/2 Son Onay: Emin misiniz?')}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (confirmState.step === 1) {
+                                        setConfirmState({ ...confirmState, step: 2 });
+                                      } else {
+                                        if (confirmState.action === 'select_all') {
+                                          handleSelectAllTopics(res);
+                                        } else {
+                                          handleClearAllTopics(res);
+                                        }
+                                        setConfirmState(null);
+                                      }
+                                    }}
+                                    className="px-2 py-0.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded text-[10px] font-black transition-all cursor-pointer"
+                                  >
+                                    {confirmState.step === 1 ? 'Evet' : 'Eminim, Onayla'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmState(null)}
+                                    className="px-1.5 py-0.5 bg-slate-850 hover:bg-slate-800 text-slate-300 rounded text-[10px] font-bold transition-all border border-slate-700/50 cursor-pointer"
+                                  >
+                                    Vazgeç
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmState({ bookId: res.id, action: 'select_all', step: 1 })}
+                                    className="px-2.5 py-1 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/30 rounded-lg text-[11px] font-semibold transition-all cursor-pointer"
+                                  >
+                                    Tümünü Seç
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmState({ bookId: res.id, action: 'clear', step: 1 })}
+                                    className="px-2.5 py-1 bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700 rounded-lg text-[11px] font-semibold transition-all cursor-pointer"
+                                  >
+                                    Temizle
+                                  </button>
+                                </div>
+                              )}
                             </div>
 
-                            {confirmState && confirmState.bookId === res.id ? (
-                              <div className="flex items-center space-x-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-amber-500/20 shadow-sm animate-in fade-in duration-200">
-                                <span className="text-[11px] text-amber-400 font-bold shrink-0">
-                                  {confirmState.action === 'select_all' 
-                                    ? (confirmState.step === 1 ? '1/2 Onay: Tüm konular seçilsin mi?' : '2/2 Son Onay: Emin misiniz?') 
-                                    : (confirmState.step === 1 ? '1/2 Onay: Tüm işaretlemeler silinsin mi?' : '2/2 Son Onay: Emin misiniz?')}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    if (confirmState.step === 1) {
-                                      setConfirmState({ ...confirmState, step: 2 });
-                                    } else {
-                                      if (confirmState.action === 'select_all') {
-                                        handleSelectAllTopics(res);
-                                      } else {
-                                        handleClearAllTopics(res);
-                                      }
-                                      setConfirmState(null);
-                                    }
-                                  }}
-                                  className="px-2 py-0.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded text-[10px] font-black transition-all"
-                                >
-                                  {confirmState.step === 1 ? 'Evet' : 'Eminim, Onayla'}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmState(null)}
-                                  className="px-1.5 py-0.5 bg-slate-850 hover:bg-slate-800 text-slate-300 rounded text-[10px] font-bold transition-all border border-slate-700/50"
-                                >
-                                  Vazgeç
-                                </button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center space-x-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmState({ bookId: res.id, action: 'select_all', step: 1 })}
-                                  className="px-2.5 py-1 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/30 rounded-lg text-[11px] font-semibold transition-all"
-                                >
-                                  Tümünü Seç
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setConfirmState({ bookId: res.id, action: 'clear', step: 1 })}
-                                  className="px-2.5 py-1 bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700 rounded-lg text-[11px] font-semibold transition-all"
-                                >
-                                  Temizle
-                                </button>
+                            {/* Search topics in book */}
+                            {subjectTopics.length > 6 && (
+                              <div className="relative">
+                                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                                <input
+                                  type="text"
+                                  placeholder="Konu ara... (Ör: Türev, Paragraf)"
+                                  value={searchQuery}
+                                  onChange={(e) => setTopicSearchQuery(prev => ({ ...prev, [res.id]: e.target.value }))}
+                                  className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                                />
                               </div>
                             )}
-                          </div>
 
-                          {/* Search topics in book */}
-                          {subjectTopics.length > 6 && (
-                            <div className="relative">
-                              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                              <input
-                                type="text"
-                                placeholder="Konu ara... (Ör: Türev, Paragraf)"
-                                value={searchQuery}
-                                onChange={(e) => setTopicSearchQuery(prev => ({ ...prev, [res.id]: e.target.value }))}
-                                className="w-full bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                              />
-                            </div>
-                          )}
-
-                          {/* Topics Grid */}
-                          {subjectTopics.length === 0 ? (
-                            <div className="text-xs text-slate-400 italic p-3 text-center">
-                              Bu ders için özel konu listesi bulunamadı. Genel sayaç ile takip edilmektedir.
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1 pb-1">
-                              {filteredTopics.map((topicName) => {
-                                const checked = completedTopics.includes(topicName);
-
-                                return (
-                                  <button
-                                    key={topicName}
-                                    type="button"
-                                    onClick={() => handleToggleTopicForBook(res, topicName)}
-                                    className={`flex items-center space-x-2.5 p-2.5 rounded-xl border text-left transition-all ${
-                                      checked
-                                        ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
-                                        : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/60 hover:border-slate-700'
-                                    }`}
-                                  >
-                                    {checked ? (
-                                      <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
-                                    ) : (
-                                      <Square className="w-4 h-4 text-slate-500 shrink-0" />
-                                    )}
-                                    <span className={`text-xs font-medium ${checked ? 'line-through opacity-80' : ''}`}>
-                                      {topicName}
+                            {/* Topics Grid - Separated by Solved vs To-Be-Solved */}
+                            {subjectTopics.length === 0 ? (
+                              <div className="text-xs text-slate-400 italic p-3 text-center">
+                                Bu ders için özel konu listesi bulunamadı. Genel sayaç ile takip edilmektedir.
+                              </div>
+                            ) : (
+                              <div className="space-y-4 max-h-96 overflow-y-auto pr-1 pb-1 scrollbar-thin">
+                                {/* SECTION 1: Çözülecek Konular (Bekleyenler) */}
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-extrabold text-amber-400 uppercase tracking-wider flex items-center space-x-1.5">
+                                      <Square className="w-3.5 h-3.5" />
+                                      <span>Çözülecek Konular ({unsolvedTopics.length})</span>
                                     </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </motion.div>
-                      )}
+                                    {unsolvedTopics.length > 0 && (
+                                      <span className="text-[10px] text-amber-300/80 font-mono font-medium">
+                                        Kalan: {unsolvedTopics.length} Konu
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {unsolvedTopics.length === 0 ? (
+                                    <div className="p-3 bg-emerald-950/20 border border-emerald-500/20 rounded-xl text-center text-xs text-emerald-300 font-semibold flex items-center justify-center space-x-2">
+                                      <Check className="w-4 h-4 text-emerald-400" />
+                                      <span>Tebrikler! Bu kitaptaki tüm müfredat konuları çözüldü (%100).</span>
+                                    </div>
+                                  ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      {unsolvedTopics.map((topicName) => (
+                                        <button
+                                          key={topicName}
+                                          type="button"
+                                          onClick={() => handleToggleTopicForBook(res, topicName)}
+                                          className="flex items-center space-x-2.5 p-2.5 rounded-xl border text-left transition-all bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/60 hover:border-slate-700 cursor-pointer group"
+                                        >
+                                          <Square className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 shrink-0 transition-colors" />
+                                          <span className="text-xs font-medium">{topicName}</span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* SECTION 2: Çözülen Konular (Tamamlananlar) */}
+                                <div className="space-y-2 pt-3 border-t border-slate-800/60">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-extrabold text-emerald-400 uppercase tracking-wider flex items-center space-x-1.5">
+                                      <CheckSquare className="w-3.5 h-3.5" />
+                                      <span>Çözülen Konular ({solvedTopics.length})</span>
+                                    </span>
+                                    {solvedTopics.length > 0 && (
+                                      <span className="text-[10px] text-emerald-300/80 font-mono font-medium">
+                                        Tamamlanan: {solvedTopics.length} Konu
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {solvedTopics.length === 0 ? (
+                                    <div className="p-3 bg-slate-900/40 border border-slate-800 rounded-xl text-center text-xs text-slate-500 italic">
+                                      Henüz işaretlenmiş çözülen konu bulunmuyor.
+                                    </div>
+                                  ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      {solvedTopics.map((topicName) => (
+                                        <button
+                                          key={topicName}
+                                          type="button"
+                                          onClick={() => handleToggleTopicForBook(res, topicName)}
+                                          className="flex items-center space-x-2.5 p-2.5 rounded-xl border text-left transition-all bg-emerald-950/30 border-emerald-500/30 text-emerald-200 hover:bg-emerald-950/50 hover:border-emerald-500/50 cursor-pointer group"
+                                        >
+                                          <CheckSquare className="w-4 h-4 text-emerald-400 shrink-0" />
+                                          <span className="text-xs font-medium line-through opacity-80 group-hover:opacity-100 transition-opacity">
+                                            {topicName}
+                                          </span>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </motion.div>
+                        );
+                      })()}
                     </AnimatePresence>
 
                   </div>
