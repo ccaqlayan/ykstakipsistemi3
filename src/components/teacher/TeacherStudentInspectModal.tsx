@@ -1254,35 +1254,76 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                 .slice(-14)
                 .map(d => ({ ...d, net: Number(d.net.toFixed(2)) }));
 
-              // 2. Subject Breakdown for LAST 7 DAYS (Stacked Bar)
+              // 2. Subject Breakdown for LAST 7 DAYS (X-axis: Days, Stacked Bars: Subjects)
               const last7DaysLogs = logs.filter(l => l.date && l.date >= cutoff7);
-              const logsForSubjectChart = last7DaysLogs.length > 0 ? last7DaysLogs : logs;
+              const logsFor7Days = last7DaysLogs.length > 0 ? last7DaysLogs : logs.slice(-25);
               const isUsingLast7Days = last7DaysLogs.length > 0;
 
-              const subjectMap: Record<string, { subject: string; solved: number; correct: number; wrong: number; empty: number; wrongAndEmpty: number; accuracy: number }> = {};
-              logsForSubjectChart.forEach(l => {
-                const s = l.subject || 'Diğer';
-                if (!subjectMap[s]) {
-                  subjectMap[s] = { subject: s, solved: 0, correct: 0, wrong: 0, empty: 0, wrongAndEmpty: 0, accuracy: 0 };
-                }
-                const solved = (l.solvedCount || 0);
-                const correct = (l.correctCount || 0);
-                const wrong = (l.wrongCount || 0);
-                const empty = (l.emptyCount || 0);
-                subjectMap[s].solved += solved;
-                subjectMap[s].correct += correct;
-                subjectMap[s].wrong += wrong;
-                subjectMap[s].empty += empty;
-                subjectMap[s].wrongAndEmpty += (wrong + empty);
+              const dateSet = Array.from(new Set(logsFor7Days.map(l => l.date).filter(Boolean))).sort();
+              const recent7Dates = dateSet.slice(-7);
+
+              const distinctSubjectsIn7Days = Array.from(new Set(
+                logsFor7Days
+                  .filter(l => l.date && recent7Dates.includes(l.date))
+                  .map(l => l.subject || 'Diğer')
+              ));
+
+              const last7DaysSubjectChartData = recent7Dates.map(d => {
+                const parts = d.split('-');
+                const displayDate = parts.length === 3 ? `${parts[2]}/${parts[1]}` : d;
+                const dayLogs = logsFor7Days.filter(l => l.date === d);
+
+                const row: Record<string, any> = {
+                  date: d,
+                  displayDate,
+                  total: 0
+                };
+
+                distinctSubjectsIn7Days.forEach(s => {
+                  row[s] = 0;
+                });
+
+                dayLogs.forEach(l => {
+                  const s = l.subject || 'Diğer';
+                  const count = (l.solvedCount || 0);
+                  row[s] = (row[s] || 0) + count;
+                  row.total += count;
+                });
+
+                return row;
               });
 
-              const subjectChartData = Object.values(subjectMap)
-                .map(s => ({
-                  ...s,
-                  accuracy: s.solved > 0 ? Math.round((s.correct / s.solved) * 100) : 0
-                }))
-                .sort((a, b) => b.solved - a.solved)
-                .slice(0, 8);
+              const SUBJECT_PALETTE: Record<string, string> = {
+                'Matematik': '#6366f1',
+                'TYT Matematik': '#6366f1',
+                'AYT Matematik': '#4f46e5',
+                'Geometri': '#818cf8',
+                'Türkçe': '#ec4899',
+                'TYT Türkçe': '#ec4899',
+                'Edebiyat': '#db2777',
+                'Fizik': '#06b6d4',
+                'TYT Fizik': '#06b6d4',
+                'AYT Fizik': '#0891b2',
+                'Kimya': '#10b981',
+                'TYT Kimya': '#10b981',
+                'AYT Kimya': '#059669',
+                'Biyoloji': '#84cc16',
+                'TYT Biyoloji': '#84cc16',
+                'AYT Biyoloji': '#65a30d',
+                'Tarih': '#f59e0b',
+                'TYT Tarih': '#f59e0b',
+                'AYT Tarih': '#d97706',
+                'Coğrafya': '#ea580c',
+                'TYT Coğrafya': '#ea580c',
+                'AYT Coğrafya': '#c2410c',
+                'Felsefe': '#a855f7',
+                'Din Kültürü': '#14b8a6',
+                'İngilizce': '#3b82f6',
+              };
+              const FALLBACK_COLORS = ['#6366f1', '#ec4899', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6', '#ea580c', '#14b8a6', '#84cc16', '#3b82f6', '#e11d48', '#f97316'];
+              const getSubjectColor = (subj: string, index: number) => {
+                return SUBJECT_PALETTE[subj] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+              };
 
               return (
                 <div className="space-y-5">
@@ -1365,12 +1406,12 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                   {/* Visual Charts */}
                   {logs.length > 0 && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {/* Daily Chart (Yığmalı / Stacked Bar) */}
+                      {/* Daily Chart */}
                       <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-2.5">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
                             <TrendingUp className="w-3.5 h-3.5 text-indigo-400" />
-                            <h4 className="text-xs font-bold text-white">Günlük Trend (Son 14 Gün - Yığmalı)</h4>
+                            <h4 className="text-xs font-bold text-white">Günlük Trend (Son 14 Gün)</h4>
                           </div>
                           <div className="flex items-center space-x-2 text-[10px] font-bold">
                             <span className="flex items-center space-x-1 text-emerald-400">
@@ -1409,47 +1450,60 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                         </div>
                       </div>
 
-                      {/* Subject Chart (Son 7 Gün - Yığmalı / Stacked Bar) */}
+                      {/* Subject Chart (Son 7 Gün - X ekseninde günler, sütunda o gün çözülen dersler) */}
                       <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-2.5">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
                             <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
                             <h4 className="text-xs font-bold text-white">
-                              Ders Dağılımı {isUsingLast7Days ? '(Son 7 Gün - Yığmalı)' : '(Tüm Kayıtlar)'}
+                              Ders Dağılımı {isUsingLast7Days ? '(Son 7 Gün)' : '(Son Kayıtlar)'}
                             </h4>
                           </div>
-                          <div className="flex items-center space-x-2 text-[10px] font-bold">
-                            <span className="flex items-center space-x-1 text-emerald-400">
-                              <span className="w-2 h-2 rounded-sm bg-emerald-500" />
-                              <span>Doğru</span>
-                            </span>
-                            <span className="flex items-center space-x-1 text-rose-400">
-                              <span className="w-2 h-2 rounded-sm bg-rose-500" />
-                              <span>Yanlış/Boş</span>
-                            </span>
+                          <div className="flex items-center space-x-2 text-[10px] font-bold overflow-x-auto max-w-[180px] scrollbar-none">
+                            {distinctSubjectsIn7Days.slice(0, 3).map((subj, idx) => (
+                              <span key={subj} className="flex items-center space-x-1 whitespace-nowrap text-slate-300 text-[9px]">
+                                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: getSubjectColor(subj, idx) }} />
+                                <span>{subj}</span>
+                              </span>
+                            ))}
+                            {distinctSubjectsIn7Days.length > 3 && (
+                              <span className="text-slate-500 font-mono text-[8px]">+{distinctSubjectsIn7Days.length - 3}</span>
+                            )}
                           </div>
                         </div>
 
                         <div className="h-40 w-full pt-1">
                           <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={subjectChartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                            <BarChart data={last7DaysSubjectChartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                              <XAxis dataKey="subject" stroke="#94a3b8" fontSize={9} tickLine={false} interval={0} />
+                              <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} />
                               <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
                               <Tooltip
                                 contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
-                                formatter={(val: any, name: any, item: any) => {
-                                  if (name === 'correct') return [`${val} Soru (%${item.payload.accuracy} Başarı)`, 'Doğru'];
-                                  if (name === 'wrongAndEmpty') return [`${val} Soru (${item.payload.wrong} Yanlış, ${item.payload.empty} Boş)`, 'Yanlış / Boş'];
-                                  return [val, name];
+                                formatter={(val: any, name: any) => {
+                                  if (!val || val === 0) return null as any;
+                                  return [`${val} Soru`, name];
                                 }}
                                 labelFormatter={(l: any, payload: any) => {
                                   const item = payload && payload[0]?.payload;
-                                  return item ? `${item.subject} (${item.solved} Soru - Başarı %${item.accuracy})` : `${l}`;
+                                  return item ? `Tarih: ${item.date} (Toplam: ${item.total} Soru)` : `Tarih: ${l}`;
                                 }}
                               />
-                              <Bar dataKey="correct" fill="#10b981" stackId="subjModalStack" name="correct" maxBarSize={24} />
-                              <Bar dataKey="wrongAndEmpty" fill="#f43f5e" radius={[3, 3, 0, 0]} stackId="subjModalStack" name="wrongAndEmpty" maxBarSize={24} />
+                              {distinctSubjectsIn7Days.map((subj, sIdx) => {
+                                const color = getSubjectColor(subj, sIdx);
+                                const isTop = sIdx === distinctSubjectsIn7Days.length - 1;
+                                return (
+                                  <Bar
+                                    key={subj}
+                                    dataKey={subj}
+                                    fill={color}
+                                    stackId="daySubjectsModalStack"
+                                    name={subj}
+                                    radius={isTop ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+                                    maxBarSize={24}
+                                  />
+                                );
+                              })}
                             </BarChart>
                           </ResponsiveContainer>
                         </div>
