@@ -25,6 +25,8 @@ interface StudyPlannerWeeklyBoardProps {
   getSubjectTheme: (subject: string) => SubjectTheme;
   DAY_COLUMN_STYLES: Record<string, any>;
   dragOverDay: DayOfWeek | null;
+  dragOverPlanId?: string | null;
+  dropPosition?: 'before' | 'after' | null;
   draggedPlanId: string | null;
   touchDraggedPlanId: string | null;
   openMoveMenuPlanId: string | null;
@@ -32,6 +34,9 @@ interface StudyPlannerWeeklyBoardProps {
   handleDragOver: (e: React.DragEvent, day: DayOfWeek) => void;
   handleDragLeave: (e: React.DragEvent, day: DayOfWeek) => void;
   handleDrop: (e: React.DragEvent, targetDay: DayOfWeek) => void;
+  handleDragOverCard?: (e: React.DragEvent, planId: string, day: DayOfWeek) => void;
+  handleDragLeaveCard?: (e: React.DragEvent, planId: string) => void;
+  handleDropCard?: (e: React.DragEvent, targetPlanId: string, day: DayOfWeek) => void;
   handleDragStart: (e: React.DragEvent, planId: string) => void;
   handleDragEnd: () => void;
   handleTouchStart: (e: React.TouchEvent, planId: string) => void;
@@ -59,6 +64,8 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
   getSubjectTheme,
   DAY_COLUMN_STYLES,
   dragOverDay,
+  dragOverPlanId,
+  dropPosition,
   draggedPlanId,
   touchDraggedPlanId,
   openMoveMenuPlanId,
@@ -66,6 +73,9 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
   handleDragOver,
   handleDragLeave,
   handleDrop,
+  handleDragOverCard,
+  handleDragLeaveCard,
+  handleDropCard,
   handleDragStart,
   handleDragEnd,
   handleTouchStart,
@@ -109,7 +119,7 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-400 bg-slate-900/40 p-3 rounded-2xl border border-slate-800">
           <div className="flex items-center space-x-2">
             <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
-            <span><strong>Sürükle & Bırak İpucu:</strong> Herhangi bir görevi basılı tutarak başka bir günün sütununa sürükleyin. Sürüklediğinizde hedef sütun mor renkle parlayacaktır.</span>
+            <span><strong>Sürükle & Sırala İpucu:</strong> Görevleri basılı tutup sürükleyerek <strong>aynı gün içinde yukarı/aşağı sıralayabilir</strong> veya başka bir günün sütununa taşıyabilirsiniz.</span>
           </div>
         </div>
       )}
@@ -280,9 +290,14 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                     return (
                       <div
                         key={plan.id}
+                        data-plan-id={plan.id}
+                        data-plan-day={day}
                         draggable={!isArchivedWeek}
                         onDragStart={(e) => !isArchivedWeek && handleDragStart(e, plan.id)}
                         onDragEnd={handleDragEnd}
+                        onDragOver={(e) => !isArchivedWeek && handleDragOverCard?.(e, plan.id, day)}
+                        onDragLeave={(e) => !isArchivedWeek && handleDragLeaveCard?.(e, plan.id)}
+                        onDrop={(e) => !isArchivedWeek && handleDropCard?.(e, plan.id, day)}
                         onTouchStart={(e) => !isArchivedWeek && handleTouchStart(e, plan.id)}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
@@ -308,11 +323,29 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
                         } ${subjectTheme.cardBorderClass} ${
                           isBeingDragged
                             ? 'opacity-40 scale-95 border-dashed border-indigo-400'
+                            : dragOverPlanId === plan.id
+                            ? 'border-indigo-400 bg-indigo-950/40 shadow-lg shadow-indigo-500/20 scale-[1.01]'
                             : plan.status === 'completed'
                             ? 'bg-emerald-950/20 border-emerald-500/30 text-slate-300'
                             : 'bg-slate-950 border-slate-800 hover:border-slate-700 hover:bg-slate-800/50'
                         }`}
                       >
+                        {/* Insertion Line / Drop Indicator Above */}
+                        {dragOverPlanId === plan.id && dropPosition === 'before' && (
+                          <div className="absolute -top-1.5 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-400 to-indigo-500 rounded-full shadow-lg shadow-indigo-500/60 animate-pulse pointer-events-none z-30 flex items-center justify-between px-0.5">
+                            <div className="w-2.5 h-2.5 rounded-full bg-sky-300 -ml-1 border-2 border-slate-950 shadow" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-sky-300 -mr-1 border-2 border-slate-950 shadow" />
+                          </div>
+                        )}
+
+                        {/* Insertion Line / Drop Indicator Below */}
+                        {dragOverPlanId === plan.id && dropPosition === 'after' && (
+                          <div className="absolute -bottom-1.5 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-400 to-indigo-500 rounded-full shadow-lg shadow-indigo-500/60 animate-pulse pointer-events-none z-30 flex items-center justify-between px-0.5">
+                            <div className="w-2.5 h-2.5 rounded-full bg-sky-300 -ml-1 border-2 border-slate-950 shadow" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-sky-300 -mr-1 border-2 border-slate-950 shadow" />
+                          </div>
+                        )}
+
                         {/* Drag Grip Handle */}
                         <div className="flex items-start justify-between gap-1.5 mb-1.5">
                           <div className="flex items-center space-x-1 flex-wrap gap-y-1">

@@ -752,6 +752,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   // Drag and Drop States
   const [draggedPlanId, setDraggedPlanId] = useState<string | null>(null);
   const [dragOverDay, setDragOverDay] = useState<DayOfWeek | null>(null);
+  const [dragOverPlanId, setDragOverPlanId] = useState<string | null>(null);
+  const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
   const [touchDraggedPlanId, setTouchDraggedPlanId] = useState<string | null>(null);
   const [openMoveMenuPlanId, setOpenMoveMenuPlanId] = useState<string | null>(null);
   const touchStartRef = useRef<{ x: number; y: number; moved: boolean; isLongPress?: boolean } | null>(null);
@@ -1243,6 +1245,70 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     }
   };
 
+  // REORDER / MOVE STUDY PLAN ITEM (INTRA-DAY SORTING & CROSS-DAY DROPPING)
+  const handleReorderPlan = (
+    sourcePlanId: string, 
+    targetDay: DayOfWeek, 
+    targetPlanId?: string | null, 
+    position?: 'before' | 'after' | null
+  ) => {
+    if (!sourcePlanId) return;
+    const sourceIndex = studyPlans.findIndex(p => p.id === sourcePlanId);
+    if (sourceIndex === -1) return;
+
+    const sourcePlan = studyPlans[sourceIndex];
+    const isDayChanging = sourcePlan.day !== targetDay;
+
+    let updatedSourcePlan = { ...sourcePlan };
+    if (isDayChanging) {
+      const { date, weekLabel } = getPlanDateAndWeekLabel(targetDay);
+      updatedSourcePlan = {
+        ...updatedSourcePlan,
+        day: targetDay,
+        date,
+        weekLabel
+      };
+    }
+
+    // If dropped on itself without day change, do nothing
+    if (targetPlanId === sourcePlanId && !isDayChanging) {
+      return;
+    }
+
+    const nextPlans = [...studyPlans];
+    nextPlans.splice(sourceIndex, 1);
+
+    if (targetPlanId && targetPlanId !== sourcePlanId) {
+      const targetIndexInNext = nextPlans.findIndex(p => p.id === targetPlanId);
+      if (targetIndexInNext !== -1) {
+        const insertIndex = position === 'after' ? targetIndexInNext + 1 : targetIndexInNext;
+        nextPlans.splice(insertIndex, 0, updatedSourcePlan);
+      } else {
+        nextPlans.push(updatedSourcePlan);
+      }
+    } else {
+      // If dropped on empty day column, insert at the end of that day's tasks
+      let lastMatchingIdx = -1;
+      for (let i = nextPlans.length - 1; i >= 0; i--) {
+        if (nextPlans[i].day === targetDay && !nextPlans[i].archived) {
+          lastMatchingIdx = i;
+          break;
+        }
+      }
+      if (lastMatchingIdx !== -1) {
+        nextPlans.splice(lastMatchingIdx + 1, 0, updatedSourcePlan);
+      } else {
+        nextPlans.push(updatedSourcePlan);
+      }
+    }
+
+    if (onUpdateAllPlans) {
+      onUpdateAllPlans(nextPlans);
+    } else if (isDayChanging) {
+      onUpdatePlan(updatedSourcePlan);
+    }
+  };
+
   // DRAG AND DROP HANDLERS
   const handleDragStart = (e: React.DragEvent, planId: string) => {
     e.dataTransfer.setData('text/plain', planId);
@@ -1253,6 +1319,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   const handleDragEnd = () => {
     setDraggedPlanId(null);
     setDragOverDay(null);
+    setDragOverPlanId(null);
+    setDropPosition(null);
   };
 
   const handleDragOver = (e: React.DragEvent, day: DayOfWeek) => {
@@ -1272,23 +1340,58 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     }
   };
 
+  const handleDragOverCard = (e: React.DragEvent, planId: string, day: DayOfWeek) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverDay !== day) {
+      setDragOverDay(day);
+    }
+    if (draggedPlanId === planId) {
+      setDragOverPlanId(null);
+      setDropPosition(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const pos = e.clientY < midY ? 'before' : 'after';
+    setDragOverPlanId(planId);
+    setDropPosition(pos);
+  };
+
+  const handleDragLeaveCard = (e: React.DragEvent, planId: string) => {
+    if (e.currentTarget && !e.currentTarget.contains(e.relatedTarget as Node)) {
+      if (dragOverPlanId === planId) {
+        setDragOverPlanId(null);
+        setDropPosition(null);
+      }
+    }
+  };
+
+  const handleDropCard = (e: React.DragEvent, targetPlanId: string, day: DayOfWeek) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const sourcePlanId = e.dataTransfer.getData('text/plain') || draggedPlanId;
+    const pos = dropPosition || 'before';
+    setDraggedPlanId(null);
+    setDragOverDay(null);
+    setDragOverPlanId(null);
+    setDropPosition(null);
+    if (!sourcePlanId) return;
+    handleReorderPlan(sourcePlanId, day, targetPlanId, pos);
+  };
+
   const handleDrop = (e: React.DragEvent, targetDay: DayOfWeek) => {
     e.preventDefault();
-    setDragOverDay(null);
-    const planId = e.dataTransfer.getData('text/plain') || draggedPlanId;
-    if (!planId) return;
-
-    const planToMove = studyPlans.find((p) => p.id === planId);
-    if (planToMove && planToMove.day !== targetDay) {
-      const { date, weekLabel } = getPlanDateAndWeekLabel(targetDay);
-      onUpdatePlan({
-        ...planToMove,
-        day: targetDay,
-        date,
-        weekLabel
-      });
-    }
+    const sourcePlanId = e.dataTransfer.getData('text/plain') || draggedPlanId;
+    const targetCardId = dragOverPlanId;
+    const pos = dropPosition;
     setDraggedPlanId(null);
+    setDragOverDay(null);
+    setDragOverPlanId(null);
+    setDropPosition(null);
+    if (!sourcePlanId) return;
+    handleReorderPlan(sourcePlanId, targetDay, targetCardId, pos);
   };
 
   // TOUCH DRAG AND DROP HANDLERS FOR TABLETS & MOBILE (WITH LONG-PRESS ACTIVATION)
@@ -1307,7 +1410,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       };
     }
 
-    // Set a timer of 400ms. If the finger does not move significantly within this time, trigger drag mode!
+    // Set a timer of 350ms. If the finger does not move significantly within this time, trigger drag mode!
     touchTimeoutRef.current = setTimeout(() => {
       if (touchStartRef.current && !touchStartRef.current.moved) {
         touchStartRef.current.isLongPress = true;
@@ -1322,7 +1425,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
           }
         }
       }
-    }, 400);
+    }, 350);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -1355,11 +1458,29 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
       if (!targetEl) return;
 
-      const dayCol = targetEl.closest('[data-day-column]') as HTMLElement | null;
-      if (dayCol) {
-        const dayAttr = dayCol.getAttribute('data-day-column') as DayOfWeek;
-        if (dayAttr && dayAttr !== dragOverDay) {
-          setDragOverDay(dayAttr);
+      const cardEl = targetEl.closest('[data-plan-id]') as HTMLElement | null;
+      if (cardEl) {
+        const planId = cardEl.getAttribute('data-plan-id');
+        const cardDay = cardEl.getAttribute('data-plan-day') as DayOfWeek;
+        if (cardDay && cardDay !== dragOverDay) {
+          setDragOverDay(cardDay);
+        }
+        if (planId && planId !== touchDraggedPlanId) {
+          const rect = cardEl.getBoundingClientRect();
+          const midY = rect.top + rect.height / 2;
+          const pos = touch.clientY < midY ? 'before' : 'after';
+          setDragOverPlanId(planId);
+          setDropPosition(pos);
+        }
+      } else {
+        const dayCol = targetEl.closest('[data-day-column]') as HTMLElement | null;
+        if (dayCol) {
+          const dayAttr = dayCol.getAttribute('data-day-column') as DayOfWeek;
+          if (dayAttr && dayAttr !== dragOverDay) {
+            setDragOverDay(dayAttr);
+          }
+          setDragOverPlanId(null);
+          setDropPosition(null);
         }
       }
     }
@@ -1375,16 +1496,12 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     const isLongPress = touchStartRef.current?.isLongPress;
 
     if (touchDraggedPlanId && dragOverDay) {
-      const planToMove = studyPlans.find((p) => p.id === touchDraggedPlanId);
-      if (planToMove && planToMove.day !== dragOverDay) {
-        const { date, weekLabel } = getPlanDateAndWeekLabel(dragOverDay);
-        onUpdatePlan({
-          ...planToMove,
-          day: dragOverDay,
-          date,
-          weekLabel
-        });
-      }
+      const sourcePlanId = touchDraggedPlanId;
+      const targetCardId = dragOverPlanId;
+      const pos = dropPosition;
+      const targetDay = dragOverDay;
+
+      handleReorderPlan(sourcePlanId, targetDay, targetCardId, pos);
     }
 
     // Only prevent default if we were actually dragging (long press triggered and moved)
@@ -1395,6 +1512,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     setTouchDraggedPlanId(null);
     setDraggedPlanId(null);
     setDragOverDay(null);
+    setDragOverPlanId(null);
+    setDropPosition(null);
 
     // Keep moved flag temporarily to block accidental click modal opening on touch release
     setTimeout(() => {
@@ -1987,6 +2106,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                 getSubjectTheme={getSubjectTheme}
                 DAY_COLUMN_STYLES={DAY_COLUMN_STYLES}
                 dragOverDay={dragOverDay}
+                dragOverPlanId={dragOverPlanId}
+                dropPosition={dropPosition}
                 draggedPlanId={draggedPlanId}
                 touchDraggedPlanId={touchDraggedPlanId}
                 openMoveMenuPlanId={openMoveMenuPlanId}
@@ -1994,6 +2115,9 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                 handleDragOver={handleDragOver}
                 handleDragLeave={handleDragLeave}
                 handleDrop={handleDrop}
+                handleDragOverCard={handleDragOverCard}
+                handleDragLeaveCard={handleDragLeaveCard}
+                handleDropCard={handleDropCard}
                 handleDragStart={handleDragStart}
                 handleDragEnd={handleDragEnd}
                 handleTouchStart={handleTouchStart}
