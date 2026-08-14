@@ -35,8 +35,10 @@ import {
   ReferenceLine,
   LabelList
 } from 'recharts';
+import { BranchExam } from '../../types';
 
 interface BranchAnalyticsTabProps {
+  branchExams?: BranchExam[];
   totalBranchExamsCount: number;
   analyzedBranchExamsCount: number;
   analyzedBranchExamsPercentage: number;
@@ -63,6 +65,7 @@ interface BranchAnalyticsTabProps {
 }
 
 export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
+  branchExams = [],
   totalBranchExamsCount,
   analyzedBranchExamsCount,
   analyzedBranchExamsPercentage,
@@ -89,12 +92,24 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
 }) => {
   const [activeGraphType, setActiveGraphType] = useState<'net' | 'distribution' | 'time'>('net');
   const [showDataLabels, setShowDataLabels] = useState<boolean>(false);
+  const [showAverageLine, setShowAverageLine] = useState<boolean>(true);
 
   // Compute highest net in the current dataset
   const maxNetRecord = React.useMemo(() => {
     if (!netChartData || netChartData.length === 0) return 0;
     return Math.max(...netChartData.map(d => Number(d.net) || 0));
   }, [netChartData]);
+
+  // Dynamic average net calculated from currently filtered netChartData (respects ExamType, Subject and Limit filters)
+  const filteredAvgNet = React.useMemo(() => {
+    if (!netChartData || netChartData.length === 0) return 0;
+    const sum = netChartData.reduce((acc, curr) => acc + (Number(curr.net) || 0), 0);
+    return Math.round((sum / netChartData.length) * 100) / 100;
+  }, [netChartData]);
+
+  const filteredAvgNetStr = React.useMemo(() => {
+    return filteredAvgNet.toString().replace('.', ',');
+  }, [filteredAvgNet]);
 
   // Compute TYT vs AYT exam counts
   const tytExamCount = React.useMemo(() => {
@@ -109,21 +124,37 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
       .reduce((acc, s) => acc + (s.count || 0), 0);
   }, [branchSubjectStats]);
 
-  // Compute available subjects based on current chartExamType or all
+  // Compute subject record counts based on active chartExamType (ALL / TYT / AYT)
+  const subjectRecordCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    if (branchExams && branchExams.length > 0) {
+      branchExams.forEach(ex => {
+        if (chartExamType === 'ALL' || ex.examType === chartExamType) {
+          if (ex.subject) {
+            counts[ex.subject] = (counts[ex.subject] || 0) + 1;
+          }
+        }
+      });
+    } else if (branchSubjectStats && branchSubjectStats.length > 0) {
+      branchSubjectStats.forEach(s => {
+        if (chartExamType === 'ALL' || s.examType === chartExamType) {
+          if (s.subject) {
+            counts[s.subject] = (counts[s.subject] || 0) + (s.count || 0);
+          }
+        }
+      });
+    }
+    return counts;
+  }, [branchExams, branchSubjectStats, chartExamType]);
+
+  // Compute available subjects list
   const availableSubjects = React.useMemo(() => {
-    const set = new Set<string>();
-    branchSubjectStats.forEach(s => {
-      if (chartExamType === 'ALL' || s.examType === chartExamType) {
-        if (s.subject) set.add(s.subject);
-      }
-    });
-    netChartData.forEach(d => {
-      if (d.subject && (chartExamType === 'ALL' || d.examType === chartExamType)) {
-        set.add(d.subject);
-      }
-    });
-    return Array.from(set).sort((a, b) => a.localeCompare(b, 'tr'));
-  }, [branchSubjectStats, netChartData, chartExamType]);
+    return Object.keys(subjectRecordCounts).sort((a, b) => a.localeCompare(b, 'tr'));
+  }, [subjectRecordCounts]);
+
+  const totalFilteredExamsCount = React.useMemo(() => {
+    return Object.values(subjectRecordCounts).reduce((acc, c) => acc + c, 0);
+  }, [subjectRecordCounts]);
 
   const formatHoursAndMinutes = (totalMins: number) => {
     if (!totalMins || totalMins <= 0) return '0 dk';
@@ -347,12 +378,12 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
                 id="branch-chart-subject-filter"
                 value={chartSubject}
                 onChange={(e) => setChartSubject(e.target.value)}
-                className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer max-w-[160px] truncate"
+                className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer max-w-[190px] truncate"
               >
-                <option value="ALL" className="bg-slate-900 text-white">Tüm Dersler ({availableSubjects.length})</option>
+                <option value="ALL" className="bg-slate-900 text-white">Tüm Dersler ({totalFilteredExamsCount})</option>
                 {availableSubjects.map(s => (
                   <option key={s} value={s} className="bg-slate-900 text-white">
-                    {s}
+                    {s} ({subjectRecordCounts[s] || 0})
                   </option>
                 ))}
               </select>
@@ -372,6 +403,21 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
                 <option value="ALL" className="bg-slate-900 text-white">Tüm Kayıtlar</option>
               </select>
             </div>
+
+            {/* Average Reference Line (Ortalama Çizgisi) Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowAverageLine(prev => !prev)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 border ${
+                showAverageLine
+                  ? 'bg-emerald-600/25 text-emerald-300 border-emerald-500/50 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+              }`}
+              title="Grafikteki ortalama net referans çizgisini aç / kapat"
+            >
+              <span className={`w-2 h-2 rounded-full ${showAverageLine ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
+              <span>Ort. Çizgisi {showAverageLine ? 'Açık' : 'Kapalı'}</span>
+            </button>
 
             {/* Data Labels (Sayı Bilgisi) Toggle Button */}
             <button
@@ -421,12 +467,19 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
                       return label;
                     }}
                   />
-                  {avgNetOverall && Number(avgNetOverall.toString().replace(',', '.')) > 0 && (
+                  {showAverageLine && filteredAvgNet > 0 && (
                     <ReferenceLine 
-                      y={Number(avgNetOverall.toString().replace(',', '.'))} 
+                      y={filteredAvgNet} 
                       stroke="#10b981" 
                       strokeDasharray="4 4" 
-                      label={{ value: `Ort. Net: ${avgNetOverall}`, fill: '#10b981', fontSize: 10, position: 'insideTopRight' }} 
+                      strokeWidth={1.5}
+                      label={{ 
+                        value: `Ort. Net: ${filteredAvgNetStr}`, 
+                        fill: '#10b981', 
+                        fontSize: 10, 
+                        position: 'insideTopRight',
+                        fontWeight: 'bold'
+                      }} 
                     />
                   )}
                   <Line

@@ -2065,6 +2065,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       {/* SUBTAB 0: GRAFİK & ANALİZ (CHARTS DASHBOARD) */}
       {activeSubTab === 'analytics' && (
         <BranchAnalyticsTab
+          branchExams={branchExams}
           totalBranchExamsCount={totalBranchExamsCount}
           analyzedBranchExamsCount={analyzedBranchExamsCount}
           analyzedBranchExamsPercentage={analyzedBranchExamsPercentage}
