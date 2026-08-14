@@ -889,16 +889,21 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
     ? activeSourceMocks.slice(-30)
     : activeSourceMocks;
 
-  const chartData = filteredByCountMocks.map((m) => ({
-    id: m.id,
-    name: m.title.length > 14 ? m.title.substring(0, 14) + '...' : m.title,
-    fullTitle: m.title,
-    date: m.date,
-    TYT_Net: m.tyt.totalNet,
-    AYT_Net: m.ayt.totalNet,
-    Hedef_TYT: profile.targetTYTNet,
-    Hedef_AYT: profile.targetAYTNet
-  }));
+  const chartData = filteredByCountMocks.map((m) => {
+    const tytNet = Number(m.tyt?.totalNet) || 0;
+    const aytNet = Number(m.ayt?.totalNet) || 0;
+
+    return {
+      id: m.id,
+      name: m.title.length > 14 ? m.title.substring(0, 14) + '...' : m.title,
+      fullTitle: m.title,
+      date: m.date,
+      TYT_Net: tytNet > 0 ? tytNet : null,
+      AYT_Net: aytNet > 0 ? aytNet : null,
+      Hedef_TYT: profile.targetTYTNet,
+      Hedef_AYT: profile.targetAYTNet
+    };
+  });
 
   const subjectChartData = filteredByCountMocks.map((m) => {
     const tDet = m.tyt.details;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Filter, 
   BarChart2, 
@@ -11,7 +11,9 @@ import {
   ChevronUp, 
   AlertCircle, 
   CheckCircle2, 
-  Award 
+  Award,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -115,10 +117,82 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
   toggleActiveSubSubject,
   profile
 }) => {
+  const [showTytLine, setShowTytLine] = useState<boolean>(true);
+  const [showAytLine, setShowAytLine] = useState<boolean>(true);
+
   if (generalMocks.length === 0) return null;
 
   return (
     <>
+      {/* Sabitlenen Branş Takip Kartları (Artık Filtre Kutusunun Üstünde) */}
+      {pinnedSubjects.length > 0 && (
+        <div className="bg-slate-900/90 border border-indigo-500/30 rounded-3xl p-4 sm:p-5 space-y-3 shadow-lg shadow-indigo-950/20 animate-fadeIn">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+            <h3 className="text-xs font-bold text-white flex items-center space-x-2">
+              <Pin className="w-4 h-4 text-amber-400 rotate-45 shrink-0" />
+              <span>Sabitlenen Branş Takip Kartlarınız ({pinnedSubjects.length})</span>
+            </h3>
+            <span className="text-[11px] text-slate-400">
+              Sayfa başından anlık takip ettiğiniz öncelikli branşlar
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {pinnedSubjects.map(key => {
+              const stat = subSubjectStatsMap[key];
+              const meta = detailedSubSubjectsMeta.find(m => m.key === key) || mockSubjectConfig.find(m => m.key === key);
+              if (!stat && !meta) return null;
+
+              const label = meta?.label || key;
+              const avgNet = stat ? stat.avgNet : 0;
+              const maxQ = meta && 'maxQuestions' in meta ? meta.maxQuestions : 10;
+              const percent = stat ? stat.accuracyPercent : 0;
+              const status = stat ? stat.status : 'warning';
+
+              return (
+                <div key={key} className="bg-slate-950 border border-slate-800 rounded-2xl p-3.5 space-y-2.5 relative group hover:border-indigo-500/50 transition-all shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-100 truncate pr-4">{label}</span>
+                    <button
+                      type="button"
+                      onClick={() => togglePinnedSubject(key)}
+                      className="text-slate-500 hover:text-amber-400 transition-colors p-1 rounded hover:bg-slate-800/80 cursor-pointer"
+                      title="Sabitlemeyi kaldır"
+                    >
+                      <PinOff className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-baseline justify-between text-xs font-mono">
+                    <span className="text-slate-400 text-[11px]">Ort. Net:</span>
+                    <span className="text-sm font-bold text-white">{avgNet} / {maxQ} Net</span>
+                  </div>
+
+                  {/* Visual Progress Bar */}
+                  <div className="w-full bg-slate-800/80 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        status === 'critical' ? 'bg-rose-500' : status === 'warning' ? 'bg-amber-400' : 'bg-emerald-400'
+                      }`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] pt-0.5">
+                    <span className={`font-semibold flex items-center gap-1 ${
+                      status === 'critical' ? 'text-rose-400' : status === 'warning' ? 'text-amber-400' : 'text-emerald-400'
+                    }`}>
+                      {status === 'critical' ? '🔴 Kritik (%' + percent + ')' : status === 'warning' ? '🟡 Geliştirilmeli (%' + percent + ')' : '🟢 Güçlü (%' + percent + ')'}
+                    </span>
+                    <span className="text-slate-500 font-mono">Son: {stat?.latestNet ?? '-'} Net</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Chart Count Filter & Graph Selection Bar */}
       <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-3xl shadow-2xl backdrop-blur-md space-y-4">
         {/* 1. Satır: Deneme Filtresi */}
@@ -264,75 +338,6 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
         </div>
       </div>
 
-      {/* Sabitlenen Branş Takip Kartları */}
-      {pinnedSubjects.length > 0 && (
-        <div className="bg-slate-900/90 border border-indigo-500/30 rounded-2xl p-4 space-y-3 shadow-lg shadow-indigo-950/20 animate-fadeIn">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
-            <h3 className="text-xs font-bold text-white flex items-center space-x-2">
-              <Pin className="w-4 h-4 text-amber-400 rotate-45 shrink-0" />
-              <span>Sabitlenen Branş Takip Kartlarınız ({pinnedSubjects.length})</span>
-            </h3>
-            <span className="text-[11px] text-slate-400">
-              Sayfa başından anlık takip ettiğiniz öncelikli branşlar
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {pinnedSubjects.map(key => {
-              const stat = subSubjectStatsMap[key];
-              const meta = detailedSubSubjectsMeta.find(m => m.key === key) || mockSubjectConfig.find(m => m.key === key);
-              if (!stat && !meta) return null;
-
-              const label = meta?.label || key;
-              const avgNet = stat ? stat.avgNet : 0;
-              const maxQ = meta && 'maxQuestions' in meta ? meta.maxQuestions : 10;
-              const percent = stat ? stat.accuracyPercent : 0;
-              const status = stat ? stat.status : 'warning';
-
-              return (
-                <div key={key} className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2.5 relative group hover:border-indigo-500/50 transition-all shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-100 truncate pr-4">{label}</span>
-                    <button
-                      type="button"
-                      onClick={() => togglePinnedSubject(key)}
-                      className="text-slate-500 hover:text-amber-400 transition-colors p-1 rounded hover:bg-slate-800/80 cursor-pointer"
-                      title="Sabitlemeyi kaldır"
-                    >
-                      <PinOff className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <div className="flex items-baseline justify-between text-xs font-mono">
-                    <span className="text-slate-400 text-[11px]">Ort. Net:</span>
-                    <span className="text-sm font-bold text-white">{avgNet} / {maxQ} Net</span>
-                  </div>
-
-                  {/* Visual Progress Bar */}
-                  <div className="w-full bg-slate-800/80 rounded-full h-2 overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        status === 'critical' ? 'bg-rose-500' : status === 'warning' ? 'bg-amber-400' : 'bg-emerald-400'
-                      }`}
-                      style={{ width: `${percent}%` }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between text-[10px] pt-0.5">
-                    <span className={`font-semibold flex items-center gap-1 ${
-                      status === 'critical' ? 'text-rose-400' : status === 'warning' ? 'text-amber-400' : 'text-emerald-400'
-                    }`}>
-                      {status === 'critical' ? '🔴 Kritik (%' + percent + ')' : status === 'warning' ? '🟡 Geliştirilmeli (%' + percent + ')' : '🟢 Güçlü (%' + percent + ')'}
-                    </span>
-                    <span className="text-slate-500 font-mono">Son: {stat?.latestNet ?? '-'} Net</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Recharts Net Trend Graph */}
       {visibleCharts.netTrend && chartData.length > 0 && (activeChartTab === 'all' || activeChartTab === 'net' || activeChartTab === 'custom') && (
         <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-4">
@@ -341,15 +346,38 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
               <BarChart2 className="w-4 h-4 text-emerald-400" />
               <span><span className="text-indigo-400 font-bold">TYT</span> & <span className="text-emerald-400 font-bold">AYT</span> Net Gelişim Trendi</span>
             </h2>
-            <div className="flex items-center space-x-3 text-xs font-mono">
-              <span className="flex items-center space-x-1.5 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-xl">
-                <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" />
-                <span className="text-indigo-300 font-bold">TYT Net</span>
-              </span>
-              <span className="flex items-center space-x-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-xl">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />
-                <span className="text-emerald-300 font-bold">AYT Net</span>
-              </span>
+
+            {/* Interactive Toggle Buttons for TYT & AYT Net Lines */}
+            <div className="flex items-center space-x-2 text-xs font-mono">
+              <button
+                type="button"
+                onClick={() => setShowTytLine(prev => !prev)}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-bold ${
+                  showTytLine
+                    ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/50 shadow-md shadow-indigo-950/40'
+                    : 'bg-slate-950/60 text-slate-500 border-slate-800 opacity-60 hover:opacity-100 hover:text-slate-300'
+                }`}
+                title={showTytLine ? 'TYT Net çizgisini gizle' : 'TYT Net çizgisini göster'}
+              >
+                <span className={`w-2.5 h-2.5 rounded-full ${showTytLine ? 'bg-indigo-500 animate-pulse' : 'bg-slate-600'} inline-block`} />
+                <span>TYT Net</span>
+                {showTytLine ? <Eye className="w-3 h-3 text-indigo-400" /> : <EyeOff className="w-3 h-3 text-slate-500" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowAytLine(prev => !prev)}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-bold ${
+                  showAytLine
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-md shadow-emerald-950/40'
+                    : 'bg-slate-950/60 text-slate-500 border-slate-800 opacity-60 hover:opacity-100 hover:text-slate-300'
+                }`}
+                title={showAytLine ? 'AYT Net çizgisini gizle' : 'AYT Net çizgisini göster'}
+              >
+                <span className={`w-2.5 h-2.5 rounded-full ${showAytLine ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'} inline-block`} />
+                <span>AYT Net</span>
+                {showAytLine ? <Eye className="w-3 h-3 text-emerald-400" /> : <EyeOff className="w-3 h-3 text-slate-500" />}
+              </button>
             </div>
           </div>
 
@@ -395,6 +423,8 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                 <Tooltip
                   content={({ active, payload }: any) => {
                     if (active && payload && payload.length) {
+                      const validPayload = payload.filter((p: any) => p.value !== null && p.value !== undefined);
+                      if (validPayload.length === 0) return null;
                       const data = payload[0].payload;
                       return (
                         <div className="bg-slate-900 border border-slate-700 p-3 rounded-xl shadow-xl text-xs space-y-1.5 max-w-xs sm:max-w-sm">
@@ -404,7 +434,7 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                             <span>Tarih: {data.date}</span>
                           </div>
                           <div className="pt-1.5 border-t border-slate-800 space-y-1 font-mono font-semibold">
-                            {payload.map((p: any) => (
+                            {validPayload.map((p: any) => (
                               <div key={p.dataKey} className="flex items-center justify-between gap-4" style={{ color: p.color }}>
                                 <span>{p.dataKey === 'TYT_Net' ? 'TYT Net' : p.dataKey === 'AYT_Net' ? 'AYT Net' : p.name}:</span>
                                 <span>{String(p.value).replace('.', ',')} Net</span>
@@ -417,22 +447,28 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                     return null;
                   }}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="TYT_Net"
-                  stroke="#6366f1"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: '#6366f1' }}
-                  activeDot={{ r: 6 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="AYT_Net"
-                  stroke="#34d399"
-                  strokeWidth={3}
-                  dot={{ r: 4, fill: '#34d399' }}
-                  activeDot={{ r: 6 }}
-                />
+                {showTytLine && (
+                  <Line
+                    type="monotone"
+                    dataKey="TYT_Net"
+                    stroke="#6366f1"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: '#6366f1' }}
+                    activeDot={{ r: 6 }}
+                    connectNulls={true}
+                  />
+                )}
+                {showAytLine && (
+                  <Line
+                    type="monotone"
+                    dataKey="AYT_Net"
+                    stroke="#34d399"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: '#34d399' }}
+                    activeDot={{ r: 6 }}
+                    connectNulls={true}
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           </div>
