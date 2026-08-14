@@ -37,7 +37,13 @@ import {
   Target,
   Timer,
   LayoutGrid,
-  Table
+  Table,
+  Building2,
+  School,
+  FileText,
+  Eye,
+  ArrowRight,
+  ArrowLeft
 } from 'lucide-react';
 import { BadgeShield } from '../badges/BadgeShield';
 import { BADGE_DEFINITIONS, evaluateBadges } from '../../services/motivationEngine';
@@ -53,16 +59,20 @@ import {
   YAxis, 
   Tooltip, 
   CartesianGrid, 
-  Legend 
+  Legend,
+  AreaChart,
+  Area
 } from 'recharts';
 import { 
   UserAccount, 
   YKSDataState, 
   AuditLogItem, 
   ClassDefinition, 
-  DayOfWeek 
+  DayOfWeek,
+  InstitutionalMockExam
 } from '../../types';
 import { AuditLogsView } from '../AuditLogsView';
+import { MockInstitutionalDetailView } from '../mocks/MockInstitutionalDetailView';
 import { isUserOnline } from '../../utils/statusUtils';
 
 const DAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
@@ -187,6 +197,14 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
   const [questionDateFilter, setQuestionDateFilter] = React.useState<'all' | '7days' | '30days'>('all');
   const [questionSearchQuery, setQuestionSearchQuery] = React.useState<string>('');
   const [questionViewMode, setQuestionViewMode] = React.useState<'cards' | 'table'>('cards');
+  const [mockSubTab, setMockSubTab] = React.useState<'general' | 'branch' | 'institutional'>('general');
+  const [selectedInstitutionalExam, setSelectedInstitutionalExam] = React.useState<InstitutionalMockExam | null>(null);
+  const [generalMockSearch, setGeneralMockSearch] = React.useState<string>('');
+  const [generalMockTypeFilter, setGeneralMockTypeFilter] = React.useState<'all' | 'TYT' | 'AYT'>('all');
+  const [branchMockSubjectFilter, setBranchMockSubjectFilter] = React.useState<string>('all');
+  const [branchMockSearch, setBranchMockSearch] = React.useState<string>('');
+  const [institutionalMockSearch, setInstitutionalMockSearch] = React.useState<string>('');
+  const [institutionalMockTypeFilter, setInstitutionalMockTypeFilter] = React.useState<'all' | 'TYT' | 'AYT'>('all');
 
   return (
     <div 
@@ -1885,116 +1903,760 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
           </div>
         )}
 
-        {/* TAB 5: MOCKS */}
+        {/* TAB 5: MOCKS & BRANCH & INSTITUTIONAL EXAMS */}
         {inspectModalTab === 'mocks' && (
-          <div className="space-y-6">
-            {(() => {
-              const mocks = stData?.generalMocks || [];
-              const branchExams = stData?.branchExams || [];
-              const topicErrors = stData?.topicErrors || [];
+          <div className="space-y-5">
+            {selectedInstitutionalExam ? (
+              /* INSTITUTIONAL REPORT CARD (KARNE) VIEW IN MODAL */
+              <div className="space-y-3">
+                <div className="flex items-center justify-between bg-slate-950/80 border border-white/10 rounded-2xl p-3 shadow-lg">
+                  <button
+                    onClick={() => setSelectedInstitutionalExam(null)}
+                    className="flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-bold rounded-xl transition-all border border-emerald-400/30 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>← Deneme Listesine Dön</span>
+                  </button>
+                  <span className="text-xs font-bold text-slate-300">
+                    Sınav: <strong className="text-white">{selectedInstitutionalExam.examTitle || selectedInstitutionalExam.title}</strong>
+                  </span>
+                </div>
 
-              return (
-                <div className="space-y-6">
-                  {/* General Mocks */}
-                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/10 space-y-3">
+                <MockInstitutionalDetailView
+                  selectedInstitutionalExam={selectedInstitutionalExam}
+                  setSelectedInstitutionalExam={setSelectedInstitutionalExam}
+                  allInstitutionalExams={(stData?.institutionalMocks as InstitutionalMockExam[]) || []}
+                />
+              </div>
+            ) : (
+              /* MAIN MOCK EXAM ANALYSIS HUB */
+              <div className="space-y-5">
+                {/* Header & Sub-Tab Switcher */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/5 p-4 rounded-2xl border border-white/10">
+                  <div>
                     <h3 className="text-sm font-bold text-white flex items-center space-x-2">
                       <BarChart3 className="w-4 h-4 text-sky-400" />
-                      <span>Genel Deneme Sınavı Netleri ({mocks.length})</span>
+                      <span>Deneme Sınavları & Analiz Merkezi</span>
                     </h3>
-
-                    {mocks.length === 0 ? (
-                      <p className="text-xs text-slate-400 italic py-4 text-center">Genel deneme kaydı bulunmuyor.</p>
-                    ) : (
-                      <div className="overflow-x-auto rounded-xl border border-white/10">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-white/10 text-slate-300 font-bold">
-                            <tr>
-                              <th className="p-3">Tarih</th>
-                              <th className="p-3">Deneme Başlığı</th>
-                              <th className="p-3 text-center text-indigo-400 font-bold">TYT Net</th>
-                              <th className="p-3 text-center text-emerald-400 font-bold">AYT Net</th>
-                              <th className="p-3 text-center text-amber-400">Sıralama</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-white/10 text-slate-200 font-mono">
-                            {mocks.map((m) => (
-                              <tr key={m.id} className="hover:bg-white/5">
-                                <td className="p-3 text-slate-400">{m.date}</td>
-                                <td className="p-3 font-bold text-white">{m.title}</td>
-                                <td className="p-3 text-center text-indigo-400 font-bold">{m.tyt?.totalNet} Net</td>
-                                <td className="p-3 text-center text-emerald-400 font-bold">{m.ayt?.totalNet} Net</td>
-                                <td className="p-3 text-center text-amber-400 font-bold">{m.estimatedRank ? `#${m.estimatedRank}` : '-'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Genel denemeler, branş denemeleri ve kurumsal karne sonuçları.
+                    </p>
                   </div>
 
-                  {/* Branch Exams */}
-                  <div className="bg-slate-950/80 p-5 rounded-2xl border border-white/10 space-y-3">
-                    <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-                      <BarChart3 className="w-4 h-4 text-purple-400" />
-                      <span>Branş Denemeleri ({branchExams.length})</span>
-                    </h3>
-
-                    {branchExams.length === 0 ? (
-                      <p className="text-xs text-slate-400 italic py-4 text-center">Branş denemesi kaydı bulunmuyor.</p>
-                    ) : (
-                      <div className="overflow-x-auto rounded-xl border border-white/10">
-                        {(() => {
-                          const teacherSubj = (teacher.role === 'teacher' && teacher.subject) ? teacher.subject.toLowerCase() : '';
-                          const sortedBranchExams = [...branchExams].sort((a, b) => {
-                            if (teacherSubj) {
-                              const aMatch = (a.subject || '').toLowerCase().includes(teacherSubj) || teacherSubj.includes((a.subject || '').toLowerCase());
-                              const bMatch = (b.subject || '').toLowerCase().includes(teacherSubj) || teacherSubj.includes((b.subject || '').toLowerCase());
-                              if (aMatch && !bMatch) return -1;
-                              if (!aMatch && bMatch) return 1;
-                            }
-                            return 0;
-                          });
-
-                          return (
-                            <table className="w-full text-left text-xs">
-                              <thead className="bg-white/10 text-slate-300 font-bold">
-                                <tr>
-                                  <th className="p-3">Tarih</th>
-                                  <th className="p-3">Ders & Yayınevi</th>
-                                  <th className="p-3 text-center text-emerald-400">Doğru</th>
-                                  <th className="p-3 text-center text-rose-400">Yanlış</th>
-                                  <th className="p-3 text-center text-slate-400">Boş</th>
-                                  <th className="p-3 text-center text-indigo-400 font-bold">Net</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-white/10 text-slate-200 font-mono">
-                                {sortedBranchExams.map((ex) => {
-                                  const isMyBranch = teacherSubj && (ex.subject || '').toLowerCase().includes(teacherSubj);
-                                  return (
-                                    <tr key={ex.id} className={isMyBranch ? 'bg-amber-500/10 border-l-4 border-l-amber-400 hover:bg-amber-500/15' : 'hover:bg-white/5'}>
-                                      <td className="p-3 text-slate-400">{ex.date}</td>
-                                      <td className="p-3 font-bold text-white flex items-center gap-1.5">
-                                        <span>{ex.subject}</span>
-                                        {isMyBranch && <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded border border-amber-400/40">Branşınız ⭐</span>}
-                                        <span className="text-slate-400 font-normal">({ex.publisher})</span>
-                                      </td>
-                                      <td className="p-3 text-center text-emerald-400 font-bold">{ex.correct}</td>
-                                      <td className="p-3 text-center text-rose-400 font-bold">{ex.wrong}</td>
-                                      <td className="p-3 text-center text-slate-400">{ex.empty}</td>
-                                      <td className="p-3 text-center text-indigo-400 font-bold">{ex.net} Net</td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          );
-                        })()}
-                      </div>
-                    )}
+                  {/* Sub-Tab Switcher */}
+                  <div className="flex items-center space-x-1 bg-slate-950/80 p-1 rounded-xl border border-white/10 shrink-0">
+                    <button
+                      onClick={() => setMockSubTab('general')}
+                      className={`flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        mockSubTab === 'general'
+                          ? 'bg-sky-600 text-white shadow-md'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <BarChart3 className="w-3.5 h-3.5" />
+                      <span>Genel ({(stData?.generalMocks || []).length})</span>
+                    </button>
+                    <button
+                      onClick={() => setMockSubTab('branch')}
+                      className={`flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        mockSubTab === 'branch'
+                          ? 'bg-purple-600 text-white shadow-md'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <Layers className="w-3.5 h-3.5" />
+                      <span>Branş ({(stData?.branchExams || []).length})</span>
+                    </button>
+                    <button
+                      onClick={() => setMockSubTab('institutional')}
+                      className={`flex items-center space-x-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        mockSubTab === 'institutional'
+                          ? 'bg-emerald-600 text-white shadow-md'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <School className="w-3.5 h-3.5" />
+                      <span>Kurumsal ({(stData?.institutionalMocks || []).length})</span>
+                    </button>
                   </div>
                 </div>
-              );
-            })()}
+
+                {/* ------------------------------------------------------------- */}
+                {/* SUB-TAB 1: GENEL DENEMELER */}
+                {/* ------------------------------------------------------------- */}
+                {mockSubTab === 'general' && (() => {
+                  const mocks = stData?.generalMocks || [];
+                  const profile = stData?.profile;
+                  const tytNets = mocks.map(m => m.tyt?.totalNet || 0).filter(n => n > 0);
+                  const aytNets = mocks.map(m => m.ayt?.totalNet || 0).filter(n => n > 0);
+                  const maxTYT = tytNets.length > 0 ? Math.max(...tytNets) : 0;
+                  const avgTYT = tytNets.length > 0 ? (tytNets.reduce((a, b) => a + b, 0) / tytNets.length).toFixed(1) : '0';
+                  const maxAYT = aytNets.length > 0 ? Math.max(...aytNets) : 0;
+                  const avgAYT = aytNets.length > 0 ? (aytNets.reduce((a, b) => a + b, 0) / aytNets.length).toFixed(1) : '0';
+
+                  const netTrendData = [...mocks]
+                    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+                    .slice(-10)
+                    .map(m => {
+                      const parts = (m.date || '').split('-');
+                      const displayDate = parts.length === 3 ? `${parts[2]}/${parts[1]}` : m.date;
+                      return {
+                        date: m.date,
+                        displayDate,
+                        title: m.title,
+                        tytNet: m.tyt?.totalNet || 0,
+                        aytNet: m.ayt?.totalNet || 0
+                      };
+                    });
+
+                  const filteredGeneralMocks = mocks.filter(m => {
+                    if (generalMockSearch.trim()) {
+                      const q = generalMockSearch.toLowerCase();
+                      const matchTitle = (m.title || '').toLowerCase().includes(q);
+                      const matchPublisher = (m.publisher || '').toLowerCase().includes(q);
+                      if (!matchTitle && !matchPublisher) return false;
+                    }
+                    if (generalMockTypeFilter === 'TYT' && !(m.tyt?.totalNet && m.tyt.totalNet > 0)) return false;
+                    if (generalMockTypeFilter === 'AYT' && !(m.ayt?.totalNet && m.ayt.totalNet > 0)) return false;
+                    return true;
+                  }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+                  return (
+                    <div className="space-y-4">
+                      {/* KPI Cards */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-400">Toplam Genel Deneme</span>
+                            <FileSpreadsheet className="w-4 h-4 text-sky-400" />
+                          </div>
+                          <div className="mt-2 flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-white">{mocks.length}</span>
+                            <span className="text-xs text-slate-400">sınav</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-400">TYT Net Durumu</span>
+                            <TrendingUp className="w-4 h-4 text-indigo-400" />
+                          </div>
+                          <div className="mt-2 flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-indigo-400">{maxTYT}</span>
+                            <span className="text-xs text-slate-400 font-bold">Max (Ort: {avgTYT})</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-400">AYT Net Durumu</span>
+                            <TrendingUp className="w-4 h-4 text-emerald-400" />
+                          </div>
+                          <div className="mt-2 flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-emerald-400">{maxAYT}</span>
+                            <span className="text-xs text-slate-400 font-bold">Max (Ort: {avgAYT})</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-400">Tahmini Sıra</span>
+                            <Trophy className="w-4 h-4 text-amber-400" />
+                          </div>
+                          <div className="mt-2 flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-amber-400">
+                              {mocks[0]?.estimatedRank ? `#${mocks[0].estimatedRank.toLocaleString('tr-TR')}` : 'Hesaplanıyor'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Chart: Net Progression */}
+                      {mocks.length > 0 && (
+                        <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <TrendingUp className="w-3.5 h-3.5 text-sky-400" />
+                              <h4 className="text-xs font-bold text-white">TYT & AYT Net İlerleme Grafiği</h4>
+                            </div>
+                            <div className="flex items-center space-x-3 text-[10px] font-bold">
+                              <span className="flex items-center space-x-1 text-indigo-400">
+                                <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                                <span>TYT Net</span>
+                              </span>
+                              <span className="flex items-center space-x-1 text-emerald-400">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                <span>AYT Net</span>
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="h-40 w-full pt-1">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={netTrendData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                                <defs>
+                                  <linearGradient id="modalTytGrad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4}/>
+                                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                                  </linearGradient>
+                                  <linearGradient id="modalAytGrad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
+                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                                <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} />
+                                <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
+                                <Tooltip
+                                  contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
+                                  formatter={(val: any, name: any) => [`${val} Net`, name === 'tytNet' ? 'TYT Net' : 'AYT Net']}
+                                />
+                                <Area type="monotone" dataKey="tytNet" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#modalTytGrad)" name="tytNet" />
+                                <Area type="monotone" dataKey="aytNet" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#modalAytGrad)" name="aytNet" />
+                              </AreaChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Toolbar */}
+                      <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div className="relative flex-1">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={generalMockSearch}
+                            onChange={(e) => setGeneralMockSearch(e.target.value)}
+                            placeholder="Deneme ara..."
+                            className="w-full bg-slate-900/90 border border-white/10 rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500/50"
+                          />
+                        </div>
+
+                        <div className="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-white/10 shrink-0">
+                          <button
+                            onClick={() => setGeneralMockTypeFilter('all')}
+                            className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                              generalMockTypeFilter === 'all' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            Tümü
+                          </button>
+                          <button
+                            onClick={() => setGeneralMockTypeFilter('TYT')}
+                            className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                              generalMockTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-indigo-400'
+                            }`}
+                          >
+                            TYT
+                          </button>
+                          <button
+                            onClick={() => setGeneralMockTypeFilter('AYT')}
+                            className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                              generalMockTypeFilter === 'AYT' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-emerald-400'
+                            }`}
+                          >
+                            AYT
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* General Mock Cards */}
+                      {filteredGeneralMocks.length === 0 ? (
+                        <p className="text-xs text-slate-400 italic py-6 text-center">Genel deneme sınavı kaydı bulunamadı.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {filteredGeneralMocks.map(mock => {
+                            const tytNet = mock.tyt?.totalNet || 0;
+                            const aytNet = mock.ayt?.totalNet || 0;
+                            return (
+                              <div key={mock.id} className="bg-slate-950/80 border border-white/10 hover:border-white/20 rounded-xl p-3.5 space-y-2.5">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h4 className="text-xs font-bold text-white">{mock.title}</h4>
+                                    {mock.publisher && <span className="text-[10px] text-slate-400">{mock.publisher}</span>}
+                                  </div>
+                                  <span className="text-[10px] font-mono text-slate-400">{mock.date}</span>
+                                </div>
+
+                                <div className="grid grid-cols-3 gap-1.5 bg-slate-900/90 p-2 rounded-lg text-center font-mono">
+                                  <div>
+                                    <span className="text-[9px] text-indigo-400 font-sans block">TYT</span>
+                                    <span className="text-xs font-bold text-indigo-300">{tytNet > 0 ? `${tytNet}N` : '-'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-[9px] text-emerald-400 font-sans block">AYT</span>
+                                    <span className="text-xs font-bold text-emerald-300">{aytNet > 0 ? `${aytNet}N` : '-'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-[9px] text-amber-400 font-sans block">Sıra</span>
+                                    <span className="text-xs font-bold text-amber-300">{mock.estimatedRank ? `#${mock.estimatedRank}` : '-'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* ------------------------------------------------------------- */}
+                {/* SUB-TAB 2: BRANŞ DENEMELERİ */}
+                {/* ------------------------------------------------------------- */}
+                {mockSubTab === 'branch' && (() => {
+                  const branchExams = stData?.branchExams || [];
+                  const teacherSubj = (teacher.role === 'teacher' && teacher.subject) ? teacher.subject.toLowerCase() : '';
+
+                  const sortedBranchExams = [...branchExams].sort((a, b) => {
+                    if (teacherSubj) {
+                      const aMatch = (a.subject || '').toLowerCase().includes(teacherSubj) || teacherSubj.includes((a.subject || '').toLowerCase());
+                      const bMatch = (b.subject || '').toLowerCase().includes(teacherSubj) || teacherSubj.includes((b.subject || '').toLowerCase());
+                      if (aMatch && !bMatch) return -1;
+                      if (!aMatch && bMatch) return 1;
+                    }
+                    return (b.date || '').localeCompare(a.date || '');
+                  });
+
+                  const branchSubjects = ['all', ...Array.from(new Set(branchExams.map(b => b.subject).filter(Boolean)))];
+
+                  const branchSubjectMap: Record<string, { subject: string; count: number; totalNet: number }> = {};
+                  branchExams.forEach(b => {
+                    const s = b.subject || 'Diğer';
+                    if (!branchSubjectMap[s]) branchSubjectMap[s] = { subject: s, count: 0, totalNet: 0 };
+                    branchSubjectMap[s].count += 1;
+                    branchSubjectMap[s].totalNet += (b.net || 0);
+                  });
+
+                  const branchChartData = Object.values(branchSubjectMap)
+                    .map(s => ({ ...s, avgNet: Number((s.totalNet / s.count).toFixed(1)) }))
+                    .sort((a, b) => b.count - a.count);
+
+                  const filteredBranchExams = sortedBranchExams.filter(ex => {
+                    if (branchMockSubjectFilter !== 'all' && ex.subject !== branchMockSubjectFilter) return false;
+                    if (branchMockSearch.trim()) {
+                      const q = branchMockSearch.toLowerCase();
+                      const matchSubj = (ex.subject || '').toLowerCase().includes(q);
+                      const matchPub = (ex.publisher || '').toLowerCase().includes(q);
+                      if (!matchSubj && !matchPub) return false;
+                    }
+                    return true;
+                  });
+
+                  return (
+                    <div className="space-y-4">
+                      {/* KPI Cards */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-400">Toplam Branş</span>
+                            <Layers className="w-4 h-4 text-purple-400" />
+                          </div>
+                          <div className="mt-2 flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-white">{branchExams.length}</span>
+                            <span className="text-xs text-slate-400">deneme</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-400">Ortalama Net</span>
+                            <Target className="w-4 h-4 text-indigo-400" />
+                          </div>
+                          <div className="mt-2 flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-indigo-400">
+                              {branchExams.length > 0 ? (branchExams.reduce((acc, b) => acc + (b.net || 0), 0) / branchExams.length).toFixed(1) : 0}
+                            </span>
+                            <span className="text-xs text-slate-400 font-bold">Net</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-400">Branşınız</span>
+                            <Sparkles className="w-4 h-4 text-amber-400" />
+                          </div>
+                          <div className="mt-2 flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-amber-400">
+                              {teacherSubj ? branchExams.filter(b => (b.subject || '').toLowerCase().includes(teacherSubj)).length : 0}
+                            </span>
+                            <span className="text-xs text-slate-400">deneme</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-400">Lider Ders</span>
+                            <Award className="w-4 h-4 text-emerald-400" />
+                          </div>
+                          <div className="mt-2 flex items-baseline gap-1.5 truncate">
+                            <span className="text-base font-black text-emerald-400 truncate">
+                              {branchChartData[0]?.subject || '-'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Chart */}
+                      {branchExams.length > 0 && (
+                        <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <BarChart3 className="w-3.5 h-3.5 text-purple-400" />
+                              <h4 className="text-xs font-bold text-white">Ders Dağılımı & Çözülen Sayısı</h4>
+                            </div>
+                          </div>
+
+                          <div className="h-40 w-full pt-1">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={branchChartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                                <XAxis dataKey="subject" stroke="#94a3b8" fontSize={9} tickLine={false} />
+                                <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
+                                <Tooltip
+                                  contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
+                                  formatter={(val: any) => [`${val} Deneme`, 'Çözülen Deneme']}
+                                />
+                                <Bar dataKey="count" radius={[3, 3, 0, 0]} maxBarSize={28}>
+                                  {branchChartData.map((entry, index) => {
+                                    const isMyBranch = teacherSubj && entry.subject.toLowerCase().includes(teacherSubj);
+                                    return <Cell key={`cell-modal-branch-${index}`} fill={isMyBranch ? '#f59e0b' : '#a855f7'} />;
+                                  })}
+                                </Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Toolbar & Filters */}
+                      <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 space-y-2">
+                        <div className="relative">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={branchMockSearch}
+                            onChange={(e) => setBranchMockSearch(e.target.value)}
+                            placeholder="Branş denemesi ara..."
+                            className="w-full bg-slate-900/90 border border-white/10 rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
+                          />
+                        </div>
+
+                        {branchSubjects.length > 2 && (
+                          <div className="flex items-center gap-1 flex-wrap pt-1">
+                            {branchSubjects.map(subj => {
+                              const isMyBranch = teacherSubj && subj.toLowerCase().includes(teacherSubj);
+                              return (
+                                <button
+                                  key={subj}
+                                  onClick={() => setBranchMockSubjectFilter(subj)}
+                                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                                    branchMockSubjectFilter === subj
+                                      ? 'bg-purple-600 text-white font-bold'
+                                      : isMyBranch
+                                      ? 'bg-amber-500/10 text-amber-200 border-amber-500/20'
+                                      : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10'
+                                  }`}
+                                >
+                                  {subj === 'all' ? 'Tümü' : subj} {isMyBranch && '⭐'}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Branch Cards */}
+                      {filteredBranchExams.length === 0 ? (
+                        <p className="text-xs text-slate-400 italic py-6 text-center">Branş denemesi kaydı bulunamadı.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {filteredBranchExams.map((ex) => {
+                            const isMyBranch = teacherSubj && (ex.subject || '').toLowerCase().includes(teacherSubj);
+                            return (
+                              <div
+                                key={ex.id}
+                                className={`p-3 rounded-xl border transition-all space-y-2 ${
+                                  isMyBranch
+                                    ? 'bg-amber-950/20 border-amber-500/40'
+                                    : 'bg-slate-950/80 border-white/10'
+                                }`}
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-[11px] font-black text-purple-300 bg-purple-500/20 px-1.5 py-0.5 rounded">
+                                        {ex.subject}
+                                      </span>
+                                      {isMyBranch && (
+                                        <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1 py-0.5 rounded font-bold">
+                                          Branşınız ⭐
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-xs font-bold text-white mt-1">
+                                      {ex.publisher || 'Deneme'}
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-black text-purple-300">{ex.net} Net</span>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[11px] font-mono bg-slate-900/90 p-1.5 rounded-lg">
+                                  <span className="text-emerald-400 font-bold">{ex.correct}D</span>
+                                  <span className="text-rose-400 font-bold">{ex.wrong}Y</span>
+                                  <span className="text-slate-400">{ex.empty}B</span>
+                                  <span className="text-slate-500 text-[10px]">{ex.date}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* ------------------------------------------------------------- */}
+                {/* SUB-TAB 3: KURUMSAL DENEMELER (KARNELER) */}
+                {/* ------------------------------------------------------------- */}
+                {mockSubTab === 'institutional' && (() => {
+                  const institutionalMocks: InstitutionalMockExam[] = (stData?.institutionalMocks as InstitutionalMockExam[]) || [];
+                  const totalInstCount = institutionalMocks.length;
+                  const latestExam = institutionalMocks[0];
+
+                  const instTrendData = [...institutionalMocks]
+                    .sort((a, b) => (a.examDate || '').localeCompare(b.examDate || ''))
+                    .slice(-8)
+                    .map(ex => {
+                      const parts = (ex.examDate || '').split('-');
+                      const displayDate = parts.length === 3 ? `${parts[2]}/${parts[1]}` : ex.examDate;
+                      return {
+                        date: ex.examDate,
+                        displayDate,
+                        title: ex.examTitle || ex.title,
+                        totalNet: ex.totalNet || 0
+                      };
+                    });
+
+                  const filteredInstMocks = institutionalMocks.filter(ex => {
+                    if (institutionalMockSearch.trim()) {
+                      const q = institutionalMockSearch.toLowerCase();
+                      const matchTitle = (ex.examTitle || ex.title || '').toLowerCase().includes(q);
+                      const matchPub = (ex.publisher || '').toLowerCase().includes(q);
+                      if (!matchTitle && !matchPub) return false;
+                    }
+                    if (institutionalMockTypeFilter === 'TYT' && ex.examType !== 'TYT') return false;
+                    if (institutionalMockTypeFilter === 'AYT' && ex.examType !== 'AYT') return false;
+                    return true;
+                  }).sort((a, b) => (b.examDate || '').localeCompare(a.examDate || ''));
+
+                  return (
+                    <div className="space-y-4">
+                      {/* KPI Cards */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-400">Toplam Karne</span>
+                            <School className="w-4 h-4 text-emerald-400" />
+                          </div>
+                          <div className="mt-2 flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-white">{totalInstCount}</span>
+                            <span className="text-xs text-slate-400">karne</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-400">Son Sınav Neti</span>
+                            <Target className="w-4 h-4 text-sky-400" />
+                          </div>
+                          <div className="mt-2 flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-sky-400">{latestExam?.totalNet || 0}</span>
+                            <span className="text-xs text-slate-400 font-bold">Net</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-400">Son Puan</span>
+                            <Award className="w-4 h-4 text-amber-400" />
+                          </div>
+                          <div className="mt-2 flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-amber-400">{latestExam?.score ? latestExam.score.toFixed(1) : '-'}</span>
+                            <span className="text-xs text-slate-400 font-bold">Puan</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-slate-400">Okul Sırası</span>
+                            <Trophy className="w-4 h-4 text-emerald-400" />
+                          </div>
+                          <div className="mt-2 flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-emerald-400">
+                              {latestExam?.schoolRank ? `#${latestExam.schoolRank}` : '-'}
+                            </span>
+                            {latestExam?.schoolTotalCount && (
+                              <span className="text-xs text-slate-400 font-bold">/ {latestExam.schoolTotalCount}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Chart */}
+                      {institutionalMocks.length > 0 && (
+                        <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                              <h4 className="text-xs font-bold text-white">Kurumsal Deneme Net Gelişim Trendi</h4>
+                            </div>
+                          </div>
+
+                          <div className="h-40 w-full pt-1">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={instTrendData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                                <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} />
+                                <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
+                                <Tooltip
+                                  contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
+                                  formatter={(val: any) => [`${val} Net`, 'Toplam Net']}
+                                />
+                                <Line type="monotone" dataKey="totalNet" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981' }} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Toolbar */}
+                      <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div className="relative flex-1">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={institutionalMockSearch}
+                            onChange={(e) => setInstitutionalMockSearch(e.target.value)}
+                            placeholder="Kurumsal karne ara..."
+                            className="w-full bg-slate-900/90 border border-white/10 rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
+                          />
+                        </div>
+
+                        <div className="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-white/10 shrink-0">
+                          <button
+                            onClick={() => setInstitutionalMockTypeFilter('all')}
+                            className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                              institutionalMockTypeFilter === 'all' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            Tümü
+                          </button>
+                          <button
+                            onClick={() => setInstitutionalMockTypeFilter('TYT')}
+                            className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                              institutionalMockTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-indigo-400'
+                            }`}
+                          >
+                            TYT
+                          </button>
+                          <button
+                            onClick={() => setInstitutionalMockTypeFilter('AYT')}
+                            className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                              institutionalMockTypeFilter === 'AYT' ? 'bg-fuchsia-600 text-white font-bold' : 'text-slate-400 hover:text-fuchsia-400'
+                            }`}
+                          >
+                            AYT
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Institutional Mock Exam Report Cards Grid */}
+                      {filteredInstMocks.length === 0 ? (
+                        <p className="text-xs text-slate-400 italic py-6 text-center">Kurumsal deneme karnesi bulunamadı.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          {filteredInstMocks.map((exam) => {
+                            const examTitle = exam.examTitle || exam.title;
+                            const totalNet = exam.totalNet || 0;
+                            const score = exam.score || 0;
+
+                            return (
+                              <div
+                                key={exam.id}
+                                className="bg-slate-950/80 border border-white/10 hover:border-emerald-500/40 rounded-xl p-4 space-y-3 shadow-xl transition-all"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${
+                                        exam.examType === 'TYT'
+                                          ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                                          : 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30'
+                                      }`}>
+                                        {exam.examType || 'TYT'}
+                                      </span>
+                                      {exam.publisher && (
+                                        <span className="text-[10px] font-bold text-slate-400 bg-white/5 px-1.5 py-0.5 rounded">
+                                          {exam.publisher}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <h4 className="text-sm font-bold text-white mt-1">
+                                      {examTitle}
+                                    </h4>
+                                  </div>
+
+                                  <div className="text-right shrink-0">
+                                    <span className="text-base font-black text-emerald-400 font-mono block">
+                                      {totalNet.toFixed(2)} Net
+                                    </span>
+                                    {score > 0 && (
+                                      <span className="text-[10px] text-amber-400/90 font-mono">
+                                        {score.toFixed(1)} Puan
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Ranking Badges */}
+                                <div className="grid grid-cols-3 gap-1.5 bg-slate-900/90 p-2 rounded-lg font-mono text-center text-xs">
+                                  <div>
+                                    <span className="text-[9px] text-emerald-400 font-sans block">Okul</span>
+                                    <span className="font-bold text-white">{exam.schoolRank ? `#${exam.schoolRank}` : '-'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-[9px] text-sky-400 font-sans block">İl/İlçe</span>
+                                    <span className="font-bold text-white">{exam.cityRank ? `#${exam.cityRank}` : exam.districtRank ? `#${exam.districtRank}` : '-'}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-[9px] text-purple-400 font-sans block">Genel</span>
+                                    <span className="font-bold text-white">{exam.generalRank ? `#${exam.generalRank.toLocaleString('tr-TR')}` : '-'}</span>
+                                  </div>
+                                </div>
+
+                                {/* Action Button */}
+                                <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                                  <span className="text-[10px] text-slate-400 font-mono">{exam.examDate}</span>
+
+                                  <button
+                                    onClick={() => setSelectedInstitutionalExam(exam)}
+                                    className="flex items-center space-x-1 px-2.5 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[11px] font-bold rounded-lg transition-all shadow-sm cursor-pointer"
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                    <span>Karneyi İncele</span>
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         )}
 
