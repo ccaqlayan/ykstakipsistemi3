@@ -300,7 +300,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [addExamType, setAddExamType] = useState<MockExamType>(() => {
-    return profile?.targetField === 'DİL' ? 'DIL' : 'TYT';
+    return (profile?.targetField === 'DİL' || profile?.targetField === 'DIL') ? 'DIL' : 'TYT';
   });
   const [addEntryMode, setAddEntryMode] = useState<'quick' | 'detailed'>('quick');
   const [addInputMethod, setAddInputMethod] = useState<'net' | 'dyb'>('dyb');
@@ -330,7 +330,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
 
   // Sync addExamType when targetField changes if user hasn't typed
   useEffect(() => {
-    if (profile?.targetField === 'DİL') {
+    if (profile?.targetField === 'DİL' || profile?.targetField === 'DIL') {
       setAddExamType('DIL');
     }
   }, [profile?.targetField]);
@@ -338,7 +338,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   const resetAddForm = () => {
     setTitle('');
     setDate(new Date().toISOString().split('T')[0]);
-    setAddExamType(profile?.targetField === 'DİL' ? 'DIL' : 'TYT');
+    setAddExamType((profile?.targetField === 'DİL' || profile?.targetField === 'DIL') ? 'DIL' : 'TYT');
     setAddEntryMode('quick');
     setAddInputMethod('dyb');
     setTytTurkce('');
@@ -779,44 +779,73 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
 
     // Contextual motivation trigger with net comparison
     const prevMocks = [...generalMocks].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const prevTytNet = prevMocks.find(m => (m.tyt?.totalNet || 0) > 0)?.tyt?.totalNet || 0;
-    const prevAytNet = prevMocks.find(m => (m.ayt?.totalNet || 0) > 0)?.ayt?.totalNet || 0;
-    const prevYdtNet = prevMocks.find(m => (m.ydt?.net || 0) > 0)?.ydt?.net || 0;
+    const prevTytNet = prevMocks.find(m => (m.tyt?.totalNet || 0) > 0)?.tyt?.totalNet;
+    const prevAytNet = prevMocks.find(m => (m.ayt?.totalNet || 0) > 0)?.ayt?.totalNet;
+    const prevYdtNet = prevMocks.find(m => (m.ydt?.net !== undefined && Number(m.ydt.net) > 0))?.ydt?.net;
 
-    if (addExamType === 'DIL' || addExamType === 'TYT_DIL') {
+    if (addExamType === 'DIL') {
       const currentYdt = ydtObj?.net || 0;
       window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
         detail: {
           type: 'mock_added',
           payload: {
-            examType: 'DİL (YDT)',
+            examType: 'DIL',
             newNet: currentYdt,
-            oldNet: prevYdtNet,
-            hasPrevious: prevYdtNet > 0
+            oldNet: prevYdtNet || 0,
+            hasPrevious: prevYdtNet !== undefined && Number(prevYdtNet) > 0
           }
         }
       }));
-    } else if (aytTotal > 0 && tytTotal === 0) {
+    } else if (addExamType === 'TYT_DIL') {
+      const currentYdt = ydtObj?.net || 0;
+      window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
+        detail: {
+          type: 'mock_added',
+          payload: {
+            examType: 'TYT_DIL',
+            tytNet: tytTotal,
+            ydtNet: currentYdt,
+            newNet: currentYdt,
+            oldNet: prevYdtNet || 0,
+            hasPrevious: prevYdtNet !== undefined && Number(prevYdtNet) > 0
+          }
+        }
+      }));
+    } else if (addExamType === 'TYT_AYT') {
+      window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
+        detail: {
+          type: 'mock_added',
+          payload: {
+            examType: 'TYT_AYT',
+            tytNet: tytTotal,
+            aytNet: aytTotal,
+            newNet: aytTotal,
+            oldNet: prevAytNet || 0,
+            hasPrevious: prevAytNet !== undefined && Number(prevAytNet) > 0
+          }
+        }
+      }));
+    } else if (addExamType === 'AYT' || (aytTotal > 0 && tytTotal === 0)) {
       window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
         detail: {
           type: 'mock_added',
           payload: {
             examType: 'AYT',
             newNet: aytTotal,
-            oldNet: prevAytNet,
-            hasPrevious: prevAytNet > 0
+            oldNet: prevAytNet || 0,
+            hasPrevious: prevAytNet !== undefined && Number(prevAytNet) > 0
           }
         }
       }));
-    } else if (tytTotal > 0) {
+    } else {
       window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
         detail: {
           type: 'mock_added',
           payload: {
             examType: 'TYT',
             newNet: tytTotal,
-            oldNet: prevTytNet,
-            hasPrevious: prevTytNet > 0
+            oldNet: prevTytNet || 0,
+            hasPrevious: prevTytNet !== undefined && Number(prevTytNet) > 0
           }
         }
       }));

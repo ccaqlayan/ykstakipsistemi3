@@ -587,12 +587,32 @@ export interface MotivationEvent {
 export const DEFAULT_MOTIVATION_MESSAGES: Record<string, string> = {
   plan_completed: 'Harika! {subject} için {minutes} dk tamamlandı 💪 Bugün {count}. görevin bitti!',
   all_plans_completed: 'İnanılmaz! Bugünkü tüm planı eksiksiz bitirdin 🎉 Bunu başarmak ciddi disiplin ister, tebrikler!',
+  
+  // İlk deneme özel bildirimleri (0 netten yükseldi demek yerine başlangıç ölçümü)
+  mock_first_tyt: 'İlk TYT denemen {newNet} net ile sisteme kaydedildi! 🎯 Başlangıç noktan belirlendi, şimdi hedef yükseltme zamanı.',
+  mock_first_ayt: 'İlk AYT denemen {newNet} net ile sisteme kaydedildi! 🎯 Başlangıç noktan belirlendi, adım adım zirveye!',
+  mock_first_dil: 'İlk DİL (YDT) denemen {newNet} net ile sisteme kaydedildi! 🌍 Yabancı dilde harika bir başlangıç!',
+  mock_first_tyt_ayt: 'Tam YKS denemen ({tytNet} TYT / {aytNet} AYT) kaydedildi! 🏆 Maratona harika bir genel prova!',
+  mock_first_tyt_dil: 'TYT + DİL denemen ({tytNet} TYT / {ydtNet} YDT) kaydedildi! 🌍 Harika bir dil puanı provası!',
+
+  // Sonraki denemeler (artış / azalış / koruma)
   tyt_mock_increase: 'Net artıyor! TYT\'de {oldNet} → {newNet} net 📈 Bu eğilimi sürdürürsen hedefine hızla yaklaşıyorsun.',
   tyt_mock_decrease: 'Bu deneme zorlamış olabilir, ama her deneme bir ders 🧠 Analiz bölümüne bakarak eksikleri kapatalım.',
+  tyt_mock_same: 'TYT\'de {newNet} net ile istikrarını korudun 🎯 Bir sonraki denemede sıçrama yapabilirsin!',
+
   ayt_mock_increase: 'Güzel ilerleme! AYT\'de {oldNet} → {newNet} net 📈 Hedef bölümüne doğru emin adımlarla!',
   ayt_mock_decrease: 'AYT bu sefer zorlamış olabilir 🧠 Zayıf konuları analiz edip tekrara dönelim.',
+  ayt_mock_same: 'AYT\'de {newNet} net ile dengeni korudun 🎯 Analizle eksik konuları tamamlayalım!',
+
+  dil_mock_increase: 'DİL (YDT) netin artıyor! {oldNet} → {newNet} net 📈 Kelime ve soru pratiğin meyvesini veriyor!',
+  dil_mock_decrease: 'DİL bu denemede biraz zorlamış olabilir 🔍 Yanlış çıkan soru kalıplarını analiz sekmesinden inceleyelim.',
+  dil_mock_same: 'DİL (YDT)\'de {newNet} net ile dengeni korudun 🌍 Pratikle netlerini daha da artırabilirsin!',
+
+  branch_mock_first: 'İlk {subject} branş denemen {newNet} net ile kaydedildi! 🎯 Branş analizini buradan takip edebilirsin.',
   branch_mock_increase: '{subject} branş denemesinde {oldNet} → {newNet} net 🎯 {subject} giderek güçleniyor!',
   branch_mock_decrease: '{subject} bu seferlik zorlamış olabilir 🔍 Analiz sekmesinden yanlışlara bakalım.',
+  branch_mock_same: '{subject} branş denemesinde {newNet} net ile istikrarını korudun 🎯',
+
   topic_mastered: 'Süper! {topicName} konusunu özümsedin ⭐ Bu konudan soru gelse artık seni şaşırtamaz.',
   question_goal_reached: 'Günlük soru hedefi tamam! 🎯 {solved} soru çözüldü ({correct} Doğru). Harikasın!',
   streak_active: '🔥 {streak} günlük serin devam ediyor! Bugün de devam edelim.'
@@ -639,32 +659,99 @@ export function generateContextualFeedback(
     }
 
     case 'mock_added': {
-      const isTyt = p.examType === 'TYT' || (p.tytNet !== undefined && (p.aytNet === undefined || p.aytNet === 0));
-      const newNet = Number(p.newNet || (isTyt ? p.tytNet : p.aytNet) || 0);
-      const oldNet = Number(p.oldNet || 0);
-      const hasPrevious = p.hasPrevious === true || oldNet > 0;
+      const rawType = String(p.examType || '').toUpperCase();
+      const isDil = rawType.includes('DIL') || rawType.includes('DİL') || rawType.includes('YDT');
+      const isTytDil = rawType === 'TYT_DIL';
+      const isTytAyt = rawType === 'TYT_AYT';
+      const isAyt = !isDil && !isTytDil && !isTytAyt && (rawType === 'AYT' || (p.aytNet !== undefined && (p.tytNet === undefined || p.tytNet === 0)));
+      const isTyt = !isDil && !isTytDil && !isTytAyt && !isAyt;
 
-      if (isTyt) {
-        if (!hasPrevious || newNet >= oldNet) {
-          const template = messages.tyt_mock_increase;
+      const newNet = Number(p.newNet || (isDil ? p.ydtNet : isTyt ? p.tytNet : p.aytNet) || 0);
+      const oldNet = Number(p.oldNet || 0);
+      const hasPrevious = p.hasPrevious === true && oldNet > 0;
+
+      // 1. İLK DENEME GİRİŞİ (Önceden neti olmayan ilk kayıt)
+      if (!hasPrevious) {
+        if (isDil && !isTytDil) {
+          const template = messages.mock_first_dil || DEFAULT_MOTIVATION_MESSAGES.mock_first_dil;
+          return {
+            id: 'toast-mock-' + Date.now(),
+            type: 'mock',
+            title: '🌍 DİL (YDT) Denemesi Kaydedildi!',
+            message: template.replace('{newNet}', newNet.toFixed(1)),
+            variant: 'cyan'
+          };
+        } else if (isTytDil) {
+          const template = messages.mock_first_tyt_dil || DEFAULT_MOTIVATION_MESSAGES.mock_first_tyt_dil;
+          return {
+            id: 'toast-mock-' + Date.now(),
+            type: 'mock',
+            title: '🌍 TYT + DİL Denemesi Kaydedildi!',
+            message: template.replace('{tytNet}', String(p.tytNet ?? 0)).replace('{ydtNet}', String(p.ydtNet ?? newNet)),
+            variant: 'cyan'
+          };
+        } else if (isTytAyt) {
+          const template = messages.mock_first_tyt_ayt || DEFAULT_MOTIVATION_MESSAGES.mock_first_tyt_ayt;
+          return {
+            id: 'toast-mock-' + Date.now(),
+            type: 'mock',
+            title: '🏆 TYT + AYT Denemesi Kaydedildi!',
+            message: template.replace('{tytNet}', String(p.tytNet ?? 0)).replace('{aytNet}', String(p.aytNet ?? newNet)),
+            variant: 'purple'
+          };
+        } else if (isAyt) {
+          const template = messages.mock_first_ayt || DEFAULT_MOTIVATION_MESSAGES.mock_first_ayt;
+          return {
+            id: 'toast-mock-' + Date.now(),
+            type: 'mock',
+            title: '⚡ AYT Denemesi Kaydedildi!',
+            message: template.replace('{newNet}', newNet.toFixed(1)),
+            variant: 'cyan'
+          };
+        } else {
+          const template = messages.mock_first_tyt || DEFAULT_MOTIVATION_MESSAGES.mock_first_tyt;
           return {
             id: 'toast-mock-' + Date.now(),
             type: 'mock',
             title: '🚀 TYT Denemesi Kaydedildi!',
-            message: template.replace('{oldNet}', oldNet.toFixed(1)).replace('{newNet}', newNet.toFixed(1)),
+            message: template.replace('{newNet}', newNet.toFixed(1)),
             variant: 'cyan'
           };
-        } else {
+        }
+      }
+
+      // 2. SONRAKİ DENEMELER (Net karşılaştırmalı)
+      if (isDil || isTytDil) {
+        if (newNet > oldNet) {
+          const template = messages.dil_mock_increase || DEFAULT_MOTIVATION_MESSAGES.dil_mock_increase;
           return {
             id: 'toast-mock-' + Date.now(),
             type: 'mock',
-            title: '📝 TYT Denemesi Kaydedildi',
-            message: messages.tyt_mock_decrease,
+            title: '🌍 DİL (YDT) Denemesi Kaydedildi!',
+            message: template.replace('{oldNet}', oldNet.toFixed(1)).replace('{newNet}', newNet.toFixed(1)),
+            variant: 'cyan'
+          };
+        } else if (newNet === oldNet) {
+          const template = messages.dil_mock_same || DEFAULT_MOTIVATION_MESSAGES.dil_mock_same;
+          return {
+            id: 'toast-mock-' + Date.now(),
+            type: 'mock',
+            title: '🌍 DİL (YDT) Denemesi Kaydedildi',
+            message: template.replace('{newNet}', newNet.toFixed(1)),
+            variant: 'cyan'
+          };
+        } else {
+          const template = messages.dil_mock_decrease || DEFAULT_MOTIVATION_MESSAGES.dil_mock_decrease;
+          return {
+            id: 'toast-mock-' + Date.now(),
+            type: 'mock',
+            title: '📝 DİL (YDT) Denemesi Kaydedildi',
+            message: template,
             variant: 'purple'
           };
         }
-      } else {
-        if (!hasPrevious || newNet >= oldNet) {
+      } else if (isAyt || isTytAyt) {
+        if (newNet > oldNet) {
           const template = messages.ayt_mock_increase;
           return {
             id: 'toast-mock-' + Date.now(),
@@ -673,12 +760,49 @@ export function generateContextualFeedback(
             message: template.replace('{oldNet}', oldNet.toFixed(1)).replace('{newNet}', newNet.toFixed(1)),
             variant: 'cyan'
           };
+        } else if (newNet === oldNet) {
+          const template = messages.ayt_mock_same || DEFAULT_MOTIVATION_MESSAGES.ayt_mock_same;
+          return {
+            id: 'toast-mock-' + Date.now(),
+            type: 'mock',
+            title: '⚡ AYT Denemesi Kaydedildi',
+            message: template.replace('{newNet}', newNet.toFixed(1)),
+            variant: 'cyan'
+          };
         } else {
           return {
             id: 'toast-mock-' + Date.now(),
             type: 'mock',
             title: '📝 AYT Denemesi Kaydedildi',
             message: messages.ayt_mock_decrease,
+            variant: 'purple'
+          };
+        }
+      } else {
+        if (newNet > oldNet) {
+          const template = messages.tyt_mock_increase;
+          return {
+            id: 'toast-mock-' + Date.now(),
+            type: 'mock',
+            title: '🚀 TYT Denemesi Kaydedildi!',
+            message: template.replace('{oldNet}', oldNet.toFixed(1)).replace('{newNet}', newNet.toFixed(1)),
+            variant: 'cyan'
+          };
+        } else if (newNet === oldNet) {
+          const template = messages.tyt_mock_same || DEFAULT_MOTIVATION_MESSAGES.tyt_mock_same;
+          return {
+            id: 'toast-mock-' + Date.now(),
+            type: 'mock',
+            title: '🚀 TYT Denemesi Kaydedildi',
+            message: template.replace('{newNet}', newNet.toFixed(1)),
+            variant: 'cyan'
+          };
+        } else {
+          return {
+            id: 'toast-mock-' + Date.now(),
+            type: 'mock',
+            title: '📝 TYT Denemesi Kaydedildi',
+            message: messages.tyt_mock_decrease,
             variant: 'purple'
           };
         }

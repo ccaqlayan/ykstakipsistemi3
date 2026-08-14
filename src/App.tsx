@@ -2280,8 +2280,15 @@ export default function App() {
     const prevMocks = currentStudentData.generalMocks || [];
     updateCurrentStudentData((prev) => ({ ...prev, generalMocks: [...(prev.generalMocks || []), newItem] }));
 
+    const examTypeStr = mock.examType === 'DIL' ? 'DİL' : mock.examType === 'TYT_DIL' ? 'TYT + DİL' : mock.examType === 'AYT' ? 'AYT' : mock.examType === 'TYT_AYT' ? 'TYT + AYT' : 'TYT';
+    const netDetailsStr = [
+      mock.tyt?.totalNet ? `TYT: ${mock.tyt.totalNet}` : null,
+      mock.ayt?.totalNet ? `AYT: ${mock.ayt.totalNet}` : null,
+      mock.ydt?.net !== undefined ? `YDT: ${mock.ydt.net}` : null
+    ].filter(Boolean).join(', ');
+
     addAuditAndUndo(
-      `${currentUser?.name || 'Öğrenci'} yeni bir genel deneme ekledi: "${mock.title}" (${mock.tytNet ? `TYT Net: ${mock.tytNet}` : ''}${mock.aytNet ? `, AYT Net: ${mock.aytNet}` : ''}).`,
+      `${currentUser?.name || 'Öğrenci'} yeni bir genel deneme ekledi: "${mock.title}" (${examTypeStr}${netDetailsStr ? ` - ${netDetailsStr}` : ''}).`,
       'exam',
       'add_general_mock',
       () => {
@@ -2315,8 +2322,15 @@ export default function App() {
       generalMocks: (prev.generalMocks || []).map((m) => (m.id === updated.id ? updated : m))
     }));
 
+    const examTypeStr = updated.examType === 'DIL' ? 'DİL' : updated.examType === 'TYT_DIL' ? 'TYT + DİL' : updated.examType === 'AYT' ? 'AYT' : updated.examType === 'TYT_AYT' ? 'TYT + AYT' : 'TYT';
+    const netDetailsStr = [
+      updated.tyt?.totalNet ? `TYT: ${updated.tyt.totalNet}` : null,
+      updated.ayt?.totalNet ? `AYT: ${updated.ayt.totalNet}` : null,
+      updated.ydt?.net !== undefined ? `YDT: ${updated.ydt.net}` : null
+    ].filter(Boolean).join(', ');
+
     addAuditAndUndo(
-      `${currentUser?.name || 'Öğrenci'} "${updated.title}" genel deneme sonucunu güncelledi (${updated.tytNet ? `TYT Net: ${updated.tytNet}` : ''}${updated.aytNet ? `, AYT Net: ${updated.aytNet}` : ''}).`,
+      `${currentUser?.name || 'Öğrenci'} "${updated.title}" genel deneme sonucunu güncelledi (${examTypeStr}${netDetailsStr ? ` - ${netDetailsStr}` : ''}).`,
       'exam',
       'update_general_mock',
       () => {

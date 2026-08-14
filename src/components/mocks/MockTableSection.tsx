@@ -21,14 +21,24 @@ interface MockTableSectionProps {
 }
 
 export const getEffectiveMockExamType = (mock: GeneralMockExam): MockExamType => {
-  if (mock.examType) return mock.examType;
   const hasTyt = (mock.tyt?.totalNet || 0) > 0;
   const hasAyt = (mock.ayt?.totalNet || 0) > 0;
-  const hasYdt = (mock.ydt?.net || 0) > 0;
+  const hasYdt = (mock.ydt?.net !== undefined && mock.ydt?.net !== null && Number(mock.ydt.net) > 0) || (mock.ydt && Object.keys(mock.ydt).length > 0 && mock.ydt.net !== undefined);
+
+  // If explicit DIL or combination type is set, trust it
+  if (mock.examType === 'DIL') return 'DIL';
+  if (mock.examType === 'TYT_DIL') return 'TYT_DIL';
+  if (mock.examType === 'TYT_AYT') return 'TYT_AYT';
+  if (mock.examType === 'AYT' && !hasTyt) return 'AYT';
+
+  // Smart resolution based on actual net payload (fixes cases where examType defaulted to TYT)
+  if (hasYdt && !hasAyt && !hasTyt) return 'DIL';
+  if (hasYdt && hasTyt && !hasAyt) return 'TYT_DIL';
   if (hasTyt && hasAyt) return 'TYT_AYT';
-  if (hasTyt && hasYdt) return 'TYT_DIL';
+  if (hasAyt && !hasTyt) return 'AYT';
+
+  if (mock.examType) return mock.examType;
   if (hasYdt) return 'DIL';
-  if (hasAyt) return 'AYT';
   return 'TYT';
 };
 
