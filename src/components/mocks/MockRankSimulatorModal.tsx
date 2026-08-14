@@ -37,7 +37,11 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
   if (!calcMock) return null;
 
   const examType = getEffectiveMockExamType(calcMock);
-  const registeredField = profile?.targetField || 'SAY';
+  const rawField = (profile?.targetField || 'SAY').toUpperCase().trim();
+  const isSayProfile = rawField.includes('SAY');
+  const isEaProfile = rawField.includes('EA') || rawField.includes('EŞİT') || rawField.includes('ESIT');
+  const isSozProfile = rawField.includes('SÖZ') || rawField.includes('SOZ');
+  const isDilProfile = rawField.includes('DİL') || rawField.includes('DIL') || rawField.includes('YDT');
 
   const tytTurkceNet = parseNetVal(calcMock.tyt?.turkce);
   const tytMatNet = parseNetVal(calcMock.tyt?.mat);
@@ -53,9 +57,9 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
 
   // Field Presence Detection
   const hasTytNets = tytTotalNet > 0 || tytTurkceNet > 0 || tytMatNet > 0 || tytSosyalNet > 0 || tytFenNet > 0;
-  const hasSayNets = aytMatNet > 0 || aytFenNet > 0;
-  const hasEaNets = aytMatNet > 0 || aytEdebNet > 0;
-  const hasSozNets = aytEdebNet > 0 || aytSos2Net > 0;
+  const hasSayNets = aytFenNet > 0;
+  const hasEaNets = aytEdebNet > 0;
+  const hasSozNets = aytSos2Net > 0;
   const hasDilNets = ydtNet > 0 || examType === 'DIL' || examType === 'TYT_DIL';
 
   // Compute Official Scores via MEB OGM & ÖSYM 2026 Engine
@@ -79,22 +83,58 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
   };
 
   // Determine Primary Target Result for Quick Preset Selection
+  const isOnlyTyt = examType === 'TYT' || (hasTytNets && !hasSayNets && !hasEaNets && !hasSozNets && !hasDilNets && aytMatNet === 0);
+
   const primaryResult: { title: string; result: YksScoreResult } = (() => {
-    if (examType === 'TYT') return { title: 'TYT', result: tyt };
-    if (examType === 'DIL' || examType === 'TYT_DIL' || registeredField === 'DİL' || registeredField === 'DIL') return { title: 'DİL (YDT)', result: dil };
-    if (registeredField === 'EA') return { title: 'EA', result: ea };
-    if (registeredField === 'SÖZ' || registeredField === 'SOZ') return { title: 'SÖZ', result: soz };
+    if (examType === 'TYT' || isOnlyTyt) return { title: 'TYT', result: tyt };
+    if (examType === 'DIL' || examType === 'TYT_DIL' || isDilProfile) return { title: 'DİL (YDT)', result: dil };
+    if (isEaProfile) return { title: 'EA', result: ea };
+    if (isSozProfile) return { title: 'SÖZ', result: soz };
     return { title: 'SAY', result: say };
   })();
 
-  // Determine visibility for each field card
-  const isOnlyTyt = examType === 'TYT' || (hasTytNets && !hasSayNets && !hasEaNets && !hasSozNets && !hasDilNets);
-  
+  // Automatic Field Visibility Rules for 'auto' mode
+  let autoShowSay = false;
+  let autoShowEa = false;
+  let autoShowSoz = false;
+  let autoShowDil = false;
+
+  if (!isOnlyTyt) {
+    // 1. SAY: If Fen is entered (>0), OR (student profile is SAY and has AYT nets, and didn't exclusively enter EA/SÖZ subjects)
+    if (aytFenNet > 0 || (isSayProfile && (aytMatNet > 0 || examType === 'AYT' || examType === 'TYT_AYT') && aytEdebNet === 0)) {
+      autoShowSay = true;
+    }
+
+    // 2. EA: If Edebiyat is entered (>0), OR (student profile is EA and has AYT/Mat nets, and didn't exclusively enter Fen)
+    if ((aytEdebNet > 0 && aytSos2Net === 0) || (isEaProfile && (aytMatNet > 0 || aytEdebNet > 0 || examType === 'AYT' || examType === 'TYT_AYT') && aytFenNet === 0)) {
+      autoShowEa = true;
+    }
+
+    // 3. SÖZ: If Sos2 is entered (>0), OR (student profile is SÖZ and has Edeb/Sos2 nets)
+    if (aytSos2Net > 0 || (isSozProfile && (aytEdebNet > 0 || aytSos2Net > 0 || examType === 'AYT' || examType === 'TYT_AYT') && aytFenNet === 0 && aytMatNet === 0)) {
+      autoShowSoz = true;
+    }
+
+    // 4. DİL: If YDT net entered (>0) OR student profile is DİL
+    if (ydtNet > 0 || examType === 'DIL' || examType === 'TYT_DIL' || (isDilProfile && (examType === 'DIL' || examType === 'TYT_DIL' || ydtNet > 0))) {
+      autoShowDil = true;
+    }
+
+    // Fallback: If no field matched, default strictly to registered student profile
+    if (!autoShowSay && !autoShowEa && !autoShowSoz && !autoShowDil) {
+      if (isSayProfile) autoShowSay = true;
+      else if (isEaProfile) autoShowEa = true;
+      else if (isSozProfile) autoShowSoz = true;
+      else if (isDilProfile) autoShowDil = true;
+      else autoShowSay = true;
+    }
+  }
+
   const showTyt = viewMode === 'all' || viewMode === 'TYT' || (viewMode === 'auto' && isOnlyTyt);
-  const showSay = viewMode === 'all' || viewMode === 'SAY' || (viewMode === 'auto' && (hasSayNets || registeredField === 'SAY') && !isOnlyTyt);
-  const showEa = viewMode === 'all' || viewMode === 'EA' || (viewMode === 'auto' && (hasEaNets || registeredField === 'EA') && !isOnlyTyt);
-  const showSoz = viewMode === 'all' || viewMode === 'SOZ' || (viewMode === 'auto' && (hasSozNets || registeredField === 'SÖZ' || registeredField === 'SOZ') && !isOnlyTyt);
-  const showDil = viewMode === 'all' || viewMode === 'DIL' || (viewMode === 'auto' && (hasDilNets || registeredField === 'DİL' || registeredField === 'DIL'));
+  const showSay = viewMode === 'all' || viewMode === 'SAY' || (viewMode === 'auto' && autoShowSay && !isOnlyTyt);
+  const showEa = viewMode === 'all' || viewMode === 'EA' || (viewMode === 'auto' && autoShowEa && !isOnlyTyt);
+  const showSoz = viewMode === 'all' || viewMode === 'SOZ' || (viewMode === 'auto' && autoShowSoz && !isOnlyTyt);
+  const showDil = viewMode === 'all' || viewMode === 'DIL' || (viewMode === 'auto' && autoShowDil);
 
   // Save Estimated Rank Handler
   const handleSaveRank = (rankToSave: number, label?: string) => {
