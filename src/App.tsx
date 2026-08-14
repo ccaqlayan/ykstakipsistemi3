@@ -1807,7 +1807,10 @@ export default function App() {
     const prevVideos = currentStudentData.youtubeVideos || [];
     let updatedVideos = prevVideos;
 
-    if (plan.status === 'completed') {
+    const oldPlan = prevPlans.find((p) => p.id === plan.id);
+    const isNewlyCompleted = plan.status === 'completed' && oldPlan?.status !== 'completed';
+
+    if (isNewlyCompleted) {
       updatedVideos = syncCompletedPlanToYoutubeVideos(plan, prevVideos);
 
       const todayStr = plan.date || new Date().toISOString().split('T')[0];
@@ -1831,6 +1834,8 @@ export default function App() {
           }
         }));
       }
+    } else if (plan.status === 'completed') {
+      updatedVideos = syncCompletedPlanToYoutubeVideos(plan, prevVideos);
     }
 
     updateCurrentStudentData((prev) => ({
@@ -1839,8 +1844,13 @@ export default function App() {
       youtubeVideos: updatedVideos
     }));
 
+    const isDayChanged = oldPlan && oldPlan.day !== plan.day;
+    const auditText = isDayChanged
+      ? `${currentUser?.name || 'Öğrenci'} "${plan.subject} - ${plan.topic}" görev gününü ${oldPlan.day} -> ${plan.day} olarak değiştirdi.`
+      : `${currentUser?.name || 'Öğrenci'} "${plan.subject} - ${plan.topic}" görev durumunu güncelledi (${plan.status === 'completed' ? 'Tamamlandı' : 'Devam Ediyor'}).`;
+
     addAuditAndUndo(
-      `${currentUser?.name || 'Öğrenci'} "${plan.subject} - ${plan.topic}" görev durumunu güncelledi (${plan.status === 'completed' ? 'Tamamlandı' : 'Devam Ediyor'}).`,
+      auditText,
       'study',
       'update_plan',
       () => {
