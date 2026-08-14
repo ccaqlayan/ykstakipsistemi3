@@ -76,6 +76,8 @@ import {
 import { INITIAL_GLOBAL_STATE } from '../../services/storage';
 import { resolveStudentData } from '../../utils/studentDataUtils';
 
+const DAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+
 const TURKISH_MONTHS_LOCAL = [
   'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
   'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
@@ -1757,8 +1759,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
 
       {/* TAB 8: YOUTUBE TRACKER */}
       {activeTab === 'youtube' && (() => {
-        // Unique subjects in student's YouTube list
-        const ytSubjects = ['all', ...Array.from(new Set(youtubeList.map(y => y.subject).filter(Boolean)))];
+        const ytSubjects: string[] = ['all', ...Array.from(new Set(youtubeList.map((y: any) => String(y.subject || '')).filter(Boolean)))];
 
         // Filter items
         const filteredYoutubeList = youtubeList.filter(item => {

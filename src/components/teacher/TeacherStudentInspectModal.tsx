@@ -1054,8 +1054,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
           <div className="space-y-6">
             {(() => {
               const youtubeVideos = stData?.youtubeVideos || (stData as any)?.youtubePlaylists || [];
-              const teacherSubj = (teacher.role === 'teacher' && teacher.subject) ? teacher.subject.toLowerCase() : '';
-              const ytSubjects = ['all', ...Array.from(new Set(youtubeVideos.map((y: any) => y.subject).filter(Boolean)))];
+              const ytSubjects: string[] = ['all', ...Array.from(new Set(youtubeVideos.map((y: any) => String(y.subject || '')).filter(Boolean)))];
 
               let totalYoutubeVideosOverall = 0;
               let totalYoutubeWatchedOverall = 0;
