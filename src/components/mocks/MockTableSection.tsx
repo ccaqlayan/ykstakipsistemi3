@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   GraduationCap, ArrowDown, ArrowUp, CheckCircle2, Pencil, Clock, SlidersHorizontal, 
-  ChevronDown, Calculator, Trash2, Search, Sparkles, Globe, Filter,
+  ChevronDown, Calculator, Trash2, Search, Sparkles, Globe, Filter, Calendar,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
 } from 'lucide-react';
 import { GeneralMockExam, InstitutionalMockExam, MockExamType } from '../../types';
@@ -423,8 +423,9 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
                     >
                       <div>
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-mono font-bold text-slate-300 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 cursor-help" title={dateInfo.full}>
-                            {dateInfo.short}
+                          <span className="text-xs font-mono font-bold text-slate-300 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 cursor-help flex items-center gap-1" title={dateInfo.full}>
+                            <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>{dateInfo.short}</span>
                           </span>
                           <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-xl border border-indigo-500/20 uppercase">
                             {exam.examType || 'Kurumsal'}
@@ -494,350 +495,540 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="space-y-3">
+          <div className="space-y-3.5">
             {paginatedGeneralMocks.map((mock) => {
-            const dateInfo = formatMockDate(mock.date);
-            const type = getEffectiveMockExamType(mock);
+              const dateInfo = formatMockDate(mock.date);
+              const type = getEffectiveMockExamType(mock);
+              const hasTyt = type === 'TYT' || type === 'TYT_AYT' || type === 'TYT_DIL' || (mock.tyt?.totalNet || 0) > 0;
+              const hasAyt = type === 'AYT' || type === 'TYT_AYT' || (mock.ayt?.totalNet || 0) > 0;
+              const hasYdt = type === 'DIL' || type === 'TYT_DIL' || (mock.ydt?.net !== undefined && mock.ydt.net > 0);
+              const hasDetails = (mock.tyt?.details && Object.keys(mock.tyt.details).length > 0) || (mock.ayt?.details && Object.keys(mock.ayt.details).length > 0);
 
-            return (
-              <div
-                key={mock.id}
-                className="bg-slate-950/80 border border-slate-800/80 rounded-3xl p-4 hover:border-slate-700 transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 animate-fade-in shadow-sm hover:shadow-lg"
-              >
-                <div className="flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-slate-300 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 cursor-help" title={dateInfo.full}>
-                      {dateInfo.short}
-                    </span>
-
-                    <span className={`text-xs font-black px-2.5 py-1 rounded-xl border uppercase tracking-wider ${
-                      type === 'DIL'
-                        ? 'bg-sky-500/10 text-sky-400 border-sky-500/30'
-                        : type === 'TYT_DIL'
-                        ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
-                        : type === 'AYT'
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                        : type === 'TYT_AYT'
-                        ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
-                        : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
-                    }`}>
-                      {type === 'DIL' ? 'DİL (YDT)' : type === 'TYT_DIL' ? 'TYT + DİL' : type === 'AYT' ? 'AYT' : type === 'TYT_AYT' ? 'TYT + AYT' : 'TYT'}
-                    </span>
-
-                    {mock.estimatedRank && (
-                      <span className="text-xs font-mono font-black text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-xl flex items-center space-x-1" title="Tahmini YKS Sıralaması">
-                        <Sparkles className="w-3 h-3 text-amber-400" />
-                        <span>#{new Intl.NumberFormat('tr-TR').format(mock.estimatedRank)}</span>
+              return (
+                <div
+                  key={mock.id}
+                  className="bg-slate-950/90 border border-slate-800/90 hover:border-indigo-500/40 rounded-3xl p-5 hover:bg-slate-900/40 transition-all duration-200 shadow-md hover:shadow-xl flex flex-col justify-between space-y-4 group animate-fade-in"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-800/80">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-mono font-bold text-slate-300 bg-slate-900 px-3 py-1 rounded-xl border border-slate-800 cursor-help flex items-center gap-1.5 shadow-sm" title={dateInfo.full}>
+                        <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>{dateInfo.short}</span>
                       </span>
-                    )}
 
-                    <h3 className="text-sm font-extrabold text-white ml-1 break-words">
-                      {mock.title}
-                    </h3>
+                      <span className={`text-xs font-black px-3 py-1 rounded-xl border uppercase tracking-wider flex items-center gap-1.5 shadow-sm ${
+                        type === 'DIL'
+                          ? 'bg-sky-500/10 text-sky-400 border-sky-500/30'
+                          : type === 'TYT_DIL'
+                          ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
+                          : type === 'AYT'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                          : type === 'TYT_AYT'
+                          ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
+                          : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
+                      }`}>
+                        {type === 'DIL' || type === 'TYT_DIL' ? <Globe className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
+                        <span>{type === 'DIL' ? 'DİL (YDT)' : type === 'TYT_DIL' ? 'TYT + DİL' : type === 'AYT' ? 'AYT' : type === 'TYT_AYT' ? 'TYT + AYT' : 'TYT'}</span>
+                      </span>
+
+                      <h3 className="text-sm sm:text-base font-extrabold text-white group-hover:text-indigo-300 transition-colors ml-1">
+                        {mock.title}
+                      </h3>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      {mock.estimatedRank && (
+                        <div className="inline-flex items-center space-x-1.5 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-xl text-xs font-black text-amber-300 font-mono shadow-sm" title="Tahmini YKS Sıralaması">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          <span>#{new Intl.NumberFormat('tr-TR').format(mock.estimatedRank)}</span>
+                        </div>
+                      )}
+
+                      <div className="bg-slate-900 px-3.5 py-1 rounded-xl border border-slate-800 text-xs font-mono font-bold flex items-center space-x-2.5 shadow-sm">
+                        {hasTyt && (
+                          <span className="flex items-center gap-1">
+                            <span className="text-[10px] text-slate-400 font-sans">TYT:</span>
+                            <strong className="text-indigo-300">{String(mock.tyt.totalNet).replace('.', ',')}</strong>
+                          </span>
+                        )}
+
+                        {hasTyt && hasAyt && <span className="text-slate-700">|</span>}
+
+                        {hasAyt && (
+                          <span className="flex items-center gap-1">
+                            <span className="text-[10px] text-slate-400 font-sans">AYT:</span>
+                            <strong className="text-emerald-300">{String(mock.ayt.totalNet).replace('.', ',')}</strong>
+                          </span>
+                        )}
+
+                        {hasYdt && (
+                          <span className="flex items-center gap-1">
+                            <span className="text-[10px] text-slate-400 font-sans">{mock.ydt?.language || 'YDT'}:</span>
+                            <strong className="text-sky-300">{String(mock.ydt?.net ?? 0).replace('.', ',')}</strong>
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
-                {mock.notes && (
-                  <p className="text-xs text-slate-400 mt-1 italic">{mock.notes}</p>
-                )}
-
-                {/* TYT & AYT & YDT Breakdown */}
-                <div className="flex flex-wrap gap-2 text-[11px] text-slate-300 mt-2 font-mono">
-                  {/* TYT Summary */}
-                  {(mock.tyt.totalNet > 0 || type === 'TYT' || type === 'TYT_AYT' || type === 'TYT_DIL') && (
-                    <span className="bg-slate-900 px-2 py-1 rounded border border-slate-800">
-                      <span className="text-indigo-400 font-bold mr-1">TYT</span>
-                      TÜR: <strong>{String(mock.tyt.turkce).replace('.', ',')}</strong> | MAT: <strong>{String(mock.tyt.mat).replace('.', ',')}</strong> | SOS: <strong>{String(mock.tyt.sosyal).replace('.', ',')}</strong> | FEN: <strong>{String(mock.tyt.fen).replace('.', ',')}</strong>
-                    </span>
-                  )}
-
-                  {/* AYT Summary */}
-                  {(mock.ayt.totalNet > 0 || type === 'AYT' || type === 'TYT_AYT') && (
-                    <span className="bg-slate-900 px-2 py-1 rounded border border-slate-800">
-                      <span className="text-emerald-400 font-bold mr-1">AYT</span>
-                      MAT: <strong>{String(mock.ayt.mat).replace('.', ',')}</strong> | FEN: <strong>{String(mock.ayt.fen).replace('.', ',')}</strong>
-                      {mock.ayt.edebiyatSos1 !== undefined && mock.ayt.edebiyatSos1 > 0 && (
-                        <> | EDB-SOS1: <strong>{String(mock.ayt.edebiyatSos1).replace('.', ',')}</strong></>
-                      )}
-                      {mock.ayt.sos2 !== undefined && mock.ayt.sos2 > 0 && (
-                        <> | SOS2: <strong>{String(mock.ayt.sos2).replace('.', ',')}</strong></>
-                      )}
-                    </span>
-                  )}
-
-                  {/* YDT Summary */}
-                  {(mock.ydt?.net !== undefined && (mock.ydt.net > 0 || type === 'DIL' || type === 'TYT_DIL')) && (
-                    <span className="bg-slate-900 px-2 py-1 rounded border border-slate-800 flex items-center gap-1">
-                      <Globe className="w-3 h-3 text-sky-400" />
-                      <span className="text-sky-400 font-bold mr-1">{mock.ydt.language || 'YDT'}</span>
-                      <strong>{String(mock.ydt.net).replace('.', ',')} Net</strong>
-                      {(mock.ydt.correct !== undefined || mock.ydt.wrong !== undefined) && (
-                        <span className="text-[10px] text-slate-500 ml-1">({mock.ydt.correct ?? 0}D {mock.ydt.wrong ?? 0}Y)</span>
-                      )}
-                    </span>
-                  )}
-                </div>
-
-                {/* Granular Sub-subject Breakdown Accordion Toggle */}
-                {(mock.tyt.details || mock.ayt.details) && (
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => toggleExpandMockDetails(mock.id)}
-                      className="mt-2 text-[11px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <SlidersHorizontal className="w-3 h-3 text-indigo-400" />
-                      <span>{expandedMockDetails[mock.id] ? 'Ayrıntılı Ders Detaylarını Gizle' : 'Ayrıntılı Ders Detaylarını Göster (Mat/Geo, Fiz/Kim/Biyo...)'}</span>
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expandedMockDetails[mock.id] ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    {expandedMockDetails[mock.id] && (
-                      <div className="mt-2.5 p-3 bg-slate-900/90 border border-slate-800/80 rounded-xl space-y-3 text-[11px] font-mono animate-fade-in">
-                        {/* TYT Sub-subjects */}
-                        {mock.tyt.details && (
-                          <div>
-                            <div className="text-[11px] font-bold text-indigo-400 mb-1.5 flex items-center gap-1">
-                              <span>TYT Alt Ders Netleri</span>
+                  <div className="space-y-3">
+                    {hasTyt && (
+                      <div className="space-y-1.5">
+                        {(type === 'TYT_AYT' || type === 'TYT_DIL') && (
+                          <div className="text-[11px] font-bold text-indigo-400 flex items-center gap-1">
+                            <span>TYT Ders Netleri</span>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2">
+                          <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-2.5 flex flex-col justify-between hover:border-slate-700 transition-colors">
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
+                              <span>Türkçe</span>
+                              <span className="text-[10px] text-slate-500 font-mono">40S</span>
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-slate-300">
-                              {mock.tyt.details.matematik && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">Matematik</span>
-                                  <strong className="text-indigo-300 text-xs">{String(mock.tyt.details.matematik.net).replace('.', ',')} Net</strong>
-                                  {mock.tyt.details.matematik.correct !== undefined && (
-                                    <span className="text-[10px] text-slate-500 block">({mock.tyt.details.matematik.correct}D {mock.tyt.details.matematik.wrong}Y)</span>
-                                  )}
-                                </div>
-                              )}
-                              {mock.tyt.details.geometri && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">Geometri</span>
-                                  <strong className="text-purple-300 text-xs">{String(mock.tyt.details.geometri.net).replace('.', ',')} Net</strong>
-                                  {mock.tyt.details.geometri.correct !== undefined && (
-                                    <span className="text-[10px] text-slate-500 block">({mock.tyt.details.geometri.correct}D {mock.tyt.details.geometri.wrong}Y)</span>
-                                  )}
-                                </div>
-                              )}
-                              {mock.tyt.details.fizik && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">Fizik</span>
-                                  <strong className="text-sky-300 text-xs">{String(mock.tyt.details.fizik.net).replace('.', ',')} Net</strong>
-                                  {mock.tyt.details.fizik.correct !== undefined && (
-                                    <span className="text-[10px] text-slate-500 block">({mock.tyt.details.fizik.correct}D {mock.tyt.details.fizik.wrong}Y)</span>
-                                  )}
-                                </div>
-                              )}
-                              {mock.tyt.details.kimya && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">Kimya</span>
-                                  <strong className="text-teal-300 text-xs">{String(mock.tyt.details.kimya.net).replace('.', ',')} Net</strong>
-                                  {mock.tyt.details.kimya.correct !== undefined && (
-                                    <span className="text-[10px] text-slate-500 block">({mock.tyt.details.kimya.correct}D {mock.tyt.details.kimya.wrong}Y)</span>
-                                  )}
-                                </div>
-                              )}
-                              {mock.tyt.details.biyoloji && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">Biyoloji</span>
-                                  <strong className="text-emerald-300 text-xs">{String(mock.tyt.details.biyoloji.net).replace('.', ',')} Net</strong>
-                                  {mock.tyt.details.biyoloji.correct !== undefined && (
-                                    <span className="text-[10px] text-slate-500 block">({mock.tyt.details.biyoloji.correct}D {mock.tyt.details.biyoloji.wrong}Y)</span>
-                                  )}
-                                </div>
-                              )}
-                              {mock.tyt.details.tarih && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">Tarih</span>
-                                  <strong className="text-amber-300 text-xs">{String(mock.tyt.details.tarih.net).replace('.', ',')} Net</strong>
-                                </div>
-                              )}
-                              {mock.tyt.details.cografya && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">Coğrafya</span>
-                                  <strong className="text-orange-300 text-xs">{String(mock.tyt.details.cografya.net).replace('.', ',')} Net</strong>
-                                </div>
-                              )}
-                              {mock.tyt.details.felsefe && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">Felsefe</span>
-                                  <strong className="text-fuchsia-300 text-xs">{String(mock.tyt.details.felsefe.net).replace('.', ',')} Net</strong>
-                                </div>
-                              )}
-                              {mock.tyt.details.din && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">Din Kültürü</span>
-                                  <strong className="text-pink-300 text-xs">{String(mock.tyt.details.din.net).replace('.', ',')} Net</strong>
-                                </div>
+                            <div className="mt-1 flex items-baseline justify-between">
+                              <strong className="text-sm font-black text-indigo-300 font-mono">
+                                {String(mock.tyt.turkce).replace('.', ',')}
+                              </strong>
+                              {mock.tyt.details?.turkce && (
+                                <span className="text-[10px] text-slate-500 font-mono">
+                                  {mock.tyt.details.turkce.correct}D {mock.tyt.details.turkce.wrong}Y
+                                </span>
                               )}
                             </div>
                           </div>
-                        )}
 
-                        {/* AYT Sub-subjects */}
-                        {mock.ayt.details && (
-                          <div>
-                            <div className="text-[11px] font-bold text-emerald-400 mb-1.5 flex items-center gap-1">
-                              <span>AYT Alt Ders Netleri</span>
+                          <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-2.5 flex flex-col justify-between hover:border-slate-700 transition-colors">
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
+                              <span>Sosyal</span>
+                              <span className="text-[10px] text-slate-500 font-mono">20S</span>
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-slate-300">
-                              {mock.ayt.details.matematik && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">AYT Matematik</span>
-                                  <strong className="text-purple-300 text-xs">{String(mock.ayt.details.matematik.net).replace('.', ',')} Net</strong>
-                                  {mock.ayt.details.matematik.correct !== undefined && (
-                                    <span className="text-[10px] text-slate-500 block">({mock.ayt.details.matematik.correct}D {mock.ayt.details.matematik.wrong}Y)</span>
-                                  )}
-                                </div>
-                              )}
-                              {mock.ayt.details.geometri && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">AYT Geometri</span>
-                                  <strong className="text-fuchsia-300 text-xs">{String(mock.ayt.details.geometri.net).replace('.', ',')} Net</strong>
-                                  {mock.ayt.details.geometri.correct !== undefined && (
-                                    <span className="text-[10px] text-slate-500 block">({mock.ayt.details.geometri.correct}D {mock.ayt.details.geometri.wrong}Y)</span>
-                                  )}
-                                </div>
-                              )}
-                              {mock.ayt.details.fizik && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">AYT Fizik</span>
-                                  <strong className="text-sky-300 text-xs">{String(mock.ayt.details.fizik.net).replace('.', ',')} Net</strong>
-                                  {mock.ayt.details.fizik.correct !== undefined && (
-                                    <span className="text-[10px] text-slate-500 block">({mock.ayt.details.fizik.correct}D {mock.ayt.details.fizik.wrong}Y)</span>
-                                  )}
-                                </div>
-                              )}
-                              {mock.ayt.details.kimya && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">AYT Kimya</span>
-                                  <strong className="text-teal-300 text-xs">{String(mock.ayt.details.kimya.net).replace('.', ',')} Net</strong>
-                                  {mock.ayt.details.kimya.correct !== undefined && (
-                                    <span className="text-[10px] text-slate-500 block">({mock.ayt.details.kimya.correct}D {mock.ayt.details.kimya.wrong}Y)</span>
-                                  )}
-                                </div>
-                              )}
-                              {mock.ayt.details.biyoloji && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">AYT Biyoloji</span>
-                                  <strong className="text-emerald-300 text-xs">{String(mock.ayt.details.biyoloji.net).replace('.', ',')} Net</strong>
-                                  {mock.ayt.details.biyoloji.correct !== undefined && (
-                                    <span className="text-[10px] text-slate-500 block">({mock.ayt.details.biyoloji.correct}D {mock.ayt.details.biyoloji.wrong}Y)</span>
-                                  )}
-                                </div>
-                              )}
-                              {mock.ayt.details.edebiyat && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">Edebiyat</span>
-                                  <strong className="text-rose-300 text-xs">{String(mock.ayt.details.edebiyat.net).replace('.', ',')} Net</strong>
-                                </div>
-                              )}
-                              {mock.ayt.details.tarih1 && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">Tarih-1</span>
-                                  <strong className="text-amber-300 text-xs">{String(mock.ayt.details.tarih1.net).replace('.', ',')} Net</strong>
-                                </div>
-                              )}
-                              {mock.ayt.details.cografya1 && (
-                                <div className="bg-slate-950 p-2 rounded-lg border border-slate-800">
-                                  <span className="text-slate-400 block text-[10px]">Coğrafya-1</span>
-                                  <strong className="text-orange-300 text-xs">{String(mock.ayt.details.cografya1.net).replace('.', ',')} Net</strong>
-                                </div>
+                            <div className="mt-1 flex items-baseline justify-between">
+                              <strong className="text-sm font-black text-indigo-300 font-mono">
+                                {String(mock.tyt.sosyal).replace('.', ',')}
+                              </strong>
+                              {mock.tyt.details?.sosyal && (
+                                <span className="text-[10px] text-slate-500 font-mono">
+                                  {mock.tyt.details.sosyal.correct}D {mock.tyt.details.sosyal.wrong}Y
+                                </span>
                               )}
                             </div>
                           </div>
+
+                          <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-2.5 flex flex-col justify-between hover:border-slate-700 transition-colors">
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
+                              <span>Matematik</span>
+                              <span className="text-[10px] text-slate-500 font-mono">40S</span>
+                            </div>
+                            <div className="mt-1 flex items-baseline justify-between">
+                              <strong className="text-sm font-black text-indigo-300 font-mono">
+                                {String(mock.tyt.mat).replace('.', ',')}
+                              </strong>
+                              {mock.tyt.details?.mat && (
+                                <span className="text-[10px] text-slate-500 font-mono">
+                                  {mock.tyt.details.mat.correct}D {mock.tyt.details.mat.wrong}Y
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-2.5 flex flex-col justify-between hover:border-slate-700 transition-colors">
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
+                              <span>Fen Bilimleri</span>
+                              <span className="text-[10px] text-slate-500 font-mono">20S</span>
+                            </div>
+                            <div className="mt-1 flex items-baseline justify-between">
+                              <strong className="text-sm font-black text-indigo-300 font-mono">
+                                {String(mock.tyt.fen).replace('.', ',')}
+                              </strong>
+                              {mock.tyt.details?.fen && (
+                                <span className="text-[10px] text-slate-500 font-mono">
+                                  {mock.tyt.details.fen.correct}D {mock.tyt.details.fen.wrong}Y
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="bg-indigo-500/10 border border-indigo-500/25 rounded-2xl p-2.5 flex flex-col justify-between col-span-2 sm:col-span-4 lg:col-span-1">
+                            <div className="flex items-center justify-between text-[11px] text-indigo-300 font-bold">
+                              <span>TYT Toplam</span>
+                              <span className="text-[10px] text-indigo-400 font-mono">120S</span>
+                            </div>
+                            <div className="mt-1 flex items-baseline justify-between">
+                              <strong className="text-base font-black text-white font-mono">
+                                {String(mock.tyt.totalNet).replace('.', ',')}
+                              </strong>
+                              <span className="text-[10px] text-indigo-300 font-sans font-semibold">Net</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {hasAyt && (
+                      <div className="space-y-1.5">
+                        {type === 'TYT_AYT' && (
+                          <div className="text-[11px] font-bold text-emerald-400 flex items-center gap-1 mt-1">
+                            <span>AYT Ders Netleri</span>
+                          </div>
                         )}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                          <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-2.5 flex flex-col justify-between hover:border-slate-700 transition-colors">
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
+                              <span>AYT Matematik</span>
+                              <span className="text-[10px] text-slate-500 font-mono">40S</span>
+                            </div>
+                            <div className="mt-1 flex items-baseline justify-between">
+                              <strong className="text-sm font-black text-emerald-300 font-mono">
+                                {String(mock.ayt.mat).replace('.', ',')}
+                              </strong>
+                              {mock.ayt.details?.mat && (
+                                <span className="text-[10px] text-slate-500 font-mono">
+                                  {mock.ayt.details.mat.correct}D {mock.ayt.details.mat.wrong}Y
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {(mock.ayt.fen !== undefined && (mock.ayt.fen > 0 || (mock.ayt.edebiyatSos1 === 0 && mock.ayt.sos2 === 0))) && (
+                            <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-2.5 flex flex-col justify-between hover:border-slate-700 transition-colors">
+                              <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
+                                <span>AYT Fen</span>
+                                <span className="text-[10px] text-slate-500 font-mono">40S</span>
+                              </div>
+                              <div className="mt-1 flex items-baseline justify-between">
+                                <strong className="text-sm font-black text-emerald-300 font-mono">
+                                  {String(mock.ayt.fen).replace('.', ',')}
+                                </strong>
+                                {mock.ayt.details?.fen && (
+                                  <span className="text-[10px] text-slate-500 font-mono">
+                                    {mock.ayt.details.fen.correct}D {mock.ayt.details.fen.wrong}Y
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {(mock.ayt.edebiyatSos1 !== undefined && mock.ayt.edebiyatSos1 > 0) && (
+                            <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-2.5 flex flex-col justify-between hover:border-slate-700 transition-colors">
+                              <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
+                                <span>Edebiyat-Sos1</span>
+                                <span className="text-[10px] text-slate-500 font-mono">40S</span>
+                              </div>
+                              <div className="mt-1 flex items-baseline justify-between">
+                                <strong className="text-sm font-black text-emerald-300 font-mono">
+                                  {String(mock.ayt.edebiyatSos1).replace('.', ',')}
+                                </strong>
+                                {mock.ayt.details?.edebiyatSos1 && (
+                                  <span className="text-[10px] text-slate-500 font-mono">
+                                    {mock.ayt.details.edebiyatSos1.correct}D {mock.ayt.details.edebiyatSos1.wrong}Y
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {(mock.ayt.sos2 !== undefined && mock.ayt.sos2 > 0) && (
+                            <div className="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-2.5 flex flex-col justify-between hover:border-slate-700 transition-colors">
+                              <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold">
+                                <span>Sosyal-2</span>
+                                <span className="text-[10px] text-slate-500 font-mono">40S</span>
+                              </div>
+                              <div className="mt-1 flex items-baseline justify-between">
+                                <strong className="text-sm font-black text-emerald-300 font-mono">
+                                  {String(mock.ayt.sos2).replace('.', ',')}
+                                </strong>
+                                {mock.ayt.details?.sos2 && (
+                                  <span className="text-[10px] text-slate-500 font-mono">
+                                    {mock.ayt.details.sos2.correct}D {mock.ayt.details.sos2.wrong}Y
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="bg-emerald-500/10 border border-emerald-500/25 rounded-2xl p-2.5 flex flex-col justify-between col-span-2 sm:col-span-1">
+                            <div className="flex items-center justify-between text-[11px] text-emerald-300 font-bold">
+                              <span>AYT Toplam</span>
+                              <span className="text-[10px] text-emerald-400 font-mono">80S</span>
+                            </div>
+                            <div className="mt-1 flex items-baseline justify-between">
+                              <strong className="text-base font-black text-white font-mono">
+                                {String(mock.ayt.totalNet).replace('.', ',')}
+                              </strong>
+                              <span className="text-[10px] text-emerald-300 font-sans font-semibold">Net</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {hasYdt && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="bg-sky-500/10 border border-sky-500/25 rounded-2xl p-3 flex items-center justify-between">
+                          <div>
+                            <div className="flex items-center space-x-1.5 text-xs font-bold text-sky-300">
+                              <Globe className="w-3.5 h-3.5" />
+                              <span>Yabancı Dil ({mock.ydt?.language || 'İngilizce'}) Sınavı (80S)</span>
+                            </div>
+                            {mock.ydt && (mock.ydt.correct !== undefined || mock.ydt.wrong !== undefined) && (
+                              <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                                {mock.ydt.correct ?? 0} Doğru • {mock.ydt.wrong ?? 0} Yanlış • {mock.ydt.empty ?? 0} Boş
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[10px] text-slate-400 font-bold block">YDT Neti</span>
+                            <strong className="text-lg font-black text-white font-mono">
+                              {String(mock.ydt?.net ?? 0).replace('.', ',')}
+                            </strong>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
-                )}
-              </div>
 
-              {/* Totals & Actions (Right Bottom Area) */}
-              <div className="flex flex-wrap items-center justify-between lg:justify-end gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-800/80 w-full lg:w-auto">
-                <div className="flex items-center space-x-2 sm:space-x-3">
-                  {(mock.tyt.totalNet > 0 || type === 'TYT' || type === 'TYT_AYT' || type === 'TYT_DIL') && (
-                    <div className="text-center px-2 sm:px-3">
-                      <div className="text-[10px] text-slate-400">TYT Toplam</div>
-                      <div className="text-base sm:text-lg font-bold text-indigo-400 font-mono">{String(mock.tyt.totalNet).replace('.', ',')}</div>
+                  {mock.notes && (
+                    <div className="text-xs text-slate-400 bg-slate-900/60 px-3.5 py-2 rounded-2xl border border-slate-800/80 flex items-start space-x-2">
+                      <span className="text-indigo-400 font-bold shrink-0">Not:</span>
+                      <span className="italic">{mock.notes}</span>
                     </div>
                   )}
 
-                  {(mock.ayt.totalNet > 0 || type === 'AYT' || type === 'TYT_AYT') && (
-                    <div className="text-center px-2 sm:px-3 border-l border-slate-800">
-                      <div className="text-[10px] text-slate-400">AYT Toplam</div>
-                      <div className="text-base sm:text-lg font-bold text-emerald-400 font-mono">{String(mock.ayt.totalNet).replace('.', ',')}</div>
+                  {hasDetails && (
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => toggleExpandMockDetails(mock.id)}
+                        className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition-colors cursor-pointer bg-slate-900/60 hover:bg-slate-900 px-3.5 py-1.5 rounded-xl border border-slate-800 shadow-sm"
+                      >
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>{expandedMockDetails[mock.id] ? 'Alt Konu & Ders Detaylarını Gizle' : 'Alt Konu & Ders Detaylarını Göster (Geometri, Fizik, Kimya, Biyoloji, Tarih...)'}</span>
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedMockDetails[mock.id] ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {expandedMockDetails[mock.id] && (
+                        <div className="mt-3 p-4 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-3.5 animate-fade-in font-mono text-[11px]">
+                          {mock.tyt?.details && (
+                            <div>
+                              <div className="text-[11px] font-bold text-indigo-400 mb-2 flex items-center gap-1 font-sans">
+                                <span>TYT Alt Ders Netleri</span>
+                              </div>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-slate-300">
+                                {mock.tyt.details.matematik && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">Matematik</span>
+                                    <strong className="text-indigo-300 text-xs">{String(mock.tyt.details.matematik.net).replace('.', ',')} Net</strong>
+                                    {mock.tyt.details.matematik.correct !== undefined && (
+                                      <span className="text-[10px] text-slate-500 block">({mock.tyt.details.matematik.correct}D {mock.tyt.details.matematik.wrong}Y)</span>
+                                    )}
+                                  </div>
+                                )}
+                                {mock.tyt.details.geometri && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">Geometri</span>
+                                    <strong className="text-purple-300 text-xs">{String(mock.tyt.details.geometri.net).replace('.', ',')} Net</strong>
+                                    {mock.tyt.details.geometri.correct !== undefined && (
+                                      <span className="text-[10px] text-slate-500 block">({mock.tyt.details.geometri.correct}D {mock.tyt.details.geometri.wrong}Y)</span>
+                                    )}
+                                  </div>
+                                )}
+                                {mock.tyt.details.fizik && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">Fizik</span>
+                                    <strong className="text-sky-300 text-xs">{String(mock.tyt.details.fizik.net).replace('.', ',')} Net</strong>
+                                    {mock.tyt.details.fizik.correct !== undefined && (
+                                      <span className="text-[10px] text-slate-500 block">({mock.tyt.details.fizik.correct}D {mock.tyt.details.fizik.wrong}Y)</span>
+                                    )}
+                                  </div>
+                                )}
+                                {mock.tyt.details.kimya && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">Kimya</span>
+                                    <strong className="text-teal-300 text-xs">{String(mock.tyt.details.kimya.net).replace('.', ',')} Net</strong>
+                                    {mock.tyt.details.kimya.correct !== undefined && (
+                                      <span className="text-[10px] text-slate-500 block">({mock.tyt.details.kimya.correct}D {mock.tyt.details.kimya.wrong}Y)</span>
+                                    )}
+                                  </div>
+                                )}
+                                {mock.tyt.details.biyoloji && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">Biyoloji</span>
+                                    <strong className="text-emerald-300 text-xs">{String(mock.tyt.details.biyoloji.net).replace('.', ',')} Net</strong>
+                                    {mock.tyt.details.biyoloji.correct !== undefined && (
+                                      <span className="text-[10px] text-slate-500 block">({mock.tyt.details.biyoloji.correct}D {mock.tyt.details.biyoloji.wrong}Y)</span>
+                                    )}
+                                  </div>
+                                )}
+                                {mock.tyt.details.tarih && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">Tarih</span>
+                                    <strong className="text-amber-300 text-xs">{String(mock.tyt.details.tarih.net).replace('.', ',')} Net</strong>
+                                  </div>
+                                )}
+                                {mock.tyt.details.cografya && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">Coğrafya</span>
+                                    <strong className="text-orange-300 text-xs">{String(mock.tyt.details.cografya.net).replace('.', ',')} Net</strong>
+                                  </div>
+                                )}
+                                {mock.tyt.details.felsefe && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">Felsefe</span>
+                                    <strong className="text-fuchsia-300 text-xs">{String(mock.tyt.details.felsefe.net).replace('.', ',')} Net</strong>
+                                  </div>
+                                )}
+                                {mock.tyt.details.din && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">Din Kültürü</span>
+                                    <strong className="text-pink-300 text-xs">{String(mock.tyt.details.din.net).replace('.', ',')} Net</strong>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {mock.ayt?.details && (
+                            <div>
+                              <div className="text-[11px] font-bold text-emerald-400 mb-2 flex items-center gap-1 font-sans">
+                                <span>AYT Alt Ders Netleri</span>
+                              </div>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-slate-300">
+                                {mock.ayt.details.matematik && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">AYT Matematik</span>
+                                    <strong className="text-purple-300 text-xs">{String(mock.ayt.details.matematik.net).replace('.', ',')} Net</strong>
+                                    {mock.ayt.details.matematik.correct !== undefined && (
+                                      <span className="text-[10px] text-slate-500 block">({mock.ayt.details.matematik.correct}D {mock.ayt.details.matematik.wrong}Y)</span>
+                                    )}
+                                  </div>
+                                )}
+                                {mock.ayt.details.geometri && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">AYT Geometri</span>
+                                    <strong className="text-fuchsia-300 text-xs">{String(mock.ayt.details.geometri.net).replace('.', ',')} Net</strong>
+                                    {mock.ayt.details.geometri.correct !== undefined && (
+                                      <span className="text-[10px] text-slate-500 block">({mock.ayt.details.geometri.correct}D {mock.ayt.details.geometri.wrong}Y)</span>
+                                    )}
+                                  </div>
+                                )}
+                                {mock.ayt.details.fizik && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">AYT Fizik</span>
+                                    <strong className="text-sky-300 text-xs">{String(mock.ayt.details.fizik.net).replace('.', ',')} Net</strong>
+                                    {mock.ayt.details.fizik.correct !== undefined && (
+                                      <span className="text-[10px] text-slate-500 block">({mock.ayt.details.fizik.correct}D {mock.ayt.details.fizik.wrong}Y)</span>
+                                    )}
+                                  </div>
+                                )}
+                                {mock.ayt.details.kimya && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">AYT Kimya</span>
+                                    <strong className="text-teal-300 text-xs">{String(mock.ayt.details.kimya.net).replace('.', ',')} Net</strong>
+                                    {mock.ayt.details.kimya.correct !== undefined && (
+                                      <span className="text-[10px] text-slate-500 block">({mock.ayt.details.kimya.correct}D {mock.ayt.details.kimya.wrong}Y)</span>
+                                    )}
+                                  </div>
+                                )}
+                                {mock.ayt.details.biyoloji && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">AYT Biyoloji</span>
+                                    <strong className="text-emerald-300 text-xs">{String(mock.ayt.details.biyoloji.net).replace('.', ',')} Net</strong>
+                                    {mock.ayt.details.biyoloji.correct !== undefined && (
+                                      <span className="text-[10px] text-slate-500 block">({mock.ayt.details.biyoloji.correct}D {mock.ayt.details.biyoloji.wrong}Y)</span>
+                                    )}
+                                  </div>
+                                )}
+                                {mock.ayt.details.edebiyat && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">Edebiyat</span>
+                                    <strong className="text-rose-300 text-xs">{String(mock.ayt.details.edebiyat.net).replace('.', ',')} Net</strong>
+                                  </div>
+                                )}
+                                {mock.ayt.details.tarih1 && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">Tarih-1</span>
+                                    <strong className="text-amber-300 text-xs">{String(mock.ayt.details.tarih1.net).replace('.', ',')} Net</strong>
+                                  </div>
+                                )}
+                                {mock.ayt.details.cografya1 && (
+                                  <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                                    <span className="text-slate-400 block text-[10px] font-sans">Coğrafya-1</span>
+                                    <strong className="text-orange-300 text-xs">{String(mock.ayt.details.cografya1.net).replace('.', ',')} Net</strong>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {(mock.ydt?.net !== undefined && (mock.ydt.net > 0 || type === 'DIL' || type === 'TYT_DIL')) && (
-                    <div className="text-center px-2 sm:px-3 border-l border-slate-800">
-                      <div className="text-[10px] text-sky-400">YDT Toplam</div>
-                      <div className="text-base sm:text-lg font-bold text-sky-300 font-mono">{String(mock.ydt.net).replace('.', ',')}</div>
+                  <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
+                    <div className="text-[11px] text-slate-500 font-mono">
+                      ID: #{mock.id.slice(-6).toUpperCase()}
                     </div>
-                  )}
 
-                  {mock.estimatedRank && (
-                    <div className="text-center px-2 sm:px-3 border-l border-slate-800">
-                      <div className="text-[10px] text-slate-400">Tahmini Sıra</div>
-                      <div className="text-xs sm:text-sm font-bold text-amber-400 font-mono">#{mock.estimatedRank}</div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => onUpdateMock({ ...mock, isAnalyzed: !mock.isAnalyzed })}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all inline-flex items-center space-x-1.5 cursor-pointer border shadow-sm ${
+                          mock.isAnalyzed
+                            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
+                            : 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
+                        }`}
+                        title="Soru ve hata analiz durumunu değiştirmek için tıklayın"
+                      >
+                        {mock.isAnalyzed ? (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Analiz Edildi</span>
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Bekliyor</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setCalcMock(mock);
+                          setShowAllFields(false);
+                        }}
+                        className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 cursor-pointer shadow-sm"
+                        title="YKS Puan & Sıralama Hesapla"
+                      >
+                        <Calculator className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Puan Hesapla</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleStartEdit(mock)}
+                        className="p-1.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 rounded-xl transition-all cursor-pointer shadow-sm"
+                        title="Denemeyi Düzenle"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={() => setDeletingMock({ id: mock.id, title: `${mock.date} - ${mock.title}` })}
+                        className="p-1.5 text-slate-500 hover:text-rose-400 bg-slate-900 hover:bg-rose-500/10 border border-slate-800 hover:border-rose-500/30 rounded-xl transition-all cursor-pointer shadow-sm"
+                        title="Denemeyi Sil"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                  )}
+                  </div>
                 </div>
+              );
+            })}
+          </div>
 
-                {/* Sağ Alt Köşe Aksiyon Butonları */}
-                <div className="flex items-center space-x-2 shrink-0">
-                  {/* Analiz Edildi / Bekliyor Butonu */}
-                  <button
-                    type="button"
-                    onClick={() => onUpdateMock({ ...mock, isAnalyzed: !mock.isAnalyzed })}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all inline-flex items-center space-x-1.5 cursor-pointer border shadow-sm ${
-                      mock.isAnalyzed
-                        ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25'
-                        : 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
-                    }`}
-                    title="Soru ve hata analiz durumunu değiştirmek için tıklayın"
-                  >
-                    {mock.isAnalyzed ? (
-                      <>
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Analiz Edildi</span>
-                      </>
-                    ) : (
-                      <>
-                        <Clock className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Bekliyor</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setCalcMock(mock);
-                      setShowAllFields(false);
-                    }}
-                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 cursor-pointer shadow-sm"
-                    title="YKS Puan & Sıralama Hesapla"
-                  >
-                    <Calculator className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Puan Hesapla</span>
-                  </button>
-
-                  <button
-                    onClick={() => setDeletingMock({ id: mock.id, title: `${mock.date} - ${mock.title}` })}
-                    className="text-slate-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer"
-                    title="Denemeyi Sil"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+          {renderPaginationControls(safeGeneralPage, totalGeneralPages, filteredGeneralMocks.length, (p) => setCurrentPage(p))}
         </div>
-
-        {/* Individual Pagination Controls */}
-        {renderPaginationControls(safeGeneralPage, totalGeneralPages, filteredGeneralMocks.length, (p) => setCurrentPage(p))}
-      </div>
       )}
     </div>
   );

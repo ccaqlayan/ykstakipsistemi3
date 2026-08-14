@@ -1141,12 +1141,71 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   return (
     <div className="space-y-6 animate-fade-in">
       
+      {/* ── TOP PRIMARY NAVIGATION TABS (En Üstte) ── */}
+      <div className="bg-slate-900/95 border border-slate-800 p-2.5 rounded-3xl flex flex-wrap items-center justify-between gap-3 shadow-2xl backdrop-blur-md">
+        <div className="bg-slate-950 p-1.5 rounded-2xl border border-slate-800 flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => setActiveGeneralTab('analytics')}
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
+              activeGeneralTab === 'analytics'
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <BarChart2 className="w-4 h-4 text-indigo-400" />
+            <span>Grafik & Analiz</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveGeneralTab('history')}
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
+              activeGeneralTab === 'history'
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <Target className="w-4 h-4 text-indigo-400" />
+            <span>Deneme Geçmişi ({totalMockCount})</span>
+          </button>
+        </div>
+
+        <div className="flex items-center space-x-3 pr-2">
+          <div className="text-xs text-slate-400 font-mono hidden md:flex items-center space-x-2">
+            {activeGeneralTab === 'analytics' ? (
+              <span className="text-indigo-300 font-semibold flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-indigo-400" />
+                Net ivmesi ve branş analizleri
+              </span>
+            ) : (
+              <span className="text-emerald-300 font-semibold flex items-center gap-1.5 font-mono">
+                <Award className="w-3.5 h-3.5 text-emerald-400" />
+                {mockListTab === 'individual' ? `${generalMocks.length} Bireysel Deneme` : `${institutionalMocks.length} Kurumsal Karne`}
+              </span>
+            )}
+          </div>
+
+          <button
+            onClick={() => {
+              resetAddForm();
+              setShowAddModal(true);
+            }}
+            id="add-general-mock-btn"
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-xl shadow-indigo-600/25 flex items-center justify-center space-x-2 cursor-pointer border border-indigo-400/30 group shrink-0"
+          >
+            <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <span>Genel Deneme Sonucu Gir</span>
+          </button>
+        </div>
+      </div>
+
       {/* ── HERO HEADER BANNER ── */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 p-6 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-md relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1.5 z-10">
           <div className="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full text-xs font-bold text-indigo-300">
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-            <span>YKS Genel Deneme Analiz Paneli</span>
+            <span>YKS Genel Deneme Takip ve İlerleme Paneli</span>
           </div>
           <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center space-x-2">
             <span>Genel Deneme Analizi & Net Yükseliş Grafiği</span>
@@ -1154,20 +1213,6 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
           <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
             Türkiye geneli ve kurum içi <strong className="text-indigo-400 font-mono">TYT</strong> & <strong className="text-emerald-400 font-mono">AYT</strong> genel deneme sonuçlarınızı girin, net ivmenizi ve tahmini YKS sıralamanızı adım adım takip edin.
           </p>
-        </div>
-
-        <div className="flex items-center space-x-2 shrink-0 z-10">
-          <button
-            onClick={() => {
-              resetAddForm();
-              setShowAddModal(true);
-            }}
-            id="add-general-mock-btn"
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold px-5 py-3 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer border border-indigo-400/30 group"
-          >
-            <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            <span>Genel Deneme Sonucu Gir</span>
-          </button>
         </div>
       </div>
 
@@ -1269,45 +1314,6 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
           </div>
         </div>
 
-      </div>
-
-      {/* === SUBTABS NAVIGATION BAR: Grafik & Analiz vs Deneme Geçmişi === */}
-      <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xl backdrop-blur-md">
-        <div className="bg-slate-950 p-1 rounded-xl border border-slate-800 flex flex-wrap gap-1">
-          <button
-            type="button"
-            onClick={() => setActiveGeneralTab('analytics')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
-              activeGeneralTab === 'analytics'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            <BarChart2 className="w-4 h-4 text-indigo-400" />
-            <span>Grafik & Analiz</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveGeneralTab('history')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
-              activeGeneralTab === 'history'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-white hover:bg-slate-900'
-            }`}
-          >
-            <Target className="w-4 h-4 text-indigo-400" />
-            <span>Deneme Geçmişi ({totalMockCount})</span>
-          </button>
-        </div>
-
-        <div className="text-xs text-slate-400 font-mono hidden sm:flex items-center space-x-2 pr-2">
-          {activeGeneralTab === 'analytics' ? (
-            <span className="text-[11px] text-indigo-300">📊 Net gelişim trendi ve branş analizleri</span>
-          ) : (
-            <span className="text-[11px] text-emerald-300 font-bold">🎯 {mockListTab === 'individual' ? `${generalMocks.length} Bireysel Deneme` : `${institutionalMocks.length} Kurumsal Karne`}</span>
-          )}
-        </div>
       </div>
 
       {/* Tab 1: Grafik & Analiz */}
