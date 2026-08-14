@@ -199,22 +199,31 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
   const [questionDateFilter, setQuestionDateFilter] = React.useState<'all' | '7days' | '30days'>('all');
   const [questionSearchQuery, setQuestionSearchQuery] = React.useState<string>('');
   const [questionViewMode, setQuestionViewMode] = React.useState<'cards' | 'table'>('cards');
+  const [questionPage, setQuestionPage] = React.useState<number>(1);
+  const [questionPageSize, setQuestionPageSize] = React.useState<number>(10);
+
+  const [topicStatusFilter, setTopicStatusFilter] = React.useState<'all' | 'missing' | 'completed'>('all');
+  const [topicSearchQuery, setTopicSearchQuery] = React.useState<string>('');
+
   const [mockSubTab, setMockSubTab] = React.useState<'general' | 'branch' | 'institutional'>('general');
   const [selectedInstitutionalExam, setSelectedInstitutionalExam] = React.useState<InstitutionalMockExam | null>(null);
   const [generalMockSearch, setGeneralMockSearch] = React.useState<string>('');
   const [generalMockTypeFilter, setGeneralMockTypeFilter] = React.useState<'all' | 'TYT' | 'AYT'>('all');
   const [generalMockViewMode, setGeneralMockViewMode] = React.useState<'cards' | 'table'>('cards');
   const [generalMockPage, setGeneralMockPage] = React.useState<number>(1);
+  const [generalMockPageSize, setGeneralMockPageSize] = React.useState<number>(10);
 
   const [branchMockSubjectFilter, setBranchMockSubjectFilter] = React.useState<string>('all');
   const [branchMockSearch, setBranchMockSearch] = React.useState<string>('');
   const [branchExamViewMode, setBranchExamViewMode] = React.useState<'cards' | 'table'>('cards');
   const [branchExamPage, setBranchExamPage] = React.useState<number>(1);
+  const [branchExamPageSize, setBranchExamPageSize] = React.useState<number>(10);
 
   const [institutionalMockSearch, setInstitutionalMockSearch] = React.useState<string>('');
   const [institutionalMockTypeFilter, setInstitutionalMockTypeFilter] = React.useState<'all' | 'TYT' | 'AYT'>('all');
   const [institutionalMockViewMode, setInstitutionalMockViewMode] = React.useState<'cards' | 'table'>('cards');
   const [institutionalMockPage, setInstitutionalMockPage] = React.useState<number>(1);
+  const [institutionalMockPageSize, setInstitutionalMockPageSize] = React.useState<number>(10);
 
   return (
     <div 
@@ -1343,15 +1352,18 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                 'AYT Tarih': '#d97706',
                 'Coğrafya': '#ea580c',
                 'TYT Coğrafya': '#ea580c',
-                'AYT Coğrafya': '#c2410c',
-                'Felsefe': '#a855f7',
-                'Din Kültürü': '#14b8a6',
+'Din Kültürü': '#14b8a6',
                 'İngilizce': '#3b82f6',
               };
               const FALLBACK_COLORS = ['#6366f1', '#ec4899', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6', '#ea580c', '#14b8a6', '#84cc16', '#3b82f6', '#e11d48', '#f97316'];
               const getSubjectColor = (subj: string, index: number) => {
                 return SUBJECT_PALETTE[subj] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
               };
+
+              // Pagination for Question Logs
+              const totalQuestionPages = Math.ceil(filteredLogs.length / questionPageSize) || 1;
+              const currentQPage = Math.min(questionPage, totalQuestionPages);
+              const paginatedLogs = filteredLogs.slice((currentQPage - 1) * questionPageSize, currentQPage * questionPageSize);
 
               return (
                 <div className="space-y-5">
@@ -1547,13 +1559,19 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                         <input
                           type="text"
                           value={questionSearchQuery}
-                          onChange={(e) => setQuestionSearchQuery(e.target.value)}
+                          onChange={(e) => {
+                            setQuestionSearchQuery(e.target.value);
+                            setQuestionPage(1);
+                          }}
                           placeholder="Ders, konu adı veya notlarda ara..."
                           className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/50 transition-colors"
                         />
                         {questionSearchQuery && (
                           <button
-                            onClick={() => setQuestionSearchQuery('')}
+                            onClick={() => {
+                              setQuestionSearchQuery('');
+                              setQuestionPage(1);
+                            }}
                             className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs px-1"
                           >
                             ✕
@@ -1564,7 +1582,10 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                       {/* Exam Filter */}
                       <div className="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0">
                         <button
-                          onClick={() => setQuestionExamTypeFilter('all')}
+                          onClick={() => {
+                            setQuestionExamTypeFilter('all');
+                            setQuestionPage(1);
+                          }}
                           className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                             questionExamTypeFilter === 'all' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
                           }`}
@@ -1572,7 +1593,10 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                           Tümü
                         </button>
                         <button
-                          onClick={() => setQuestionExamTypeFilter('TYT')}
+                          onClick={() => {
+                            setQuestionExamTypeFilter('TYT');
+                            setQuestionPage(1);
+                          }}
                           className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                             questionExamTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-indigo-400'
                           }`}
@@ -1580,7 +1604,10 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                           TYT
                         </button>
                         <button
-                          onClick={() => setQuestionExamTypeFilter('AYT')}
+                          onClick={() => {
+                            setQuestionExamTypeFilter('AYT');
+                            setQuestionPage(1);
+                          }}
                           className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                             questionExamTypeFilter === 'AYT' ? 'bg-fuchsia-600 text-white font-bold' : 'text-slate-400 hover:text-fuchsia-400'
                           }`}
@@ -1623,7 +1650,10 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                           return (
                             <button
                               key={subj}
-                              onClick={() => setQuestionSubjectFilter(subj)}
+                              onClick={() => {
+                                setQuestionSubjectFilter(subj);
+                                setQuestionPage(1);
+                              }}
                               className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg border transition-all cursor-pointer flex items-center space-x-1 ${
                                 questionSubjectFilter === subj
                                   ? 'bg-amber-500/20 text-amber-300 border-amber-400/40 font-bold'
@@ -1657,6 +1687,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                           setQuestionExamTypeFilter('all');
                           setQuestionDateFilter('all');
                           setQuestionSearchQuery('');
+                          setQuestionPage(1);
                         }}
                         className="text-xs text-amber-400 hover:text-amber-300 underline font-semibold cursor-pointer"
                       >
@@ -1666,7 +1697,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                   ) : questionViewMode === 'cards' ? (
                     /* CARD VIEW */
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                      {filteredLogs.map(log => {
+                      {paginatedLogs.map(log => {
                         const isMyBranch = teacherSubj && (log.subject || '').toLowerCase().includes(teacherSubj);
                         const solved = log.solvedCount || 0;
                         const correct = log.correctCount || 0;
@@ -1795,7 +1826,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/10 text-slate-200 font-mono">
-                          {filteredLogs.map((log) => {
+                          {paginatedLogs.map((log) => {
                             const isMyBranch = teacherSubj && (log.subject || '').toLowerCase().includes(teacherSubj);
                             const solved = log.solvedCount || 0;
                             const correct = log.correctCount || 0;
@@ -1854,6 +1885,80 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                           })}
                         </tbody>
                       </table>
+                    </div>
+                  )}
+
+                  {/* Pagination Bar for Question Logs */}
+                  {filteredLogs.length > 0 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/10 text-xs">
+                      <span className="text-slate-400 font-medium">
+                        Toplam <strong className="text-white font-mono">{filteredLogs.length}</strong> kayıttan{' '}
+                        <strong className="text-white font-mono">
+                          {(currentQPage - 1) * questionPageSize + 1}-{Math.min(currentQPage * questionPageSize, filteredLogs.length)}
+                        </strong>{' '}
+                        arası gösteriliyor
+                      </span>
+
+                      <div className="flex items-center space-x-3 flex-wrap justify-end">
+                        {/* Page Size Selector */}
+                        <div className="flex items-center space-x-1.5 text-slate-400 text-xs">
+                          <span>Göster:</span>
+                          <select
+                            value={questionPageSize}
+                            onChange={(e) => {
+                              setQuestionPageSize(Number(e.target.value));
+                              setQuestionPage(1);
+                            }}
+                            className="bg-slate-900 border border-white/10 text-white rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-amber-500 cursor-pointer font-mono"
+                          >
+                            <option value={5}>5</option>
+                            <option value={10}>10</option>
+                            <option value={20}>20</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                          </select>
+                        </div>
+
+                        {/* Page Navigation */}
+                        {totalQuestionPages > 1 && (
+                          <div className="flex items-center space-x-1">
+                            <button
+                              type="button"
+                              onClick={() => setQuestionPage(Math.max(1, currentQPage - 1))}
+                              disabled={currentQPage === 1}
+                              className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                              title="Önceki Sayfa"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </button>
+
+                            {Array.from({ length: totalQuestionPages }, (_, i) => i + 1).map((pageNum) => (
+                              <button
+                                key={pageNum}
+                                type="button"
+                                onClick={() => setQuestionPage(pageNum)}
+                                className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer font-mono ${
+                                  currentQPage === pageNum
+                                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                                    : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            ))}
+
+                            <button
+                              type="button"
+                              onClick={() => setQuestionPage(Math.min(totalQuestionPages, currentQPage + 1))}
+                              disabled={currentQPage === totalQuestionPages}
+                              className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                              title="Sonraki Sayfa"
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2183,236 +2288,261 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                         </div>
                       )}
 
-                      const GENERAL_PER_PAGE = 6;
-                      const totalGeneralPages = Math.ceil(filteredGeneralMocks.length / GENERAL_PER_PAGE) || 1;
-                      const currentGenPage = Math.min(generalMockPage, totalGeneralPages);
-                      const paginatedGeneralMocks = filteredGeneralMocks.slice((currentGenPage - 1) * GENERAL_PER_PAGE, currentGenPage * GENERAL_PER_PAGE);
+                      {(() => {
+                        const totalGeneralPages = Math.ceil(filteredGeneralMocks.length / generalMockPageSize) || 1;
+                        const currentGenPage = Math.min(generalMockPage, totalGeneralPages);
+                        const paginatedGeneralMocks = filteredGeneralMocks.slice((currentGenPage - 1) * generalMockPageSize, currentGenPage * generalMockPageSize);
 
-                      return (
-                        <div className="space-y-4">
-                          {/* Toolbar */}
-                          <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                            <div className="relative flex-1">
-                              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                              <input
-                                type="text"
-                                value={generalMockSearch}
-                                onChange={(e) => {
-                                  setGeneralMockSearch(e.target.value);
-                                  setGeneralMockPage(1);
-                                }}
-                                placeholder="Deneme ara..."
-                                className="w-full bg-slate-900/90 border border-white/10 rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500/50"
-                              />
-                            </div>
-
-                            <div className="flex items-center space-x-2 flex-wrap">
-                              <div className="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-white/10 shrink-0">
-                                <button
-                                  onClick={() => {
-                                    setGeneralMockTypeFilter('all');
+                        return (
+                          <div className="space-y-4">
+                            {/* Toolbar */}
+                            <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                              <div className="relative flex-1">
+                                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                <input
+                                  type="text"
+                                  value={generalMockSearch}
+                                  onChange={(e) => {
+                                    setGeneralMockSearch(e.target.value);
                                     setGeneralMockPage(1);
                                   }}
-                                  className={`px-2.5 py-1 rounded text-xs font-semibold ${
-                                    generalMockTypeFilter === 'all' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400 hover:text-white'
-                                  }`}
-                                >
-                                  Tümü
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setGeneralMockTypeFilter('TYT');
-                                    setGeneralMockPage(1);
-                                  }}
-                                  className={`px-2.5 py-1 rounded text-xs font-semibold ${
-                                    generalMockTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-indigo-400'
-                                  }`}
-                                >
-                                  TYT
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setGeneralMockTypeFilter('AYT');
-                                    setGeneralMockPage(1);
-                                  }}
-                                  className={`px-2.5 py-1 rounded text-xs font-semibold ${
-                                    generalMockTypeFilter === 'AYT' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-emerald-400'
-                                  }`}
-                                >
-                                  AYT
-                                </button>
+                                  placeholder="Deneme ara..."
+                                  className="w-full bg-slate-900/90 border border-white/10 rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500/50"
+                                />
                               </div>
 
-                              {/* View Mode Toggle */}
-                              <div className="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-white/10 shrink-0">
-                                <button
-                                  type="button"
-                                  onClick={() => setGeneralMockViewMode('cards')}
-                                  className={`p-1 rounded transition-all cursor-pointer ${
-                                    generalMockViewMode === 'cards' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-white'
-                                  }`}
-                                  title="Kart Görünümü"
-                                >
-                                  <LayoutGrid className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setGeneralMockViewMode('table')}
-                                  className={`p-1 rounded transition-all cursor-pointer ${
-                                    generalMockViewMode === 'table' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-white'
-                                  }`}
-                                  title="Detaylı Liste / Tablo Görünümü"
-                                >
-                                  <Table className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* General Mock Cards OR Table */}
-                          {filteredGeneralMocks.length === 0 ? (
-                            <p className="text-xs text-slate-400 italic py-6 text-center">Filtreye uygun deneme bulunamadı.</p>
-                          ) : generalMockViewMode === 'cards' ? (
-                            /* CARD VIEW */
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              {paginatedGeneralMocks.map((exam) => (
-                                <div
-                                  key={exam.id}
-                                  className="bg-slate-950/80 border border-white/10 hover:border-sky-500/40 rounded-xl p-3.5 space-y-2.5 shadow-xl transition-all"
-                                >
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div>
-                                      <div className="flex items-center gap-1.5">
-                                        <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">
-                                          {exam.publisher || 'Bireysel'}
-                                        </span>
-                                        {exam.estimatedRank ? (
-                                          <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-mono">
-                                            #{exam.estimatedRank.toLocaleString('tr-TR')}
-                                          </span>
-                                        ) : null}
-                                      </div>
-                                      <h4 className="text-xs font-bold text-white mt-1">
-                                        {exam.title}
-                                      </h4>
-                                    </div>
-                                    <div className="text-right shrink-0 font-mono">
-                                      {exam.tyt?.totalNet ? (
-                                        <span className="text-xs font-black text-indigo-400 block">{exam.tyt.totalNet} TYT Net</span>
-                                      ) : null}
-                                      {exam.ayt?.totalNet ? (
-                                        <span className="text-xs font-black text-emerald-400 block">{exam.ayt.totalNet} AYT Net</span>
-                                      ) : null}
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-white/5 font-mono">
-                                    <span>{exam.date}</span>
-                                    {exam.score ? (
-                                      <span className="text-amber-300 font-bold">{exam.score.toFixed(1)} Puan</span>
-                                    ) : null}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            /* TABLE VIEW */
-                            <div className="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/80 shadow-xl">
-                              <table className="w-full text-left text-xs border-collapse">
-                                <thead>
-                                  <tr className="border-b border-white/10 bg-slate-900/90 text-slate-400 font-semibold uppercase tracking-wider text-[9px]">
-                                    <th className="py-2.5 px-3">Sınav Adı</th>
-                                    <th className="py-2.5 px-3">Tarih</th>
-                                    <th className="py-2.5 px-3 text-center">TYT Net</th>
-                                    <th className="py-2.5 px-3 text-center">AYT Net</th>
-                                    <th className="py-2.5 px-3 text-center">Toplam Net</th>
-                                    <th className="py-2.5 px-3 text-center">Tahmini Sıra</th>
-                                    <th className="py-2.5 px-3 text-right">Puan</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-white/5 font-mono text-[11px]">
-                                  {paginatedGeneralMocks.map(mock => {
-                                    const tytNet = mock.tyt?.totalNet || 0;
-                                    const aytNet = mock.ayt?.totalNet || 0;
-                                    const totalNet = (tytNet + aytNet).toFixed(2);
-                                    return (
-                                      <tr key={mock.id} className="hover:bg-white/5 transition-colors">
-                                        <td className="py-2.5 px-3">
-                                          <div className="font-bold text-white font-sans text-xs">{mock.title}</div>
-                                          <div className="text-[10px] text-slate-400 font-sans">{mock.publisher || 'Bireysel'}</div>
-                                        </td>
-                                        <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">{mock.date}</td>
-                                        <td className="py-2.5 px-3 text-center font-bold text-indigo-300">
-                                          {tytNet > 0 ? `${tytNet}N` : '-'}
-                                        </td>
-                                        <td className="py-2.5 px-3 text-center font-bold text-emerald-300">
-                                          {aytNet > 0 ? `${aytNet}N` : '-'}
-                                        </td>
-                                        <td className="py-2.5 px-3 text-center font-black text-sky-400">
-                                          {totalNet} Net
-                                        </td>
-                                        <td className="py-2.5 px-3 text-center text-amber-400 font-bold">
-                                          {mock.estimatedRank ? `#${mock.estimatedRank.toLocaleString('tr-TR')}` : '-'}
-                                        </td>
-                                        <td className="py-2.5 px-3 text-right text-amber-300 font-bold">
-                                          {mock.score ? `${mock.score.toFixed(1)} P` : '-'}
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-
-                          {/* Pagination Bar */}
-                          {filteredGeneralMocks.length > GENERAL_PER_PAGE && (
-                            <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs">
-                              <span className="text-slate-400 text-[11px]">
-                                Toplam <strong className="text-white font-mono">{filteredGeneralMocks.length}</strong> sınav
-                              </span>
-
-                              <div className="flex items-center space-x-1">
-                                <button
-                                  type="button"
-                                  onClick={() => setGeneralMockPage(Math.max(1, currentGenPage - 1))}
-                                  disabled={currentGenPage === 1}
-                                  className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                                  title="Önceki"
-                                >
-                                  <ChevronLeft className="w-3.5 h-3.5" />
-                                </button>
-
-                                {Array.from({ length: totalGeneralPages }, (_, i) => i + 1).map((pageNum) => (
+                              <div className="flex items-center space-x-2 flex-wrap">
+                                <div className="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-white/10 shrink-0">
                                   <button
-                                    key={pageNum}
-                                    type="button"
-                                    onClick={() => setGeneralMockPage(pageNum)}
-                                    className={`w-6 h-6 rounded text-xs font-bold transition-all cursor-pointer font-mono ${
-                                      currentGenPage === pageNum
-                                        ? 'bg-sky-600 text-white'
-                                        : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white'
+                                    onClick={() => {
+                                      setGeneralMockTypeFilter('all');
+                                      setGeneralMockPage(1);
+                                    }}
+                                    className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                                      generalMockTypeFilter === 'all' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400 hover:text-white'
                                     }`}
                                   >
-                                    {pageNum}
+                                    Tümü
                                   </button>
-                                ))}
+                                  <button
+                                    onClick={() => {
+                                      setGeneralMockTypeFilter('TYT');
+                                      setGeneralMockPage(1);
+                                    }}
+                                    className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                                      generalMockTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-indigo-400'
+                                    }`}
+                                  >
+                                    TYT
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setGeneralMockTypeFilter('AYT');
+                                      setGeneralMockPage(1);
+                                    }}
+                                    className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                                      generalMockTypeFilter === 'AYT' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-emerald-400'
+                                    }`}
+                                  >
+                                    AYT
+                                  </button>
+                                </div>
 
-                                <button
-                                  type="button"
-                                  onClick={() => setGeneralMockPage(Math.min(totalGeneralPages, currentGenPage + 1))}
-                                  disabled={currentGenPage === totalGeneralPages}
-                                  className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                                  title="Sonraki"
-                                >
-                                  <ChevronRight className="w-3.5 h-3.5" />
-                                </button>
+                                {/* View Mode Toggle */}
+                                <div className="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-white/10 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => setGeneralMockViewMode('cards')}
+                                    className={`p-1 rounded transition-all cursor-pointer ${
+                                      generalMockViewMode === 'cards' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-white'
+                                    }`}
+                                    title="Kart Görünümü"
+                                  >
+                                    <LayoutGrid className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setGeneralMockViewMode('table')}
+                                    className={`p-1 rounded transition-all cursor-pointer ${
+                                      generalMockViewMode === 'table' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-white'
+                                    }`}
+                                    title="Detaylı Liste / Tablo Görünümü"
+                                  >
+                                    <Table className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })()}
+
+                            {/* General Mock Cards OR Table */}
+                            {filteredGeneralMocks.length === 0 ? (
+                              <p className="text-xs text-slate-400 italic py-6 text-center">Filtreye uygun deneme bulunamadı.</p>
+                            ) : generalMockViewMode === 'cards' ? (
+                              /* CARD VIEW */
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {paginatedGeneralMocks.map((exam) => (
+                                  <div
+                                    key={exam.id}
+                                    className="bg-slate-950/80 border border-white/10 hover:border-sky-500/40 rounded-xl p-3.5 space-y-2.5 shadow-xl transition-all"
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div>
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">
+                                            {exam.publisher || 'Bireysel'}
+                                          </span>
+                                          {exam.estimatedRank ? (
+                                            <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-mono">
+                                              #{exam.estimatedRank.toLocaleString('tr-TR')}
+                                            </span>
+                                          ) : null}
+                                        </div>
+                                        <h4 className="text-xs font-bold text-white mt-1">
+                                          {exam.title}
+                                        </h4>
+                                      </div>
+                                      <div className="text-right shrink-0 font-mono">
+                                        {exam.tyt?.totalNet ? (
+                                          <span className="text-xs font-black text-indigo-400 block">{exam.tyt.totalNet} TYT Net</span>
+                                        ) : null}
+                                        {exam.ayt?.totalNet ? (
+                                          <span className="text-xs font-black text-emerald-400 block">{exam.ayt.totalNet} AYT Net</span>
+                                        ) : null}
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-white/5 font-mono">
+                                      <span>{exam.date}</span>
+                                      {exam.score ? (
+                                        <span className="text-amber-300 font-bold">{exam.score.toFixed(1)} Puan</span>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              /* TABLE VIEW */
+                              <div className="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/80 shadow-xl">
+                                <table className="w-full text-left text-xs border-collapse">
+                                  <thead>
+                                    <tr className="border-b border-white/10 bg-slate-900/90 text-slate-400 font-semibold uppercase tracking-wider text-[9px]">
+                                      <th className="py-2.5 px-3">Sınav Adı</th>
+                                      <th className="py-2.5 px-3">Tarih</th>
+                                      <th className="py-2.5 px-3 text-center">TYT Net</th>
+                                      <th className="py-2.5 px-3 text-center">AYT Net</th>
+                                      <th className="py-2.5 px-3 text-center">Toplam Net</th>
+                                      <th className="py-2.5 px-3 text-center">Tahmini Sıra</th>
+                                      <th className="py-2.5 px-3 text-right">Puan</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-white/5 font-mono text-[11px]">
+                                    {paginatedGeneralMocks.map(mock => {
+                                      const tytNet = mock.tyt?.totalNet || 0;
+                                      const aytNet = mock.ayt?.totalNet || 0;
+                                      const totalNet = (tytNet + aytNet).toFixed(2);
+                                      return (
+                                        <tr key={mock.id} className="hover:bg-white/5 transition-colors">
+                                          <td className="py-2.5 px-3">
+                                            <div className="font-bold text-white font-sans text-xs">{mock.title}</div>
+                                            <div className="text-[10px] text-slate-400 font-sans">{mock.publisher || 'Bireysel'}</div>
+                                          </td>
+                                          <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">{mock.date}</td>
+                                          <td className="py-2.5 px-3 text-center font-bold text-indigo-300">
+                                            {tytNet > 0 ? `${tytNet}N` : '-'}
+                                          </td>
+                                          <td className="py-2.5 px-3 text-center font-bold text-emerald-300">
+                                            {aytNet > 0 ? `${aytNet}N` : '-'}
+                                          </td>
+                                          <td className="py-2.5 px-3 text-center font-black text-sky-400">
+                                            {totalNet} Net
+                                          </td>
+                                          <td className="py-2.5 px-3 text-center text-amber-400 font-bold">
+                                            {mock.estimatedRank ? `#${mock.estimatedRank.toLocaleString('tr-TR')}` : '-'}
+                                          </td>
+                                          <td className="py-2.5 px-3 text-right text-amber-300 font-bold">
+                                            {mock.score ? `${mock.score.toFixed(1)} P` : '-'}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+
+                            {/* Pagination Bar */}
+                            {filteredGeneralMocks.length > 0 && (
+                              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs">
+                                <span className="text-slate-400 text-[11px]">
+                                  Toplam <strong className="text-white font-mono">{filteredGeneralMocks.length}</strong> sınavdan{' '}
+                                  <strong className="text-white font-mono">
+                                    {(currentGenPage - 1) * generalMockPageSize + 1}-{Math.min(currentGenPage * generalMockPageSize, filteredGeneralMocks.length)}
+                                  </strong>{' '}
+                                  arası
+                                </span>
+
+                                <div className="flex items-center space-x-2">
+                                  <div className="flex items-center space-x-1 text-[11px] text-slate-400">
+                                    <span>Göster:</span>
+                                    <select
+                                      value={generalMockPageSize}
+                                      onChange={(e) => {
+                                        setGeneralMockPageSize(Number(e.target.value));
+                                        setGeneralMockPage(1);
+                                      }}
+                                      className="bg-slate-900 border border-white/10 text-white rounded px-1.5 py-0.5 text-xs focus:outline-none focus:border-sky-500 cursor-pointer font-mono"
+                                    >
+                                      <option value={5}>5</option>
+                                      <option value={10}>10</option>
+                                      <option value={20}>20</option>
+                                      <option value={50}>50</option>
+                                    </select>
+                                  </div>
+
+                                  {totalGeneralPages > 1 && (
+                                    <div className="flex items-center space-x-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => setGeneralMockPage(Math.max(1, currentGenPage - 1))}
+                                        disabled={currentGenPage === 1}
+                                        className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                        title="Önceki"
+                                      >
+                                        <ChevronLeft className="w-3.5 h-3.5" />
+                                      </button>
+
+                                      {Array.from({ length: totalGeneralPages }, (_, i) => i + 1).map((pageNum) => (
+                                        <button
+                                          key={pageNum}
+                                          type="button"
+                                          onClick={() => setGeneralMockPage(pageNum)}
+                                          className={`w-6 h-6 rounded text-xs font-bold transition-all cursor-pointer font-mono ${
+                                            currentGenPage === pageNum
+                                              ? 'bg-sky-600 text-white'
+                                              : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white'
+                                          }`}
+                                        >
+                                          {pageNum}
+                                        </button>
+                                      ))}
+
+                                      <button
+                                        type="button"
+                                        onClick={() => setGeneralMockPage(Math.min(totalGeneralPages, currentGenPage + 1))}
+                                        disabled={currentGenPage === totalGeneralPages}
+                                        className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                        title="Sonraki"
+                                      >
+                                        <ChevronRight className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                 {/* ------------------------------------------------------------- */}
                 {/* SUB-TAB 2: BRANŞ DENEMELERİ */}
@@ -2458,10 +2588,9 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                     return true;
                   }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-                      const BRANCH_PER_PAGE = 6;
-                      const totalBranchPages = Math.ceil(filteredBranchExams.length / BRANCH_PER_PAGE) || 1;
+                      const totalBranchPages = Math.ceil(filteredBranchExams.length / branchExamPageSize) || 1;
                       const currentBrPage = Math.min(branchExamPage, totalBranchPages);
-                      const paginatedBranchExams = filteredBranchExams.slice((currentBrPage - 1) * BRANCH_PER_PAGE, currentBrPage * BRANCH_PER_PAGE);
+                      const paginatedBranchExams = filteredBranchExams.slice((currentBrPage - 1) * branchExamPageSize, currentBrPage * branchExamPageSize);
 
                       return (
                         <div className="space-y-4">
@@ -2509,19 +2638,22 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                                 <span className="text-sm font-black text-emerald-400 truncate max-w-[130px]">
                                   {subjectStats[0]?.subject || '-'}
                                 </span>
+                                {subjectStats[0] && (
+                                  <span className="text-xs text-slate-400">({subjectStats[0].count})</span>
+                                )}
                               </div>
                             </div>
                           </div>
 
-                          {/* Chart: Branch Breakdown */}
+                          {/* Chart: Branch Exam Distribution */}
                           {subjectStats.length > 0 && (
                             <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-2.5">
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center space-x-2">
                                   <BarChart3 className="w-3.5 h-3.5 text-purple-400" />
-                                  <h4 className="text-xs font-bold text-white">Ders Bazlı Branş Denemeleri</h4>
+                                  <h4 className="text-xs font-bold text-white">Branş Denemesi Ders Dağılımı ve Netler</h4>
                                 </div>
-                                <span className="text-[10px] text-slate-400 font-mono">Çözüm Sayısı</span>
+                                <span className="text-[10px] text-slate-400 font-mono">Ders Dağılımı</span>
                               </div>
 
                               <div className="h-40 w-full pt-1">
@@ -2531,15 +2663,18 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                                     <XAxis dataKey="subject" stroke="#94a3b8" fontSize={9} tickLine={false} />
                                     <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
                                     <Tooltip
-                                      contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
-                                      formatter={(val: any, name: any, item: any) => [
-                                        `${val} Deneme (Ort: ${item.payload.avgNet} Net)`,
-                                        item.payload.isMyBranch ? '⭐ Branşınız' : 'Deneme Sayısı'
+                                      contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '8px', fontSize: '10px', color: '#fff' }}
+                                      formatter={(val: any, name: any) => [
+                                        name === 'count' ? `${val} Deneme` : `${val} Net`,
+                                        name === 'count' ? 'Çözülen Deneme Sayısı' : 'Ortalama Net'
                                       ]}
                                     />
-                                    <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={32}>
+                                    <Bar dataKey="count" radius={[3, 3, 0, 0]} maxBarSize={24} name="count">
                                       {subjectStats.map((entry, index) => (
-                                        <Cell key={`cell-branch-${index}`} fill={entry.isMyBranch ? '#f59e0b' : '#a855f7'} />
+                                        <Cell 
+                                          key={`cell-modal-${index}`} 
+                                          fill={entry.isMyBranch ? '#f59e0b' : '#a855f7'} 
+                                        />
                                       ))}
                                     </Bar>
                                   </BarChart>
@@ -2708,47 +2843,72 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                           )}
 
                           {/* Pagination Bar */}
-                          {filteredBranchExams.length > BRANCH_PER_PAGE && (
-                            <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs">
+                          {filteredBranchExams.length > 0 && (
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs">
                               <span className="text-slate-400 text-[11px]">
-                                Toplam <strong className="text-white font-mono">{filteredBranchExams.length}</strong> sınav
+                                Toplam <strong className="text-white font-mono">{filteredBranchExams.length}</strong> sınavdan{' '}
+                                <strong className="text-white font-mono">
+                                  {(currentBrPage - 1) * branchExamPageSize + 1}-{Math.min(currentBrPage * branchExamPageSize, filteredBranchExams.length)}
+                                </strong>{' '}
+                                arası
                               </span>
 
-                              <div className="flex items-center space-x-1">
-                                <button
-                                  type="button"
-                                  onClick={() => setBranchExamPage(Math.max(1, currentBrPage - 1))}
-                                  disabled={currentBrPage === 1}
-                                  className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                                  title="Önceki"
-                                >
-                                  <ChevronLeft className="w-3.5 h-3.5" />
-                                </button>
-
-                                {Array.from({ length: totalBranchPages }, (_, i) => i + 1).map((pageNum) => (
-                                  <button
-                                    key={pageNum}
-                                    type="button"
-                                    onClick={() => setBranchExamPage(pageNum)}
-                                    className={`w-6 h-6 rounded text-xs font-bold transition-all cursor-pointer font-mono ${
-                                      currentBrPage === pageNum
-                                        ? 'bg-purple-600 text-white'
-                                        : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white'
-                                    }`}
+                              <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-1 text-[11px] text-slate-400">
+                                  <span>Göster:</span>
+                                  <select
+                                    value={branchExamPageSize}
+                                    onChange={(e) => {
+                                      setBranchExamPageSize(Number(e.target.value));
+                                      setBranchExamPage(1);
+                                    }}
+                                    className="bg-slate-900 border border-white/10 text-white rounded px-1.5 py-0.5 text-xs focus:outline-none focus:border-purple-500 cursor-pointer font-mono"
                                   >
-                                    {pageNum}
-                                  </button>
-                                ))}
+                                    <option value={5}>5</option>
+                                    <option value={10}>10</option>
+                                    <option value={20}>20</option>
+                                    <option value={50}>50</option>
+                                  </select>
+                                </div>
 
-                                <button
-                                  type="button"
-                                  onClick={() => setBranchExamPage(Math.min(totalBranchPages, currentBrPage + 1))}
-                                  disabled={currentBrPage === totalBranchPages}
-                                  className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                                  title="Sonraki"
-                                >
-                                  <ChevronRight className="w-3.5 h-3.5" />
-                                </button>
+                                {totalBranchPages > 1 && (
+                                  <div className="flex items-center space-x-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => setBranchExamPage(Math.max(1, currentBrPage - 1))}
+                                      disabled={currentBrPage === 1}
+                                      className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                      title="Önceki"
+                                    >
+                                      <ChevronLeft className="w-3.5 h-3.5" />
+                                    </button>
+
+                                    {Array.from({ length: totalBranchPages }, (_, i) => i + 1).map((pageNum) => (
+                                      <button
+                                        key={pageNum}
+                                        type="button"
+                                        onClick={() => setBranchExamPage(pageNum)}
+                                        className={`w-6 h-6 rounded text-xs font-bold transition-all cursor-pointer font-mono ${
+                                          currentBrPage === pageNum
+                                            ? 'bg-purple-600 text-white'
+                                            : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white'
+                                        }`}
+                                      >
+                                        {pageNum}
+                                      </button>
+                                    ))}
+
+                                    <button
+                                      type="button"
+                                      onClick={() => setBranchExamPage(Math.min(totalBranchPages, currentBrPage + 1))}
+                                      disabled={currentBrPage === totalBranchPages}
+                                      className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                      title="Sonraki"
+                                    >
+                                      <ChevronRight className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}
@@ -3085,6 +3245,12 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                             </div>
                           )}
 
+                      const totalInstPages = Math.ceil(filteredInstMocks.length / institutionalMockPageSize) || 1;
+                      const currentInstPage = Math.min(institutionalMockPage, totalInstPages);
+                      const paginatedInstMocks = filteredInstMocks.slice((currentInstPage - 1) * institutionalMockPageSize, currentInstPage * institutionalMockPageSize);
+
+                      return (
+                        <div className="space-y-4">
                           {/* Toolbar */}
                           <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                             <div className="relative flex-1">
@@ -3342,47 +3508,72 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                           )}
 
                           {/* Pagination Bar */}
-                          {filteredInstMocks.length > INST_PER_PAGE && (
-                            <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs">
+                          {filteredInstMocks.length > 0 && (
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs">
                               <span className="text-slate-400 text-[11px]">
-                                Toplam <strong className="text-white font-mono">{filteredInstMocks.length}</strong> karne
+                                Toplam <strong className="text-white font-mono">{filteredInstMocks.length}</strong> karne'den{' '}
+                                <strong className="text-white font-mono">
+                                  {(currentInstPage - 1) * institutionalMockPageSize + 1}-{Math.min(currentInstPage * institutionalMockPageSize, filteredInstMocks.length)}
+                                </strong>{' '}
+                                arası
                               </span>
 
-                              <div className="flex items-center space-x-1">
-                                <button
-                                  type="button"
-                                  onClick={() => setInstitutionalMockPage(Math.max(1, currentInstPage - 1))}
-                                  disabled={currentInstPage === 1}
-                                  className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                                  title="Önceki"
-                                >
-                                  <ChevronLeft className="w-3.5 h-3.5" />
-                                </button>
-
-                                {Array.from({ length: totalInstPages }, (_, i) => i + 1).map((pageNum) => (
-                                  <button
-                                    key={pageNum}
-                                    type="button"
-                                    onClick={() => setInstitutionalMockPage(pageNum)}
-                                    className={`w-6 h-6 rounded text-xs font-bold transition-all cursor-pointer font-mono ${
-                                      currentInstPage === pageNum
-                                        ? 'bg-emerald-600 text-white'
-                                        : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white'
-                                    }`}
+                              <div className="flex items-center space-x-2">
+                                <div className="flex items-center space-x-1 text-[11px] text-slate-400">
+                                  <span>Göster:</span>
+                                  <select
+                                    value={institutionalMockPageSize}
+                                    onChange={(e) => {
+                                      setInstitutionalMockPageSize(Number(e.target.value));
+                                      setInstitutionalMockPage(1);
+                                    }}
+                                    className="bg-slate-900 border border-white/10 text-white rounded px-1.5 py-0.5 text-xs focus:outline-none focus:border-emerald-500 cursor-pointer font-mono"
                                   >
-                                    {pageNum}
-                                  </button>
-                                ))}
+                                    <option value={5}>5</option>
+                                    <option value={10}>10</option>
+                                    <option value={20}>20</option>
+                                    <option value={50}>50</option>
+                                  </select>
+                                </div>
 
-                                <button
-                                  type="button"
-                                  onClick={() => setInstitutionalMockPage(Math.min(totalInstPages, currentInstPage + 1))}
-                                  disabled={currentInstPage === totalInstPages}
-                                  className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                                  title="Sonraki"
-                                >
-                                  <ChevronRight className="w-3.5 h-3.5" />
-                                </button>
+                                {totalInstPages > 1 && (
+                                  <div className="flex items-center space-x-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => setInstitutionalMockPage(Math.max(1, currentInstPage - 1))}
+                                      disabled={currentInstPage === 1}
+                                      className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                      title="Önceki"
+                                    >
+                                      <ChevronLeft className="w-3.5 h-3.5" />
+                                    </button>
+
+                                    {Array.from({ length: totalInstPages }, (_, i) => i + 1).map((pageNum) => (
+                                      <button
+                                        key={pageNum}
+                                        type="button"
+                                        onClick={() => setInstitutionalMockPage(pageNum)}
+                                        className={`w-6 h-6 rounded text-xs font-bold transition-all cursor-pointer font-mono ${
+                                          currentInstPage === pageNum
+                                            ? 'bg-emerald-600 text-white'
+                                            : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white'
+                                        }`}
+                                      >
+                                        {pageNum}
+                                      </button>
+                                    ))}
+
+                                    <button
+                                      type="button"
+                                      onClick={() => setInstitutionalMockPage(Math.min(totalInstPages, currentInstPage + 1))}
+                                      disabled={currentInstPage === totalInstPages}
+                                      className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                      title="Sonraki"
+                                    >
+                                      <ChevronRight className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}

@@ -229,22 +229,32 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
   const [questionDateFilter, setQuestionDateFilter] = useState<'all' | '7days' | '30days'>('all');
   const [questionSearchQuery, setQuestionSearchQuery] = useState<string>('');
   const [questionViewMode, setQuestionViewMode] = useState<'cards' | 'table'>('cards');
+  const [questionPage, setQuestionPage] = useState<number>(1);
+  const [questionPageSize, setQuestionPageSize] = useState<number>(10);
+
+  const [topicStatusFilter, setTopicStatusFilter] = useState<'all' | 'missing' | 'completed'>('all');
+  const [topicSearchQuery, setTopicSearchQuery] = useState<string>('');
+
   const [mockSubTab, setMockSubTab] = useState<'general' | 'branch' | 'institutional'>('general');
   const [selectedInstitutionalExam, setSelectedInstitutionalExam] = useState<InstitutionalMockExam | null>(null);
+  
   const [generalMockSearch, setGeneralMockSearch] = useState<string>('');
   const [generalMockTypeFilter, setGeneralMockTypeFilter] = useState<'all' | 'TYT' | 'AYT'>('all');
   const [generalMockViewMode, setGeneralMockViewMode] = useState<'cards' | 'table'>('cards');
   const [generalMockPage, setGeneralMockPage] = useState<number>(1);
+  const [generalMockPageSize, setGeneralMockPageSize] = useState<number>(10);
 
   const [branchMockSubjectFilter, setBranchMockSubjectFilter] = useState<string>('all');
   const [branchMockSearch, setBranchMockSearch] = useState<string>('');
   const [branchExamViewMode, setBranchExamViewMode] = useState<'cards' | 'table'>('cards');
   const [branchExamPage, setBranchExamPage] = useState<number>(1);
+  const [branchExamPageSize, setBranchExamPageSize] = useState<number>(10);
 
   const [institutionalMockSearch, setInstitutionalMockSearch] = useState<string>('');
   const [institutionalMockTypeFilter, setInstitutionalMockTypeFilter] = useState<'all' | 'TYT' | 'AYT'>('all');
   const [institutionalMockViewMode, setInstitutionalMockViewMode] = useState<'cards' | 'table'>('cards');
   const [institutionalMockPage, setInstitutionalMockPage] = useState<number>(1);
+  const [institutionalMockPageSize, setInstitutionalMockPageSize] = useState<number>(10);
 
   const stData = resolveStudentData(selectedStudentUser, studentsData);
   const profile = stData.profile;
@@ -1745,7 +1755,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
           'AYT Tarih': '#d97706',
           'Coğrafya': '#ea580c',
           'TYT Coğrafya': '#ea580c',
-          'AYT Coğrafya': '#c2410c',
+'AYT Coğrafya': '#c2410c',
           'Felsefe': '#a855f7',
           'Din Kültürü': '#14b8a6',
           'İngilizce': '#3b82f6',
@@ -1754,6 +1764,11 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
         const getSubjectColor = (subj: string, index: number) => {
           return SUBJECT_PALETTE[subj] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
         };
+
+        // Pagination for Question Logs
+        const totalQuestionPages = Math.ceil(filteredLogs.length / questionPageSize) || 1;
+        const currentQPage = Math.min(questionPage, totalQuestionPages);
+        const paginatedLogs = filteredLogs.slice((currentQPage - 1) * questionPageSize, currentQPage * questionPageSize);
 
         return (
           <div className="bg-slate-900/90 border border-white/15 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl space-y-6">
@@ -1972,13 +1987,19 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                   <input
                     type="text"
                     value={questionSearchQuery}
-                    onChange={(e) => setQuestionSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setQuestionSearchQuery(e.target.value);
+                      setQuestionPage(1);
+                    }}
                     placeholder="Ders, konu adı veya notlarda ara..."
                     className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/50 transition-colors"
                   />
                   {questionSearchQuery && (
                     <button
-                      onClick={() => setQuestionSearchQuery('')}
+                      onClick={() => {
+                        setQuestionSearchQuery('');
+                        setQuestionPage(1);
+                      }}
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs px-1"
                     >
                       ✕
@@ -1989,7 +2010,10 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                 {/* Exam Type Filter Buttons */}
                 <div className="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0">
                   <button
-                    onClick={() => setQuestionExamTypeFilter('all')}
+                    onClick={() => {
+                      setQuestionExamTypeFilter('all');
+                      setQuestionPage(1);
+                    }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       questionExamTypeFilter === 'all'
                         ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
@@ -1999,7 +2023,10 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                     Tüm Sınavlar
                   </button>
                   <button
-                    onClick={() => setQuestionExamTypeFilter('TYT')}
+                    onClick={() => {
+                      setQuestionExamTypeFilter('TYT');
+                      setQuestionPage(1);
+                    }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       questionExamTypeFilter === 'TYT'
                         ? 'bg-indigo-600 text-white font-bold shadow-sm'
@@ -2009,7 +2036,10 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                     TYT
                   </button>
                   <button
-                    onClick={() => setQuestionExamTypeFilter('AYT')}
+                    onClick={() => {
+                      setQuestionExamTypeFilter('AYT');
+                      setQuestionPage(1);
+                    }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       questionExamTypeFilter === 'AYT'
                         ? 'bg-fuchsia-600 text-white font-bold shadow-sm'
@@ -2024,7 +2054,10 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                 <div className="flex items-center space-x-2 shrink-0">
                   <div className="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-white/10">
                     <button
-                      onClick={() => setQuestionDateFilter('all')}
+                      onClick={() => {
+                        setQuestionDateFilter('all');
+                        setQuestionPage(1);
+                      }}
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
                         questionDateFilter === 'all' ? 'bg-white/15 text-white' : 'text-slate-400 hover:text-white'
                       }`}
@@ -2032,7 +2065,10 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                       Tümü
                     </button>
                     <button
-                      onClick={() => setQuestionDateFilter('7days')}
+                      onClick={() => {
+                        setQuestionDateFilter('7days');
+                        setQuestionPage(1);
+                      }}
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
                         questionDateFilter === '7days' ? 'bg-white/15 text-white' : 'text-slate-400 hover:text-white'
                       }`}
@@ -2040,7 +2076,10 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                       Son 7 Gün
                     </button>
                     <button
-                      onClick={() => setQuestionDateFilter('30days')}
+                      onClick={() => {
+                        setQuestionDateFilter('30days');
+                        setQuestionPage(1);
+                      }}
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
                         questionDateFilter === '30days' ? 'bg-white/15 text-white' : 'text-slate-400 hover:text-white'
                       }`}
@@ -2084,7 +2123,10 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                     return (
                       <button
                         key={subj}
-                        onClick={() => setQuestionSubjectFilter(subj)}
+                        onClick={() => {
+                          setQuestionSubjectFilter(subj);
+                          setQuestionPage(1);
+                        }}
                         className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer flex items-center space-x-1 ${
                           questionSubjectFilter === subj
                             ? 'bg-amber-500/20 text-amber-300 border-amber-400/40 font-bold'
@@ -2118,6 +2160,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                     setQuestionExamTypeFilter('all');
                     setQuestionDateFilter('all');
                     setQuestionSearchQuery('');
+                    setQuestionPage(1);
                   }}
                   className="text-xs text-amber-400 hover:text-amber-300 underline font-semibold cursor-pointer"
                 >
@@ -2127,7 +2170,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
             ) : questionViewMode === 'cards' ? (
               /* CARD VIEW (Modern Grid) */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredLogs.map(log => {
+                {paginatedLogs.map(log => {
                   const isMyBranch = teacherSubj && (log.subject || '').toLowerCase().includes(teacherSubj);
                   const solved = log.solvedCount || 0;
                   const correct = log.correctCount || 0;
@@ -2269,7 +2312,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/10 text-slate-200 font-mono">
-                    {filteredLogs.map((log) => {
+                    {paginatedLogs.map((log) => {
                       const isMyBranch = teacherSubj && (log.subject || '').toLowerCase().includes(teacherSubj);
                       const solved = log.solvedCount || 0;
                       const correct = log.correctCount || 0;
@@ -2330,6 +2373,80 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                 </table>
               </div>
             )}
+
+            {/* Pagination Bar for Question Logs */}
+            {filteredLogs.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/10 text-xs">
+                <span className="text-slate-400 font-medium">
+                  Toplam <strong className="text-white font-mono">{filteredLogs.length}</strong> kayıttan{' '}
+                  <strong className="text-white font-mono">
+                    {(currentQPage - 1) * questionPageSize + 1}-{Math.min(currentQPage * questionPageSize, filteredLogs.length)}
+                  </strong>{' '}
+                  arası gösteriliyor
+                </span>
+
+                <div className="flex items-center space-x-3 flex-wrap justify-end">
+                  {/* Page Size Selector */}
+                  <div className="flex items-center space-x-1.5 text-slate-400 text-xs">
+                    <span>Göster:</span>
+                    <select
+                      value={questionPageSize}
+                      onChange={(e) => {
+                        setQuestionPageSize(Number(e.target.value));
+                        setQuestionPage(1);
+                      }}
+                      className="bg-slate-900 border border-white/10 text-white rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-amber-500 cursor-pointer font-mono"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                  </div>
+
+                  {/* Page Navigation */}
+                  {totalQuestionPages > 1 && (
+                    <div className="flex items-center space-x-1">
+                      <button
+                        type="button"
+                        onClick={() => setQuestionPage(Math.max(1, currentQPage - 1))}
+                        disabled={currentQPage === 1}
+                        className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                        title="Önceki Sayfa"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+
+                      {Array.from({ length: totalQuestionPages }, (_, i) => i + 1).map((pageNum) => (
+                        <button
+                          key={pageNum}
+                          type="button"
+                          onClick={() => setQuestionPage(pageNum)}
+                          className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer font-mono ${
+                            currentQPage === pageNum
+                              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                              : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      ))}
+
+                      <button
+                        type="button"
+                        onClick={() => setQuestionPage(Math.min(totalQuestionPages, currentQPage + 1))}
+                        disabled={currentQPage === totalQuestionPages}
+                        className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                        title="Sonraki Sayfa"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         );
       })()}
@@ -2347,10 +2464,28 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
         const fieldFiltered = showAllTopics 
           ? subjectProgressList 
           : subjectProgressList.filter(s => keywords.some(kw => s.subjectName.toLowerCase().includes(kw.toLowerCase())));
-        const displayList = fieldFiltered.length > 0 ? fieldFiltered : subjectProgressList;
+        
+        let filteredSubjectList = fieldFiltered.length > 0 ? fieldFiltered : subjectProgressList;
+
+        if (topicSearchQuery.trim()) {
+          const q = topicSearchQuery.toLowerCase();
+          filteredSubjectList = filteredSubjectList.filter(s => 
+            s.subjectName.toLowerCase().includes(q) ||
+            s.topics.some(t => t.name.toLowerCase().includes(q))
+          );
+        }
+
+        if (topicStatusFilter === 'missing') {
+          filteredSubjectList = filteredSubjectList.filter(s => s.topics.some(t => !t.isDone));
+        } else if (topicStatusFilter === 'completed') {
+          filteredSubjectList = filteredSubjectList.filter(s => s.pct === 100);
+        }
+
+        const missingTopicsTotal = totalTopicsCount - completedTopicsCount;
 
         return (
           <div className="bg-slate-900/90 border border-white/15 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl space-y-6">
+            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center space-x-2">
@@ -2358,80 +2493,215 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                   <span>Müfredat ve Konu Tamamlama İlerlemesi</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  {showAllTopics ? 'Tüm dersler gösteriliyor.' : `Öğrencinin alanı (${studentField}) dersleri gösteriliyor.`}
+                  Biten ve eksik konular ders bazlı gruplandırılmış ve ayrılmıştır.
                 </p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-bold px-3 py-1.5 rounded-xl font-mono">
-                  %{topicCompletionPct} ({completedTopicsCount}/{totalTopicsCount})
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold px-3 py-1.5 rounded-xl font-mono">
+                  ✓ {completedTopicsCount} Bitti
                 </span>
+                <span className="bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold px-3 py-1.5 rounded-xl font-mono">
+                  ○ {missingTopicsTotal} Eksik
+                </span>
+                <span className="bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-bold px-3 py-1.5 rounded-xl font-mono">
+                  %{topicCompletionPct} Tamamlandı
+                </span>
+              </div>
+            </div>
+
+            {/* Toolbar: Search, Status Filter, Field Filter */}
+            <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {/* Search */}
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={topicSearchQuery}
+                    onChange={(e) => setTopicSearchQuery(e.target.value)}
+                    placeholder="Ders veya konu adı ara..."
+                    className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500/50 transition-colors"
+                  />
+                  {topicSearchQuery && (
+                    <button
+                      onClick={() => setTopicSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs px-1"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Status Filter Buttons */}
+                <div className="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0">
+                  <button
+                    onClick={() => setTopicStatusFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      topicStatusFilter === 'all'
+                        ? 'bg-teal-600 text-white font-bold shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Tüm Dersler
+                  </button>
+                  <button
+                    onClick={() => setTopicStatusFilter('missing')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center space-x-1 ${
+                      topicStatusFilter === 'missing'
+                        ? 'bg-rose-600 text-white font-bold shadow-sm'
+                        : 'text-slate-400 hover:text-rose-400'
+                    }`}
+                  >
+                    <span>Eksik Konuları Olanlar</span>
+                  </button>
+                  <button
+                    onClick={() => setTopicStatusFilter('completed')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center space-x-1 ${
+                      topicStatusFilter === 'completed'
+                        ? 'bg-emerald-600 text-white font-bold shadow-sm'
+                        : 'text-slate-400 hover:text-emerald-400'
+                    }`}
+                  >
+                    <span>Tamamı Bitenler</span>
+                  </button>
+                </div>
+
+                {/* Field Toggle */}
                 <button
                   onClick={() => setShowAllTopics(v => !v)}
-                  className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+                  className={`text-xs font-bold px-3 py-2 rounded-xl border transition-all cursor-pointer shrink-0 ${
                     showAllTopics
-                      ? 'bg-indigo-600 text-white border-indigo-400/40'
+                      ? 'bg-indigo-600 text-white border-indigo-400/40 shadow-sm'
                       : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
                   }`}
                 >
-                  {showAllTopics ? 'Alanı Göster' : 'Tümünü Göster'}
+                  {showAllTopics ? `Tüm Dersler (Alana Dön: ${studentField})` : `Alanı Göster (${studentField})`}
                 </button>
               </div>
             </div>
 
-            {displayList.length === 0 ? (
-              <div className="py-16 text-center text-xs text-slate-400 italic border border-dashed border-white/10 rounded-2xl">
-                Henüz konu ilerleme kaydı bulunmuyor.
+            {filteredSubjectList.length === 0 ? (
+              <div className="py-16 text-center text-xs text-slate-400 italic border border-dashed border-white/10 rounded-2xl space-y-2">
+                <ListChecks className="w-8 h-8 text-slate-500 mx-auto" />
+                <p>Uygulanan filtrelerle eşleşen ders veya konu bulunamadı.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {displayList.map(subjItem => {
+                {filteredSubjectList.map(subjItem => {
                   const isMyBranch = teacherSubj && subjItem.subjectName.toLowerCase().includes(teacherSubj);
+                  const completedTopics = subjItem.topics.filter(t => t.isDone);
+                  const missingTopics = subjItem.topics.filter(t => !t.isDone);
 
                   return (
                     <div 
                       key={subjItem.subjectName} 
-                      className={`p-4 rounded-2xl border space-y-3 ${
+                      className={`p-4 rounded-2xl border space-y-3 flex flex-col justify-between ${
                         isMyBranch 
                           ? 'bg-amber-500/10 border-amber-500/40 shadow-lg shadow-amber-500/5' 
                           : 'bg-slate-950/80 border-white/10'
                       }`}
                     >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center space-x-1.5">
-                            <h4 className="font-bold text-white text-sm">{subjItem.subjectName}</h4>
-                            {isMyBranch && (
-                              <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded font-semibold">
-                                Branşınız ⭐
-                              </span>
-                            )}
+                      <div className="space-y-2.5">
+                        {/* Header Row */}
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="flex items-center space-x-1.5">
+                              <h4 className="font-bold text-white text-sm">{subjItem.subjectName}</h4>
+                              {isMyBranch && (
+                                <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded font-semibold">
+                                  Branşınız ⭐
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2 text-[10px] text-slate-400 font-mono mt-0.5">
+                              <span className="text-emerald-400 font-bold">{completedTopics.length} Bitti</span>
+                              <span>•</span>
+                              <span className="text-rose-400 font-bold">{missingTopics.length} Eksik</span>
+                              <span>•</span>
+                              <span>{subjItem.totalCount} Toplam</span>
+                            </div>
                           </div>
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            {subjItem.doneCount} / {subjItem.totalCount} Bitti
+                          <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-lg border ${
+                            subjItem.pct === 100
+                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                              : subjItem.pct >= 50
+                              ? 'bg-teal-500/20 text-teal-300 border-teal-500/30'
+                              : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                          }`}>
+                            %{subjItem.pct}
                           </span>
                         </div>
-                        <span className="text-xs font-mono font-bold text-teal-400">%{subjItem.pct}</span>
-                      </div>
 
-                      <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-                        <div className="bg-teal-500 h-full rounded-full transition-all duration-500" style={{ width: `${subjItem.pct}%` }} />
-                      </div>
+                        {/* Progress Bar */}
+                        <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-white/5">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              subjItem.pct === 100 ? 'bg-emerald-500' : 'bg-gradient-to-r from-teal-500 to-emerald-400'
+                            }`} 
+                            style={{ width: `${subjItem.pct}%` }} 
+                          />
+                        </div>
 
-                      <div className="space-y-1 max-h-40 overflow-y-auto pr-1 text-xs pt-1">
-                        {subjItem.topics.map(topic => (
-                          <div key={topic.name} className="flex items-center justify-between text-slate-300 py-0.5 border-b border-white/5 last:border-0">
-                            <span className="truncate pr-2">{topic.name}</span>
-                            <span className={
-                              topic.isDone 
-                                ? 'text-emerald-400 font-bold shrink-0' 
-                                : topic.isInProgress 
-                                ? 'text-amber-400 font-bold shrink-0' 
-                                : 'text-slate-500 shrink-0'
-                            }>
-                              {topic.isDone ? '✓ Bitti' : topic.isInProgress ? '⏳ Çalışılıyor' : '○ Eksik'}
-                            </span>
+                        {/* Separated Topics Container */}
+                        <div className="space-y-2.5 pt-1">
+                          {/* 1. EKSİK KONULAR BÖLÜMÜ */}
+                          <div className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-2.5 space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px] font-bold text-rose-300">
+                              <span className="flex items-center gap-1">
+                                <AlertTriangle className="w-3 h-3 text-rose-400" />
+                                Eksik Konular ({missingTopics.length})
+                              </span>
+                              {missingTopics.length === 0 && (
+                                <span className="text-[10px] text-emerald-400 font-normal">Tümü Bitti 🎉</span>
+                              )}
+                            </div>
+                            {missingTopics.length > 0 ? (
+                              <div className="max-h-32 overflow-y-auto space-y-1 pr-1 text-xs">
+                                {missingTopics.map(topic => (
+                                  <div key={topic.name} className="flex items-center justify-between text-slate-300 py-0.5 border-b border-white/5 last:border-0">
+                                    <span className="truncate pr-2 text-slate-300">{topic.name}</span>
+                                    <span className={topic.isInProgress ? 'text-amber-400 font-bold shrink-0 text-[10px]' : 'text-rose-400 shrink-0 text-[10px]'}>
+                                      {topic.isInProgress ? '⏳ Çalışılıyor' : '○ Eksik'}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-[11px] text-emerald-400/90 italic py-0.5 text-center font-medium">
+                                Bu dersin tüm konuları tamamlandı!
+                              </div>
+                            )}
                           </div>
-                        ))}
+
+                          {/* 2. BİTEN KONULAR BÖLÜMÜ */}
+                          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-2.5 space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px] font-bold text-emerald-300">
+                              <span className="flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                Biten Konular ({completedTopics.length})
+                              </span>
+                              <span className="text-[10px] text-emerald-400 font-mono">
+                                %{subjItem.pct}
+                              </span>
+                            </div>
+                            {completedTopics.length > 0 ? (
+                              <div className="max-h-32 overflow-y-auto space-y-1 pr-1 text-xs">
+                                {completedTopics.map(topic => (
+                                  <div key={topic.name} className="flex items-center justify-between text-slate-300 py-0.5 border-b border-white/5 last:border-0">
+                                    <span className="truncate pr-2 text-emerald-100/90">{topic.name}</span>
+                                    <span className="text-emerald-400 font-bold shrink-0 text-[10px]">
+                                      ✓ Bitti
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-[11px] text-slate-500 italic py-0.5 text-center font-medium">
+                                Henüz bitirilen konu bulunmuyor.
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
@@ -2580,10 +2850,9 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                   return true;
                 }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-                const GENERAL_PER_PAGE = 6;
-                const totalGeneralPages = Math.ceil(filteredGeneralMocks.length / GENERAL_PER_PAGE) || 1;
+                const totalGeneralPages = Math.ceil(filteredGeneralMocks.length / generalMockPageSize) || 1;
                 const currentGenPage = Math.min(generalMockPage, totalGeneralPages);
-                const paginatedGeneralMocks = filteredGeneralMocks.slice((currentGenPage - 1) * GENERAL_PER_PAGE, currentGenPage * GENERAL_PER_PAGE);
+                const paginatedGeneralMocks = filteredGeneralMocks.slice((currentGenPage - 1) * generalMockPageSize, currentGenPage * generalMockPageSize);
 
                 return (
                   <div className="space-y-6">
@@ -2990,51 +3259,74 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                     )}
 
                     {/* Pagination Bar */}
-                    {filteredGeneralMocks.length > GENERAL_PER_PAGE && (
+                    {filteredGeneralMocks.length > 0 && (
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/10 text-xs">
                         <span className="text-slate-400 font-medium">
                           Toplam <strong className="text-white font-mono">{filteredGeneralMocks.length}</strong> sınavdan{' '}
                           <strong className="text-white font-mono">
-                            {(currentGenPage - 1) * GENERAL_PER_PAGE + 1}-{Math.min(currentGenPage * GENERAL_PER_PAGE, filteredGeneralMocks.length)}
+                            {(currentGenPage - 1) * generalMockPageSize + 1}-{Math.min(currentGenPage * generalMockPageSize, filteredGeneralMocks.length)}
                           </strong>{' '}
                           arası gösteriliyor
                         </span>
 
-                        <div className="flex items-center space-x-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setGeneralMockPage(Math.max(1, currentGenPage - 1))}
-                            disabled={currentGenPage === 1}
-                            className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-                            title="Önceki Sayfa"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
-
-                          {Array.from({ length: totalGeneralPages }, (_, i) => i + 1).map((pageNum) => (
-                            <button
-                              key={pageNum}
-                              type="button"
-                              onClick={() => setGeneralMockPage(pageNum)}
-                              className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer font-mono ${
-                                currentGenPage === pageNum
-                                  ? 'bg-sky-600 text-white shadow-md shadow-sky-500/20'
-                                  : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
-                              }`}
+                        <div className="flex items-center space-x-3 flex-wrap justify-end">
+                          {/* Page Size Selector */}
+                          <div className="flex items-center space-x-1.5 text-slate-400 text-xs">
+                            <span>Göster:</span>
+                            <select
+                              value={generalMockPageSize}
+                              onChange={(e) => {
+                                setGeneralMockPageSize(Number(e.target.value));
+                                setGeneralMockPage(1);
+                              }}
+                              className="bg-slate-900 border border-white/10 text-white rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-sky-500 cursor-pointer font-mono"
                             >
-                              {pageNum}
-                            </button>
-                          ))}
+                              <option value={5}>5</option>
+                              <option value={10}>10</option>
+                              <option value={20}>20</option>
+                              <option value={50}>50</option>
+                            </select>
+                          </div>
 
-                          <button
-                            type="button"
-                            onClick={() => setGeneralMockPage(Math.min(totalGeneralPages, currentGenPage + 1))}
-                            disabled={currentGenPage === totalGeneralPages}
-                            className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-                            title="Sonraki Sayfa"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
+                          {/* Page Buttons */}
+                          {totalGeneralPages > 1 && (
+                            <div className="flex items-center space-x-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setGeneralMockPage(Math.max(1, currentGenPage - 1))}
+                                disabled={currentGenPage === 1}
+                                className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                                title="Önceki Sayfa"
+                              >
+                                <ChevronLeft className="w-4 h-4" />
+                              </button>
+
+                              {Array.from({ length: totalGeneralPages }, (_, i) => i + 1).map((pageNum) => (
+                                <button
+                                  key={pageNum}
+                                  type="button"
+                                  onClick={() => setGeneralMockPage(pageNum)}
+                                  className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer font-mono ${
+                                    currentGenPage === pageNum
+                                      ? 'bg-sky-600 text-white shadow-md shadow-sky-500/20'
+                                      : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+                                  }`}
+                                >
+                                  {pageNum}
+                                </button>
+                              ))}
+
+                              <button
+                                type="button"
+                                onClick={() => setGeneralMockPage(Math.min(totalGeneralPages, currentGenPage + 1))}
+                                disabled={currentGenPage === totalGeneralPages}
+                                className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                                title="Sonraki Sayfa"
+                              >
+                                <ChevronRight className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -3092,10 +3384,9 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                   return true;
                 });
 
-                    const BRANCH_PER_PAGE = 6;
-                    const totalBranchPages = Math.ceil(filteredBranchExams.length / BRANCH_PER_PAGE) || 1;
+                    const totalBranchPages = Math.ceil(filteredBranchExams.length / branchExamPageSize) || 1;
                     const currentBrPage = Math.min(branchExamPage, totalBranchPages);
-                    const paginatedBranchExams = filteredBranchExams.slice((currentBrPage - 1) * BRANCH_PER_PAGE, currentBrPage * BRANCH_PER_PAGE);
+                    const paginatedBranchExams = filteredBranchExams.slice((currentBrPage - 1) * branchExamPageSize, currentBrPage * branchExamPageSize);
 
                     return (
                       <div className="space-y-6">
@@ -3405,51 +3696,74 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                         )}
 
                         {/* Pagination Bar */}
-                        {filteredBranchExams.length > BRANCH_PER_PAGE && (
+                        {filteredBranchExams.length > 0 && (
                           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/10 text-xs">
                             <span className="text-slate-400 font-medium">
                               Toplam <strong className="text-white font-mono">{filteredBranchExams.length}</strong> sınavdan{' '}
                               <strong className="text-white font-mono">
-                                {(currentBrPage - 1) * BRANCH_PER_PAGE + 1}-{Math.min(currentBrPage * BRANCH_PER_PAGE, filteredBranchExams.length)}
+                                {(currentBrPage - 1) * branchExamPageSize + 1}-{Math.min(currentBrPage * branchExamPageSize, filteredBranchExams.length)}
                               </strong>{' '}
                               arası gösteriliyor
                             </span>
 
-                            <div className="flex items-center space-x-1.5">
-                              <button
-                                type="button"
-                                onClick={() => setBranchExamPage(Math.max(1, currentBrPage - 1))}
-                                disabled={currentBrPage === 1}
-                                className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-                                title="Önceki Sayfa"
-                              >
-                                <ChevronLeft className="w-4 h-4" />
-                              </button>
-
-                              {Array.from({ length: totalBranchPages }, (_, i) => i + 1).map((pageNum) => (
-                                <button
-                                  key={pageNum}
-                                  type="button"
-                                  onClick={() => setBranchExamPage(pageNum)}
-                                  className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer font-mono ${
-                                    currentBrPage === pageNum
-                                      ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
-                                      : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
-                                  }`}
+                            <div className="flex items-center space-x-3 flex-wrap justify-end">
+                              {/* Page Size Selector */}
+                              <div className="flex items-center space-x-1.5 text-slate-400 text-xs">
+                                <span>Göster:</span>
+                                <select
+                                  value={branchExamPageSize}
+                                  onChange={(e) => {
+                                    setBranchExamPageSize(Number(e.target.value));
+                                    setBranchExamPage(1);
+                                  }}
+                                  className="bg-slate-900 border border-white/10 text-white rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-purple-500 cursor-pointer font-mono"
                                 >
-                                  {pageNum}
-                                </button>
-                              ))}
+                                  <option value={5}>5</option>
+                                  <option value={10}>10</option>
+                                  <option value={20}>20</option>
+                                  <option value={50}>50</option>
+                                </select>
+                              </div>
 
-                              <button
-                                type="button"
-                                onClick={() => setBranchExamPage(Math.min(totalBranchPages, currentBrPage + 1))}
-                                disabled={currentBrPage === totalBranchPages}
-                                className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-                                title="Sonraki Sayfa"
-                              >
-                                <ChevronRight className="w-4 h-4" />
-                              </button>
+                              {/* Page Buttons */}
+                              {totalBranchPages > 1 && (
+                                <div className="flex items-center space-x-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => setBranchExamPage(Math.max(1, currentBrPage - 1))}
+                                    disabled={currentBrPage === 1}
+                                    className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                                    title="Önceki Sayfa"
+                                  >
+                                    <ChevronLeft className="w-4 h-4" />
+                                  </button>
+
+                                  {Array.from({ length: totalBranchPages }, (_, i) => i + 1).map((pageNum) => (
+                                    <button
+                                      key={pageNum}
+                                      type="button"
+                                      onClick={() => setBranchExamPage(pageNum)}
+                                      className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer font-mono ${
+                                        currentBrPage === pageNum
+                                          ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                                          : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+                                      }`}
+                                    >
+                                      {pageNum}
+                                    </button>
+                                  ))}
+
+                                  <button
+                                    type="button"
+                                    onClick={() => setBranchExamPage(Math.min(totalBranchPages, currentBrPage + 1))}
+                                    disabled={currentBrPage === totalBranchPages}
+                                    className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                                    title="Sonraki Sayfa"
+                                  >
+                                    <ChevronRight className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         )}
@@ -3612,10 +3926,9 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                   return true;
                 });
 
-                const INST_PER_PAGE = 6;
-                const totalInstPages = Math.ceil(filteredInstMocks.length / INST_PER_PAGE) || 1;
+                const totalInstPages = Math.ceil(filteredInstMocks.length / institutionalMockPageSize) || 1;
                 const currentInstPage = Math.min(institutionalMockPage, totalInstPages);
-                const paginatedInstMocks = filteredInstMocks.slice((currentInstPage - 1) * INST_PER_PAGE, currentInstPage * INST_PER_PAGE);
+                const paginatedInstMocks = filteredInstMocks.slice((currentInstPage - 1) * institutionalMockPageSize, currentInstPage * institutionalMockPageSize);
 
                 return (
                   <div className="space-y-6">
@@ -4039,51 +4352,74 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                     )}
 
                     {/* Pagination Bar */}
-                    {filteredInstMocks.length > INST_PER_PAGE && (
+                    {filteredInstMocks.length > 0 && (
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/10 text-xs">
                         <span className="text-slate-400 font-medium">
                           Toplam <strong className="text-white font-mono">{filteredInstMocks.length}</strong> sınavdan{' '}
                           <strong className="text-white font-mono">
-                            {(currentInstPage - 1) * INST_PER_PAGE + 1}-{Math.min(currentInstPage * INST_PER_PAGE, filteredInstMocks.length)}
+                            {(currentInstPage - 1) * institutionalMockPageSize + 1}-{Math.min(currentInstPage * institutionalMockPageSize, filteredInstMocks.length)}
                           </strong>{' '}
                           arası gösteriliyor
                         </span>
 
-                        <div className="flex items-center space-x-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setInstitutionalMockPage(Math.max(1, currentInstPage - 1))}
-                            disabled={currentInstPage === 1}
-                            className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-                            title="Önceki Sayfa"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
-
-                          {Array.from({ length: totalInstPages }, (_, i) => i + 1).map((pageNum) => (
-                            <button
-                              key={pageNum}
-                              type="button"
-                              onClick={() => setInstitutionalMockPage(pageNum)}
-                              className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer font-mono ${
-                                currentInstPage === pageNum
-                                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
-                                  : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
-                              }`}
+                        <div className="flex items-center space-x-3 flex-wrap justify-end">
+                          {/* Page Size Selector */}
+                          <div className="flex items-center space-x-1.5 text-slate-400 text-xs">
+                            <span>Göster:</span>
+                            <select
+                              value={institutionalMockPageSize}
+                              onChange={(e) => {
+                                setInstitutionalMockPageSize(Number(e.target.value));
+                                setInstitutionalMockPage(1);
+                              }}
+                              className="bg-slate-900 border border-white/10 text-white rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-emerald-500 cursor-pointer font-mono"
                             >
-                              {pageNum}
-                            </button>
-                          ))}
+                              <option value={5}>5</option>
+                              <option value={10}>10</option>
+                              <option value={20}>20</option>
+                              <option value={50}>50</option>
+                            </select>
+                          </div>
 
-                          <button
-                            type="button"
-                            onClick={() => setInstitutionalMockPage(Math.min(totalInstPages, currentInstPage + 1))}
-                            disabled={currentInstPage === totalInstPages}
-                            className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-                            title="Sonraki Sayfa"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
+                          {/* Page Buttons */}
+                          {totalInstPages > 1 && (
+                            <div className="flex items-center space-x-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setInstitutionalMockPage(Math.max(1, currentInstPage - 1))}
+                                disabled={currentInstPage === 1}
+                                className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                                title="Önceki Sayfa"
+                              >
+                                <ChevronLeft className="w-4 h-4" />
+                              </button>
+
+                              {Array.from({ length: totalInstPages }, (_, i) => i + 1).map((pageNum) => (
+                                <button
+                                  key={pageNum}
+                                  type="button"
+                                  onClick={() => setInstitutionalMockPage(pageNum)}
+                                  className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer font-mono ${
+                                    currentInstPage === pageNum
+                                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
+                                      : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+                                  }`}
+                                >
+                                  {pageNum}
+                                </button>
+                              ))}
+
+                              <button
+                                type="button"
+                                onClick={() => setInstitutionalMockPage(Math.min(totalInstPages, currentInstPage + 1))}
+                                disabled={currentInstPage === totalInstPages}
+                                className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                                title="Sonraki Sayfa"
+                              >
+                                <ChevronRight className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
