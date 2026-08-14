@@ -100,7 +100,9 @@ export default function App() {
       const unsubscribeStudent = subscribeToSingleStudentData(currentUser.id, (data) => {
         setGlobalState((prev) => ({
           ...prev,
-          studentsData: data ? { [currentUser.id]: data } : prev.studentsData
+          studentsData: data 
+            ? { ...prev.studentsData, [currentUser.id]: resolveStudentData(currentUser, { [currentUser.id]: data }) } 
+            : prev.studentsData
         }));
       });
       return () => unsubscribeStudent();

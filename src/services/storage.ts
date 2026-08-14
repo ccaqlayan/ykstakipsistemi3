@@ -127,54 +127,59 @@ export function loadGlobalState(): AppGlobalState {
       classes: parsed.classes && parsed.classes.length > 0 ? parsed.classes : DEMO_CLASSES,
       studentsData: {
         ...parsed.studentsData,
-        'student-1': {
+        'student-1': parsed.studentsData?.['student-1'] ? {
           ...INITIAL_STATE,
-          ...(parsed.studentsData?.['student-1'] || {}),
-          questionLogs: enrichLogsWithDuration(
-            (parsed.studentsData?.['student-1']?.questionLogs && 
-             parsed.studentsData['student-1'].questionLogs.length >= INITIAL_STATE.questionLogs.length &&
-             !parsed.studentsData['student-1'].questionLogs.some((l: any) => l.date && l.date.startsWith('2026-06-')))
-              ? parsed.studentsData['student-1'].questionLogs
-              : INITIAL_STATE.questionLogs
-          ),
-          branchExams: (parsed.studentsData?.['student-1']?.branchExams && parsed.studentsData['student-1'].branchExams.length >= INITIAL_STATE.branchExams.length)
+          ...parsed.studentsData['student-1'],
+          profile: {
+            ...INITIAL_STATE.profile,
+            ...(parsed.studentsData['student-1'].profile || {})
+          },
+          topicErrors: Array.isArray(parsed.studentsData['student-1'].topicErrors)
+            ? parsed.studentsData['student-1'].topicErrors
+            : INITIAL_STATE.topicErrors,
+          youtubeVideos: Array.isArray(parsed.studentsData['student-1'].youtubeVideos)
+            ? parsed.studentsData['student-1'].youtubeVideos
+            : INITIAL_STATE.youtubeVideos,
+          studyPlans: Array.isArray(parsed.studentsData['student-1'].studyPlans)
+            ? parsed.studentsData['student-1'].studyPlans
+            : INITIAL_STATE.studyPlans,
+          questionLogs: Array.isArray(parsed.studentsData['student-1'].questionLogs)
+            ? enrichLogsWithDuration(parsed.studentsData['student-1'].questionLogs)
+            : INITIAL_STATE.questionLogs,
+          branchExams: Array.isArray(parsed.studentsData['student-1'].branchExams)
             ? parsed.studentsData['student-1'].branchExams
             : INITIAL_STATE.branchExams,
-          generalMocks: (parsed.studentsData?.['student-1']?.generalMocks && 
-                         parsed.studentsData['student-1'].generalMocks.length >= INITIAL_STATE.generalMocks.length &&
-                         parsed.studentsData['student-1'].generalMocks[2]?.tyt?.totalNet !== 87.5)
+          generalMocks: Array.isArray(parsed.studentsData['student-1'].generalMocks)
             ? parsed.studentsData['student-1'].generalMocks
             : INITIAL_STATE.generalMocks
-        },
-        'student-4': {
-          ...(parsed.studentsData?.['student-4'] || parsed.studentsData?.['student-1'] || INITIAL_STATE),
+        } : INITIAL_STATE,
+        'student-4': parsed.studentsData?.['student-4'] ? {
+          ...INITIAL_STUDENT_4_STATE,
+          ...parsed.studentsData['student-4'],
           profile: {
-            ...(parsed.studentsData?.['student-4']?.profile || parsed.studentsData?.['student-1']?.profile || INITIAL_STATE.profile),
+            ...INITIAL_STUDENT_4_STATE.profile,
+            ...(parsed.studentsData['student-4'].profile || {}),
             name: 'Burak ÇAKIR'
           },
-          questionLogs: enrichLogsWithDuration(
-            (parsed.studentsData?.['student-4']?.questionLogs && 
-             !parsed.studentsData['student-4'].questionLogs.some((l: any) => l.date && l.date.startsWith('2026-06-')))
-              ? parsed.studentsData['student-4'].questionLogs
-              : (parsed.studentsData?.['student-1']?.questionLogs && 
-                 parsed.studentsData['student-1'].questionLogs.length >= INITIAL_STATE.questionLogs.length &&
-                 !parsed.studentsData['student-1'].questionLogs.some((l: any) => l.date && l.date.startsWith('2026-06-')))
-                ? parsed.studentsData['student-1'].questionLogs
-                : INITIAL_STATE.questionLogs
-          ),
-          branchExams: parsed.studentsData?.['student-4']?.branchExams
+          topicErrors: Array.isArray(parsed.studentsData['student-4'].topicErrors)
+            ? parsed.studentsData['student-4'].topicErrors
+            : INITIAL_STUDENT_4_STATE.topicErrors,
+          youtubeVideos: Array.isArray(parsed.studentsData['student-4'].youtubeVideos)
+            ? parsed.studentsData['student-4'].youtubeVideos
+            : INITIAL_STUDENT_4_STATE.youtubeVideos,
+          studyPlans: Array.isArray(parsed.studentsData['student-4'].studyPlans)
+            ? parsed.studentsData['student-4'].studyPlans
+            : INITIAL_STUDENT_4_STATE.studyPlans,
+          questionLogs: Array.isArray(parsed.studentsData['student-4'].questionLogs)
+            ? enrichLogsWithDuration(parsed.studentsData['student-4'].questionLogs)
+            : INITIAL_STUDENT_4_STATE.questionLogs,
+          branchExams: Array.isArray(parsed.studentsData['student-4'].branchExams)
             ? parsed.studentsData['student-4'].branchExams
-            : (parsed.studentsData?.['student-1']?.branchExams && parsed.studentsData['student-1'].branchExams.length >= INITIAL_STATE.branchExams.length)
-              ? parsed.studentsData['student-1'].branchExams
-              : INITIAL_STATE.branchExams,
-          generalMocks: parsed.studentsData?.['student-4']?.generalMocks
+            : INITIAL_STUDENT_4_STATE.branchExams,
+          generalMocks: Array.isArray(parsed.studentsData['student-4'].generalMocks)
             ? parsed.studentsData['student-4'].generalMocks
-            : (parsed.studentsData?.['student-1']?.generalMocks && 
-               parsed.studentsData['student-1'].generalMocks.length >= INITIAL_STATE.generalMocks.length &&
-               parsed.studentsData['student-1'].generalMocks[2]?.tyt?.totalNet !== 87.5)
-              ? parsed.studentsData['student-1'].generalMocks
-              : INITIAL_STATE.generalMocks
-        }
+            : INITIAL_STUDENT_4_STATE.generalMocks
+        } : INITIAL_STUDENT_4_STATE
       },
       programTemplates: parsed.programTemplates && parsed.programTemplates.length > 0 
         ? parsed.programTemplates 

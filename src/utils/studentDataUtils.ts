@@ -10,7 +10,7 @@ import { INITIAL_GLOBAL_STATE } from '../services/storage';
 /**
  * Resolves full YKSDataState for any student with 100% guarantee.
  * - Handles Demo accounts (student-1 / Ahmet Yılmaz, student-2 / Zeynep, student-3 / Mehmet, student-4 / Burak)
- * - Merges any existing Firestore/state data with default mock and curriculum data
+ * - Merges any existing Firestore/state data safely without wiping user-entered records
  * - Ensures newly created/custom students always have valid arrays and profile data
  */
 export function resolveStudentData(
@@ -72,8 +72,6 @@ export function resolveStudentData(
     || INITIAL_GLOBAL_STATE.studentsData?.[studentId]
     || {};
 
-  const isDemo = isAhmet || isBurak || isZeynep || isMehmet;
-
   return {
     ...baseDefaults,
     ...rawData,
@@ -83,9 +81,9 @@ export function resolveStudentData(
       name: name || rawData.profile?.name || baseDefaults.profile?.name || 'Öğrenci',
       className: className || rawData.profile?.className || baseDefaults.profile?.className || '12-A SAY'
     },
-    questionLogs: ((rawData.questionLogs && rawData.questionLogs.length > 0)
+    questionLogs: (Array.isArray(rawData.questionLogs)
       ? rawData.questionLogs
-      : (isDemo ? baseDefaults.questionLogs : [])).map(log => {
+      : (baseDefaults.questionLogs || [])).map(log => {
         if (log.topic && log.topic.trim()) return log;
         const initialMatch = INITIAL_STATE.questionLogs.find(iLog => iLog.id === log.id || (iLog.date === log.date && iLog.subject === log.subject));
         return {
@@ -93,35 +91,38 @@ export function resolveStudentData(
           topic: initialMatch?.topic || log.notes || 'Genel Soru Çözümü'
         };
       }),
-    studyPlans: (rawData.studyPlans && rawData.studyPlans.length > 0)
+    studyPlans: Array.isArray(rawData.studyPlans)
       ? rawData.studyPlans
-      : (isDemo ? baseDefaults.studyPlans : []),
-    generalMocks: (rawData.generalMocks && rawData.generalMocks.length > 0)
+      : (baseDefaults.studyPlans || []),
+    generalMocks: Array.isArray(rawData.generalMocks)
       ? rawData.generalMocks
-      : (isDemo ? baseDefaults.generalMocks : []),
-    branchExams: (rawData.branchExams && rawData.branchExams.length > 0)
+      : (baseDefaults.generalMocks || []),
+    branchExams: Array.isArray(rawData.branchExams)
       ? rawData.branchExams
-      : (isDemo ? baseDefaults.branchExams : []),
-    topicErrors: (rawData.topicErrors && rawData.topicErrors.length > 0)
+      : (baseDefaults.branchExams || []),
+    topicErrors: Array.isArray(rawData.topicErrors)
       ? rawData.topicErrors
-      : (isDemo ? baseDefaults.topicErrors : []),
-    resources: (rawData.resources && rawData.resources.length > 0)
+      : (baseDefaults.topicErrors || []),
+    resources: Array.isArray(rawData.resources)
       ? rawData.resources
-      : (rawData.resourceTrackers && rawData.resourceTrackers.length > 0)
+      : Array.isArray(rawData.resourceTrackers)
       ? rawData.resourceTrackers
-      : (isDemo ? (baseDefaults.resources || []) : []),
-    resourceTrackers: (rawData.resourceTrackers && rawData.resourceTrackers.length > 0)
+      : (baseDefaults.resources || []),
+    resourceTrackers: Array.isArray(rawData.resourceTrackers)
       ? rawData.resourceTrackers
-      : (rawData.resources && rawData.resources.length > 0)
+      : Array.isArray(rawData.resources)
       ? rawData.resources
-      : (isDemo ? (baseDefaults.resourceTrackers || baseDefaults.resources || []) : []),
-    routines: (rawData.routines && rawData.routines.length > 0)
+      : (baseDefaults.resourceTrackers || baseDefaults.resources || []),
+    routines: Array.isArray(rawData.routines)
       ? rawData.routines
-      : (isDemo ? (baseDefaults.routines || []) : []),
-    youtubeVideos: (rawData.youtubeVideos && rawData.youtubeVideos.length > 0)
+      : (baseDefaults.routines || []),
+    youtubeVideos: Array.isArray(rawData.youtubeVideos)
       ? rawData.youtubeVideos
-      : (isDemo ? (baseDefaults.youtubeVideos || []) : []),
+      : (baseDefaults.youtubeVideos || []),
     topics: rawData.topics || baseDefaults.topics || {},
-    pomodoroHistory: (rawData as any).pomodoroHistory || (baseDefaults as any).pomodoroHistory || []
+    pomodoroHistory: Array.isArray((rawData as any).pomodoroHistory)
+      ? (rawData as any).pomodoroHistory
+      : (baseDefaults.pomodoroHistory || [])
   };
 }
+
