@@ -527,7 +527,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   // Open student inspection modal
   const handleOpenInspectStudent = (
     student: UserAccount, 
-    initialTab: 'performance' | 'planner' | 'questions' | 'resources' | 'mocks' | 'youtube' | 'audit_logs' = 'performance'
+    initialTab: 'performance' | 'planner' | 'questions' | 'resources' | 'mocks' | 'youtube' | 'audit_logs' | 'badges' = 'performance'
   ) => {
     setSelectedStudentUser(student);
     setInspectModalTab(initialTab);

@@ -210,7 +210,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
         </div>
 
         {/* Sub-tabs in Inspect Modal */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap gap-2 pb-3 border-b border-white/10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:flex lg:flex-wrap gap-2 pb-3 border-b border-white/10">
           <button
             onClick={() => setInspectModalTab('performance')}
             className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center sm:justify-start space-x-1.5 ${
@@ -220,7 +220,19 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
-            <span className="truncate">Performans & Koçluk</span>
+            <span className="truncate">Performans & Özet</span>
+          </button>
+
+          <button
+            onClick={() => setInspectModalTab('badges')}
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center sm:justify-start space-x-1.5 ${
+              inspectModalTab === 'badges'
+                ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30 border border-amber-400/40'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10'
+            }`}
+          >
+            <Trophy className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+            <span className="truncate">Başarılar & Rozetler</span>
           </button>
 
           <button
@@ -239,11 +251,11 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
             onClick={() => setInspectModalTab('questions')}
             className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center sm:justify-start space-x-1.5 ${
               inspectModalTab === 'questions'
-                ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30 border border-amber-400/40'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 border border-emerald-400/40'
                 : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10'
             }`}
           >
-            <CheckSquare className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+            <CheckSquare className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
             <span className="truncate">Soru Takibi</span>
           </button>
 
@@ -251,11 +263,11 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
             onClick={() => setInspectModalTab('resources')}
             className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center sm:justify-start space-x-1.5 ${
               inspectModalTab === 'resources'
-                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 border border-emerald-400/40'
+                ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/30 border border-teal-400/40'
                 : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10'
             }`}
           >
-            <BookOpenCheck className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+            <BookOpenCheck className="w-3.5 h-3.5 text-teal-300 shrink-0" />
             <span className="truncate">Kaynak Takibi</span>
           </button>
 
@@ -284,18 +296,6 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
           </button>
 
           <button
-            onClick={() => setInspectModalTab('badges')}
-            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center sm:justify-start space-x-1.5 ${
-              inspectModalTab === 'badges'
-                ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30 border border-amber-400/40'
-                : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10'
-            }`}
-          >
-            <Trophy className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-            <span className="truncate">Rozetler & Başarılar</span>
-          </button>
-
-          <button
             onClick={() => setInspectModalTab('audit_logs')}
             className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center sm:justify-start space-x-1.5 ${
               inspectModalTab === 'audit_logs'
@@ -320,6 +320,9 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
               const plans = stData?.studyPlans || [];
               const topicErrors = stData?.topicErrors || [];
               const unresolvedErrs = topicErrors.filter(e => !e.revised);
+
+              const { allEarnedBadges: perfEarnedBadges, stats: perfStats, totalXp: perfTotalXp } = evaluateBadges(stData || ({} as any));
+              const earnedBadgesCount = perfEarnedBadges.length;
 
               const totalSolved = questionLogs.reduce((sum, q) => sum + (q.solvedCount || 0), 0);
               const totalCorrect = questionLogs.reduce((sum, q) => sum + (q.correctCount || 0), 0);
@@ -579,7 +582,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                   </div>
 
                   {/* Quick Summary KPI Cards */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     <div className="bg-slate-900/90 p-4 rounded-2xl border border-indigo-500/30 space-y-1">
                       <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Toplam Soru</span>
                       <div className="text-2xl font-black text-indigo-400 font-mono">{totalSolved.toLocaleString()}</div>
@@ -598,11 +601,27 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                       <span className="text-[10px] text-slate-400 font-semibold">{mocks.length} Genel / {branchExams.length} Branş</span>
                     </div>
 
-                    <div className="bg-slate-900/90 p-4 rounded-2xl border border-amber-500/30 space-y-1">
+                    <div className="bg-slate-900/90 p-4 rounded-2xl border border-rose-500/30 space-y-1">
                       <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Çözülmeyen Hata</span>
-                      <div className="text-2xl font-black text-amber-400 font-mono">{unresolvedErrs.length}</div>
-                      <span className="text-[10px] text-amber-400/80 font-semibold">Konu Tekrarı Bekliyor</span>
+                      <div className="text-2xl font-black text-rose-400 font-mono">{unresolvedErrs.length}</div>
+                      <span className="text-[10px] text-rose-400/80 font-semibold">Konu Tekrarı Bekliyor</span>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setInspectModalTab('badges')}
+                      className="bg-slate-900/90 hover:bg-amber-950/40 p-4 rounded-2xl border border-amber-500/30 hover:border-amber-400/60 space-y-1 text-left transition-all group cursor-pointer shadow-sm"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider block">Başarılar & Rozet</span>
+                        <Trophy className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+                      </div>
+                      <div className="text-2xl font-black text-amber-300 font-mono">{earnedBadgesCount} <span className="text-xs text-slate-400 font-normal">/ {BADGE_DEFINITIONS.length}</span></div>
+                      <div className="text-[10px] text-amber-400/90 font-semibold flex items-center gap-1">
+                        <Flame className="w-3 h-3 text-orange-400" />
+                        <span>{perfStats.currentStreak} Gün • {perfTotalXp.toLocaleString('tr-TR')} XP</span>
+                      </div>
+                    </button>
                   </div>
 
                   {/* Coach Notes Input */}

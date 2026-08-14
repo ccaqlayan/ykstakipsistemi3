@@ -16,11 +16,14 @@ import {
   Lock,
   Unlock,
   Pencil,
-  X
+  X,
+  Trophy,
+  Flame
 } from 'lucide-react';
 import { UserAccount, YKSDataState } from '../../types';
 import { DEFAULT_AVATAR } from '../../data/initialData';
 import { isUserOnline, isStudentActive } from '../../utils/statusUtils';
+import { evaluateBadges } from '../../services/motivationEngine';
 
 interface TeacherStudentsTabProps {
   totalStudentsCount: number;
@@ -229,6 +232,8 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
               
               const hasCoachNote = Boolean(profile?.coachNotes && profile.coachNotes.trim() !== '');
               const unresolvedErrorsCount = (data?.topicErrors || []).filter(e => !e.revised).length;
+              const { allEarnedBadges: cardEarnedBadges, stats: cardStats } = data ? evaluateBadges(data) : { allEarnedBadges: [], stats: { currentStreak: 0 } };
+              const badgesCount = cardEarnedBadges.length;
 
               return (
                 <div 
@@ -394,6 +399,20 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
                           <AlertTriangle className="w-3 h-3 shrink-0 text-rose-400" />
                           <span>{unresolvedErrorsCount} Hata</span>
                         </div>
+                      )}
+
+                      {badgesCount > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenInspectStudent(student, 'badges');
+                          }}
+                          className="text-[10px] bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 px-2.5 py-1 rounded-xl flex items-center space-x-1 font-bold border border-amber-500/30 transition-colors cursor-pointer"
+                          title="Öğrencinin rozetlerini ve başarılarını incele"
+                        >
+                          <Trophy className="w-3 h-3 shrink-0 text-amber-400" />
+                          <span>{badgesCount} Rozet {cardStats.currentStreak > 0 ? `(${cardStats.currentStreak}g Seri)` : ''}</span>
+                        </button>
                       )}
                     </div>
                   </div>
