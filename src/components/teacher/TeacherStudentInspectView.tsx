@@ -27,7 +27,19 @@ import {
   FileSpreadsheet,
   Trophy,
   Zap,
-  Lock
+  Lock,
+  ExternalLink,
+  Play,
+  Search,
+  Filter,
+  Layers,
+  ListVideo,
+  Video,
+  ChevronDown,
+  ChevronUp,
+  Folder,
+  Sparkles,
+  CheckCheck
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -189,6 +201,9 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
   const [showAllTopics, setShowAllTopics] = useState(false);
   const [resourceSubjectFilter, setResourceSubjectFilter] = useState<string>('all');
   const [expandedPlaylistId, setExpandedPlaylistId] = useState<string | null>(null);
+  const [youtubeSubjectFilter, setYoutubeSubjectFilter] = useState<string>('all');
+  const [youtubeStatusFilter, setYoutubeStatusFilter] = useState<'all' | 'playlist' | 'single' | 'completed' | 'in_progress'>('all');
+  const [youtubeSearchQuery, setYoutubeSearchQuery] = useState<string>('');
 
   const stData = resolveStudentData(selectedStudentUser, studentsData);
   const profile = stData.profile;
@@ -212,15 +227,26 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
   // YouTube Summary Metrics Calculation
   let totalYoutubeVideosOverall = 0;
   let totalYoutubeWatchedOverall = 0;
+  let totalYoutubeDurationMinutes = 0;
+  let totalPlaylistCount = 0;
+  let totalSingleCount = 0;
+
   youtubeList.forEach(item => {
-    if (item.isPlaylist && item.playlistVideos && item.playlistVideos.length > 0) {
+    const isPl = item.isPlaylist && item.playlistVideos && item.playlistVideos.length > 0;
+    if (isPl) {
+      totalPlaylistCount += 1;
       totalYoutubeVideosOverall += item.playlistVideos.length;
       totalYoutubeWatchedOverall += item.playlistVideos.filter((v: any) => v.isWatched || v.watched).length;
+      const plDur = item.playlistVideos.reduce((sum: number, v: any) => sum + (v.durationMinutes || 45), 0);
+      totalYoutubeDurationMinutes += (item.durationMinutes || plDur);
     } else {
+      totalSingleCount += 1;
       totalYoutubeVideosOverall += 1;
       if (item.isWatched) totalYoutubeWatchedOverall += 1;
+      totalYoutubeDurationMinutes += (item.durationMinutes || 45);
     }
   });
+
   const overallYoutubePct = totalYoutubeVideosOverall > 0 
     ? Math.round((totalYoutubeWatchedOverall / totalYoutubeVideosOverall) * 100) 
     : 0;
@@ -1730,96 +1756,402 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
       )}
 
       {/* TAB 8: YOUTUBE TRACKER */}
-      {activeTab === 'youtube' && (
-        <div className="bg-slate-900/90 border border-white/15 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl space-y-6">
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
-            <div>
-              <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                <Youtube className="w-5 h-5 text-rose-400" />
-                <span>YouTube Ders İzleme ve Playlist Takibi ({youtubeList.length})</span>
-              </h3>
-              <p className="text-xs text-slate-400 mt-0.5">Öğrencinin takip ettiği YouTube ders kanalları, oynatma listeleri ve izlenen video durumları.</p>
+      {activeTab === 'youtube' && (() => {
+        // Unique subjects in student's YouTube list
+        const ytSubjects = ['all', ...Array.from(new Set(youtubeList.map(y => y.subject).filter(Boolean)))];
+
+        // Filter items
+        const filteredYoutubeList = youtubeList.filter(item => {
+          // Search query filter
+          if (youtubeSearchQuery.trim()) {
+            const q = youtubeSearchQuery.toLowerCase();
+            const matchChannel = (item.channelName || '').toLowerCase().includes(q);
+            const matchTopic = (item.topicName || '').toLowerCase().includes(q);
+            const matchPlaylist = (item.playlistTitle || '').toLowerCase().includes(q);
+            const matchNotes = (item.notes || '').toLowerCase().includes(q);
+            const matchSubVideos = item.playlistVideos?.some((v: any) => (v.title || '').toLowerCase().includes(q));
+            if (!matchChannel && !matchTopic && !matchPlaylist && !matchNotes && !matchSubVideos) {
+              return false;
+            }
+          }
+
+          // Subject filter
+          if (youtubeSubjectFilter !== 'all') {
+            if (item.subject !== youtubeSubjectFilter) return false;
+          }
+
+          // Status / Type filter
+          const isPlaylist = item.isPlaylist && item.playlistVideos && item.playlistVideos.length > 0;
+          const totalVids = isPlaylist ? item.playlistVideos.length : 1;
+          const watchedVids = isPlaylist 
+            ? item.playlistVideos.filter((v: any) => v.isWatched || v.watched).length 
+            : (item.isWatched ? 1 : 0);
+          const isComplete = totalVids > 0 && watchedVids === totalVids;
+
+          if (youtubeStatusFilter === 'playlist' && !isPlaylist) return false;
+          if (youtubeStatusFilter === 'single' && isPlaylist) return false;
+          if (youtubeStatusFilter === 'completed' && !isComplete) return false;
+          if (youtubeStatusFilter === 'in_progress' && isComplete) return false;
+
+          return true;
+        });
+
+        const formatDurationMinutes = (mins: number) => {
+          if (!mins || mins <= 0) return '0 dk';
+          const h = Math.floor(mins / 60);
+          const m = mins % 60;
+          if (h > 0) return m > 0 ? `${h} sa ${m} dk` : `${h} sa`;
+          return `${m} dk`;
+        };
+
+        return (
+          <div className="bg-slate-900/90 border border-white/15 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl space-y-6">
+            
+            {/* Header & KPI Summary */}
+            <div className="space-y-4 border-b border-white/10 pb-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                    <Youtube className="w-5 h-5 text-rose-500" />
+                    <span>YouTube Ders İzleme ve Playlist Takibi</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Öğrencinin takip ettiği YouTube ders kanalları, oynatma listeleri, süreler ve tamamlanma oranları.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                  <span className="bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold px-3 py-1.5 rounded-xl font-mono flex items-center gap-1.5">
+                    <CheckCheck className="w-4 h-4 text-rose-400" />
+                    <span>%{overallYoutubePct} İzleme Oranı</span>
+                  </span>
+                  <span className="bg-white/10 text-slate-300 border border-white/10 text-xs font-bold px-3 py-1.5 rounded-xl font-mono">
+                    {totalYoutubeWatchedOverall} / {totalYoutubeVideosOverall} Video
+                  </span>
+                </div>
+              </div>
+
+              {/* 4 Mini KPI Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+                <div className="bg-slate-950/60 border border-rose-500/30 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Takip Edilen Liste</span>
+                  <div className="text-lg font-black text-rose-300 font-mono">
+                    {youtubeList.length} <span className="text-xs font-normal text-slate-400">İçerik</span>
+                  </div>
+                  <span className="text-[10px] text-rose-400 font-semibold block">
+                    {totalPlaylistCount} Playlist • {totalSingleCount} Tekil
+                  </span>
+                </div>
+
+                <div className="bg-slate-950/60 border border-emerald-500/30 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tamamlanan Videolar</span>
+                  <div className="text-lg font-black text-emerald-300 font-mono">
+                    {totalYoutubeWatchedOverall} <span className="text-xs font-normal text-slate-400">/ {totalYoutubeVideosOverall}</span>
+                  </div>
+                  <span className="text-[10px] text-emerald-400 font-semibold block">
+                    %{overallYoutubePct} İlerleme
+                  </span>
+                </div>
+
+                <div className="bg-slate-950/60 border border-amber-500/30 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Kalan Video Sayısı</span>
+                  <div className="text-lg font-black text-amber-300 font-mono">
+                    {Math.max(0, totalYoutubeVideosOverall - totalYoutubeWatchedOverall)} <span className="text-xs font-normal text-slate-400">Video</span>
+                  </div>
+                  <span className="text-[10px] text-amber-400 font-semibold block">İzlenmeyi Bekliyor</span>
+                </div>
+
+                <div className="bg-slate-950/60 border border-purple-500/30 rounded-2xl p-3.5 space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tahmini Ders Süresi</span>
+                  <div className="text-lg font-black text-purple-300 font-mono">
+                    {formatDurationMinutes(totalYoutubeDurationMinutes)}
+                  </div>
+                  <span className="text-[10px] text-purple-400 font-semibold block">Toplam Video Süresi</span>
+                </div>
+              </div>
+
+              {/* Filters & Search Toolbar */}
+              <div className="flex flex-col md:flex-row gap-3 pt-2">
+                {/* Search Box */}
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={youtubeSearchQuery}
+                    onChange={(e) => setYoutubeSearchQuery(e.target.value)}
+                    placeholder="Kanal, playlist, ders konusu veya notlarda ara..."
+                    className="w-full bg-slate-950/80 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-rose-500/50 transition-colors"
+                  />
+                  {youtubeSearchQuery && (
+                    <button 
+                      onClick={() => setYoutubeSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs"
+                    >
+                      Temizle
+                    </button>
+                  )}
+                </div>
+
+                {/* Status / Type Filter Buttons */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+                  {[
+                    { key: 'all', label: 'Tümü' },
+                    { key: 'playlist', label: '📂 Playlistler' },
+                    { key: 'single', label: '🎬 Tekil' },
+                    { key: 'completed', label: '✅ Tamamlanan' },
+                    { key: 'in_progress', label: '⏳ Devam Eden' }
+                  ].map(tab => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setYoutubeStatusFilter(tab.key as any)}
+                      className={`text-[11px] font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer whitespace-nowrap ${
+                        youtubeStatusFilter === tab.key
+                          ? 'bg-rose-600 text-white border-rose-400/50 shadow-md shadow-rose-950/40'
+                          : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10 hover:text-slate-200'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Subject Filter Chips */}
+              {ytSubjects.length > 2 && (
+                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                  <span className="text-[11px] font-bold text-slate-400 mr-1 flex items-center gap-1">
+                    <Filter className="w-3 h-3" /> Ders:
+                  </span>
+                  {ytSubjects.map(subj => (
+                    <button
+                      key={subj}
+                      onClick={() => setYoutubeSubjectFilter(subj)}
+                      className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                        youtubeSubjectFilter === subj
+                          ? 'bg-rose-500/20 text-rose-300 border-rose-400/40 font-bold'
+                          : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-slate-300'
+                      }`}
+                    >
+                      {subj === 'all' ? 'Tüm Dersler' : subj}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <span className="bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold px-3 py-1.5 rounded-xl font-mono">
-              %{overallYoutubePct} İzlendi ({totalYoutubeWatchedOverall}/{totalYoutubeVideosOverall} Video)
-            </span>
-          </div>
+            {/* List & Cards */}
+            {youtubeList.length === 0 ? (
+              <div className="py-16 text-center text-xs text-slate-400 italic border border-dashed border-white/10 rounded-2xl">
+                Takip edilen YouTube ders videosu veya oynatma listesi bulunmuyor.
+              </div>
+            ) : filteredYoutubeList.length === 0 ? (
+              <div className="py-12 text-center text-xs text-slate-400 italic border border-dashed border-white/10 rounded-2xl space-y-2">
+                <p>Seçilen filtrelere veya aramaya uygun video/playlist bulunamadı.</p>
+                <button
+                  onClick={() => { setYoutubeSearchQuery(''); setYoutubeSubjectFilter('all'); setYoutubeStatusFilter('all'); }}
+                  className="text-rose-400 text-xs font-bold underline cursor-pointer"
+                >
+                  Filtreleri Sıfırla
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredYoutubeList.map((item: any) => {
+                  const isPlaylist = item.isPlaylist && item.playlistVideos && item.playlistVideos.length > 0;
+                  const totalVids = isPlaylist ? item.playlistVideos.length : 1;
+                  const watchedVids = isPlaylist 
+                    ? item.playlistVideos.filter((v: any) => v.isWatched || v.watched).length 
+                    : (item.isWatched ? 1 : 0);
+                  const pct = totalVids > 0 ? Math.round((watchedVids / totalVids) * 100) : 0;
+                  const isComplete = pct === 100;
+                  const isMyBranch = teacherSubj && (item.subject || '').toLowerCase().includes(teacherSubj);
+                  const isExpanded = expandedPlaylistId === item.id;
 
-          {youtubeList.length === 0 ? (
-            <div className="py-16 text-center text-xs text-slate-400 italic border border-dashed border-white/10 rounded-2xl">
-              Takip edilen YouTube ders videosu veya oynatma listesi bulunmuyor.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {youtubeList.map((item: any) => {
-                const isPlaylist = item.isPlaylist && item.playlistVideos && item.playlistVideos.length > 0;
-                const totalVids = isPlaylist ? item.playlistVideos.length : 1;
-                const watchedVids = isPlaylist 
-                  ? item.playlistVideos.filter((v: any) => v.isWatched || v.watched).length 
-                  : (item.isWatched ? 1 : 0);
-                const pct = totalVids > 0 ? Math.round((watchedVids / totalVids) * 100) : 0;
-                const title = item.playlistTitle || item.topicName || item.notes || 'YouTube Ders Videosu';
+                  // Compute playlist total minutes
+                  const itemDurationMins = isPlaylist
+                    ? item.playlistVideos.reduce((acc: number, v: any) => acc + (v.durationMinutes || 45), 0)
+                    : (item.durationMinutes || 45);
 
-                return (
-                  <div key={item.id} className="bg-slate-950/80 border border-white/10 rounded-2xl p-5 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex items-center space-x-1.5">
-                          <span className="text-[10px] font-bold bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded border border-rose-500/30">
-                            {item.channelName || 'YouTube'} • {item.subject || 'Ders'}
+                  return (
+                    <div 
+                      key={item.id} 
+                      className={`p-5 rounded-2xl border space-y-3.5 transition-all duration-300 ${
+                        isMyBranch 
+                          ? 'bg-amber-500/10 border-amber-500/40 shadow-lg shadow-amber-950/20' 
+                          : 'bg-slate-950/85 border-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      {/* Card Header Pills */}
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-bold bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-lg border border-rose-500/30 flex items-center gap-1">
+                            <Youtube className="w-3 h-3 text-rose-400 shrink-0" />
+                            <span>{item.channelName || 'YouTube Kanalı'}</span>
                           </span>
-                          <span className="text-[9px] bg-white/10 text-slate-300 px-1.5 py-0.5 rounded border border-white/10 font-semibold">
-                            {isPlaylist ? 'Playlist' : 'Tekil Video'}
+                          <span className="text-[10px] font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-lg border border-indigo-500/30">
+                            {item.subject || 'Ders'}
+                          </span>
+                          {isMyBranch && (
+                            <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded-md font-semibold">
+                              Branşınız ⭐
+                            </span>
+                          )}
+                        </div>
+
+                        <span className={`text-[10px] font-mono font-black px-2 py-0.5 rounded-lg border ${
+                          isComplete 
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' 
+                            : pct > 0 
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' 
+                            : 'bg-slate-800 text-slate-400 border-white/10'
+                        }`}>
+                          %{pct}
+                        </span>
+                      </div>
+
+                      {/* Playlist Banner (If part of a playlist or is playlist) */}
+                      {item.playlistTitle && (
+                        <div className="text-[11px] font-bold text-rose-300 bg-rose-500/10 border border-rose-500/20 px-2.5 py-1 rounded-xl flex items-center gap-1.5">
+                          <Folder className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                          <span className="truncate">{item.playlistTitle}</span>
+                        </div>
+                      )}
+
+                      {/* Topic / Video Title */}
+                      <div>
+                        <h4 className="text-sm font-bold text-white leading-snug">
+                          {item.topicName || item.notes || 'YouTube Ders Videosu'}
+                        </h4>
+                        <div className="flex items-center gap-3 text-[11px] text-slate-400 font-mono mt-1">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-slate-500" />
+                            {formatDurationMinutes(itemDurationMins)}
+                          </span>
+                          <span>•</span>
+                          <span>{isPlaylist ? `📂 ${totalVids} Bölüm` : '🎬 Tekil Ders'}</span>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="space-y-1">
+                        <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              isComplete ? 'bg-emerald-500' : 'bg-gradient-to-r from-rose-500 to-amber-400'
+                            }`} 
+                            style={{ width: `${pct}%` }} 
+                          />
+                        </div>
+
+                        <div className="text-[11px] text-slate-400 font-mono flex justify-between pt-0.5">
+                          <span>{watchedVids} / {totalVids} Video İzlendi</span>
+                          <span className={isComplete ? 'text-emerald-400 font-bold' : pct > 0 ? 'text-amber-400' : 'text-slate-500'}>
+                            {isComplete ? '✅ Tamamlandı' : pct > 0 ? '⏳ Devam Ediyor' : '○ Başlanmadı'}
                           </span>
                         </div>
-                        <h4 className="text-sm font-bold text-white mt-1.5">{title}</h4>
                       </div>
-                      <span className="text-xs font-mono font-bold text-rose-400">%{pct}</span>
-                    </div>
 
-                    <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
-                      <div className="bg-rose-500 h-full rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
-                    </div>
+                      {/* Notes Box */}
+                      {item.notes && (
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-2.5 text-xs text-slate-300 italic">
+                          <span className="text-amber-300 font-bold not-italic mr-1.5">📝 Öğrenci Notu:</span>
+                          "{item.notes}"
+                        </div>
+                      )}
 
-                    <div className="text-[11px] text-slate-400 font-mono flex justify-between pt-1">
-                      <span>İzlenen: {watchedVids} / {totalVids} Video</span>
-                      <span>{pct === 100 ? '✅ Tamamlandı' : '⏳ İzleniyor'}</span>
-                    </div>
+                      {/* Direct YouTube Link Button */}
+                      {item.videoUrl && (
+                        <div className="pt-1">
+                          <a
+                            href={item.videoUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center space-x-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 hover:text-rose-200 border border-rose-500/30 hover:border-rose-400/50 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm group"
+                          >
+                            <Play className="w-3.5 h-3.5 text-rose-400 fill-current group-hover:scale-110 transition-transform" />
+                            <span>YouTube'da Aç</span>
+                            <ExternalLink className="w-3 h-3 text-rose-400/70" />
+                          </a>
+                        </div>
+                      )}
 
-                    {isPlaylist && (
-                      <div className="border-t border-white/5 pt-2 space-y-1">
-                        <button
-                          onClick={() => setExpandedPlaylistId(expandedPlaylistId === item.id ? null : item.id)}
-                          className="text-[10px] font-bold text-indigo-300 hover:text-indigo-200 transition-colors cursor-pointer w-full text-left flex items-center justify-between"
-                        >
-                          <span>{expandedPlaylistId === item.id ? '▲ Videoları Gizle' : `▼ ${item.playlistVideos.length} Videoyu Göster`}</span>
-                          <span className="text-[9px] text-slate-500">{watchedVids} izlendi</span>
-                        </button>
-                        {expandedPlaylistId === item.id && (
-                          <div className="space-y-1 max-h-56 overflow-y-auto pr-1 text-[11px] mt-1">
-                            {item.playlistVideos.map((v: any, idx: number) => (
-                              <div key={v.id || idx} className="flex items-center justify-between text-slate-300 py-0.5 border-b border-white/5 last:border-0">
-                                <span className="truncate pr-2 text-[11px]">
-                                  <span className="text-slate-500 font-mono mr-1">{idx + 1}.</span>
-                                  {v.title || `Video ${idx + 1}`}
-                                </span>
-                                <span className={(v.isWatched || v.watched) ? 'text-emerald-400 font-bold shrink-0 text-[10px]' : 'text-slate-500 shrink-0 text-[10px]'}>
-                                  {(v.isWatched || v.watched) ? '✓' : '○'}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+                      {/* Expandable Playlist Sub-Videos Drawer */}
+                      {isPlaylist && (
+                        <div className="border-t border-white/10 pt-2.5 space-y-2">
+                          <button
+                            onClick={() => setExpandedPlaylistId(isExpanded ? null : item.id)}
+                            className="text-xs font-bold text-indigo-300 hover:text-indigo-200 transition-colors cursor-pointer w-full text-left flex items-center justify-between p-1 rounded-lg hover:bg-white/5"
+                          >
+                            <span className="flex items-center gap-1">
+                              {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-indigo-400" /> : <ChevronDown className="w-3.5 h-3.5 text-indigo-400" />}
+                              <span>{isExpanded ? 'Videoları Gizle' : `Oynatma Listesini İncele (${item.playlistVideos.length} Video)`}</span>
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono font-normal">
+                              {watchedVids}/{totalVids} izlendi
+                            </span>
+                          </button>
+
+                          {isExpanded && (
+                            <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1 text-xs mt-1 border border-white/10 rounded-xl p-2.5 bg-slate-900/90">
+                              {item.playlistVideos.map((v: any, idx: number) => {
+                                const isVidWatched = v.isWatched || v.watched;
+                                return (
+                                  <div 
+                                    key={v.id || idx} 
+                                    className={`flex items-center justify-between p-2 rounded-lg border transition-all text-xs ${
+                                      isVidWatched 
+                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-slate-200' 
+                                        : 'bg-white/5 border-white/5 text-slate-300 hover:bg-white/10'
+                                    }`}
+                                  >
+                                    <div className="flex items-center space-x-2 truncate pr-2">
+                                      <span className="text-[10px] font-mono text-slate-400 shrink-0 w-4">
+                                        {idx + 1}.
+                                      </span>
+                                      <span className="truncate font-medium">{v.title || `Video ${idx + 1}`}</span>
+                                      {v.durationMinutes && (
+                                        <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                                          ({v.durationMinutes} dk)
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <div className="flex items-center space-x-2 shrink-0">
+                                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                        isVidWatched 
+                                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                                          : 'bg-slate-800 text-slate-400 border border-white/10'
+                                      }`}>
+                                        {isVidWatched ? '✓ İzlendi' : '○ İzlenmedi'}
+                                      </span>
+                                      {v.videoUrl && (
+                                        <a 
+                                          href={v.videoUrl} 
+                                          target="_blank" 
+                                          rel="noreferrer"
+                                          className="text-slate-400 hover:text-rose-400 transition-colors p-1"
+                                          title="Videoyu Aç"
+                                        >
+                                          <ExternalLink className="w-3 h-3" />
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* TAB 9: AUDIT LOGS */}
       {activeTab === 'audit_logs' && (

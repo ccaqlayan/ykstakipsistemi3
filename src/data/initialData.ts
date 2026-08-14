@@ -2221,12 +2221,87 @@ export const INITIAL_STATE: YKSDataState = {
   ],
   youtubeVideos: [
     {
+      id: 'yt-pl-1',
+      subject: 'AYT Matematik',
+      channelName: 'Eyüp B. Matematik',
+      playlistTitle: '2026 AYT Matematik Derece Kampı',
+      topicName: 'Türev & İntegral Full Kamp',
+      videoUrl: 'https://www.youtube.com/playlist?list=PLxyz1',
+      isPlaylist: true,
+      isWatched: false,
+      notes: 'Derece için türev ve integral soru çözüm videoları takibi.',
+      playlistVideos: [
+        { id: 'sub-1-1', title: '1. Türev Kavramı, Anlık Hız ve Teğet Eğimi', durationMinutes: 45, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-1-2', title: '2. Türev Alma Kuralları ve Bileşke Fonksiyon', durationMinutes: 50, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-1-3', title: '3. Türevin Geometrik Yorumu ve Artan-Azalanlık', durationMinutes: 55, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-1-4', title: '4. Ekstremum Noktalar ve Maksimum-Minimum Problemleri', durationMinutes: 60, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-1-5', title: '5. Belirsiz İntegral ve Değişken Değiştirme Yöntemi', durationMinutes: 50, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-1-6', title: '6. Belirli İntegral Özellikleri ve Parçalı Fonksiyonlar', durationMinutes: 55, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-1-7', title: '7. İntegral ile Alan Hesabı ve Eğriler Arası Alan', durationMinutes: 65, isWatched: false, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-1-8', title: '8. Riemann Toplamı ve Çıkmış Soru Tipleri Provası', durationMinutes: 45, isWatched: false, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
+      ]
+    },
+    {
+      id: 'yt-pl-2',
+      subject: 'AYT Fizik',
+      channelName: 'VIP Fizik',
+      playlistTitle: '2026 AYT Fizik Kampı (Konu + Soru)',
+      topicName: 'Elektromanyetizma & Manyetik Alan',
+      videoUrl: 'https://www.youtube.com/playlist?list=PLxyz2',
+      isPlaylist: true,
+      isWatched: false,
+      notes: 'Sağ el kuralı ve indüksiyon akımı yön tayinleri.',
+      playlistVideos: [
+        { id: 'sub-2-1', title: '1. Manyetik Alan, Akım Geçen Düz Tel ve Halka', durationMinutes: 40, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-2-2', title: '2. Manyetik Kuvvet ve Yüklü Parçacıkların Hareketi', durationMinutes: 45, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-2-3', title: '3. Manyetik Akı ve Faraday İndüksiyon Kanunu', durationMinutes: 50, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-2-4', title: '4. Lenz Kanunu ve İndüksiyon EMK Formülleri', durationMinutes: 48, isWatched: false, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-2-5', title: '5. Özindüksiyon Akımı ve Transformatörler', durationMinutes: 42, isWatched: false, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
+      ]
+    },
+    {
+      id: 'yt-pl-3',
+      subject: 'AYT Kimya',
+      channelName: 'Görkem Şahin Kimya',
+      playlistTitle: '2026 AYT Kimya Kampı (Organik & Elektrokimya)',
+      topicName: 'Organik Kimya Full Seri',
+      videoUrl: 'https://www.youtube.com/playlist?list=PLxyz3',
+      isPlaylist: true,
+      isWatched: true,
+      notes: 'IUPAC adlandırması ve fonksiyonel gruplar eksiksiz tamamlandı.',
+      playlistVideos: [
+        { id: 'sub-3-1', title: '1. Karbon Kimyasına Giriş ve Hibritleşme', durationMinutes: 35, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-3-2', title: '2. Alkanlar, Adlandırma ve İzomeri', durationMinutes: 40, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-3-3', title: '3. Alkenler, Alkinler ve Tepkimeleri', durationMinutes: 45, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-3-4', title: '4. Alkoller, Eterler ve Karbonil Bileşikleri', durationMinutes: 50, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-3-5', title: '5. Karboksilik Asitler ve Esterler', durationMinutes: 40, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
+      ]
+    },
+    {
+      id: 'yt-pl-4',
+      subject: 'TYT Türkçe',
+      channelName: 'Rüştü Hoca ile Türkçe',
+      playlistTitle: '2026 Paragraf Full Taktik Kampı',
+      topicName: 'Paragraf Soru Çözüm Taktikleri',
+      videoUrl: 'https://www.youtube.com/playlist?list=PLxyz4',
+      isPlaylist: true,
+      isWatched: true,
+      notes: 'Olumsuz soru kökleri ve hızlandırma taktikleri.',
+      playlistVideos: [
+        { id: 'sub-4-1', title: '1. Paragrafta Ana Düşünceyi 10 Saniyede Bulma', durationMinutes: 30, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-4-2', title: '2. Olumsuz Soru Kökleri & Şık Eleme Taktikleri', durationMinutes: 32, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-4-3', title: '3. Paragraf Bölme ve Akışı Bozan Cümleler', durationMinutes: 28, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' },
+        { id: 'sub-4-4', title: '4. Çoklu Paragraf Sorularında Hız Stratejisi', durationMinutes: 35, isWatched: true, videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
+      ]
+    },
+    {
       id: 'yt-1',
       subject: 'AYT Matematik',
       channelName: 'Eyüp B. Matematik',
       topicName: 'Türev Kampı 1. Video (Türev Kavramı & Eğim)',
-      playlistTitle: 'AYT Matematik Derece Kampı',
+      playlistTitle: '2026 AYT Matematik Derece Kampı',
       videoUrl: 'https://www.youtube.com/results?search_query=eyup+b+turev',
+      durationMinutes: 55,
       isWatched: true,
       notes: 'Mükemmel bakış açıları var, soruların pratik mantığı not alındı.'
     },
@@ -2235,8 +2310,9 @@ export const INITIAL_STATE: YKSDataState = {
       subject: 'AYT Matematik',
       channelName: 'Eyüp B. Matematik',
       topicName: 'İntegral Belirli İntegral ile Alan Hesabı',
-      playlistTitle: 'AYT Matematik Derece Kampı',
+      playlistTitle: '2026 AYT Matematik Derece Kampı',
       videoUrl: 'https://www.youtube.com/results?search_query=eyup+b+integral+alan',
+      durationMinutes: 65,
       isWatched: true,
       notes: 'Eğriler arasında kalan alan soru tipleri incelendi.'
     },
@@ -2247,6 +2323,7 @@ export const INITIAL_STATE: YKSDataState = {
       topicName: 'Elektromanyetik İndüksiyon ve Lenz Kanunu',
       playlistTitle: '2026 AYT Fizik Kampı',
       videoUrl: 'https://www.youtube.com/results?search_query=vip+fizik+induksiyon',
+      durationMinutes: 48,
       isWatched: false,
       notes: 'Lenz kanunu yön tayini kısmını dikkatli izle.'
     },
@@ -2257,36 +2334,18 @@ export const INITIAL_STATE: YKSDataState = {
       topicName: 'Düzgün Çembersel Hareket ve Açısal Momentum',
       playlistTitle: '2026 AYT Fizik Kampı',
       videoUrl: 'https://www.youtube.com/results?search_query=vip+fizik+cembersel+hareket',
+      durationMinutes: 52,
       isWatched: true,
       notes: 'Vektörel yön tayini ve tork ilişkisi kavrandı.'
-    },
-    {
-      id: 'yt-5',
-      subject: 'TYT Türkçe',
-      channelName: 'Rüştü Hoca ile Türkçe',
-      topicName: 'Paragraf Taktikleri 2026',
-      playlistTitle: 'Paragraf Kampı',
-      videoUrl: 'https://www.youtube.com/results?search_query=rustu+hoca+paragraf',
-      isWatched: true,
-      notes: 'Soru köklerini okuma hızı geliştiren ipuçları alındı.'
-    },
-    {
-      id: 'yt-6',
-      subject: 'AYT Kimya',
-      channelName: 'Görkem Şahin Kimya',
-      topicName: 'Organik Kimya - Alkenler ve Alkinler',
-      playlistTitle: 'AYT Kimya Full Tekrar',
-      videoUrl: 'https://www.youtube.com/results?search_query=gorkem+sahin+organik+kimya',
-      isWatched: true,
-      notes: 'IUPAC adlandırma kuralları pekişti.'
     },
     {
       id: 'yt-7',
       subject: 'AYT Biyoloji',
       channelName: 'Dr. Biyoloji',
       topicName: 'Genden Proteine & Protein Sentezi',
-      playlistTitle: 'AYT Biyoloji Derece Kampı',
+      playlistTitle: '2026 AYT Biyoloji Derece Kampı',
       videoUrl: 'https://www.youtube.com/results?search_query=dr+biyoloji+protein+sentezi',
+      durationMinutes: 45,
       isWatched: false,
       notes: 'Şifreler ve kodon tablosu kısımları izlenecek.'
     },
@@ -2295,8 +2354,9 @@ export const INITIAL_STATE: YKSDataState = {
       subject: 'TYT Geometri',
       channelName: 'Kenan Kara ile Geometri',
       topicName: 'Analitik Geometri ve Doğru Denklemleri',
-      playlistTitle: 'TYT-AYT Geometri Kampı',
+      playlistTitle: '2026 TYT-AYT Geometri Kampı',
       videoUrl: 'https://www.youtube.com/results?search_query=kenan+kara+analitik+geometri',
+      durationMinutes: 50,
       isWatched: true,
       notes: 'Eğim açısı ve dik kesişen doğrular bağıntıları çalışıldı.'
     }
