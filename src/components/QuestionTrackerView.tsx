@@ -1371,29 +1371,33 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
       {/* ── 4. LOGS TABLE WITH LIVE SEARCH & FILTERS ── */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-4">
         
-        {/* Table Header Controls */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-          <div className="flex items-center space-x-2">
-            <FileText className="w-5 h-5 text-indigo-400" />
-            <h3 className="font-bold text-white text-base">Soru Çözüm Kayıt Geçmişi</h3>
-            <span className="text-xs bg-slate-800 text-slate-300 font-mono font-bold px-2.5 py-0.5 rounded-full border border-slate-700">
-              {filteredLogs.length} Kayıt
-            </span>
+        {/* 1. Clean Title Row (No buttons or inputs next to it) */}
+        <div className="flex items-center space-x-2.5">
+          <div className="p-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-xl">
+            <FileText className="w-5 h-5" />
           </div>
+          <div>
+            <h3 className="font-bold text-white text-base">Soru Çözüm Kayıt Geçmişi</h3>
+            <p className="text-xs text-slate-400">Çözdüğünüz tüm soru kayıtlarını listeleyin, arayın ve filtreleyin.</p>
+          </div>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+        {/* 2. All Filters & Search in Dedicated Bottom Row */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950/70 p-3 rounded-2xl border border-slate-800/80">
+          {/* Left Group: Search & Filter Dropdowns */}
+          <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
             {/* Live Search Bar */}
-            <div className="relative flex-1 sm:flex-initial min-w-[200px]">
+            <div className="relative flex-1 min-w-[200px] max-w-sm">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
                 placeholder="Ders, not veya tarih ara..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-2xl pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
+                className="w-full bg-slate-900 border border-slate-800 focus:border-indigo-500 rounded-xl pl-9 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2.5 text-slate-500 hover:text-white">
+                <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-2 text-slate-500 hover:text-white cursor-pointer p-0.5">
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -1403,7 +1407,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
             <select
               value={filterExamType}
               onChange={(e) => setFilterExamType(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3 py-1.5 focus:outline-none cursor-pointer"
+              className="bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 rounded-xl px-3 py-1.5 focus:outline-none cursor-pointer"
             >
               <option value="ALL">Tüm Sınavlar</option>
               <option value="TYT">Sadece TYT</option>
@@ -1414,7 +1418,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
             <select
               value={filterSubject}
               onChange={(e) => setFilterSubject(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3 py-1.5 focus:outline-none cursor-pointer max-w-[200px] truncate"
+              className="bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 rounded-xl px-3 py-1.5 focus:outline-none cursor-pointer max-w-[210px] truncate"
             >
               <option value="ALL">Tüm Dersler ({totalTableFilteredLogsCount})</option>
               {availableTableSubjects.map(s => (
@@ -1423,17 +1427,24 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                 </option>
               ))}
             </select>
+          </div>
 
+          {/* Right Group: Sort Order Toggle & Record Counter Badge */}
+          <div className="flex items-center space-x-2">
             {/* Quick Sort Order Toggle Button */}
             <button
               type="button"
               onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-              className="bg-slate-950 border border-slate-800 hover:border-slate-700 text-xs font-semibold text-slate-200 rounded-2xl px-3 py-1.5 flex items-center space-x-1.5 cursor-pointer transition-all shrink-0"
+              className="bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-semibold text-slate-200 rounded-xl px-3 py-1.5 flex items-center space-x-1.5 cursor-pointer transition-all shrink-0"
               title="Tarih sıralamasını değiştir (Yeniden Eskiye / Eskiden Yeniye)"
             >
               <ArrowUpDown className="w-3.5 h-3.5 text-indigo-400" />
               <span>{sortOrder === 'desc' ? 'Yeniden Eskiye' : 'Eskiden Yeniye'}</span>
             </button>
+
+            <span className="text-xs bg-slate-900 text-slate-300 font-mono font-bold px-2.5 py-1.5 rounded-xl border border-slate-800 shrink-0">
+              {filteredLogs.length} Kayıt
+            </span>
           </div>
         </div>
 
