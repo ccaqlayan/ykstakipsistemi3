@@ -530,17 +530,20 @@ export function subscribeToAuditLogs(
 const enrichQuestionLogs = (logs: QuestionLog[]) => {
   if (!logs) return INITIAL_STATE.questionLogs;
   return logs.map((log) => {
-    if (log.durationMinutes && log.durationMinutes > 0) return log;
     const initialMatch = INITIAL_STATE.questionLogs.find(iLog => iLog.id === log.id || (iLog.date === log.date && iLog.subject === log.subject));
+    const topic = log.topic || initialMatch?.topic || log.notes || 'Genel Soru Çözümü';
+    if (log.durationMinutes && log.durationMinutes > 0) {
+      return { ...log, topic };
+    }
     if (initialMatch?.durationMinutes && initialMatch.durationMinutes > 0) {
-      return { ...log, durationMinutes: initialMatch.durationMinutes };
+      return { ...log, topic, durationMinutes: initialMatch.durationMinutes };
     }
     const solved = log.solvedCount || 30;
     let factor = 1.2;
     if (log.subject?.includes('Matematik')) factor = 1.4;
     else if (log.subject?.includes('Paragraf') || log.subject?.includes('Türkçe')) factor = 0.8;
     else if (log.subject?.includes('Fizik') || log.subject?.includes('Geometri')) factor = 1.3;
-    return { ...log, durationMinutes: Math.max(1, Math.round(solved * factor)) };
+    return { ...log, topic, durationMinutes: Math.max(1, Math.round(solved * factor)) };
   });
 };
 

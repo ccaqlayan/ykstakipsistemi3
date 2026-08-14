@@ -1570,11 +1570,16 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       <td className="py-2 px-2 font-mono text-slate-300 cursor-help whitespace-nowrap text-[11px]" title={dateFull}>
                         {dateShort}
                       </td>
-                      <td className="py-2 px-2 font-semibold text-white text-[11px] whitespace-nowrap">
+                      <td className="py-2 px-2 font-semibold text-white text-[11px]">
                         <div className="flex items-center space-x-1.5">
                           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: getSubjectColor(log.subject) }} />
                           <span>{log.subject}</span>
                         </div>
+                        {(log.topic || log.notes) && (
+                          <div className="text-[10px] text-indigo-300 font-normal mt-0.5 truncate max-w-[200px]">
+                            {log.topic || log.notes}
+                          </div>
+                        )}
                       </td>
                       <td className="py-2 px-2 text-center font-mono font-bold text-slate-200 text-xs">
                         {log.solvedCount}

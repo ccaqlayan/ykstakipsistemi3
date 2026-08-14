@@ -1238,10 +1238,16 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                         return (
                           <tr key={log.id} className={isMyBranch ? 'bg-amber-500/10 border-l-4 border-l-amber-400 hover:bg-amber-500/15' : 'hover:bg-white/5'}>
                             <td className="p-3.5 text-slate-400">{log.date}</td>
-                            <td className="p-3.5 font-bold text-white flex items-center gap-1.5">
-                              <span>{log.subject}</span>
-                              {isMyBranch && <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded border border-amber-400/40">Branşınız ⭐</span>}
-                              <span className="text-slate-400 font-normal">({log.topic})</span>
+                            <td className="p-3.5 font-bold text-white">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span>{log.subject}</span>
+                                {isMyBranch && <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded border border-amber-400/40 font-sans">Branşınız ⭐</span>}
+                              </div>
+                              {(log.topic || log.notes) && (
+                                <div className="text-[11px] text-indigo-300 font-medium font-sans mt-0.5">
+                                  {log.topic || log.notes}
+                                </div>
+                              )}
                             </td>
                             <td className="p-3.5 text-center font-bold text-indigo-300">{log.solvedCount}</td>
                             <td className="p-3.5 text-center text-emerald-400 font-bold">{log.correctCount}</td>

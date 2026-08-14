@@ -83,9 +83,16 @@ export function resolveStudentData(
       name: name || rawData.profile?.name || baseDefaults.profile?.name || 'Öğrenci',
       className: className || rawData.profile?.className || baseDefaults.profile?.className || '12-A SAY'
     },
-    questionLogs: (rawData.questionLogs && rawData.questionLogs.length > 0)
+    questionLogs: ((rawData.questionLogs && rawData.questionLogs.length > 0)
       ? rawData.questionLogs
-      : (isDemo ? baseDefaults.questionLogs : []),
+      : (isDemo ? baseDefaults.questionLogs : [])).map(log => {
+        if (log.topic && log.topic.trim()) return log;
+        const initialMatch = INITIAL_STATE.questionLogs.find(iLog => iLog.id === log.id || (iLog.date === log.date && iLog.subject === log.subject));
+        return {
+          ...log,
+          topic: initialMatch?.topic || log.notes || 'Genel Soru Çözümü'
+        };
+      }),
     studyPlans: (rawData.studyPlans && rawData.studyPlans.length > 0)
       ? rawData.studyPlans
       : (isDemo ? baseDefaults.studyPlans : []),
