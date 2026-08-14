@@ -223,10 +223,13 @@ export interface AytDetails {
   din2?: SubSubjectScore;
 }
 
+export type MockExamType = 'TYT' | 'AYT' | 'DIL' | 'TYT_AYT' | 'TYT_DIL';
+
 export interface GeneralMockExam {
   id: string;
   title: string;
   date: string;
+  examType?: MockExamType;
   tyt: {
     turkce: number;
     sosyal: number;
@@ -242,6 +245,13 @@ export interface GeneralMockExam {
     sos2: number;
     totalNet: number;
     details?: AytDetails;
+  };
+  ydt?: {
+    net: number;
+    correct?: number;
+    wrong?: number;
+    empty?: number;
+    language?: string;
   };
   estimatedRank?: number;
   notes?: string;

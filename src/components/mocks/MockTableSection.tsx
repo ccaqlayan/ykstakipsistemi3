@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { GraduationCap, ArrowDown, ArrowUp, CheckCircle2, Pencil, Clock, SlidersHorizontal, ChevronDown, Calculator, Trash2, Search } from 'lucide-react';
-import { GeneralMockExam, InstitutionalMockExam } from '../../types';
+import { GraduationCap, ArrowDown, ArrowUp, CheckCircle2, Pencil, Clock, SlidersHorizontal, ChevronDown, Calculator, Trash2, Search, Sparkles, Globe, Filter } from 'lucide-react';
+import { GeneralMockExam, InstitutionalMockExam, MockExamType } from '../../types';
 
 interface MockTableSectionProps {
   mockListTab: 'individual' | 'institutional';
@@ -19,6 +19,18 @@ interface MockTableSectionProps {
   setShowAllFields: (show: boolean) => void;
   setDeletingMock: (mock: { id: string; title: string } | null) => void;
 }
+
+export const getEffectiveMockExamType = (mock: GeneralMockExam): MockExamType => {
+  if (mock.examType) return mock.examType;
+  const hasTyt = (mock.tyt?.totalNet || 0) > 0;
+  const hasAyt = (mock.ayt?.totalNet || 0) > 0;
+  const hasYdt = (mock.ydt?.net || 0) > 0;
+  if (hasTyt && hasAyt) return 'TYT_AYT';
+  if (hasTyt && hasYdt) return 'TYT_DIL';
+  if (hasYdt) return 'DIL';
+  if (hasAyt) return 'AYT';
+  return 'TYT';
+};
 
 const formatMockDate = (dateStr?: string) => {
   if (!dateStr) return { short: '-', full: '-' };
@@ -52,19 +64,136 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
   setDeletingMock
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [examTypeFilter, setExamTypeFilter] = useState<'all' | 'TYT' | 'AYT' | 'DIL' | 'TYT_AYT'>('all');
+
+  // Count distribution for filter badges
+  const totalCount = sortedGeneralMocks.length;
+  const tytCount = sortedGeneralMocks.filter(m => {
+    const t = getEffectiveMockExamType(m);
+    return t === 'TYT' || (m.tyt?.totalNet || 0) > 0;
+  }).length;
+  const aytCount = sortedGeneralMocks.filter(m => {
+    const t = getEffectiveMockExamType(m);
+    return t === 'AYT' || t === 'TYT_AYT' || (m.ayt?.totalNet || 0) > 0;
+  }).length;
+  const dilCount = sortedGeneralMocks.filter(m => {
+    const t = getEffectiveMockExamType(m);
+    return t === 'DIL' || t === 'TYT_DIL' || (m.ydt?.net !== undefined && m.ydt.net > 0);
+  }).length;
+  const tytAytCount = sortedGeneralMocks.filter(m => {
+    const t = getEffectiveMockExamType(m);
+    return t === 'TYT_AYT' || ((m.tyt?.totalNet || 0) > 0 && (m.ayt?.totalNet || 0) > 0);
+  }).length;
 
   const filteredGeneralMocks = sortedGeneralMocks.filter(m => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      m.title.toLowerCase().includes(q) ||
-      (m.notes && m.notes.toLowerCase().includes(q)) ||
-      (m.date && m.date.includes(q))
-    );
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchQuery = (
+        m.title.toLowerCase().includes(q) ||
+        (m.notes && m.notes.toLowerCase().includes(q)) ||
+        (m.date && m.date.includes(q)) ||
+        (m.ydt?.language && m.ydt.language.toLowerCase().includes(q))
+      );
+      if (!matchQuery) return false;
+    }
+
+    if (examTypeFilter === 'all') return true;
+    const type = getEffectiveMockExamType(m);
+    if (examTypeFilter === 'TYT') {
+      return type === 'TYT' || (type !== 'AYT' && type !== 'DIL' && (m.tyt?.totalNet || 0) > 0);
+    }
+    if (examTypeFilter === 'AYT') {
+      return type === 'AYT' || type === 'TYT_AYT' || (m.ayt?.totalNet || 0) > 0;
+    }
+    if (examTypeFilter === 'DIL') {
+      return type === 'DIL' || type === 'TYT_DIL' || (m.ydt?.net !== undefined && m.ydt.net > 0);
+    }
+    if (examTypeFilter === 'TYT_AYT') {
+      return type === 'TYT_AYT' || ((m.tyt?.totalNet || 0) > 0 && (m.ayt?.totalNet || 0) > 0);
+    }
+    return true;
   });
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5 shadow-2xl backdrop-blur-md">
+      {/* Sınav Türü Filtreleme Barı (TYT / AYT / DİL / TYT+AYT) */}
+      {mockListTab === 'individual' && generalMocks.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pb-4 border-b border-slate-800/80">
+          <div className="flex items-center space-x-2 text-xs font-bold text-slate-300">
+            <Filter className="w-4 h-4 text-indigo-400" />
+            <span>Sınav Türüne Göre Filtrele:</span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5 bg-slate-950 p-1 rounded-2xl border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setExamTypeFilter('all')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                examTypeFilter === 'all'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <span>Tümü</span>
+              <span className="font-mono text-[11px] opacity-75">({totalCount})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setExamTypeFilter('TYT')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                examTypeFilter === 'TYT'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-indigo-300 hover:bg-slate-900'
+              }`}
+            >
+              <span>TYT</span>
+              <span className="font-mono text-[11px] opacity-75">({tytCount})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setExamTypeFilter('AYT')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                examTypeFilter === 'AYT'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                  : 'text-slate-400 hover:text-emerald-300 hover:bg-slate-900'
+              }`}
+            >
+              <span>AYT</span>
+              <span className="font-mono text-[11px] opacity-75">({aytCount})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setExamTypeFilter('DIL')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                examTypeFilter === 'DIL'
+                  ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                  : 'text-slate-400 hover:text-sky-300 hover:bg-slate-900'
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>DİL (YDT)</span>
+              <span className="font-mono text-[11px] opacity-75">({dilCount})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setExamTypeFilter('TYT_AYT')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                examTypeFilter === 'TYT_AYT'
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                  : 'text-slate-400 hover:text-purple-300 hover:bg-slate-900'
+              }`}
+            >
+              <span>TYT + AYT</span>
+              <span className="font-mono text-[11px] opacity-75">({tytAytCount})</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Controls bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
         <div className="flex flex-wrap items-center gap-3 flex-1">
@@ -210,6 +339,8 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
         <div className="space-y-3">
           {filteredGeneralMocks.map((mock) => {
             const dateInfo = formatMockDate(mock.date);
+            const type = getEffectiveMockExamType(mock);
+
             return (
               <div
                 key={mock.id}
@@ -220,6 +351,25 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
                     <span className="text-xs font-mono text-slate-300 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 cursor-help" title={dateInfo.full}>
                       {dateInfo.short}
                     </span>
+
+                    {/* Sınav Türü Rozeti */}
+                    <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-xl border flex items-center gap-1 ${
+                      type === 'DIL'
+                        ? 'bg-sky-500/10 text-sky-300 border-sky-500/25'
+                        : type === 'TYT_DIL'
+                        ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/25'
+                        : type === 'AYT'
+                        ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25'
+                        : type === 'TYT_AYT'
+                        ? 'bg-purple-500/10 text-purple-300 border-purple-500/25'
+                        : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/25'
+                    }`}>
+                      {type === 'DIL' || type === 'TYT_DIL' ? <Globe className="w-3 h-3 text-sky-400" /> : <Sparkles className="w-3 h-3 text-indigo-400" />}
+                      <span>
+                        {type === 'DIL' ? 'DİL (YDT)' : type === 'TYT_DIL' ? 'TYT + DİL' : type === 'AYT' ? 'AYT' : type === 'TYT_AYT' ? 'TYT + AYT' : 'TYT'}
+                      </span>
+                    </span>
+
                     <h3 
                       onClick={() => handleStartEdit(mock)}
                       className="text-sm font-bold text-white cursor-pointer hover:text-indigo-400 flex items-center gap-1.5 transition-colors group/mock-title"
@@ -257,22 +407,41 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
                   <p className="text-xs text-slate-400 mt-1 italic">{mock.notes}</p>
                 )}
 
-                {/* TYT & AYT Breakdown */}
+                {/* TYT & AYT & YDT Breakdown */}
                 <div className="flex flex-wrap gap-2 text-[11px] text-slate-300 mt-2 font-mono">
-                  <span className="bg-slate-900 px-2 py-1 rounded border border-slate-800">
-                    <span className="text-indigo-400 font-bold mr-1">TYT</span>
-                    TÜR: <strong>{String(mock.tyt.turkce).replace('.', ',')}</strong> | MAT: <strong>{String(mock.tyt.mat).replace('.', ',')}</strong> | SOS: <strong>{String(mock.tyt.sosyal).replace('.', ',')}</strong> | FEN: <strong>{String(mock.tyt.fen).replace('.', ',')}</strong>
-                  </span>
-                  <span className="bg-slate-900 px-2 py-1 rounded border border-slate-800">
-                    <span className="text-emerald-400 font-bold mr-1">AYT</span>
-                    MAT: <strong>{String(mock.ayt.mat).replace('.', ',')}</strong> | FEN: <strong>{String(mock.ayt.fen).replace('.', ',')}</strong>
-                    {mock.ayt.edebiyatSos1 !== undefined && mock.ayt.edebiyatSos1 > 0 && (
-                      <> | EDB-SOS1: <strong>{String(mock.ayt.edebiyatSos1).replace('.', ',')}</strong></>
-                    )}
-                    {mock.ayt.sos2 !== undefined && mock.ayt.sos2 > 0 && (
-                      <> | SOS2: <strong>{String(mock.ayt.sos2).replace('.', ',')}</strong></>
-                    )}
-                  </span>
+                  {/* TYT Summary */}
+                  {(mock.tyt.totalNet > 0 || type === 'TYT' || type === 'TYT_AYT' || type === 'TYT_DIL') && (
+                    <span className="bg-slate-900 px-2 py-1 rounded border border-slate-800">
+                      <span className="text-indigo-400 font-bold mr-1">TYT</span>
+                      TÜR: <strong>{String(mock.tyt.turkce).replace('.', ',')}</strong> | MAT: <strong>{String(mock.tyt.mat).replace('.', ',')}</strong> | SOS: <strong>{String(mock.tyt.sosyal).replace('.', ',')}</strong> | FEN: <strong>{String(mock.tyt.fen).replace('.', ',')}</strong>
+                    </span>
+                  )}
+
+                  {/* AYT Summary */}
+                  {(mock.ayt.totalNet > 0 || type === 'AYT' || type === 'TYT_AYT') && (
+                    <span className="bg-slate-900 px-2 py-1 rounded border border-slate-800">
+                      <span className="text-emerald-400 font-bold mr-1">AYT</span>
+                      MAT: <strong>{String(mock.ayt.mat).replace('.', ',')}</strong> | FEN: <strong>{String(mock.ayt.fen).replace('.', ',')}</strong>
+                      {mock.ayt.edebiyatSos1 !== undefined && mock.ayt.edebiyatSos1 > 0 && (
+                        <> | EDB-SOS1: <strong>{String(mock.ayt.edebiyatSos1).replace('.', ',')}</strong></>
+                      )}
+                      {mock.ayt.sos2 !== undefined && mock.ayt.sos2 > 0 && (
+                        <> | SOS2: <strong>{String(mock.ayt.sos2).replace('.', ',')}</strong></>
+                      )}
+                    </span>
+                  )}
+
+                  {/* YDT Summary */}
+                  {(mock.ydt?.net !== undefined && (mock.ydt.net > 0 || type === 'DIL' || type === 'TYT_DIL')) && (
+                    <span className="bg-slate-900 px-2 py-1 rounded border border-slate-800 flex items-center gap-1">
+                      <Globe className="w-3 h-3 text-sky-400" />
+                      <span className="text-sky-400 font-bold mr-1">{mock.ydt.language || 'YDT'}</span>
+                      <strong>{String(mock.ydt.net).replace('.', ',')} Net</strong>
+                      {(mock.ydt.correct !== undefined || mock.ydt.wrong !== undefined) && (
+                        <span className="text-[10px] text-slate-500 ml-1">({mock.ydt.correct ?? 0}D {mock.ydt.wrong ?? 0}Y)</span>
+                      )}
+                    </span>
+                  )}
                 </div>
 
                 {/* Granular Sub-subject Breakdown Accordion Toggle */}
@@ -452,15 +621,26 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
               {/* Totals & Delete & Calculate */}
               <div className="flex flex-wrap items-center justify-between lg:justify-end gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-800/80 w-full lg:w-auto">
                 <div className="flex items-center space-x-2 sm:space-x-3">
-                  <div className="text-center px-2 sm:px-3">
-                    <div className="text-[10px] text-slate-400">TYT Toplam</div>
-                    <div className="text-base sm:text-lg font-bold text-indigo-400 font-mono">{String(mock.tyt.totalNet).replace('.', ',')}</div>
-                  </div>
+                  {(mock.tyt.totalNet > 0 || type === 'TYT' || type === 'TYT_AYT' || type === 'TYT_DIL') && (
+                    <div className="text-center px-2 sm:px-3">
+                      <div className="text-[10px] text-slate-400">TYT Toplam</div>
+                      <div className="text-base sm:text-lg font-bold text-indigo-400 font-mono">{String(mock.tyt.totalNet).replace('.', ',')}</div>
+                    </div>
+                  )}
 
-                  <div className="text-center px-2 sm:px-3 border-l border-slate-800">
-                    <div className="text-[10px] text-slate-400">AYT Toplam</div>
-                    <div className="text-base sm:text-lg font-bold text-emerald-400 font-mono">{String(mock.ayt.totalNet).replace('.', ',')}</div>
-                  </div>
+                  {(mock.ayt.totalNet > 0 || type === 'AYT' || type === 'TYT_AYT') && (
+                    <div className="text-center px-2 sm:px-3 border-l border-slate-800">
+                      <div className="text-[10px] text-slate-400">AYT Toplam</div>
+                      <div className="text-base sm:text-lg font-bold text-emerald-400 font-mono">{String(mock.ayt.totalNet).replace('.', ',')}</div>
+                    </div>
+                  )}
+
+                  {(mock.ydt?.net !== undefined && (mock.ydt.net > 0 || type === 'DIL' || type === 'TYT_DIL')) && (
+                    <div className="text-center px-2 sm:px-3 border-l border-slate-800">
+                      <div className="text-[10px] text-sky-400">YDT Toplam</div>
+                      <div className="text-base sm:text-lg font-bold text-sky-300 font-mono">{String(mock.ydt.net).replace('.', ',')}</div>
+                    </div>
+                  )}
 
                   {mock.estimatedRank && (
                     <div className="text-center px-2 sm:px-3 border-l border-slate-800">

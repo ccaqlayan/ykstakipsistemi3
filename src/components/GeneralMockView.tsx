@@ -6,7 +6,7 @@ import {
   GraduationCap,
   Sparkles
 } from 'lucide-react';
-import { GeneralMockExam, StudentProfile, TytDetails, AytDetails, SubSubjectScore, InstitutionalMockExam } from '../types';
+import { GeneralMockExam, StudentProfile, TytDetails, AytDetails, SubSubjectScore, InstitutionalMockExam, MockExamType } from '../types';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { MockAddModal } from './mocks/MockAddModal';
 import { MockEditModal } from './mocks/MockEditModal';
@@ -14,7 +14,7 @@ import { MockRankSimulatorModal } from './mocks/MockRankSimulatorModal';
 import { MockCustomizeModal } from './mocks/MockCustomizeModal';
 import { MockInstitutionalDetailView } from './mocks/MockInstitutionalDetailView';
 import { MockChartsSection } from './mocks/MockChartsSection';
-import { MockTableSection } from './mocks/MockTableSection';
+import { MockTableSection, getEffectiveMockExamType } from './mocks/MockTableSection';
 
 
 
@@ -299,6 +299,9 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   // Form State: ADD
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [addExamType, setAddExamType] = useState<MockExamType>(() => {
+    return profile?.targetField === 'DİL' ? 'DIL' : 'TYT';
+  });
   const [addEntryMode, setAddEntryMode] = useState<'quick' | 'detailed'>('quick');
   const [addInputMethod, setAddInputMethod] = useState<'net' | 'dyb'>('dyb');
 
@@ -312,6 +315,11 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   const [aytEdebiyatSos1, setAytEdebiyatSos1] = useState<number | string>('');
   const [aytSos2, setAytSos2] = useState<number | string>('');
 
+  // YDT Net & DYB (ADD)
+  const [ydtNet, setYdtNet] = useState<number | string>('');
+  const [ydtDyb, setYdtDyb] = useState<{ d: string; y: string; b: string; net: string }>({ d: '', y: '', b: '', net: '' });
+  const [ydtLanguage, setYdtLanguage] = useState<string>('İngilizce');
+
   // Detailed Nets (ADD)
   const [addTytDyb, setAddTytDyb] = useState<Record<TytSubKey, DybSubSubjectItem>>(() => createInitialSubMap(TYT_SUB_KEYS));
   const [addAytDyb, setAddAytDyb] = useState<Record<AytSubKey, DybSubSubjectItem>>(() => createInitialSubMap(AYT_SUB_KEYS));
@@ -320,9 +328,17 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   const [notes, setNotes] = useState('');
   const [isAnalyzed, setIsAnalyzed] = useState<boolean>(false);
 
+  // Sync addExamType when targetField changes if user hasn't typed
+  useEffect(() => {
+    if (profile?.targetField === 'DİL') {
+      setAddExamType('DIL');
+    }
+  }, [profile?.targetField]);
+
   const resetAddForm = () => {
     setTitle('');
     setDate(new Date().toISOString().split('T')[0]);
+    setAddExamType(profile?.targetField === 'DİL' ? 'DIL' : 'TYT');
     setAddEntryMode('quick');
     setAddInputMethod('dyb');
     setTytTurkce('');
@@ -333,6 +349,9 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
     setAytFen('');
     setAytEdebiyatSos1('');
     setAytSos2('');
+    setYdtNet('');
+    setYdtDyb({ d: '', y: '', b: '', net: '' });
+    setYdtLanguage('İngilizce');
     setAddTytDyb(createInitialSubMap(TYT_SUB_KEYS));
     setAddAytDyb(createInitialSubMap(AYT_SUB_KEYS));
     setEstimatedRank('');
@@ -344,6 +363,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   const [editingMock, setEditingMock] = useState<GeneralMockExam | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDate, setEditDate] = useState('');
+  const [editExamType, setEditExamType] = useState<MockExamType>('TYT');
   const [editEntryMode, setEditEntryMode] = useState<'quick' | 'detailed'>('quick');
   const [editInputMethod, setEditInputMethod] = useState<'net' | 'dyb'>('net');
 
@@ -355,6 +375,11 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   const [editAytFen, setEditAytFen] = useState<number | string>('');
   const [editAytEdebiyatSos1, setEditAytEdebiyatSos1] = useState<number | string>('');
   const [editAytSos2, setEditAytSos2] = useState<number | string>('');
+
+  // YDT Net & DYB (EDIT)
+  const [editYdtNet, setEditYdtNet] = useState<number | string>('');
+  const [editYdtDyb, setEditYdtDyb] = useState<{ d: string; y: string; b: string; net: string }>({ d: '', y: '', b: '', net: '' });
+  const [editYdtLanguage, setEditYdtLanguage] = useState<string>('İngilizce');
 
   const [editTytDyb, setEditTytDyb] = useState<Record<TytSubKey, DybSubSubjectItem>>(() => createInitialSubMap(TYT_SUB_KEYS));
   const [editAytDyb, setEditAytDyb] = useState<Record<AytSubKey, DybSubSubjectItem>>(() => createInitialSubMap(AYT_SUB_KEYS));
@@ -416,6 +441,8 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
     setEditingMock(mock);
     setEditTitle(mock.title);
     setEditDate(mock.date);
+    const resolvedType = getEffectiveMockExamType(mock);
+    setEditExamType(mock.examType || resolvedType);
     setEditTytTurkce(mock.tyt.turkce ?? '');
     setEditTytMat(mock.tyt.mat ?? '');
     setEditTytSosyal(mock.tyt.sosyal ?? '');
@@ -424,6 +451,22 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
     setEditAytFen(mock.ayt.fen ?? '');
     setEditAytEdebiyatSos1(mock.ayt.edebiyatSos1 ?? '');
     setEditAytSos2(mock.ayt.sos2 ?? '');
+
+    if (mock.ydt) {
+      setEditYdtNet(mock.ydt.net !== undefined ? String(mock.ydt.net).replace('.', ',') : '');
+      setEditYdtDyb({
+        d: mock.ydt.correct !== undefined ? String(mock.ydt.correct) : '',
+        y: mock.ydt.wrong !== undefined ? String(mock.ydt.wrong) : '',
+        b: mock.ydt.empty !== undefined ? String(mock.ydt.empty) : '',
+        net: mock.ydt.net !== undefined ? String(mock.ydt.net).replace('.', ',') : ''
+      });
+      setEditYdtLanguage(mock.ydt.language || 'İngilizce');
+    } else {
+      setEditYdtNet('');
+      setEditYdtDyb({ d: '', y: '', b: '', net: '' });
+      setEditYdtLanguage('İngilizce');
+    }
+
     setEditEstimatedRank(mock.estimatedRank ?? '');
     setEditNotes(mock.notes || '');
     setEditIsAnalyzed(mock.isAnalyzed ?? false);
@@ -547,29 +590,53 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
       };
     }
 
-    const tytTotal = tTurkce + tMat + tSosyal + tFen;
-    const aytTotal = aMat + aFen + aEdeb + aSos2;
+    let ydtObj: { net: number; correct?: number; wrong?: number; empty?: number; language?: string } | undefined = undefined;
+    if (editExamType === 'DIL' || editExamType === 'TYT_DIL') {
+      if (editEntryMode === 'detailed') {
+        const dVal = editYdtDyb.d !== '' ? parseNetVal(editYdtDyb.d) : undefined;
+        const yVal = editYdtDyb.y !== '' ? parseNetVal(editYdtDyb.y) : undefined;
+        const bVal = editYdtDyb.b !== '' ? parseNetVal(editYdtDyb.b) : undefined;
+        const netVal = editYdtDyb.net !== '' ? parseNetVal(editYdtDyb.net) : Number(((dVal || 0) - (yVal || 0) / 4).toFixed(2));
+        ydtObj = {
+          net: netVal,
+          correct: dVal,
+          wrong: yVal,
+          empty: bVal,
+          language: editYdtLanguage || 'İngilizce'
+        };
+      } else {
+        ydtObj = {
+          net: parseNetVal(editYdtNet),
+          language: editYdtLanguage || 'İngilizce'
+        };
+      }
+    }
+
+    const tytTotal = (editExamType === 'AYT' || editExamType === 'DIL') ? 0 : tTurkce + tMat + tSosyal + tFen;
+    const aytTotal = (editExamType === 'TYT' || editExamType === 'DIL' || editExamType === 'TYT_DIL') ? 0 : aMat + aFen + aEdeb + aSos2;
 
     onUpdateMock({
       ...editingMock,
       title: editTitle.trim(),
       date: editDate,
+      examType: editExamType,
       tyt: {
-        turkce: tTurkce,
-        mat: tMat,
-        sosyal: tSosyal,
-        fen: tFen,
+        turkce: (editExamType === 'AYT' || editExamType === 'DIL') ? 0 : tTurkce,
+        mat: (editExamType === 'AYT' || editExamType === 'DIL') ? 0 : tMat,
+        sosyal: (editExamType === 'AYT' || editExamType === 'DIL') ? 0 : tSosyal,
+        fen: (editExamType === 'AYT' || editExamType === 'DIL') ? 0 : tFen,
         totalNet: Number(tytTotal.toFixed(2)),
-        details: tytDetailsObj
+        details: (editExamType === 'AYT' || editExamType === 'DIL') ? undefined : tytDetailsObj
       },
       ayt: {
-        mat: aMat,
-        fen: aFen,
-        edebiyatSos1: aEdeb,
-        sos2: aSos2,
+        mat: (editExamType === 'TYT' || editExamType === 'DIL' || editExamType === 'TYT_DIL') ? 0 : aMat,
+        fen: (editExamType === 'TYT' || editExamType === 'DIL' || editExamType === 'TYT_DIL') ? 0 : aFen,
+        edebiyatSos1: (editExamType === 'TYT' || editExamType === 'DIL' || editExamType === 'TYT_DIL') ? 0 : aEdeb,
+        sos2: (editExamType === 'TYT' || editExamType === 'DIL' || editExamType === 'TYT_DIL') ? 0 : aSos2,
         totalNet: Number(aytTotal.toFixed(2)),
-        details: aytDetailsObj
+        details: (editExamType === 'TYT' || editExamType === 'DIL' || editExamType === 'TYT_DIL') ? undefined : aytDetailsObj
       },
+      ydt: ydtObj,
       estimatedRank: editEstimatedRank === '' ? undefined : parseNetVal(editEstimatedRank),
       notes: editNotes,
       isAnalyzed: editIsAnalyzed
@@ -577,10 +644,6 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
 
     setEditingMock(null);
   };
-
-
-
-
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -663,28 +726,52 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
       };
     }
 
-    const tytTotal = tTurkce + tMat + tSosyal + tFen;
-    const aytTotal = aMat + aFen + aEdeb + aSos2;
+    let ydtObj: { net: number; correct?: number; wrong?: number; empty?: number; language?: string } | undefined = undefined;
+    if (addExamType === 'DIL' || addExamType === 'TYT_DIL') {
+      if (addEntryMode === 'detailed') {
+        const dVal = addYdtDyb.d !== '' ? parseNetVal(addYdtDyb.d) : undefined;
+        const yVal = addYdtDyb.y !== '' ? parseNetVal(addYdtDyb.y) : undefined;
+        const bVal = addYdtDyb.b !== '' ? parseNetVal(addYdtDyb.b) : undefined;
+        const netVal = addYdtDyb.net !== '' ? parseNetVal(addYdtDyb.net) : Number(((dVal || 0) - (yVal || 0) / 4).toFixed(2));
+        ydtObj = {
+          net: netVal,
+          correct: dVal,
+          wrong: yVal,
+          empty: bVal,
+          language: ydtLanguage || 'İngilizce'
+        };
+      } else {
+        ydtObj = {
+          net: parseNetVal(ydtNet),
+          language: ydtLanguage || 'İngilizce'
+        };
+      }
+    }
+
+    const tytTotal = (addExamType === 'AYT' || addExamType === 'DIL') ? 0 : tTurkce + tMat + tSosyal + tFen;
+    const aytTotal = (addExamType === 'TYT' || addExamType === 'DIL' || addExamType === 'TYT_DIL') ? 0 : aMat + aFen + aEdeb + aSos2;
 
     onAddMock({
       title: title.trim(),
       date,
+      examType: addExamType,
       tyt: {
-        turkce: tTurkce,
-        mat: tMat,
-        sosyal: tSosyal,
-        fen: tFen,
+        turkce: (addExamType === 'AYT' || addExamType === 'DIL') ? 0 : tTurkce,
+        mat: (addExamType === 'AYT' || addExamType === 'DIL') ? 0 : tMat,
+        sosyal: (addExamType === 'AYT' || addExamType === 'DIL') ? 0 : tSosyal,
+        fen: (addExamType === 'AYT' || addExamType === 'DIL') ? 0 : tFen,
         totalNet: Number(tytTotal.toFixed(2)),
-        details: tytDetailsObj
+        details: (addExamType === 'AYT' || addExamType === 'DIL') ? undefined : tytDetailsObj
       },
       ayt: {
-        mat: aMat,
-        fen: aFen,
-        edebiyatSos1: aEdeb,
-        sos2: aSos2,
+        mat: (addExamType === 'TYT' || addExamType === 'DIL' || addExamType === 'TYT_DIL') ? 0 : aMat,
+        fen: (addExamType === 'TYT' || addExamType === 'DIL' || addExamType === 'TYT_DIL') ? 0 : aFen,
+        edebiyatSos1: (addExamType === 'TYT' || addExamType === 'DIL' || addExamType === 'TYT_DIL') ? 0 : aEdeb,
+        sos2: (addExamType === 'TYT' || addExamType === 'DIL' || addExamType === 'TYT_DIL') ? 0 : aSos2,
         totalNet: Number(aytTotal.toFixed(2)),
-        details: aytDetailsObj
+        details: (addExamType === 'TYT' || addExamType === 'DIL' || addExamType === 'TYT_DIL') ? undefined : aytDetailsObj
       },
+      ydt: ydtObj,
       estimatedRank: estimatedRank === '' ? undefined : parseNetVal(estimatedRank),
       notes,
       isAnalyzed
@@ -694,8 +781,22 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
     const prevMocks = [...generalMocks].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const prevTytNet = prevMocks.find(m => (m.tyt?.totalNet || 0) > 0)?.tyt?.totalNet || 0;
     const prevAytNet = prevMocks.find(m => (m.ayt?.totalNet || 0) > 0)?.ayt?.totalNet || 0;
+    const prevYdtNet = prevMocks.find(m => (m.ydt?.net || 0) > 0)?.ydt?.net || 0;
 
-    if (aytTotal > 0 && tytTotal === 0) {
+    if (addExamType === 'DIL' || addExamType === 'TYT_DIL') {
+      const currentYdt = ydtObj?.net || 0;
+      window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
+        detail: {
+          type: 'mock_added',
+          payload: {
+            examType: 'DİL (YDT)',
+            newNet: currentYdt,
+            oldNet: prevYdtNet,
+            hasPrevious: prevYdtNet > 0
+          }
+        }
+      }));
+    } else if (aytTotal > 0 && tytTotal === 0) {
       window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
         detail: {
           type: 'mock_added',
@@ -1250,6 +1351,9 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
         setTitle={setTitle}
         date={date}
         setDate={setDate}
+        addExamType={addExamType}
+        setAddExamType={setAddExamType}
+        targetField={profile?.targetField}
         addEntryMode={addEntryMode}
         setAddEntryMode={setAddEntryMode}
         addInputMethod={addInputMethod}
@@ -1270,6 +1374,12 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
         setAytEdebiyatSos1={setAytEdebiyatSos1}
         aytSos2={aytSos2}
         setAytSos2={setAytSos2}
+        ydtNet={ydtNet}
+        setYdtNet={setYdtNet}
+        ydtDyb={ydtDyb}
+        setYdtDyb={setYdtDyb}
+        ydtLanguage={ydtLanguage}
+        setYdtLanguage={setYdtLanguage}
         addTytDyb={addTytDyb}
         setAddTytDyb={setAddTytDyb}
         addAytDyb={addAytDyb}
@@ -1293,6 +1403,9 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
         setEditTitle={setEditTitle}
         editDate={editDate}
         setEditDate={setEditDate}
+        editExamType={editExamType}
+        setEditExamType={setEditExamType}
+        targetField={profile?.targetField}
         editEntryMode={editEntryMode}
         setEditEntryMode={setEditEntryMode}
         editInputMethod={editInputMethod}
@@ -1313,6 +1426,12 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
         setEditAytEdebiyatSos1={setEditAytEdebiyatSos1}
         editAytSos2={editAytSos2}
         setEditAytSos2={setEditAytSos2}
+        editYdtNet={editYdtNet}
+        setEditYdtNet={setEditYdtNet}
+        editYdtDyb={editYdtDyb}
+        setEditYdtDyb={setEditYdtDyb}
+        editYdtLanguage={editYdtLanguage}
+        setEditYdtLanguage={setEditYdtLanguage}
         editTytDyb={editTytDyb}
         setEditTytDyb={setEditTytDyb}
         editAytDyb={editAytDyb}
