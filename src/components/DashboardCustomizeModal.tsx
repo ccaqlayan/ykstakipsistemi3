@@ -30,7 +30,8 @@ import {
   Activity,
   Plus,
   Trash2,
-  StickyNote
+  StickyNote,
+  Award
 } from 'lucide-react';
 
 export interface DashboardWidgetConfig {
@@ -84,12 +85,20 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     order: 2
   },
   {
+    id: 'badges_widget',
+    title: 'Başarılar & Rozet Vitrini',
+    description: '3D kristal başarı rozetleri, günlük çalışma serisi (streak) ve toplam XP vitrini',
+    category: 'header',
+    visible: true,
+    order: 3
+  },
+  {
     id: 'quick_notes',
     title: 'Hızlı Notlarım (Not Defteri)',
     description: 'Anlık akla gelen kısa fikir ve hatırlatmaları doğrudan Firebase\'e kaydeden hızlı not paneli',
     category: 'header',
     visible: true,
-    order: 3
+    order: 4
   },
   {
     id: 'daily_routines',
@@ -97,7 +106,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Bugünün paragraf, problem, geometri ve diğer rutinlerinin hızlı takibi',
     category: 'header',
     visible: true,
-    order: 4
+    order: 5
   },
   {
     id: 'weekly_schedule',
@@ -105,7 +114,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Haftalık ders ve konu çalışma takvimi listesi',
     category: 'header',
     visible: true,
-    order: 5
+    order: 6
   },
   {
     id: 'kpi_questions',
@@ -113,7 +122,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Günlük çözülen soru ve hedef yüzdesi göstergesi',
     category: 'kpis',
     visible: true,
-    order: 6
+    order: 7
   },
   {
     id: 'kpi_mocks',
@@ -121,7 +130,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Son deneme sınavındaki TYT ve AYT net özeti',
     category: 'kpis',
     visible: true,
-    order: 7
+    order: 8
   },
   {
     id: 'kpi_errors',
@@ -129,7 +138,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Tekrar edilmeyi bekleyen yanlış soru sayıları',
     category: 'kpis',
     visible: true,
-    order: 8
+    order: 9
   },
   {
     id: 'kpi_resources',
@@ -137,7 +146,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Soru bankaları ve konu tamamlama yüzdesi',
     category: 'kpis',
     visible: true,
-    order: 9
+    order: 10
   },
   {
     id: 'subject_progress_widget',
@@ -145,7 +154,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Seçeceğin bir dersin (Matematik, Fizik, Türkçe vb.) müfredat ve soru çözümü başarısı',
     category: 'kpis',
     visible: true,
-    order: 10,
+    order: 11,
     config: { subject: 'TYT Matematik' }
   },
   {
@@ -154,7 +163,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Zamana göre TYT ve AYT deneme netlerindeki artış/azalış görsel grafiği',
     category: 'charts',
     visible: true,
-    order: 11
+    order: 12
   },
   {
     id: 'error_reasons_widget',
@@ -162,7 +171,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Hatalı soruların nedenlerine göre (Bilgi eksikliği, dikkat hatası, süre vs.) dağılımı',
     category: 'charts',
     visible: true,
-    order: 12
+    order: 13
   },
   {
     id: 'branch_exams_widget',
@@ -170,7 +179,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Tamamlanan branş denemelerinin ders bazlı net ve süre ortalamaları',
     category: 'kpis',
     visible: true,
-    order: 13
+    order: 14
   },
   {
     id: 'past_exams_widget',
@@ -178,7 +187,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Geçmiş yıl YKS sınav sorularını çözme ve doğru/yanlış analiz oranları',
     category: 'kpis',
     visible: true,
-    order: 14
+    order: 15
   },
   {
     id: 'video_lessons_widget',
@@ -186,7 +195,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'YouTube video ders tamamlama oranı ve toplam izleme süreleri',
     category: 'kpis',
     visible: true,
-    order: 15
+    order: 16
   },
   {
     id: 'pomodoro_stats_widget',
@@ -194,7 +203,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Haftalık ve toplam kronometreli odaklanma süresi ile seans sayıları',
     category: 'kpis',
     visible: true,
-    order: 16
+    order: 17
   },
   {
     id: 'coach_notes',
@@ -202,7 +211,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Koçun değerlendirme mesajı ve yapay zeka analiz bağlantısı',
     category: 'content',
     visible: true,
-    order: 17
+    order: 18
   },
   {
     id: 'ai_coach_summary',
@@ -210,7 +219,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Yapay Zeka Koçunun oluşturduğu en son genel değerlendirme ve aksiyon planı özeti',
     category: 'content',
     visible: true,
-    order: 18
+    order: 19
   },
   {
     id: 'quick_actions',
@@ -218,7 +227,7 @@ export const DEFAULT_DASHBOARD_WIDGETS: DashboardWidgetConfig[] = [
     description: 'Pomodoro odaklanma modu, soru ekleme ve deneme girme butonları',
     category: 'content',
     visible: true,
-    order: 19
+    order: 20
   }
 ];
 
@@ -250,6 +259,7 @@ export const DashboardCustomizeModal: React.FC<DashboardCustomizeModalProps> = (
     switch (id) {
       case 'countdown': return <Timer className="w-5 h-5 text-emerald-400" />;
       case 'target_banner': return <Target className="w-5 h-5 text-indigo-400" />;
+      case 'badges_widget': return <Award className="w-5 h-5 text-amber-400" />;
       case 'daily_routines': return <CheckCircle2 className="w-5 h-5 text-emerald-400" />;
       case 'kpi_questions': return <CheckCircle2 className="w-5 h-5 text-indigo-400" />;
       case 'kpi_mocks': return <TrendingUp className="w-5 h-5 text-emerald-400" />;

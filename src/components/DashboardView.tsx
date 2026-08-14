@@ -292,6 +292,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             onOpenTargetModal={() => setShowTargetModal(true)} 
           />
         );
+      case 'badges_widget':
+        return <DashboardBadgesWidget studentData={state} studentName={currentUser?.name} />;
       case 'daily_routines': 
         return (
           <DashboardDailyRoutines 
@@ -498,9 +500,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <span>Özeti Düzenle</span>
         </button>
       </div>
-
-      {/* Top 3D Game Badges & Daily Streak Showcase Widget */}
-      <DashboardBadgesWidget studentData={state} studentName={currentUser?.name} />
 
       {/* Main Dynamic Dashboard Content */}
       {renderDashboardContent()}
