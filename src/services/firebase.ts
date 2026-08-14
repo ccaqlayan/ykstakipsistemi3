@@ -171,10 +171,43 @@ export function handleFirebaseError(err: any) {
 }
 
 /**
- * Seed initial data to Firebase Firestore if empty
+ * Her uygulama başlangıcında çalışacak migration — seed marker'ına bakmadan
+ * student-1'in questionLogs tarihlerini günceller (eski Haziran tarihleri varsa).
  */
+export async function migrateStudentQuestionLogs() {
+  try {
+    const student1Ref = doc(db, STUDENTS_DATA_COL, 'student-1');
+    const student1Snap = await getDoc(student1Ref);
+    if (!student1Snap.exists()) return;
+
+    const data = student1Snap.data() as YKSDataState;
+    const hasOldDates = data.questionLogs && data.questionLogs.some(
+      (l: any) => l.date && (
+        l.date.startsWith('2026-06-') ||
+        l.date === '2026-07-25' ||
+        l.date === '2026-07-20' ||
+        l.date === '2026-07-18' ||
+        l.date === '2026-07-15' ||
+        l.date === '2026-07-10'
+      )
+    );
+
+    if (hasOldDates) {
+      console.log('[Migration] student-1 questionLogs contain old dates. Updating...');
+      const cleanLogs = sanitizeAndPrepareForFirestore(INITIAL_STATE.questionLogs);
+      await setDoc(student1Ref, { ...data, questionLogs: cleanLogs }, { merge: false });
+      console.log('[Migration] student-1 questionLogs updated successfully.');
+    }
+  } catch (err) {
+    console.warn('[Migration] migrateStudentQuestionLogs error:', err);
+  }
+}
+
 export async function seedInitialFirestoreData() {
   try {
+    // Her zaman migration kontrolü yap (seed marker'a bakmaksızın)
+    await migrateStudentQuestionLogs();
+
     // Hafif "seed marker" kontrolü — tüm koleksiyonları taramak yerine TEK bir doküman oku
     const seedMarkerRef = doc(db, 'meta', 'seed_status');
     const seedMarkerSnap = await getDoc(seedMarkerRef);
