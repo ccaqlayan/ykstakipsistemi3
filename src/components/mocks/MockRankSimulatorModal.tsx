@@ -42,6 +42,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
   const isEaProfile = rawField.includes('EA') || rawField.includes('EŞİT') || rawField.includes('ESIT');
   const isSozProfile = rawField.includes('SÖZ') || rawField.includes('SOZ');
   const isDilProfile = rawField.includes('DİL') || rawField.includes('DIL') || rawField.includes('YDT');
+  const profileFieldLabel = isSayProfile ? 'SAY' : isEaProfile ? 'EA' : isSozProfile ? 'SÖZ' : isDilProfile ? 'DİL' : 'SAY';
 
   const tytTurkceNet = parseNetVal(calcMock.tyt?.turkce);
   const tytMatNet = parseNetVal(calcMock.tyt?.mat);
@@ -57,9 +58,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
 
   // Field Presence Detection
   const hasTytNets = tytTotalNet > 0 || tytTurkceNet > 0 || tytMatNet > 0 || tytSosyalNet > 0 || tytFenNet > 0;
-  const hasSayNets = aytFenNet > 0;
-  const hasEaNets = aytEdebNet > 0;
-  const hasSozNets = aytSos2Net > 0;
+  const hasAytNets = aytMatNet > 0 || aytFenNet > 0 || aytEdebNet > 0 || aytSos2Net > 0;
   const hasDilNets = ydtNet > 0 || examType === 'DIL' || examType === 'TYT_DIL';
 
   // Compute Official Scores via MEB OGM & ÖSYM 2026 Engine
@@ -83,14 +82,16 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
   };
 
   // Determine Primary Target Result for Quick Preset Selection
-  const isOnlyTyt = examType === 'TYT' || (hasTytNets && !hasSayNets && !hasEaNets && !hasSozNets && !hasDilNets && aytMatNet === 0);
+  const isOnlyTyt = examType === 'TYT' || (hasTytNets && !hasAytNets && !hasDilNets);
+  const isTytPresent = hasTytNets || examType === 'TYT' || examType === 'TYT_AYT' || examType === 'TYT_DIL';
+  const isAytPresent = !isOnlyTyt;
 
   const primaryResult: { title: string; result: YksScoreResult } = (() => {
     if (examType === 'TYT' || isOnlyTyt) return { title: 'TYT', result: tyt };
     if (examType === 'DIL' || examType === 'TYT_DIL' || isDilProfile) return { title: 'DİL (YDT)', result: dil };
-    if (isEaProfile) return { title: 'EA', result: ea };
-    if (isSozProfile) return { title: 'SÖZ', result: soz };
-    return { title: 'SAY', result: say };
+    if (isEaProfile) return { title: 'AYT EA', result: ea };
+    if (isSozProfile) return { title: 'AYT SÖZ', result: soz };
+    return { title: 'AYT SAY', result: say };
   })();
 
   // Automatic Field Visibility Rules for 'auto' mode
@@ -99,7 +100,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
   let autoShowSoz = false;
   let autoShowDil = false;
 
-  if (!isOnlyTyt) {
+  if (isAytPresent) {
     // 1. SAY: If Fen is entered (>0), OR (student profile is SAY and has AYT nets, and didn't exclusively enter EA/SÖZ subjects)
     if (aytFenNet > 0 || (isSayProfile && (aytMatNet > 0 || examType === 'AYT' || examType === 'TYT_AYT') && aytEdebNet === 0)) {
       autoShowSay = true;
@@ -130,11 +131,14 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
     }
   }
 
-  const showTyt = viewMode === 'all' || viewMode === 'TYT' || (viewMode === 'auto' && isOnlyTyt);
-  const showSay = viewMode === 'all' || viewMode === 'SAY' || (viewMode === 'auto' && autoShowSay && !isOnlyTyt);
-  const showEa = viewMode === 'all' || viewMode === 'EA' || (viewMode === 'auto' && autoShowEa && !isOnlyTyt);
-  const showSoz = viewMode === 'all' || viewMode === 'SOZ' || (viewMode === 'auto' && autoShowSoz && !isOnlyTyt);
-  const showDil = viewMode === 'all' || viewMode === 'DIL' || (viewMode === 'auto' && autoShowDil);
+  // When viewMode === 'auto':
+  // If exam has TYT, show TYT card!
+  // If exam has AYT/DİL, also show relevant AYT/DİL field card!
+  const showTyt = viewMode === 'all' || viewMode === 'TYT' || (viewMode === 'auto' && isTytPresent);
+  const showSay = viewMode === 'all' || viewMode === 'SAY' || (viewMode === 'auto' && autoShowSay && isAytPresent);
+  const showEa = viewMode === 'all' || viewMode === 'EA' || (viewMode === 'auto' && autoShowEa && isAytPresent);
+  const showSoz = viewMode === 'all' || viewMode === 'SOZ' || (viewMode === 'auto' && autoShowSoz && isAytPresent);
+  const showDil = viewMode === 'all' || viewMode === 'DIL' || (viewMode === 'auto' && autoShowDil && (hasDilNets || isDilProfile));
 
   // Save Estimated Rank Handler
   const handleSaveRank = (rankToSave: number, label?: string) => {
@@ -168,19 +172,19 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
     }
     text += `--------------------------------------\n`;
 
-    if (showTyt || isOnlyTyt) {
+    if (showTyt) {
       text += `📊 TYT: Ham: ${tyt.ham} | Yerleştirme: ${tyt.yerlestirme} | 2026 ÖSYM: #${formatRank(tyt.rank2026Yer)} | MEB Sıra Aralığı: ${tyt.mebHamAralik} (Ham) / ${tyt.mebYerAralik} (Yerl.)\n`;
     }
-    if (showSay && (hasSayNets || viewMode !== 'auto')) {
-      text += `🔬 SAYISAL: Ham: ${say.ham} | Yerleştirme: ${say.yerlestirme} | 2026 ÖSYM: #${formatRank(say.rank2026Yer)} | MEB Sıra Aralığı: ${say.mebHamAralik} (Ham) / ${say.mebYerAralik} (Yerl.)\n`;
+    if (showSay) {
+      text += `🔬 AYT SAYISAL: Ham: ${say.ham} | Yerleştirme: ${say.yerlestirme} | 2026 ÖSYM: #${formatRank(say.rank2026Yer)} | MEB Sıra Aralığı: ${say.mebHamAralik} (Ham) / ${say.mebYerAralik} (Yerl.)\n`;
     }
-    if (showEa && (hasEaNets || viewMode !== 'auto')) {
-      text += `⚖️ EŞİT AĞIRLIK: Ham: ${ea.ham} | Yerleştirme: ${ea.yerlestirme} | 2026 ÖSYM: #${formatRank(ea.rank2026Yer)} | MEB Sıra Aralığı: ${ea.mebHamAralik} (Ham) / ${ea.mebYerAralik} (Yerl.)\n`;
+    if (showEa) {
+      text += `⚖️ AYT EŞİT AĞIRLIK: Ham: ${ea.ham} | Yerleştirme: ${ea.yerlestirme} | 2026 ÖSYM: #${formatRank(ea.rank2026Yer)} | MEB Sıra Aralığı: ${ea.mebHamAralik} (Ham) / ${ea.mebYerAralik} (Yerl.)\n`;
     }
-    if (showSoz && (hasSozNets || viewMode !== 'auto')) {
-      text += `📚 SÖZEL: Ham: ${soz.ham} | Yerleştirme: ${soz.yerlestirme} | 2026 ÖSYM: #${formatRank(soz.rank2026Yer)} | MEB Sıra Aralığı: ${soz.mebHamAralik} (Ham) / ${soz.mebYerAralik} (Yerl.)\n`;
+    if (showSoz) {
+      text += `📚 AYT SÖZEL: Ham: ${soz.ham} | Yerleştirme: ${soz.yerlestirme} | 2026 ÖSYM: #${formatRank(soz.rank2026Yer)} | MEB Sıra Aralığı: ${soz.mebHamAralik} (Ham) / ${soz.mebYerAralik} (Yerl.)\n`;
     }
-    if (showDil && (hasDilNets || viewMode !== 'auto')) {
+    if (showDil) {
       text += `🌐 DİL (YDT): Ham: ${dil.ham} | Yerleştirme: ${dil.yerlestirme} | 2026 ÖSYM: #${formatRank(dil.rank2026Yer)} | MEB Sıra Aralığı: ${dil.mebHamAralik} (Ham) / ${dil.mebYerAralik} (Yerl.)\n`;
     }
 
@@ -192,6 +196,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
   // Render a Single Field Card
   const renderFieldCard = (
     title: string,
+    fieldCode: string,
     badgeColor: string,
     borderColor: string,
     accentTextColor: string,
@@ -223,7 +228,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
               <span className="font-mono text-white font-black text-sm">{data.ham}</span>
             </div>
             <div className="flex justify-between items-center text-xs pt-2 border-t border-slate-800/80">
-              <span className="text-slate-200 font-bold">Yerleştirme (Y-{title.split(' ')[0]}):</span>
+              <span className="text-slate-200 font-bold">Yerleştirme (Y-{fieldCode}):</span>
               <span className={`font-mono ${accentTextColor} font-black text-base`}>{data.yerlestirme}</span>
             </div>
           </div>
@@ -278,7 +283,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
             <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px] items-center">
               <button
                 type="button"
-                onClick={() => handleSaveRank(data.rank2026Ham, `2026 ${title.split(' ')[0]} Ham`)}
+                onClick={() => handleSaveRank(data.rank2026Ham, `2026 ${fieldCode} Ham`)}
                 className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
                   isCurrentSaved(data.rank2026Ham)
                     ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
@@ -292,7 +297,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => handleSaveRank(data.rank2026Yer, `2026 ${title.split(' ')[0]} Yerleştirme`)}
+                onClick={() => handleSaveRank(data.rank2026Yer, `2026 ${fieldCode} Yerleştirme`)}
                 className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
                   isCurrentSaved(data.rank2026Yer)
                     ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
@@ -300,7 +305,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
                 }`}
                 title="2026 Yerleştirme Sıralamasını Denemeye Kaydet"
               >
-                <span>Yerl: <strong className={`${accentTextColor} font-black text-xs`}>#{formatRank(data.rank2026Yer)}</strong></span>
+                <span>Yerl: <strong className={`${accentTextColor} font-black`}>#{formatRank(data.rank2026Yer)}</strong></span>
                 {isCurrentSaved(data.rank2026Yer) ? <CheckCheck className="w-3 h-3 text-emerald-400 shrink-0" /> : <Save className="w-3 h-3 text-slate-500 hover:text-white shrink-0" />}
               </button>
             </div>
@@ -310,12 +315,12 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
           <div className="bg-slate-900/90 p-2.5 rounded-2xl border border-slate-800 text-xs hover:border-slate-700 transition-colors">
             <div className="flex justify-between items-center mb-1">
               <span className="font-bold text-white text-[11px]">2025 YKS Simülasyonu</span>
-              <span className="text-[9px] font-bold bg-amber-500/15 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">Dengeli</span>
+              <span className="text-[9px] font-bold bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30">Orta / Standart</span>
             </div>
             <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px] items-center">
               <button
                 type="button"
-                onClick={() => handleSaveRank(data.rank2025Ham, `2025 ${title.split(' ')[0]} Ham`)}
+                onClick={() => handleSaveRank(data.rank2025Ham, `2025 ${fieldCode} Ham`)}
                 className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
                   isCurrentSaved(data.rank2025Ham)
                     ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
@@ -329,7 +334,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => handleSaveRank(data.rank2025Yer, `2025 ${title.split(' ')[0]} Yerleştirme`)}
+                onClick={() => handleSaveRank(data.rank2025Yer, `2025 ${fieldCode} Yerleştirme`)}
                 className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
                   isCurrentSaved(data.rank2025Yer)
                     ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
@@ -352,7 +357,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
             <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px] items-center">
               <button
                 type="button"
-                onClick={() => handleSaveRank(data.rank2024Ham, `2024 ${title.split(' ')[0]} Ham`)}
+                onClick={() => handleSaveRank(data.rank2024Ham, `2024 ${fieldCode} Ham`)}
                 className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
                   isCurrentSaved(data.rank2024Ham)
                     ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
@@ -366,7 +371,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => handleSaveRank(data.rank2024Yer, `2024 ${title.split(' ')[0]} Yerleştirme`)}
+                onClick={() => handleSaveRank(data.rank2024Yer, `2024 ${fieldCode} Yerleştirme`)}
                 className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
                   isCurrentSaved(data.rank2024Yer)
                     ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
@@ -389,7 +394,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
             <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px] items-center">
               <button
                 type="button"
-                onClick={() => handleSaveRank(data.rank2023Ham, `2023 ${title.split(' ')[0]} Ham`)}
+                onClick={() => handleSaveRank(data.rank2023Ham, `2023 ${fieldCode} Ham`)}
                 className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
                   isCurrentSaved(data.rank2023Ham)
                     ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
@@ -403,7 +408,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => handleSaveRank(data.rank2023Yer, `2023 ${title.split(' ')[0]} Yerleştirme`)}
+                onClick={() => handleSaveRank(data.rank2023Yer, `2023 ${fieldCode} Yerleştirme`)}
                 className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
                   isCurrentSaved(data.rank2023Yer)
                     ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
@@ -491,51 +496,28 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
               }`}>
                 {examType === 'DIL' ? 'DİL (YDT)' : examType === 'TYT_DIL' ? 'TYT + DİL' : examType === 'AYT' ? 'AYT' : examType === 'TYT_AYT' ? 'TYT + AYT' : 'TYT'}
               </span>
-              <span className="text-[11px] text-slate-400 font-mono">{calcMock.date || 'Tarih belirtilmedi'}</span>
+              <h4 className="text-sm font-extrabold text-white">{calcMock.title}</h4>
             </div>
-            <h4 className="text-sm sm:text-base font-black text-white truncate max-w-lg">{calcMock.title}</h4>
+            
+            <div className="text-xs text-slate-400 font-mono flex flex-wrap gap-2 pt-0.5">
+              {calcMock.date && <span>📅 {calcMock.date}</span>}
+              {hasTytNets && <span className="text-indigo-300 font-bold">TYT: {tytTotalNet} Net</span>}
+              {hasAytNets && (
+                <span className="text-emerald-300 font-bold">
+                  AYT: {calcMock.ayt?.totalNet ?? (aytMatNet + aytFenNet + aytEdebNet + aytSos2Net)} Net
+                </span>
+              )}
+              {hasDilNets && <span className="text-sky-300 font-bold">YDT: {ydtNet} Net</span>}
+            </div>
           </div>
 
-          {/* Quick Nets & OBP Summary Badges */}
-          <div className="flex flex-wrap items-center gap-2 text-xs font-mono font-bold">
-            {(hasTytNets || examType === 'TYT' || examType === 'TYT_AYT' || examType === 'TYT_DIL') && (
-              <div className="bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-xl text-center">
-                <span className="text-indigo-400 font-bold block text-[10px]">TYT NET</span>
-                <span className="text-indigo-300 text-sm font-black">{String(calcMock.tyt.totalNet).replace('.', ',')}</span>
-              </div>
-            )}
-
-            {(hasSayNets || hasEaNets || hasSozNets || examType === 'AYT' || examType === 'TYT_AYT') && (
-              <div className="bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl text-center">
-                <span className="text-emerald-400 font-bold block text-[10px]">AYT NET</span>
-                <span className="text-emerald-300 text-sm font-black">{String(calcMock.ayt.totalNet).replace('.', ',')}</span>
-              </div>
-            )}
-
-            {(hasDilNets || examType === 'DIL' || examType === 'TYT_DIL') && (
-              <div className="bg-sky-500/10 border border-sky-500/20 px-3 py-1.5 rounded-xl text-center">
-                <span className="text-sky-400 font-bold block text-[10px]">{calcMock.ydt?.language || 'YDT'} NET</span>
-                <span className="text-sky-300 text-sm font-black">{String(calcMock.ydt?.net ?? 0).replace('.', ',')}</span>
-              </div>
-            )}
-
-            <div className="bg-purple-500/10 border border-purple-500/20 px-3 py-1.5 rounded-xl text-center">
-              <span className="text-purple-400 font-bold block text-[10px]">TOPLAM NET</span>
-              <span className="text-purple-300 text-sm font-black">
-                {String((tytTotalNet + parseNetVal(calcMock.ayt.totalNet) + ydtNet).toFixed(2)).replace('.', ',')}
-              </span>
-            </div>
-
-            {/* Diploma Notu / OBP Button (Tıklanınca aşağı doğru düzenleme alanı açılır) */}
+          <div className="flex items-center gap-3">
+            {/* Diploma Grade Capsule Button with Accordion Toggle */}
             <button
               type="button"
               onClick={() => setShowObpEdit(prev => !prev)}
-              className={`border px-3 py-1.5 rounded-xl text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
-                showObpEdit
-                  ? 'bg-indigo-600/30 border-indigo-400 text-white shadow-md shadow-indigo-950/50 ring-1 ring-indigo-400/50'
-                  : 'bg-indigo-500/10 border-indigo-500/30 hover:bg-indigo-500/20 text-indigo-300'
-              }`}
-              title="Diploma Notu (OBP) ve eklenen puanı düzenlemek için tıklayın"
+              className="bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 px-3.5 py-2 rounded-xl transition-all cursor-pointer flex items-center space-x-2 text-left group shadow-sm"
+              title="Diploma Notunu (OBP) Değiştir"
             >
               <div className="flex items-center space-x-1">
                 <span className="text-indigo-400 font-bold block text-[10px]">DİPLOMA NOTU (OBP)</span>
@@ -641,7 +623,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
               }`}
             >
               <Zap className="w-3 h-3 text-amber-400" />
-              <span>Otomatik (Girilen Alanlar)</span>
+              <span>Otomatik ({profileFieldLabel})</span>
             </button>
 
             <button
@@ -726,6 +708,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
           {/* 1. TYT KARTI */}
           {showTyt && renderFieldCard(
             'TYT PUANI & SIRALAMA',
+            'TYT',
             'bg-indigo-500',
             'border-indigo-500/30 hover:border-indigo-500/60',
             'text-indigo-300',
@@ -735,9 +718,10 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
             `Net Katkısı: TÜR (${calcMock.tyt.turkce}) + MAT (${calcMock.tyt.mat}) + SOS (${calcMock.tyt.sosyal}) + FEN (${calcMock.tyt.fen}) = ${tytTotalNet} Net`
           )}
 
-          {/* 2. SAYISAL KARTI */}
+          {/* 2. AYT SAYISAL KARTI */}
           {showSay && renderFieldCard(
-            'SAYISAL (SAY)',
+            'AYT SAYISAL (SAY)',
+            'SAY',
             'bg-cyan-400',
             'border-cyan-500/30 hover:border-cyan-500/60',
             'text-cyan-300',
@@ -747,9 +731,10 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
             `Net Katkısı: TYT (${tytTotalNet}) + AYT Mat (${aytMatNet}) + AYT Fen (${aytFenNet})`
           )}
 
-          {/* 3. EŞİT AĞIRLIK KARTI */}
+          {/* 3. AYT EŞİT AĞIRLIK KARTI */}
           {showEa && renderFieldCard(
-            'EŞİT AĞIRLIK (EA)',
+            'AYT EŞİT AĞIRLIK (EA)',
+            'EA',
             'bg-emerald-400',
             'border-emerald-500/30 hover:border-emerald-500/60',
             'text-emerald-300',
@@ -759,9 +744,10 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
             `Net Katkısı: TYT (${tytTotalNet}) + AYT Mat (${aytMatNet}) + Edeb-Sos1 (${aytEdebNet})`
           )}
 
-          {/* 4. SÖZEL KARTI */}
+          {/* 4. AYT SÖZEL KARTI */}
           {showSoz && renderFieldCard(
-            'SÖZEL (SÖZ)',
+            'AYT SÖZEL (SÖZ)',
+            'SÖZ',
             'bg-amber-400',
             'border-amber-500/30 hover:border-amber-500/60',
             'text-amber-300',
@@ -774,6 +760,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
           {/* 5. DİL (YDT) KARTI */}
           {showDil && renderFieldCard(
             `DİL (YDT - ${calcMock.ydt?.language || 'YABANCI DİL'})`,
+            'DİL',
             'bg-sky-400',
             'border-sky-500/30 hover:border-sky-500/60',
             'text-sky-300',
