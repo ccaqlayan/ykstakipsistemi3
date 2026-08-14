@@ -33,7 +33,11 @@ import {
   ChevronUp,
   Folder,
   Sparkles,
-  CheckCheck
+  CheckCheck,
+  Target,
+  Timer,
+  LayoutGrid,
+  Table
 } from 'lucide-react';
 import { BadgeShield } from '../badges/BadgeShield';
 import { BADGE_DEFINITIONS, evaluateBadges } from '../../services/motivationEngine';
@@ -178,6 +182,11 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
   const [plannerStatusFilter, setPlannerStatusFilter] = React.useState<'all' | 'completed' | 'pending'>('all');
   const [plannerSubjectFilter, setPlannerSubjectFilter] = React.useState<string>('all');
   const [plannerSearchQuery, setPlannerSearchQuery] = React.useState<string>('');
+  const [questionSubjectFilter, setQuestionSubjectFilter] = React.useState<string>('all');
+  const [questionExamTypeFilter, setQuestionExamTypeFilter] = React.useState<'all' | 'TYT' | 'AYT'>('all');
+  const [questionDateFilter, setQuestionDateFilter] = React.useState<'all' | '7days' | '30days'>('all');
+  const [questionSearchQuery, setQuestionSearchQuery] = React.useState<string>('');
+  const [questionViewMode, setQuestionViewMode] = React.useState<'cards' | 'table'>('cards');
 
   return (
     <div 
@@ -1173,60 +1182,547 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
           <div className="space-y-6">
             {(() => {
               const logs = stData?.questionLogs || [];
+              const totalSolved = logs.reduce((acc, l) => acc + (l.solvedCount || 0), 0);
+              const totalCorrect = logs.reduce((acc, l) => acc + (l.correctCount || 0), 0);
+              const totalWrong = logs.reduce((acc, l) => acc + (l.wrongCount || 0), 0);
+              const totalEmpty = logs.reduce((acc, l) => acc + (l.emptyCount || 0), 0);
+              const totalNet = logs.reduce((acc, l) => acc + (l.netScore !== undefined ? l.netScore : ((l.correctCount || 0) - (l.wrongCount || 0) * 0.25)), 0);
+              const totalDurationMinutes = logs.reduce((acc, l) => acc + (l.durationMinutes || 0), 0);
+              const accuracyPct = totalSolved > 0 ? Math.round((totalCorrect / totalSolved) * 100) : 0;
+              const distinctDays = new Set(logs.map(l => l.date).filter(Boolean)).size;
               const teacherSubj = (teacher.role === 'teacher' && teacher.subject) ? teacher.subject.toLowerCase() : '';
-              const sortedLogs = [...logs].sort((a, b) => {
+
+              const subjectsList = ['all', ...Array.from(new Set(logs.map(l => l.subject).filter(Boolean)))];
+
+              const now = new Date();
+              const getCutoffDate = (days: number) => {
+                const d = new Date(now);
+                d.setDate(d.getDate() - days);
+                return d.toISOString().split('T')[0];
+              };
+
+              const cutoff7 = getCutoffDate(7);
+              const cutoff30 = getCutoffDate(30);
+
+              const filteredLogs = logs.filter(log => {
+                if (questionSubjectFilter !== 'all' && log.subject !== questionSubjectFilter) return false;
+                if (questionExamTypeFilter !== 'all' && log.examType !== questionExamTypeFilter) return false;
+                if (questionDateFilter === '7days' && log.date && log.date < cutoff7) return false;
+                if (questionDateFilter === '30days' && log.date && log.date < cutoff30) return false;
+                if (questionSearchQuery.trim()) {
+                  const q = questionSearchQuery.toLowerCase();
+                  const matchSubj = (log.subject || '').toLowerCase().includes(q);
+                  const matchTopic = (log.topic || '').toLowerCase().includes(q);
+                  const matchNotes = (log.notes || '').toLowerCase().includes(q);
+                  if (!matchSubj && !matchTopic && !matchNotes) return false;
+                }
+                return true;
+              }).sort((a, b) => {
                 if (teacherSubj) {
                   const aMatch = (a.subject || '').toLowerCase().includes(teacherSubj) || teacherSubj.includes((a.subject || '').toLowerCase());
                   const bMatch = (b.subject || '').toLowerCase().includes(teacherSubj) || teacherSubj.includes((b.subject || '').toLowerCase());
                   if (aMatch && !bMatch) return -1;
                   if (!aMatch && bMatch) return 1;
                 }
-                return 0;
+                return (b.date || '').localeCompare(a.date || '');
               });
 
-              return (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-                    <CheckSquare className="w-4 h-4 text-amber-400" />
-                    <span>Öğrencinin Soru Çözüm Kayıtları ({logs.length})</span>
-                  </h3>
+              // Daily Trends
+              const dailyMap: Record<string, { date: string; displayDate: string; solved: number; correct: number; wrong: number; net: number }> = {};
+              logs.forEach(l => {
+                if (!l.date) return;
+                const key = l.date;
+                if (!dailyMap[key]) {
+                  const parts = key.split('-');
+                  const displayDate = parts.length === 3 ? `${parts[2]}/${parts[1]}` : key;
+                  dailyMap[key] = { date: key, displayDate, solved: 0, correct: 0, wrong: 0, net: 0 };
+                }
+                dailyMap[key].solved += (l.solvedCount || 0);
+                dailyMap[key].correct += (l.correctCount || 0);
+                dailyMap[key].wrong += (l.wrongCount || 0);
+                dailyMap[key].net += (l.netScore !== undefined ? l.netScore : ((l.correctCount || 0) - (l.wrongCount || 0) * 0.25));
+              });
 
-                  {sortedLogs.length === 0 ? (
-                    <p className="text-xs text-slate-400 italic py-8 text-center">Soru çözme kaydı bulunmuyor.</p>
+              const dailyChartData = Object.values(dailyMap)
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .slice(-14)
+                .map(d => ({ ...d, net: Number(d.net.toFixed(2)) }));
+
+              // Subject Breakdown
+              const subjectMap: Record<string, { subject: string; solved: number; correct: number; wrong: number; accuracy: number }> = {};
+              logs.forEach(l => {
+                const s = l.subject || 'Diğer';
+                if (!subjectMap[s]) {
+                  subjectMap[s] = { subject: s, solved: 0, correct: 0, wrong: 0, accuracy: 0 };
+                }
+                subjectMap[s].solved += (l.solvedCount || 0);
+                subjectMap[s].correct += (l.correctCount || 0);
+                subjectMap[s].wrong += (l.wrongCount || 0);
+              });
+
+              const subjectChartData = Object.values(subjectMap)
+                .map(s => ({
+                  ...s,
+                  accuracy: s.solved > 0 ? Math.round((s.correct / s.solved) * 100) : 0
+                }))
+                .sort((a, b) => b.solved - a.solved)
+                .slice(0, 8);
+
+              return (
+                <div className="space-y-5">
+                  {/* Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/5 p-4 rounded-2xl border border-white/10">
+                    <div>
+                      <h3 className="text-sm font-bold text-white flex items-center space-x-2">
+                        <CheckSquare className="w-4 h-4 text-amber-400" />
+                        <span>Soru Çözüm Analizi ve Kayıtları</span>
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">Öğrencinin gün ve ders bazlı soru çözüm adetleri, doğruluk trendleri ve net skorları.</p>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold px-3 py-1 rounded-xl font-mono">
+                        {logs.length} Oturum • {totalSolved} Soru
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* KPI Metrics Header */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-400">Toplam Çözülen</span>
+                        <CheckSquare className="w-4 h-4 text-indigo-400" />
+                      </div>
+                      <div className="mt-2 flex items-baseline gap-1.5">
+                        <span className="text-xl font-black text-white">{totalSolved}</span>
+                        <span className="text-xs text-slate-400">soru</span>
+                      </div>
+                      <div className="mt-1 text-[10px] text-slate-500">
+                        {distinctDays} aktif günde
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-400">Doğru & Başarı</span>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <div className="mt-2 flex items-baseline gap-1.5">
+                        <span className="text-xl font-black text-emerald-400">{totalCorrect}</span>
+                        <span className="text-xs font-bold text-emerald-500/90">(%{accuracyPct})</span>
+                      </div>
+                      <div className="mt-1 text-[10px] text-emerald-400/80 font-medium">
+                        Net Doğruluk Oranı
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-400">Yanlış & Boş</span>
+                        <AlertTriangle className="w-4 h-4 text-rose-400" />
+                      </div>
+                      <div className="mt-2 flex items-baseline gap-1.5">
+                        <span className="text-xl font-black text-rose-400">{totalWrong}</span>
+                        <span className="text-xs text-slate-400 font-bold">/ {totalEmpty}B</span>
+                      </div>
+                      <div className="mt-1 text-[10px] text-rose-400/80">
+                        Hata Oranı: %{totalSolved > 0 ? Math.round((totalWrong / totalSolved) * 100) : 0}
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-slate-400">Toplam Net</span>
+                        <Target className="w-4 h-4 text-sky-400" />
+                      </div>
+                      <div className="mt-2 flex items-baseline gap-1.5">
+                        <span className="text-xl font-black text-sky-400">{totalNet.toFixed(1)}</span>
+                        <span className="text-xs text-sky-500 font-bold">net</span>
+                      </div>
+                      <div className="mt-1 text-[10px] text-slate-500">
+                        Süre: {Math.floor(totalDurationMinutes / 60)}s {totalDurationMinutes % 60}d
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Visual Charts */}
+                  {logs.length > 0 && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Daily Chart */}
+                      <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <TrendingUp className="w-3.5 h-3.5 text-indigo-400" />
+                            <h4 className="text-xs font-bold text-white">Günlük Trend (Son 14 Gün)</h4>
+                          </div>
+                          <div className="flex items-center space-x-2 text-[10px] font-bold">
+                            <span className="text-indigo-400">■ Çözülen</span>
+                            <span className="text-emerald-400">■ Doğru</span>
+                          </div>
+                        </div>
+
+                        <div className="h-40 w-full pt-1">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={dailyChartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                              <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} />
+                              <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
+                              <Tooltip
+                                contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
+                                formatter={(val: any, name: any) => [val, name === 'solved' ? 'Çözülen' : 'Doğru']}
+                              />
+                              <Bar dataKey="solved" fill="#6366f1" radius={[3, 3, 0, 0]} maxBarSize={20} />
+                              <Bar dataKey="correct" fill="#10b981" radius={[3, 3, 0, 0]} maxBarSize={20} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+
+                      {/* Subject Chart */}
+                      <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+                            <h4 className="text-xs font-bold text-white">Ders Dağılımı ve Doğruluk</h4>
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-mono">En çok çözülenler</span>
+                        </div>
+
+                        <div className="h-40 w-full pt-1">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={subjectChartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                              <XAxis dataKey="subject" stroke="#94a3b8" fontSize={9} tickLine={false} interval={0} />
+                              <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
+                              <Tooltip
+                                contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
+                                formatter={(val: any, name: any, item: any) => [`${val} Soru (%${item.payload.accuracy})`, 'Çözülen Soru']}
+                              />
+                              <Bar dataKey="solved" radius={[3, 3, 0, 0]} maxBarSize={24}>
+                                {subjectChartData.map((entry, index) => {
+                                  const isMyBranch = teacherSubj && entry.subject.toLowerCase().includes(teacherSubj);
+                                  const colors = ['#6366f1', '#10b981', '#f59e0b', '#06b6d4', '#ec4899', '#8b5cf6'];
+                                  return <Cell key={`cell-modal-${index}`} fill={isMyBranch ? '#f59e0b' : colors[index % colors.length]} />;
+                                })}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Toolbar: Search & Filter */}
+                  <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-3.5 space-y-2.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                      <div className="relative flex-1">
+                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={questionSearchQuery}
+                          onChange={(e) => setQuestionSearchQuery(e.target.value)}
+                          placeholder="Ders, konu adı veya notlarda ara..."
+                          className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/50 transition-colors"
+                        />
+                        {questionSearchQuery && (
+                          <button
+                            onClick={() => setQuestionSearchQuery('')}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs px-1"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Exam Filter */}
+                      <div className="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0">
+                        <button
+                          onClick={() => setQuestionExamTypeFilter('all')}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                            questionExamTypeFilter === 'all' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Tümü
+                        </button>
+                        <button
+                          onClick={() => setQuestionExamTypeFilter('TYT')}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                            questionExamTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-indigo-400'
+                          }`}
+                        >
+                          TYT
+                        </button>
+                        <button
+                          onClick={() => setQuestionExamTypeFilter('AYT')}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                            questionExamTypeFilter === 'AYT' ? 'bg-fuchsia-600 text-white font-bold' : 'text-slate-400 hover:text-fuchsia-400'
+                          }`}
+                        >
+                          AYT
+                        </button>
+                      </div>
+
+                      {/* View Mode */}
+                      <div className="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0">
+                        <button
+                          onClick={() => setQuestionViewMode('cards')}
+                          className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                            questionViewMode === 'cards' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                          }`}
+                          title="Kart Görünümü"
+                        >
+                          <LayoutGrid className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setQuestionViewMode('table')}
+                          className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                            questionViewMode === 'table' ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                          }`}
+                          title="Tablo Görünümü"
+                        >
+                          <Table className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Subject Filter Chips */}
+                    {subjectsList.length > 2 && (
+                      <div className="flex items-center gap-1 flex-wrap pt-1 border-t border-white/5">
+                        <span className="text-[11px] font-bold text-slate-400 mr-1 flex items-center gap-1">
+                          <Filter className="w-3 h-3 text-amber-400" /> Ders:
+                        </span>
+                        {subjectsList.map(subj => {
+                          const isMyBranch = teacherSubj && subj.toLowerCase().includes(teacherSubj);
+                          return (
+                            <button
+                              key={subj}
+                              onClick={() => setQuestionSubjectFilter(subj)}
+                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg border transition-all cursor-pointer flex items-center space-x-1 ${
+                                questionSubjectFilter === subj
+                                  ? 'bg-amber-500/20 text-amber-300 border-amber-400/40 font-bold'
+                                  : isMyBranch
+                                  ? 'bg-amber-500/10 text-amber-200 border-amber-500/20 hover:bg-amber-500/20'
+                                  : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-slate-300'
+                              }`}
+                            >
+                              <span>{subj === 'all' ? 'Tümü' : subj}</span>
+                              {isMyBranch && <span className="text-[8px] text-amber-300 font-bold">⭐</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* List / Cards / Table */}
+                  {logs.length === 0 ? (
+                    <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl space-y-2">
+                      <CheckSquare className="w-8 h-8 text-slate-500 mx-auto" />
+                      <p className="text-xs text-slate-400">Bu öğrencinin henüz kayıtlı soru çözümü bulunmuyor.</p>
+                    </div>
+                  ) : filteredLogs.length === 0 ? (
+                    <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl space-y-2">
+                      <Filter className="w-8 h-8 text-slate-500 mx-auto" />
+                      <p className="text-xs text-slate-400">Uygulanan filtrelerle eşleşen soru kaydı bulunamadı.</p>
+                      <button
+                        onClick={() => {
+                          setQuestionSubjectFilter('all');
+                          setQuestionExamTypeFilter('all');
+                          setQuestionDateFilter('all');
+                          setQuestionSearchQuery('');
+                        }}
+                        className="text-xs text-amber-400 hover:text-amber-300 underline font-semibold cursor-pointer"
+                      >
+                        Filtreleri Temizle
+                      </button>
+                    </div>
+                  ) : questionViewMode === 'cards' ? (
+                    /* CARD VIEW */
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      {filteredLogs.map(log => {
+                        const isMyBranch = teacherSubj && (log.subject || '').toLowerCase().includes(teacherSubj);
+                        const solved = log.solvedCount || 0;
+                        const correct = log.correctCount || 0;
+                        const wrong = log.wrongCount || 0;
+                        const empty = log.emptyCount || 0;
+                        const net = log.netScore !== undefined ? log.netScore : (correct - wrong * 0.25);
+                        const logAccuracy = solved > 0 ? Math.round((correct / solved) * 100) : 0;
+
+                        return (
+                          <div 
+                            key={log.id} 
+                            className={`p-3.5 rounded-xl border transition-all space-y-2.5 relative group ${
+                              isMyBranch
+                                ? 'bg-amber-950/20 border-amber-500/40 hover:border-amber-500/60 shadow-sm'
+                                : 'bg-slate-950/80 border-white/10 hover:border-white/20'
+                            }`}
+                          >
+                            {/* Top Row */}
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center flex-wrap gap-1.5">
+                                <span className="text-[11px] font-black text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-lg border border-indigo-500/30">
+                                  {log.subject}
+                                </span>
+                                {log.examType && (
+                                  <span className="text-[9px] font-bold text-slate-300 bg-white/10 px-1.5 py-0.5 rounded-lg border border-white/10">
+                                    {log.examType}
+                                  </span>
+                                )}
+                                {isMyBranch && (
+                                  <span className="text-[9px] font-bold bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded-lg border border-amber-500/40 flex items-center gap-0.5">
+                                    <Sparkles className="w-2.5 h-2.5" />
+                                    Branşınız
+                                  </span>
+                                )}
+                              </div>
+
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg border ${
+                                logAccuracy >= 80
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                  : logAccuracy >= 50
+                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                  : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                              }`}>
+                                %{logAccuracy} Başarı
+                              </span>
+                            </div>
+
+                            {/* Second Row: Topic */}
+                            <div className="pt-0.5">
+                              <div className="text-xs font-bold text-white leading-relaxed break-words">
+                                {log.topic || log.notes || 'Genel Soru Çözümü'}
+                              </div>
+                              {log.notes && log.topic && (
+                                <p className="text-[10px] text-slate-400 mt-1 bg-black/30 p-1.5 rounded-lg border border-white/5 italic">
+                                  "{log.notes}"
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Mini Progress Bar */}
+                            {solved > 0 && (
+                              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden flex border border-white/10">
+                                <div 
+                                  className="h-full bg-emerald-500 transition-all duration-300"
+                                  style={{ width: `${(correct / solved) * 100}%` }}
+                                />
+                                <div 
+                                  className="h-full bg-rose-500 transition-all duration-300"
+                                  style={{ width: `${(wrong / solved) * 100}%` }}
+                                />
+                                <div 
+                                  className="h-full bg-slate-500 transition-all duration-300"
+                                  style={{ width: `${(empty / solved) * 100}%` }}
+                                />
+                              </div>
+                            )}
+
+                            {/* Metrics Row */}
+                            <div className="flex items-center justify-between pt-1.5 border-t border-white/5 text-[11px] font-mono">
+                              <div className="flex items-center space-x-1.5">
+                                <span className="font-bold text-white">{solved} Soru</span>
+                                <span className="text-slate-500">•</span>
+                                <span className="text-emerald-400 font-bold">{correct}D</span>
+                                <span className="text-rose-400 font-bold">{wrong}Y</span>
+                                {empty > 0 && <span className="text-slate-400">{empty}B</span>}
+                              </div>
+
+                              <span className="text-sky-300 font-bold bg-sky-500/10 px-1.5 py-0.2 rounded border border-sky-500/20">
+                                {net.toFixed(2)} Net
+                              </span>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-0.5">
+                              <span className="flex items-center space-x-1">
+                                <Calendar className="w-3 h-3 text-slate-500" />
+                                <span>{log.date}</span>
+                              </span>
+                              {log.durationMinutes ? (
+                                <span className="flex items-center space-x-1 text-amber-400/90 font-mono">
+                                  <Clock className="w-3 h-3" />
+                                  <span>{log.durationMinutes} dk</span>
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   ) : (
+                    /* TABLE VIEW */
                     <div className="overflow-x-auto rounded-2xl border border-white/10">
                       <table className="w-full text-left text-xs">
                         <thead className="bg-white/10 text-slate-300 font-bold">
                           <tr>
                             <th className="p-3">Tarih</th>
-                            <th className="p-3">Ders & Konu</th>
+                            <th className="p-3">Ders & Sınav</th>
+                            <th className="p-3">Konu Başlığı</th>
                             <th className="p-3 text-center">Çözülen</th>
                             <th className="p-3 text-center text-emerald-400">Doğru</th>
                             <th className="p-3 text-center text-rose-400">Yanlış</th>
                             <th className="p-3 text-center text-slate-400">Boş</th>
+                            <th className="p-3 text-center text-sky-400">Net</th>
+                            <th className="p-3 text-center text-amber-400">Başarı %</th>
+                            <th className="p-3 text-center">Süre</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-white/10 text-slate-200 font-mono">
-                          {sortedLogs.map((log) => {
+                          {filteredLogs.map((log) => {
                             const isMyBranch = teacherSubj && (log.subject || '').toLowerCase().includes(teacherSubj);
+                            const solved = log.solvedCount || 0;
+                            const correct = log.correctCount || 0;
+                            const wrong = log.wrongCount || 0;
+                            const empty = log.emptyCount || 0;
+                            const net = log.netScore !== undefined ? log.netScore : (correct - wrong * 0.25);
+                            const logAccuracy = solved > 0 ? Math.round((correct / solved) * 100) : 0;
+
                             return (
                               <tr key={log.id} className={isMyBranch ? 'bg-amber-500/10 border-l-4 border-l-amber-400 hover:bg-amber-500/15' : 'hover:bg-white/5'}>
-                                <td className="p-3 text-slate-400">{log.date}</td>
-                                <td className="p-3 font-bold text-white">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span>{log.subject}</span>
-                                    {isMyBranch && <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded border border-amber-400/40 font-sans">Branşınız ⭐</span>}
+                                <td className="p-3 text-slate-400 whitespace-nowrap">{log.date}</td>
+                                <td className="p-3 font-bold text-white whitespace-nowrap">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-indigo-300 font-sans">{log.subject}</span>
+                                    {log.examType && (
+                                      <span className="text-[9px] bg-white/10 px-1 py-0.2 rounded text-slate-300 font-sans">
+                                        {log.examType}
+                                      </span>
+                                    )}
+                                    {isMyBranch && (
+                                      <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1 py-0.2 rounded font-sans">
+                                        ⭐
+                                      </span>
+                                    )}
                                   </div>
-                                  {(log.topic || log.notes) && (
-                                    <div className="text-[11px] text-indigo-300 font-medium font-sans mt-0.5">
-                                      {log.topic || log.notes}
+                                </td>
+                                <td className="p-3 font-bold text-white min-w-[160px]">
+                                  <div className="font-sans text-xs">{log.topic || log.notes || 'Genel Soru Çözümü'}</div>
+                                  {log.notes && log.topic && (
+                                    <div className="text-[10px] text-slate-400 font-sans italic font-normal mt-0.5">
+                                      "{log.notes}"
                                     </div>
                                   )}
                                 </td>
-                                <td className="p-3 text-center font-bold text-indigo-300">{log.solvedCount}</td>
-                                <td className="p-3 text-center text-emerald-400 font-bold">{log.correctCount}</td>
-                                <td className="p-3 text-center text-rose-400 font-bold">{log.wrongCount}</td>
-                                <td className="p-3 text-center text-slate-400">{log.emptyCount || 0}</td>
+                                <td className="p-3 text-center font-bold text-white">{solved}</td>
+                                <td className="p-3 text-center text-emerald-400 font-bold">{correct}</td>
+                                <td className="p-3 text-center text-rose-400 font-bold">{wrong}</td>
+                                <td className="p-3 text-center text-slate-400">{empty}</td>
+                                <td className="p-3 text-center text-sky-300 font-bold">{net.toFixed(2)}</td>
+                                <td className="p-3 text-center">
+                                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg border ${
+                                    logAccuracy >= 80
+                                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                      : logAccuracy >= 50
+                                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                                      : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                                  }`}>
+                                    %{logAccuracy}
+                                  </span>
+                                </td>
+                                <td className="p-3 text-center text-slate-400 text-[10px]">
+                                  {log.durationMinutes ? `${log.durationMinutes} dk` : '-'}
+                                </td>
                               </tr>
                             );
                           })}
