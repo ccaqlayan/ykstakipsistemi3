@@ -35,9 +35,11 @@ import {
   Sparkles,
   CheckCheck,
   Target,
-  Timer,
   LayoutGrid,
   Table,
+  List,
+  ChevronLeft,
+  ChevronRight,
   Building2,
   School,
   FileText,
@@ -201,10 +203,18 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
   const [selectedInstitutionalExam, setSelectedInstitutionalExam] = React.useState<InstitutionalMockExam | null>(null);
   const [generalMockSearch, setGeneralMockSearch] = React.useState<string>('');
   const [generalMockTypeFilter, setGeneralMockTypeFilter] = React.useState<'all' | 'TYT' | 'AYT'>('all');
+  const [generalMockViewMode, setGeneralMockViewMode] = React.useState<'cards' | 'table'>('cards');
+  const [generalMockPage, setGeneralMockPage] = React.useState<number>(1);
+
   const [branchMockSubjectFilter, setBranchMockSubjectFilter] = React.useState<string>('all');
   const [branchMockSearch, setBranchMockSearch] = React.useState<string>('');
+  const [branchExamViewMode, setBranchExamViewMode] = React.useState<'cards' | 'table'>('cards');
+  const [branchExamPage, setBranchExamPage] = React.useState<number>(1);
+
   const [institutionalMockSearch, setInstitutionalMockSearch] = React.useState<string>('');
   const [institutionalMockTypeFilter, setInstitutionalMockTypeFilter] = React.useState<'all' | 'TYT' | 'AYT'>('all');
+  const [institutionalMockViewMode, setInstitutionalMockViewMode] = React.useState<'cards' | 'table'>('cards');
+  const [institutionalMockPage, setInstitutionalMockPage] = React.useState<number>(1);
 
   return (
     <div 
@@ -2173,96 +2183,236 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                         </div>
                       )}
 
-                      {/* Toolbar */}
-                      <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                        <div className="relative flex-1">
-                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
-                            value={generalMockSearch}
-                            onChange={(e) => setGeneralMockSearch(e.target.value)}
-                            placeholder="Deneme ara..."
-                            className="w-full bg-slate-900/90 border border-white/10 rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500/50"
-                          />
-                        </div>
+                      const GENERAL_PER_PAGE = 6;
+                      const totalGeneralPages = Math.ceil(filteredGeneralMocks.length / GENERAL_PER_PAGE) || 1;
+                      const currentGenPage = Math.min(generalMockPage, totalGeneralPages);
+                      const paginatedGeneralMocks = filteredGeneralMocks.slice((currentGenPage - 1) * GENERAL_PER_PAGE, currentGenPage * GENERAL_PER_PAGE);
 
-                        <div className="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-white/10 shrink-0">
-                          <button
-                            onClick={() => setGeneralMockTypeFilter('all')}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${
-                              generalMockTypeFilter === 'all' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            Tümü
-                          </button>
-                          <button
-                            onClick={() => setGeneralMockTypeFilter('TYT')}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${
-                              generalMockTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-indigo-400'
-                            }`}
-                          >
-                            TYT
-                          </button>
-                          <button
-                            onClick={() => setGeneralMockTypeFilter('AYT')}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${
-                              generalMockTypeFilter === 'AYT' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-emerald-400'
-                            }`}
-                          >
-                            AYT
-                          </button>
-                        </div>
-                      </div>
+                      return (
+                        <div className="space-y-4">
+                          {/* Toolbar */}
+                          <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                            <div className="relative flex-1">
+                              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                              <input
+                                type="text"
+                                value={generalMockSearch}
+                                onChange={(e) => {
+                                  setGeneralMockSearch(e.target.value);
+                                  setGeneralMockPage(1);
+                                }}
+                                placeholder="Deneme ara..."
+                                className="w-full bg-slate-900/90 border border-white/10 rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500/50"
+                              />
+                            </div>
 
-                      {/* General Mock Cards */}
-                      {filteredGeneralMocks.length === 0 ? (
-                        <p className="text-xs text-slate-400 italic py-6 text-center">Filtreye uygun deneme bulunamadı.</p>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {filteredGeneralMocks.map((exam) => (
-                            <div
-                              key={exam.id}
-                              className="bg-slate-950/80 border border-white/10 hover:border-sky-500/40 rounded-xl p-3.5 space-y-2.5 shadow-xl transition-all"
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div>
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">
-                                      {exam.publisher || 'Bireysel'}
-                                    </span>
-                                    {exam.estimatedRank ? (
-                                      <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-mono">
-                                        #{exam.estimatedRank.toLocaleString('tr-TR')}
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  <h4 className="text-xs font-bold text-white mt-1">
-                                    {exam.title}
-                                  </h4>
-                                </div>
-                                <div className="text-right shrink-0 font-mono">
-                                  {exam.tyt?.totalNet ? (
-                                    <span className="text-xs font-black text-indigo-400 block">{exam.tyt.totalNet} TYT Net</span>
-                                  ) : null}
-                                  {exam.ayt?.totalNet ? (
-                                    <span className="text-xs font-black text-emerald-400 block">{exam.ayt.totalNet} AYT Net</span>
-                                  ) : null}
-                                </div>
+                            <div className="flex items-center space-x-2 flex-wrap">
+                              <div className="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-white/10 shrink-0">
+                                <button
+                                  onClick={() => {
+                                    setGeneralMockTypeFilter('all');
+                                    setGeneralMockPage(1);
+                                  }}
+                                  className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                                    generalMockTypeFilter === 'all' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                                  }`}
+                                >
+                                  Tümü
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setGeneralMockTypeFilter('TYT');
+                                    setGeneralMockPage(1);
+                                  }}
+                                  className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                                    generalMockTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-indigo-400'
+                                  }`}
+                                >
+                                  TYT
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setGeneralMockTypeFilter('AYT');
+                                    setGeneralMockPage(1);
+                                  }}
+                                  className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                                    generalMockTypeFilter === 'AYT' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-emerald-400'
+                                  }`}
+                                >
+                                  AYT
+                                </button>
                               </div>
 
-                              <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-white/5 font-mono">
-                                <span>{exam.date}</span>
-                                {exam.score ? (
-                                  <span className="text-amber-300 font-bold">{exam.score.toFixed(1)} Puan</span>
-                                ) : null}
+                              {/* View Mode Toggle */}
+                              <div className="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-white/10 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => setGeneralMockViewMode('cards')}
+                                  className={`p-1 rounded transition-all cursor-pointer ${
+                                    generalMockViewMode === 'cards' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-white'
+                                  }`}
+                                  title="Kart Görünümü"
+                                >
+                                  <LayoutGrid className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setGeneralMockViewMode('table')}
+                                  className={`p-1 rounded transition-all cursor-pointer ${
+                                    generalMockViewMode === 'table' ? 'bg-sky-600 text-white' : 'text-slate-400 hover:text-white'
+                                  }`}
+                                  title="Detaylı Liste / Tablo Görünümü"
+                                >
+                                  <Table className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             </div>
-                          ))}
+                          </div>
+
+                          {/* General Mock Cards OR Table */}
+                          {filteredGeneralMocks.length === 0 ? (
+                            <p className="text-xs text-slate-400 italic py-6 text-center">Filtreye uygun deneme bulunamadı.</p>
+                          ) : generalMockViewMode === 'cards' ? (
+                            /* CARD VIEW */
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {paginatedGeneralMocks.map((exam) => (
+                                <div
+                                  key={exam.id}
+                                  className="bg-slate-950/80 border border-white/10 hover:border-sky-500/40 rounded-xl p-3.5 space-y-2.5 shadow-xl transition-all"
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">
+                                          {exam.publisher || 'Bireysel'}
+                                        </span>
+                                        {exam.estimatedRank ? (
+                                          <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-mono">
+                                            #{exam.estimatedRank.toLocaleString('tr-TR')}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                      <h4 className="text-xs font-bold text-white mt-1">
+                                        {exam.title}
+                                      </h4>
+                                    </div>
+                                    <div className="text-right shrink-0 font-mono">
+                                      {exam.tyt?.totalNet ? (
+                                        <span className="text-xs font-black text-indigo-400 block">{exam.tyt.totalNet} TYT Net</span>
+                                      ) : null}
+                                      {exam.ayt?.totalNet ? (
+                                        <span className="text-xs font-black text-emerald-400 block">{exam.ayt.totalNet} AYT Net</span>
+                                      ) : null}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-white/5 font-mono">
+                                    <span>{exam.date}</span>
+                                    {exam.score ? (
+                                      <span className="text-amber-300 font-bold">{exam.score.toFixed(1)} Puan</span>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            /* TABLE VIEW */
+                            <div className="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/80 shadow-xl">
+                              <table className="w-full text-left text-xs border-collapse">
+                                <thead>
+                                  <tr className="border-b border-white/10 bg-slate-900/90 text-slate-400 font-semibold uppercase tracking-wider text-[9px]">
+                                    <th className="py-2.5 px-3">Sınav Adı</th>
+                                    <th className="py-2.5 px-3">Tarih</th>
+                                    <th className="py-2.5 px-3 text-center">TYT Net</th>
+                                    <th className="py-2.5 px-3 text-center">AYT Net</th>
+                                    <th className="py-2.5 px-3 text-center">Toplam Net</th>
+                                    <th className="py-2.5 px-3 text-center">Tahmini Sıra</th>
+                                    <th className="py-2.5 px-3 text-right">Puan</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5 font-mono text-[11px]">
+                                  {paginatedGeneralMocks.map(mock => {
+                                    const tytNet = mock.tyt?.totalNet || 0;
+                                    const aytNet = mock.ayt?.totalNet || 0;
+                                    const totalNet = (tytNet + aytNet).toFixed(2);
+                                    return (
+                                      <tr key={mock.id} className="hover:bg-white/5 transition-colors">
+                                        <td className="py-2.5 px-3">
+                                          <div className="font-bold text-white font-sans text-xs">{mock.title}</div>
+                                          <div className="text-[10px] text-slate-400 font-sans">{mock.publisher || 'Bireysel'}</div>
+                                        </td>
+                                        <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">{mock.date}</td>
+                                        <td className="py-2.5 px-3 text-center font-bold text-indigo-300">
+                                          {tytNet > 0 ? `${tytNet}N` : '-'}
+                                        </td>
+                                        <td className="py-2.5 px-3 text-center font-bold text-emerald-300">
+                                          {aytNet > 0 ? `${aytNet}N` : '-'}
+                                        </td>
+                                        <td className="py-2.5 px-3 text-center font-black text-sky-400">
+                                          {totalNet} Net
+                                        </td>
+                                        <td className="py-2.5 px-3 text-center text-amber-400 font-bold">
+                                          {mock.estimatedRank ? `#${mock.estimatedRank.toLocaleString('tr-TR')}` : '-'}
+                                        </td>
+                                        <td className="py-2.5 px-3 text-right text-amber-300 font-bold">
+                                          {mock.score ? `${mock.score.toFixed(1)} P` : '-'}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+
+                          {/* Pagination Bar */}
+                          {filteredGeneralMocks.length > GENERAL_PER_PAGE && (
+                            <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs">
+                              <span className="text-slate-400 text-[11px]">
+                                Toplam <strong className="text-white font-mono">{filteredGeneralMocks.length}</strong> sınav
+                              </span>
+
+                              <div className="flex items-center space-x-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setGeneralMockPage(Math.max(1, currentGenPage - 1))}
+                                  disabled={currentGenPage === 1}
+                                  className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                  title="Önceki"
+                                >
+                                  <ChevronLeft className="w-3.5 h-3.5" />
+                                </button>
+
+                                {Array.from({ length: totalGeneralPages }, (_, i) => i + 1).map((pageNum) => (
+                                  <button
+                                    key={pageNum}
+                                    type="button"
+                                    onClick={() => setGeneralMockPage(pageNum)}
+                                    className={`w-6 h-6 rounded text-xs font-bold transition-all cursor-pointer font-mono ${
+                                      currentGenPage === pageNum
+                                        ? 'bg-sky-600 text-white'
+                                        : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white'
+                                    }`}
+                                  >
+                                    {pageNum}
+                                  </button>
+                                ))}
+
+                                <button
+                                  type="button"
+                                  onClick={() => setGeneralMockPage(Math.min(totalGeneralPages, currentGenPage + 1))}
+                                  disabled={currentGenPage === totalGeneralPages}
+                                  className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                  title="Sonraki"
+                                >
+                                  <ChevronRight className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })()}
+                      );
+                    })()}
 
                 {/* ------------------------------------------------------------- */}
                 {/* SUB-TAB 2: BRANŞ DENEMELERİ */}
@@ -2308,176 +2458,303 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                     return true;
                   }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-                  return (
-                    <div className="space-y-4">
-                      {/* KPI Cards */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-400">Toplam Branş Denemesi</span>
-                            <Layers className="w-4 h-4 text-purple-400" />
-                          </div>
-                          <div className="mt-2 flex items-baseline gap-1.5">
-                            <span className="text-xl font-black text-white">{totalBranchCount}</span>
-                            <span className="text-xs text-slate-400">sınav</span>
-                          </div>
-                        </div>
+                      const BRANCH_PER_PAGE = 6;
+                      const totalBranchPages = Math.ceil(filteredBranchExams.length / BRANCH_PER_PAGE) || 1;
+                      const currentBrPage = Math.min(branchExamPage, totalBranchPages);
+                      const paginatedBranchExams = filteredBranchExams.slice((currentBrPage - 1) * BRANCH_PER_PAGE, currentBrPage * BRANCH_PER_PAGE);
 
-                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-400">Ortalama Net</span>
-                            <TrendingUp className="w-4 h-4 text-indigo-400" />
-                          </div>
-                          <div className="mt-2 flex items-baseline gap-1.5">
-                            <span className="text-xl font-black text-indigo-400">{avgBranchNet}</span>
-                            <span className="text-xs text-slate-400 font-bold">Net</span>
-                          </div>
-                        </div>
-
-                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-400">Branşınız ({teacherBranch || 'Genel'})</span>
-                            <Star className="w-4 h-4 text-amber-400" />
-                          </div>
-                          <div className="mt-2 flex items-baseline gap-1.5">
-                            <span className="text-xl font-black text-amber-400">{teacherBranchCount}</span>
-                            <span className="text-xs text-slate-400 font-bold">deneme</span>
-                          </div>
-                        </div>
-
-                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-400">Lider Ders</span>
-                            <Award className="w-4 h-4 text-emerald-400" />
-                          </div>
-                          <div className="mt-2 flex items-baseline gap-1.5">
-                            <span className="text-sm font-black text-emerald-400 truncate max-w-[130px]">
-                              {subjectStats[0]?.subject || '-'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Chart: Branch Breakdown */}
-                      {subjectStats.length > 0 && (
-                        <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <BarChart3 className="w-3.5 h-3.5 text-purple-400" />
-                              <h4 className="text-xs font-bold text-white">Ders Bazlı Branş Denemeleri</h4>
-                            </div>
-                            <span className="text-[10px] text-slate-400 font-mono">Çözüm Sayısı</span>
-                          </div>
-
-                          <div className="h-40 w-full pt-1">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={subjectStats} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                                <XAxis dataKey="subject" stroke="#94a3b8" fontSize={9} tickLine={false} />
-                                <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
-                                <Tooltip
-                                  contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
-                                  formatter={(val: any, name: any, item: any) => [
-                                    `${val} Deneme (Ort: ${item.payload.avgNet} Net)`,
-                                    item.payload.isMyBranch ? '⭐ Branşınız' : 'Deneme Sayısı'
-                                  ]}
-                                />
-                                <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={32}>
-                                  {subjectStats.map((entry, index) => (
-                                    <Cell key={`cell-branch-${index}`} fill={entry.isMyBranch ? '#f59e0b' : '#a855f7'} />
-                                  ))}
-                                </Bar>
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Toolbar */}
-                      <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                        <div className="relative flex-1">
-                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
-                            value={branchSearch}
-                            onChange={(e) => setBranchSearch(e.target.value)}
-                            placeholder="Branş veya yayıncı ara..."
-                            className="w-full bg-slate-900/90 border border-white/10 rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
-                          />
-                        </div>
-
-                        {allSubjects.length > 0 && (
-                          <div className="flex items-center space-x-1 overflow-x-auto pb-1 max-w-full">
-                            <button
-                              onClick={() => setBranchSubjectFilter('all')}
-                              className={`px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap ${
-                                branchSubjectFilter === 'all' ? 'bg-purple-600 text-white font-bold' : 'text-slate-400 hover:text-white'
-                              }`}
-                            >
-                              Tümü
-                            </button>
-                            {allSubjects.slice(0, 4).map(sub => (
-                              <button
-                                key={sub}
-                                onClick={() => setBranchSubjectFilter(sub)}
-                                className={`px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap ${
-                                  branchSubjectFilter === sub ? 'bg-purple-600 text-white font-bold' : 'text-slate-400 hover:text-purple-300'
-                                }`}
-                              >
-                                {sub.replace('TYT ', '').replace('AYT ', '')}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Branch Exam Cards Grid */}
-                      {filteredBranchExams.length === 0 ? (
-                        <p className="text-xs text-slate-400 italic py-6 text-center">Filtreye uygun branş denemesi bulunamadı.</p>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {filteredBranchExams.map((ex) => {
-                            const isMy = isBranchMatch(ex.subject);
-                            return (
-                              <div
-                                key={ex.id}
-                                className={`bg-slate-950/80 border rounded-xl p-3.5 space-y-2.5 shadow-xl transition-all ${
-                                  isMy ? 'border-amber-500/40 bg-amber-500/5' : 'border-white/10 hover:border-purple-500/40'
-                                }`}
-                              >
-                                <div className="flex items-start justify-between gap-2">
-                                  <div>
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span className="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-1.5 py-0.5 rounded">
-                                        {ex.subject}
-                                      </span>
-                                      {isMy && (
-                                        <span className="text-[9px] font-bold text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded">
-                                          ⭐ Branşınız
-                                        </span>
-                                      )}
-                                    </div>
-                                    <h4 className="text-xs font-bold text-white mt-1">
-                                      {ex.publisher || 'Yayıncı Belirtilmemiş'}
-                                    </h4>
-                                  </div>
-                                  <span className="text-xs font-black text-purple-300">{ex.net} Net</span>
-                                </div>
-
-                                <div className="flex items-center justify-between text-[11px] font-mono bg-slate-900/90 p-1.5 rounded-lg">
-                                  <span className="text-emerald-400 font-bold">{ex.correct}D</span>
-                                  <span className="text-rose-400 font-bold">{ex.wrong}Y</span>
-                                  <span className="text-slate-400">{ex.empty}B</span>
-                                  <span className="text-slate-500 text-[10px]">{ex.date}</span>
-                                </div>
+                      return (
+                        <div className="space-y-4">
+                          {/* KPI Cards */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-400">Toplam Branş Denemesi</span>
+                                <Layers className="w-4 h-4 text-purple-400" />
                               </div>
-                            );
-                          })}
+                              <div className="mt-2 flex items-baseline gap-1.5">
+                                <span className="text-xl font-black text-white">{totalBranchCount}</span>
+                                <span className="text-xs text-slate-400">sınav</span>
+                              </div>
+                            </div>
+
+                            <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-400">Ortalama Net</span>
+                                <TrendingUp className="w-4 h-4 text-indigo-400" />
+                              </div>
+                              <div className="mt-2 flex items-baseline gap-1.5">
+                                <span className="text-xl font-black text-indigo-400">{avgBranchNet}</span>
+                                <span className="text-xs text-slate-400 font-bold">Net</span>
+                              </div>
+                            </div>
+
+                            <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-400">Branşınız ({teacherBranch || 'Genel'})</span>
+                                <Star className="w-4 h-4 text-amber-400" />
+                              </div>
+                              <div className="mt-2 flex items-baseline gap-1.5">
+                                <span className="text-xl font-black text-amber-400">{teacherBranchCount}</span>
+                                <span className="text-xs text-slate-400 font-bold">deneme</span>
+                              </div>
+                            </div>
+
+                            <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-400">Lider Ders</span>
+                                <Award className="w-4 h-4 text-emerald-400" />
+                              </div>
+                              <div className="mt-2 flex items-baseline gap-1.5">
+                                <span className="text-sm font-black text-emerald-400 truncate max-w-[130px]">
+                                  {subjectStats[0]?.subject || '-'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Chart: Branch Breakdown */}
+                          {subjectStats.length > 0 && (
+                            <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                  <BarChart3 className="w-3.5 h-3.5 text-purple-400" />
+                                  <h4 className="text-xs font-bold text-white">Ders Bazlı Branş Denemeleri</h4>
+                                </div>
+                                <span className="text-[10px] text-slate-400 font-mono">Çözüm Sayısı</span>
+                              </div>
+
+                              <div className="h-40 w-full pt-1">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <BarChart data={subjectStats} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                                    <XAxis dataKey="subject" stroke="#94a3b8" fontSize={9} tickLine={false} />
+                                    <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
+                                    <Tooltip
+                                      contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
+                                      formatter={(val: any, name: any, item: any) => [
+                                        `${val} Deneme (Ort: ${item.payload.avgNet} Net)`,
+                                        item.payload.isMyBranch ? '⭐ Branşınız' : 'Deneme Sayısı'
+                                      ]}
+                                    />
+                                    <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={32}>
+                                      {subjectStats.map((entry, index) => (
+                                        <Cell key={`cell-branch-${index}`} fill={entry.isMyBranch ? '#f59e0b' : '#a855f7'} />
+                                      ))}
+                                    </Bar>
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Toolbar */}
+                          <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                            <div className="relative flex-1">
+                              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                              <input
+                                type="text"
+                                value={branchSearch}
+                                onChange={(e) => {
+                                  setBranchSearch(e.target.value);
+                                  setBranchExamPage(1);
+                                }}
+                                placeholder="Branş veya yayıncı ara..."
+                                className="w-full bg-slate-900/90 border border-white/10 rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
+                              />
+                            </div>
+
+                            <div className="flex items-center space-x-2 flex-wrap">
+                              {allSubjects.length > 0 && (
+                                <div className="flex items-center space-x-1 overflow-x-auto pb-0.5 max-w-full">
+                                  <button
+                                    onClick={() => {
+                                      setBranchSubjectFilter('all');
+                                      setBranchExamPage(1);
+                                    }}
+                                    className={`px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap ${
+                                      branchSubjectFilter === 'all' ? 'bg-purple-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                                    }`}
+                                  >
+                                    Tümü
+                                  </button>
+                                  {allSubjects.slice(0, 4).map(sub => (
+                                    <button
+                                      key={sub}
+                                      onClick={() => {
+                                        setBranchSubjectFilter(sub);
+                                        setBranchExamPage(1);
+                                      }}
+                                      className={`px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap ${
+                                        branchSubjectFilter === sub ? 'bg-purple-600 text-white font-bold' : 'text-slate-400 hover:text-purple-300'
+                                      }`}
+                                    >
+                                      {sub.replace('TYT ', '').replace('AYT ', '')}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* View Mode Toggle */}
+                              <div className="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-white/10 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => setBranchExamViewMode('cards')}
+                                  className={`p-1 rounded transition-all cursor-pointer ${
+                                    branchExamViewMode === 'cards' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+                                  }`}
+                                  title="Kart Görünümü"
+                                >
+                                  <LayoutGrid className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setBranchExamViewMode('table')}
+                                  className={`p-1 rounded transition-all cursor-pointer ${
+                                    branchExamViewMode === 'table' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+                                  }`}
+                                  title="Detaylı Liste / Tablo Görünümü"
+                                >
+                                  <Table className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Branch Exam Cards OR Table */}
+                          {filteredBranchExams.length === 0 ? (
+                            <p className="text-xs text-slate-400 italic py-6 text-center">Filtreye uygun branş denemesi bulunamadı.</p>
+                          ) : branchExamViewMode === 'cards' ? (
+                            /* CARD VIEW */
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              {paginatedBranchExams.map((ex) => {
+                                const isMy = isBranchMatch(ex.subject);
+                                return (
+                                  <div
+                                    key={ex.id}
+                                    className={`bg-slate-950/80 border rounded-xl p-3.5 space-y-2.5 shadow-xl transition-all ${
+                                      isMy ? 'border-amber-500/40 bg-amber-500/5' : 'border-white/10 hover:border-purple-500/40'
+                                    }`}
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div>
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <span className="text-[10px] font-bold text-purple-300 bg-purple-500/10 px-1.5 py-0.5 rounded">
+                                            {ex.subject}
+                                          </span>
+                                          {isMy && (
+                                            <span className="text-[9px] font-bold text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded">
+                                              ⭐ Branşınız
+                                            </span>
+                                          )}
+                                        </div>
+                                        <h4 className="text-xs font-bold text-white mt-1">
+                                          {ex.publisher || 'Yayıncı Belirtilmemiş'}
+                                        </h4>
+                                      </div>
+                                      <span className="text-xs font-black text-purple-300">{ex.net} Net</span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between text-[11px] font-mono bg-slate-900/90 p-1.5 rounded-lg">
+                                      <span className="text-emerald-400 font-bold">{ex.correct}D</span>
+                                      <span className="text-rose-400 font-bold">{ex.wrong}Y</span>
+                                      <span className="text-slate-400">{ex.empty}B</span>
+                                      <span className="text-slate-500 text-[10px]">{ex.date}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            /* TABLE VIEW */
+                            <div className="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/80 shadow-xl">
+                              <table className="w-full text-left text-xs border-collapse">
+                                <thead>
+                                  <tr className="border-b border-white/10 bg-slate-900/90 text-slate-400 font-semibold uppercase tracking-wider text-[9px]">
+                                    <th className="py-2.5 px-3">Ders</th>
+                                    <th className="py-2.5 px-3">Yayın / Deneme</th>
+                                    <th className="py-2.5 px-3">Tarih</th>
+                                    <th className="py-2.5 px-3 text-center">D / Y / B</th>
+                                    <th className="py-2.5 px-3 text-center">Net</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5 font-mono text-[11px]">
+                                  {paginatedBranchExams.map(ex => {
+                                    const isMy = isBranchMatch(ex.subject);
+                                    return (
+                                      <tr key={ex.id} className={`hover:bg-white/5 transition-colors ${isMy ? 'bg-amber-500/5' : ''}`}>
+                                        <td className="py-2.5 px-3">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="font-bold text-purple-300 font-sans text-xs">{ex.subject}</span>
+                                            {isMy && <span className="text-[9px] text-amber-300 bg-amber-500/20 px-1 py-0.5 rounded font-sans">⭐</span>}
+                                          </div>
+                                        </td>
+                                        <td className="py-2.5 px-3 text-white font-sans text-xs">{ex.publisher || 'Branş Denemesi'}</td>
+                                        <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">{ex.date}</td>
+                                        <td className="py-2.5 px-3 text-center">
+                                          <span className="text-emerald-400 font-bold">{ex.correct}D</span>{' '}
+                                          <span className="text-rose-400 font-bold">{ex.wrong}Y</span>{' '}
+                                          <span className="text-slate-400">{ex.empty}B</span>
+                                        </td>
+                                        <td className="py-2.5 px-3 text-center">
+                                          <span className="font-black text-purple-300">{ex.net} Net</span>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+
+                          {/* Pagination Bar */}
+                          {filteredBranchExams.length > BRANCH_PER_PAGE && (
+                            <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs">
+                              <span className="text-slate-400 text-[11px]">
+                                Toplam <strong className="text-white font-mono">{filteredBranchExams.length}</strong> sınav
+                              </span>
+
+                              <div className="flex items-center space-x-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setBranchExamPage(Math.max(1, currentBrPage - 1))}
+                                  disabled={currentBrPage === 1}
+                                  className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                  title="Önceki"
+                                >
+                                  <ChevronLeft className="w-3.5 h-3.5" />
+                                </button>
+
+                                {Array.from({ length: totalBranchPages }, (_, i) => i + 1).map((pageNum) => (
+                                  <button
+                                    key={pageNum}
+                                    type="button"
+                                    onClick={() => setBranchExamPage(pageNum)}
+                                    className={`w-6 h-6 rounded text-xs font-bold transition-all cursor-pointer font-mono ${
+                                      currentBrPage === pageNum
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white'
+                                    }`}
+                                  >
+                                    {pageNum}
+                                  </button>
+                                ))}
+
+                                <button
+                                  type="button"
+                                  onClick={() => setBranchExamPage(Math.min(totalBranchPages, currentBrPage + 1))}
+                                  disabled={currentBrPage === totalBranchPages}
+                                  className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                  title="Sonraki"
+                                >
+                                  <ChevronRight className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })()}
+                      );
+                    })()}
 
                 {/* ------------------------------------------------------------- */}
                 {/* SUB-TAB 3: KURUMSAL DENEMELER (KARNELER) */}
@@ -2718,168 +2995,400 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                         </div>
                       )}
 
-                      {/* Toolbar */}
-                      <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                        <div className="relative flex-1">
-                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="text"
-                            value={institutionalMockSearch}
-                            onChange={(e) => setInstitutionalMockSearch(e.target.value)}
-                            placeholder="Kurumsal karne ara..."
-                            className="w-full bg-slate-900/90 border border-white/10 rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
-                          />
-                        </div>
+                      const INST_PER_PAGE = 6;
+                      const totalInstPages = Math.ceil(filteredInstMocks.length / INST_PER_PAGE) || 1;
+                      const currentInstPage = Math.min(institutionalMockPage, totalInstPages);
+                      const paginatedInstMocks = filteredInstMocks.slice((currentInstPage - 1) * INST_PER_PAGE, currentInstPage * INST_PER_PAGE);
 
-                        <div className="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-white/10 shrink-0">
-                          <button
-                            onClick={() => setInstitutionalMockTypeFilter('all')}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${
-                              institutionalMockTypeFilter === 'all' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            Tümü
-                          </button>
-                          <button
-                            onClick={() => setInstitutionalMockTypeFilter('TYT')}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${
-                              institutionalMockTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-indigo-400'
-                            }`}
-                          >
-                            TYT
-                          </button>
-                          <button
-                            onClick={() => setInstitutionalMockTypeFilter('AYT')}
-                            className={`px-2.5 py-1 rounded text-xs font-semibold ${
-                              institutionalMockTypeFilter === 'AYT' ? 'bg-fuchsia-600 text-white font-bold' : 'text-slate-400 hover:text-fuchsia-400'
-                            }`}
-                          >
-                            AYT
-                          </button>
-                        </div>
-                      </div>
+                      return (
+                        <div className="space-y-4">
+                          {/* KPI Cards */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-400">Toplam Karne</span>
+                                <School className="w-4 h-4 text-emerald-400" />
+                              </div>
+                              <div className="mt-2 flex items-baseline gap-1.5">
+                                <span className="text-xl font-black text-white">{totalInstCount}</span>
+                                <span className="text-xs text-slate-400">karne</span>
+                              </div>
+                            </div>
 
-                      {/* Institutional Mock Exam Report Cards Grid */}
-                      {filteredInstMocks.length === 0 ? (
-                        <p className="text-xs text-slate-400 italic py-6 text-center">Kurumsal deneme karnesi bulunamadı.</p>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                          {filteredInstMocks.map((exam) => {
-                            const examTitle = exam.examTitle || (exam as any).title;
-                            const stats = extractInstStats(exam);
+                            <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-400">Son Deneme Neti</span>
+                                <Target className="w-4 h-4 text-sky-400" />
+                              </div>
+                              <div className="mt-2 flex items-baseline gap-1.5">
+                                <span className="text-xl font-black text-sky-400">{latestStats ? `${latestStats.totalNet}` : '0'}</span>
+                                <span className="text-xs text-slate-400 font-bold">Net</span>
+                              </div>
+                            </div>
 
-                            return (
-                              <div
-                                key={exam.id}
-                                className="bg-slate-950/90 border border-white/10 hover:border-emerald-500/50 rounded-2xl p-4 space-y-3.5 shadow-xl transition-all flex flex-col justify-between"
-                              >
-                                <div className="space-y-2.5">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="space-y-1">
-                                      <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className={`text-[9px] font-black px-2 py-0.5 rounded border ${
-                                          exam.examType === 'TYT'
-                                            ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
-                                            : exam.examType === 'AYT'
-                                            ? 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30'
-                                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                                        }`}>
-                                          {exam.examType || 'Kurumsal'}
-                                        </span>
-                                        {(exam.createdByName || (exam as any).publisher) && (
-                                          <span className="text-[10px] font-bold text-slate-300 bg-white/10 px-1.5 py-0.5 rounded truncate max-w-[120px]">
-                                            {exam.createdByName || (exam as any).publisher}
+                            <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-400">En İyi Okul Sırası</span>
+                                <Trophy className="w-4 h-4 text-amber-400" />
+                              </div>
+                              <div className="mt-2 flex items-baseline gap-1.5">
+                                <span className="text-xl font-black text-amber-400">
+                                  {bestSchoolItem?.stats.schoolRank ? `#${bestSchoolItem.stats.schoolRank}` : '-'}
+                                </span>
+                                {bestSchoolItem?.stats.schoolTotal && (
+                                  <span className="text-xs text-slate-400 font-bold">/ {bestSchoolItem.stats.schoolTotal}</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-slate-400">En İyi Genel Sıra</span>
+                                <Award className="w-4 h-4 text-purple-400" />
+                              </div>
+                              <div className="mt-2 flex items-baseline gap-1.5">
+                                <span className="text-xl font-black text-purple-400">
+                                  {bestGeneralItem?.stats.generalRank ? `#${bestGeneralItem.stats.generalRank.toLocaleString('tr-TR')}` : '-'}
+                                </span>
+                                {bestGeneralItem?.stats.generalTotal && (
+                                  <span className="text-xs text-slate-400 font-bold">/ {bestGeneralItem.stats.generalTotal.toLocaleString('tr-TR')}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Chart */}
+                          {institutionalMocks.length > 0 && (
+                            <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2">
+                                  <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                                  <h4 className="text-xs font-bold text-white">Kurumsal Deneme Net Gelişim Trendi</h4>
+                                </div>
+                                <span className="text-[10px] text-emerald-400 font-mono">Resmi Karneler</span>
+                              </div>
+
+                              <div className="h-40 w-full pt-1">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <LineChart data={instTrendData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                                    <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} />
+                                    <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
+                                    <Tooltip
+                                      contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
+                                      formatter={(val: any) => [`${val} Net`, 'Toplam Net']}
+                                    />
+                                    <Line type="monotone" dataKey="totalNet" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981' }} />
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Toolbar */}
+                          <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                            <div className="relative flex-1">
+                              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                              <input
+                                type="text"
+                                value={institutionalMockSearch}
+                                onChange={(e) => {
+                                  setInstitutionalMockSearch(e.target.value);
+                                  setInstitutionalMockPage(1);
+                                }}
+                                placeholder="Kurumsal karne ara..."
+                                className="w-full bg-slate-900/90 border border-white/10 rounded-lg pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
+                              />
+                            </div>
+
+                            <div className="flex items-center space-x-2 flex-wrap">
+                              <div className="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-white/10 shrink-0">
+                                <button
+                                  onClick={() => {
+                                    setInstitutionalMockTypeFilter('all');
+                                    setInstitutionalMockPage(1);
+                                  }}
+                                  className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                                    institutionalMockTypeFilter === 'all' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                                  }`}
+                                >
+                                  Tümü
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setInstitutionalMockTypeFilter('TYT');
+                                    setInstitutionalMockPage(1);
+                                  }}
+                                  className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                                    institutionalMockTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-indigo-400'
+                                  }`}
+                                >
+                                  TYT
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setInstitutionalMockTypeFilter('AYT');
+                                    setInstitutionalMockPage(1);
+                                  }}
+                                  className={`px-2.5 py-1 rounded text-xs font-semibold ${
+                                    institutionalMockTypeFilter === 'AYT' ? 'bg-fuchsia-600 text-white font-bold' : 'text-slate-400 hover:text-fuchsia-400'
+                                  }`}
+                                >
+                                  AYT
+                                </button>
+                              </div>
+
+                              {/* View Mode Toggle */}
+                              <div className="flex items-center space-x-1 bg-slate-900/90 p-0.5 rounded-lg border border-white/10 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => setInstitutionalMockViewMode('cards')}
+                                  className={`p-1 rounded transition-all cursor-pointer ${
+                                    institutionalMockViewMode === 'cards' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                                  }`}
+                                  title="Kart Görünümü"
+                                >
+                                  <LayoutGrid className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setInstitutionalMockViewMode('table')}
+                                  className={`p-1 rounded transition-all cursor-pointer ${
+                                    institutionalMockViewMode === 'table' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'
+                                  }`}
+                                  title="Detaylı Liste / Tablo Görünümü"
+                                >
+                                  <Table className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Institutional Mock Exam Report Cards Grid OR Table */}
+                          {filteredInstMocks.length === 0 ? (
+                            <p className="text-xs text-slate-400 italic py-6 text-center">Kurumsal deneme karnesi bulunamadı.</p>
+                          ) : institutionalMockViewMode === 'cards' ? (
+                            /* CARD VIEW */
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                              {paginatedInstMocks.map((exam) => {
+                                const examTitle = exam.examTitle || (exam as any).title;
+                                const stats = extractInstStats(exam);
+
+                                return (
+                                  <div
+                                    key={exam.id}
+                                    className="bg-slate-950/90 border border-white/10 hover:border-emerald-500/50 rounded-2xl p-4 space-y-3.5 shadow-xl transition-all flex flex-col justify-between"
+                                  >
+                                    <div className="space-y-2.5">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="space-y-1">
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className={`text-[9px] font-black px-2 py-0.5 rounded border ${
+                                              exam.examType === 'TYT'
+                                                ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                                                : exam.examType === 'AYT'
+                                                ? 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30'
+                                                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                            }`}>
+                                              {exam.examType || 'Kurumsal'}
+                                            </span>
+                                            {(exam.createdByName || (exam as any).publisher) && (
+                                              <span className="text-[10px] font-bold text-slate-300 bg-white/10 px-1.5 py-0.5 rounded truncate max-w-[120px]">
+                                                {exam.createdByName || (exam as any).publisher}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <h4 className="text-sm font-bold text-white leading-snug">
+                                            {examTitle}
+                                          </h4>
+                                        </div>
+
+                                        <div className="text-right shrink-0 bg-slate-900/90 border border-white/10 px-2.5 py-1.5 rounded-xl font-mono">
+                                          <span className="text-sm font-black text-emerald-400 block">
+                                            {stats.totalNet.toFixed(2)} Net
                                           </span>
-                                        )}
+                                          {stats.score > 0 && (
+                                            <span className="text-[10px] text-amber-400 block font-bold">
+                                              {stats.score.toFixed(1)} P
+                                            </span>
+                                          )}
+                                        </div>
                                       </div>
-                                      <h4 className="text-sm font-bold text-white leading-snug">
-                                        {examTitle}
-                                      </h4>
-                                    </div>
 
-                                    <div className="text-right shrink-0 bg-slate-900/90 border border-white/10 px-2.5 py-1.5 rounded-xl font-mono">
-                                      <span className="text-sm font-black text-emerald-400 block">
-                                        {stats.totalNet.toFixed(2)} Net
-                                      </span>
-                                      {stats.score > 0 && (
-                                        <span className="text-[10px] text-amber-400 block font-bold">
-                                          {stats.score.toFixed(1)} P
-                                        </span>
+                                      {/* Ranking Badges */}
+                                      <div className="grid grid-cols-3 gap-1.5 bg-slate-900/90 p-2.5 rounded-xl border border-white/10 font-mono text-center text-xs">
+                                        <div>
+                                          <span className="text-[9px] text-emerald-400 font-sans block font-bold">🏫 Okul</span>
+                                          <span className="font-black text-white text-xs">
+                                            {stats.schoolRank ? `#${stats.schoolRank}` : '-'}
+                                          </span>
+                                          {stats.schoolTotal ? (
+                                            <span className="text-[8px] text-slate-400 block">/ {stats.schoolTotal}</span>
+                                          ) : null}
+                                        </div>
+                                        <div className="border-x border-white/5 px-0.5">
+                                          <span className="text-[9px] text-sky-400 font-sans block font-bold">👥 Sınıf</span>
+                                          <span className="font-black text-white text-xs">
+                                            {stats.classRank ? `#${stats.classRank}` : '-'}
+                                          </span>
+                                          {stats.classTotal ? (
+                                            <span className="text-[8px] text-slate-400 block">/ {stats.classTotal}</span>
+                                          ) : null}
+                                        </div>
+                                        <div>
+                                          <span className="text-[9px] text-purple-400 font-sans block font-bold">🌍 Genel</span>
+                                          <span className="font-black text-white text-xs">
+                                            {stats.generalRank ? `#${stats.generalRank.toLocaleString('tr-TR')}` : '-'}
+                                          </span>
+                                          {stats.generalTotal ? (
+                                            <span className="text-[8px] text-slate-400 block">/ {stats.generalTotal.toLocaleString('tr-TR')}</span>
+                                          ) : null}
+                                        </div>
+                                      </div>
+
+                                      {/* Subject Nets Summary */}
+                                      {stats.subjects && stats.subjects.length > 0 && (
+                                        <div className="flex items-center gap-1 flex-wrap text-[9px] font-mono">
+                                          {stats.subjects.map(s => {
+                                            const sNet = s.net !== undefined ? s.net : (s.correct - (s.wrong || 0) * 0.25);
+                                            return (
+                                              <span
+                                                key={s.subjectName}
+                                                className="bg-white/5 text-slate-300 px-1.5 py-0.5 rounded border border-white/5"
+                                              >
+                                                <span className="text-slate-400 font-sans">{s.subjectName}:</span>{' '}
+                                                <strong className="text-emerald-300">{sNet.toFixed(1)}</strong>
+                                              </span>
+                                            );
+                                          })}
+                                        </div>
                                       )}
                                     </div>
-                                  </div>
 
-                                  {/* Ranking Badges */}
-                                  <div className="grid grid-cols-3 gap-1.5 bg-slate-900/90 p-2.5 rounded-xl border border-white/10 font-mono text-center text-xs">
-                                    <div>
-                                      <span className="text-[9px] text-emerald-400 font-sans block font-bold">🏫 Okul</span>
-                                      <span className="font-black text-white text-xs">
-                                        {stats.schoolRank ? `#${stats.schoolRank}` : '-'}
-                                      </span>
-                                      {stats.schoolTotal ? (
-                                        <span className="text-[8px] text-slate-400 block">/ {stats.schoolTotal}</span>
-                                      ) : null}
-                                    </div>
-                                    <div className="border-x border-white/5 px-0.5">
-                                      <span className="text-[9px] text-sky-400 font-sans block font-bold">👥 Sınıf</span>
-                                      <span className="font-black text-white text-xs">
-                                        {stats.classRank ? `#${stats.classRank}` : '-'}
-                                      </span>
-                                      {stats.classTotal ? (
-                                        <span className="text-[8px] text-slate-400 block">/ {stats.classTotal}</span>
-                                      ) : null}
-                                    </div>
-                                    <div>
-                                      <span className="text-[9px] text-purple-400 font-sans block font-bold">🌍 Genel</span>
-                                      <span className="font-black text-white text-xs">
-                                        {stats.generalRank ? `#${stats.generalRank.toLocaleString('tr-TR')}` : '-'}
-                                      </span>
-                                      {stats.generalTotal ? (
-                                        <span className="text-[8px] text-slate-400 block">/ {stats.generalTotal.toLocaleString('tr-TR')}</span>
-                                      ) : null}
+                                    {/* Action Button */}
+                                    <div className="flex items-center justify-between pt-2 border-t border-white/10 mt-auto">
+                                      <span className="text-[10px] text-slate-400 font-mono">{exam.examDate}</span>
+
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedInstitutionalExam(exam)}
+                                        className="flex items-center space-x-1 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[11px] font-bold rounded-xl transition-all shadow-sm cursor-pointer"
+                                      >
+                                        <Eye className="w-3 h-3" />
+                                        <span>Karneyi İncele</span>
+                                      </button>
                                     </div>
                                   </div>
-
-                                  {/* Subject Nets Summary */}
-                                  {stats.subjects && stats.subjects.length > 0 && (
-                                    <div className="flex items-center gap-1 flex-wrap text-[9px] font-mono">
-                                      {stats.subjects.map(s => {
-                                        const sNet = s.net !== undefined ? s.net : (s.correct - (s.wrong || 0) * 0.25);
-                                        return (
-                                          <span
-                                            key={s.subjectName}
-                                            className="bg-white/5 text-slate-300 px-1.5 py-0.5 rounded border border-white/5"
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            /* TABLE VIEW */
+                            <div className="overflow-x-auto rounded-xl border border-white/10 bg-slate-950/80 shadow-xl">
+                              <table className="w-full text-left text-xs border-collapse">
+                                <thead>
+                                  <tr className="border-b border-white/10 bg-slate-900/90 text-slate-400 font-semibold uppercase tracking-wider text-[9px]">
+                                    <th className="py-2.5 px-3">Sınav Adı</th>
+                                    <th className="py-2.5 px-3">Tarih</th>
+                                    <th className="py-2.5 px-3 text-center">Net / Puan</th>
+                                    <th className="py-2.5 px-3 text-center">Okul Sırası</th>
+                                    <th className="py-2.5 px-3 text-center">Genel Sıra</th>
+                                    <th className="py-2.5 px-3 text-right">İşlem</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/5 font-mono text-[11px]">
+                                  {paginatedInstMocks.map(exam => {
+                                    const stats = extractInstStats(exam);
+                                    const examTitle = exam.examTitle || (exam as any).title;
+                                    return (
+                                      <tr key={exam.id} className="hover:bg-white/5 transition-colors">
+                                        <td className="py-2.5 px-3">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border font-sans ${
+                                              exam.examType === 'TYT' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30'
+                                            }`}>
+                                              {exam.examType || 'TYT'}
+                                            </span>
+                                            <span className="font-bold text-white font-sans text-xs">{examTitle}</span>
+                                          </div>
+                                        </td>
+                                        <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">{exam.examDate}</td>
+                                        <td className="py-2.5 px-3 text-center">
+                                          <span className="font-black text-emerald-400">{stats.totalNet.toFixed(1)}N</span>
+                                          {stats.score > 0 && <span className="text-[10px] text-amber-400 ml-1">({stats.score.toFixed(0)}P)</span>}
+                                        </td>
+                                        <td className="py-2.5 px-3 text-center text-white">
+                                          {stats.schoolRank ? `#${stats.schoolRank}` : '-'}
+                                        </td>
+                                        <td className="py-2.5 px-3 text-center text-purple-300">
+                                          {stats.generalRank ? `#${stats.generalRank.toLocaleString('tr-TR')}` : '-'}
+                                        </td>
+                                        <td className="py-2.5 px-3 text-right">
+                                          <button
+                                            type="button"
+                                            onClick={() => setSelectedInstitutionalExam(exam)}
+                                            className="inline-flex items-center space-x-1 px-2.5 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[10px] font-bold rounded-lg transition-all cursor-pointer"
                                           >
-                                            <span className="text-slate-400 font-sans">{s.subjectName}:</span>{' '}
-                                            <strong className="text-emerald-300">{sNet.toFixed(1)}</strong>
-                                          </span>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
+                                            <Eye className="w-3 h-3" />
+                                            <span>İncele</span>
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
 
-                                {/* Action Button */}
-                                <div className="flex items-center justify-between pt-2 border-t border-white/10 mt-auto">
-                                  <span className="text-[10px] text-slate-400 font-mono">{exam.examDate}</span>
+                          {/* Pagination Bar */}
+                          {filteredInstMocks.length > INST_PER_PAGE && (
+                            <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/10 text-xs">
+                              <span className="text-slate-400 text-[11px]">
+                                Toplam <strong className="text-white font-mono">{filteredInstMocks.length}</strong> karne
+                              </span>
 
+                              <div className="flex items-center space-x-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setInstitutionalMockPage(Math.max(1, currentInstPage - 1))}
+                                  disabled={currentInstPage === 1}
+                                  className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                  title="Önceki"
+                                >
+                                  <ChevronLeft className="w-3.5 h-3.5" />
+                                </button>
+
+                                {Array.from({ length: totalInstPages }, (_, i) => i + 1).map((pageNum) => (
                                   <button
+                                    key={pageNum}
                                     type="button"
-                                    onClick={() => setSelectedInstitutionalExam(exam)}
-                                    className="flex items-center space-x-1 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[11px] font-bold rounded-xl transition-all shadow-sm cursor-pointer"
+                                    onClick={() => setInstitutionalMockPage(pageNum)}
+                                    className={`w-6 h-6 rounded text-xs font-bold transition-all cursor-pointer font-mono ${
+                                      currentInstPage === pageNum
+                                        ? 'bg-emerald-600 text-white'
+                                        : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white'
+                                    }`}
                                   >
-                                    <Eye className="w-3 h-3" />
-                                    <span>Karneyi İncele</span>
+                                    {pageNum}
                                   </button>
-                                </div>
+                                ))}
+
+                                <button
+                                  type="button"
+                                  onClick={() => setInstitutionalMockPage(Math.min(totalInstPages, currentInstPage + 1))}
+                                  disabled={currentInstPage === totalInstPages}
+                                  className="p-1 rounded border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                  title="Sonraki"
+                                >
+                                  <ChevronRight className="w-3.5 h-3.5" />
+                                </button>
                               </div>
-                            );
-                          })}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })()}
+                      );
+                    })()}
               </div>
             )}
           </div>

@@ -42,6 +42,9 @@ import {
   CheckCheck,
   LayoutGrid,
   Table,
+  List,
+  ChevronLeft,
+  ChevronRight,
   Building2,
   School,
   FileText,
@@ -230,10 +233,18 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
   const [selectedInstitutionalExam, setSelectedInstitutionalExam] = useState<InstitutionalMockExam | null>(null);
   const [generalMockSearch, setGeneralMockSearch] = useState<string>('');
   const [generalMockTypeFilter, setGeneralMockTypeFilter] = useState<'all' | 'TYT' | 'AYT'>('all');
+  const [generalMockViewMode, setGeneralMockViewMode] = useState<'cards' | 'table'>('cards');
+  const [generalMockPage, setGeneralMockPage] = useState<number>(1);
+
   const [branchMockSubjectFilter, setBranchMockSubjectFilter] = useState<string>('all');
   const [branchMockSearch, setBranchMockSearch] = useState<string>('');
+  const [branchExamViewMode, setBranchExamViewMode] = useState<'cards' | 'table'>('cards');
+  const [branchExamPage, setBranchExamPage] = useState<number>(1);
+
   const [institutionalMockSearch, setInstitutionalMockSearch] = useState<string>('');
   const [institutionalMockTypeFilter, setInstitutionalMockTypeFilter] = useState<'all' | 'TYT' | 'AYT'>('all');
+  const [institutionalMockViewMode, setInstitutionalMockViewMode] = useState<'cards' | 'table'>('cards');
+  const [institutionalMockPage, setInstitutionalMockPage] = useState<number>(1);
 
   const stData = resolveStudentData(selectedStudentUser, studentsData);
   const profile = stData.profile;
@@ -2569,6 +2580,11 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                   return true;
                 }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
+                const GENERAL_PER_PAGE = 6;
+                const totalGeneralPages = Math.ceil(filteredGeneralMocks.length / GENERAL_PER_PAGE) || 1;
+                const currentGenPage = Math.min(generalMockPage, totalGeneralPages);
+                const paginatedGeneralMocks = filteredGeneralMocks.slice((currentGenPage - 1) * GENERAL_PER_PAGE, currentGenPage * GENERAL_PER_PAGE);
+
                 return (
                   <div className="space-y-6">
                     {/* KPI Cards */}
@@ -2736,20 +2752,26 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                       </div>
                     )}
 
-                    {/* Toolbar: Search & Filters */}
+                    {/* Toolbar: Search & Filters & View Mode */}
                     <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="relative flex-1">
                         <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type="text"
                           value={generalMockSearch}
-                          onChange={(e) => setGeneralMockSearch(e.target.value)}
+                          onChange={(e) => {
+                            setGeneralMockSearch(e.target.value);
+                            setGeneralMockPage(1);
+                          }}
                           placeholder="Deneme adı veya yayıncıda ara..."
                           className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500/50 transition-colors"
                         />
                         {generalMockSearch && (
                           <button
-                            onClick={() => setGeneralMockSearch('')}
+                            onClick={() => {
+                              setGeneralMockSearch('');
+                              setGeneralMockPage(1);
+                            }}
                             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs px-1"
                           >
                             ✕
@@ -2757,51 +2779,87 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                         )}
                       </div>
 
-                      <div className="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0">
-                        <button
-                          onClick={() => setGeneralMockTypeFilter('all')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                            generalMockTypeFilter === 'all' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          Tüm Sınavlar
-                        </button>
-                        <button
-                          onClick={() => setGeneralMockTypeFilter('TYT')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                            generalMockTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-indigo-400'
-                          }`}
-                        >
-                          TYT İçerenler
-                        </button>
-                        <button
-                          onClick={() => setGeneralMockTypeFilter('AYT')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                            generalMockTypeFilter === 'AYT' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-emerald-400'
-                          }`}
-                        >
-                          AYT İçerenler
-                        </button>
+                      <div className="flex items-center space-x-2.5 flex-wrap">
+                        {/* Type Filters */}
+                        <div className="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0">
+                          <button
+                            onClick={() => {
+                              setGeneralMockTypeFilter('all');
+                              setGeneralMockPage(1);
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              generalMockTypeFilter === 'all' ? 'bg-sky-600 text-white font-bold shadow-md shadow-sky-500/20' : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            Tüm Sınavlar
+                          </button>
+                          <button
+                            onClick={() => {
+                              setGeneralMockTypeFilter('TYT');
+                              setGeneralMockPage(1);
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              generalMockTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-500/20' : 'text-slate-400 hover:text-indigo-400'
+                            }`}
+                          >
+                            TYT İçerenler
+                          </button>
+                          <button
+                            onClick={() => {
+                              setGeneralMockTypeFilter('AYT');
+                              setGeneralMockPage(1);
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              generalMockTypeFilter === 'AYT' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-500/20' : 'text-slate-400 hover:text-emerald-400'
+                            }`}
+                          >
+                            AYT İçerenler
+                          </button>
+                        </div>
+
+                        {/* View Mode Toggle */}
+                        <div className="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setGeneralMockViewMode('cards')}
+                            className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                              generalMockViewMode === 'cards' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                            }`}
+                            title="Kart Görünümü"
+                          >
+                            <LayoutGrid className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setGeneralMockViewMode('table')}
+                            className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                              generalMockViewMode === 'table' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                            }`}
+                            title="Detaylı Liste / Tablo Görünümü"
+                          >
+                            <Table className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Mocks Grid Cards */}
+                    {/* Mocks Grid Cards OR Table */}
                     {filteredGeneralMocks.length === 0 ? (
                       <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl space-y-2">
                         <FileSpreadsheet className="w-8 h-8 text-slate-500 mx-auto" />
                         <p className="text-xs text-slate-400">Eşleşen genel deneme sınavı kaydı bulunamadı.</p>
                       </div>
-                    ) : (
+                    ) : generalMockViewMode === 'cards' ? (
+                      /* CARD VIEW */
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {filteredGeneralMocks.map((mock) => {
+                        {paginatedGeneralMocks.map((mock) => {
                           const tytNet = mock.tyt?.totalNet || 0;
                           const aytNet = mock.ayt?.totalNet || 0;
-                          const totalMockNet = (tytNet + aytNet).toFixed(2);
 
                           return (
                             <div
                               key={mock.id}
-                              className="bg-slate-950/80 border border-white/10 hover:border-white/25 rounded-2xl p-4 space-y-3 shadow-xl transition-all"
+                              className="bg-slate-950/80 border border-white/10 hover:border-sky-500/40 rounded-2xl p-4 space-y-3 shadow-xl transition-all"
                             >
                               {/* Top Row: Title & Date */}
                               <div className="flex items-start justify-between gap-2">
@@ -2869,6 +2927,116 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                           );
                         })}
                       </div>
+                    ) : (
+                      /* TABLE VIEW */
+                      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/80 shadow-xl">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-white/10 bg-slate-900/90 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                              <th className="py-3 px-4">Sınav Adı & Yayın</th>
+                              <th className="py-3 px-4">Tarih</th>
+                              <th className="py-3 px-4 text-center">TYT Net</th>
+                              <th className="py-3 px-4 text-center">AYT Net</th>
+                              <th className="py-3 px-4 text-center">Toplam Net</th>
+                              <th className="py-3 px-4 text-center">Tahmini Sıra</th>
+                              <th className="py-3 px-4 text-right">Puan</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/5 font-mono">
+                            {paginatedGeneralMocks.map(mock => {
+                              const tytNet = mock.tyt?.totalNet || 0;
+                              const aytNet = mock.ayt?.totalNet || 0;
+                              const totalNet = (tytNet + aytNet).toFixed(2);
+                              return (
+                                <tr key={mock.id} className="hover:bg-white/5 transition-colors">
+                                  <td className="py-3 px-4">
+                                    <div className="font-bold text-white font-sans text-xs">{mock.title}</div>
+                                    <div className="text-[10px] text-slate-400 font-sans">{mock.publisher || 'Bireysel Deneme'}</div>
+                                  </td>
+                                  <td className="py-3 px-4 text-slate-400 text-[11px] whitespace-nowrap">{mock.date}</td>
+                                  <td className="py-3 px-4 text-center">
+                                    {tytNet > 0 ? (
+                                      <span className="font-black text-indigo-300">{tytNet} Net</span>
+                                    ) : (
+                                      <span className="text-slate-600">-</span>
+                                    )}
+                                  </td>
+                                  <td className="py-3 px-4 text-center">
+                                    {aytNet > 0 ? (
+                                      <span className="font-black text-emerald-300">{aytNet} Net</span>
+                                    ) : (
+                                      <span className="text-slate-600">-</span>
+                                    )}
+                                  </td>
+                                  <td className="py-3 px-4 text-center">
+                                    <span className="font-black text-sky-400">{totalNet} Net</span>
+                                  </td>
+                                  <td className="py-3 px-4 text-center">
+                                    {mock.estimatedRank ? (
+                                      <span className="text-amber-400 font-bold">#{mock.estimatedRank.toLocaleString('tr-TR')}</span>
+                                    ) : (
+                                      <span className="text-slate-600">-</span>
+                                    )}
+                                  </td>
+                                  <td className="py-3 px-4 text-right text-amber-300 font-bold">
+                                    {mock.score ? `${mock.score.toFixed(1)} P` : '-'}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Pagination Bar */}
+                    {filteredGeneralMocks.length > GENERAL_PER_PAGE && (
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/10 text-xs">
+                        <span className="text-slate-400 font-medium">
+                          Toplam <strong className="text-white font-mono">{filteredGeneralMocks.length}</strong> sınavdan{' '}
+                          <strong className="text-white font-mono">
+                            {(currentGenPage - 1) * GENERAL_PER_PAGE + 1}-{Math.min(currentGenPage * GENERAL_PER_PAGE, filteredGeneralMocks.length)}
+                          </strong>{' '}
+                          arası gösteriliyor
+                        </span>
+
+                        <div className="flex items-center space-x-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setGeneralMockPage(Math.max(1, currentGenPage - 1))}
+                            disabled={currentGenPage === 1}
+                            className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                            title="Önceki Sayfa"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+
+                          {Array.from({ length: totalGeneralPages }, (_, i) => i + 1).map((pageNum) => (
+                            <button
+                              key={pageNum}
+                              type="button"
+                              onClick={() => setGeneralMockPage(pageNum)}
+                              className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer font-mono ${
+                                currentGenPage === pageNum
+                                  ? 'bg-sky-600 text-white shadow-md shadow-sky-500/20'
+                                  : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          ))}
+
+                          <button
+                            type="button"
+                            onClick={() => setGeneralMockPage(Math.min(totalGeneralPages, currentGenPage + 1))}
+                            disabled={currentGenPage === totalGeneralPages}
+                            className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                            title="Sonraki Sayfa"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 );
@@ -2924,225 +3092,370 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                   return true;
                 });
 
-                return (
-                  <div className="space-y-6">
-                    {/* KPI Metrics */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-400">Toplam Branş Denemesi</span>
-                          <Layers className="w-4 h-4 text-purple-400" />
-                        </div>
-                        <div className="mt-2 flex items-baseline gap-1.5">
-                          <span className="text-2xl font-black text-white">{totalBranchCount}</span>
-                          <span className="text-xs text-slate-400">deneme</span>
-                        </div>
-                        <div className="mt-1 text-[10px] text-purple-400/90 font-medium">{branchSubjects.length - 1} farklı derste</div>
-                      </div>
+                    const BRANCH_PER_PAGE = 6;
+                    const totalBranchPages = Math.ceil(filteredBranchExams.length / BRANCH_PER_PAGE) || 1;
+                    const currentBrPage = Math.min(branchExamPage, totalBranchPages);
+                    const paginatedBranchExams = filteredBranchExams.slice((currentBrPage - 1) * BRANCH_PER_PAGE, currentBrPage * BRANCH_PER_PAGE);
 
-                      <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-400">Ortalama Branş Neti</span>
-                          <Target className="w-4 h-4 text-indigo-400" />
-                        </div>
-                        <div className="mt-2 flex items-baseline gap-1.5">
-                          <span className="text-2xl font-black text-indigo-400">{avgBranchNet}</span>
-                          <span className="text-xs text-slate-400 font-bold">Net</span>
-                        </div>
-                        <div className="mt-1 text-[10px] text-slate-400">Tüm branş denemeleri ortalaması</div>
-                      </div>
+                    return (
+                      <div className="space-y-6">
+                        {/* KPI Metrics */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-slate-400">Toplam Branş Denemesi</span>
+                              <Layers className="w-4 h-4 text-purple-400" />
+                            </div>
+                            <div className="mt-2 flex items-baseline gap-1.5">
+                              <span className="text-2xl font-black text-white">{totalBranchCount}</span>
+                              <span className="text-xs text-slate-400">deneme</span>
+                            </div>
+                            <div className="mt-1 text-[10px] text-purple-400/90 font-medium">{branchSubjects.length - 1} farklı derste</div>
+                          </div>
 
-                      <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-400">Branşınızdaki Denemeler</span>
-                          <Sparkles className="w-4 h-4 text-amber-400" />
-                        </div>
-                        <div className="mt-2 flex items-baseline gap-1.5">
-                          <span className="text-2xl font-black text-amber-400">{teacherBranchExams.length}</span>
-                          <span className="text-xs text-slate-400">deneme</span>
-                        </div>
-                        <div className="mt-1 text-[10px] text-amber-400/80 font-medium">
-                          {teacher.subject ? `${teacher.subject} Alanınız` : 'Branş Seçilmedi'}
-                        </div>
-                      </div>
+                          <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-slate-400">Ortalama Branş Neti</span>
+                              <Target className="w-4 h-4 text-indigo-400" />
+                            </div>
+                            <div className="mt-2 flex items-baseline gap-1.5">
+                              <span className="text-2xl font-black text-indigo-400">{avgBranchNet}</span>
+                              <span className="text-xs text-slate-400 font-bold">Net</span>
+                            </div>
+                            <div className="mt-1 text-[10px] text-slate-400">Tüm branş denemeleri ortalaması</div>
+                          </div>
 
-                      <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-400">En Çok Çözülen Ders</span>
-                          <Award className="w-4 h-4 text-emerald-400" />
+                          <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-slate-400">Branşınızdaki Denemeler</span>
+                              <Sparkles className="w-4 h-4 text-amber-400" />
+                            </div>
+                            <div className="mt-2 flex items-baseline gap-1.5">
+                              <span className="text-2xl font-black text-amber-400">{teacherBranchExams.length}</span>
+                              <span className="text-xs text-slate-400">deneme</span>
+                            </div>
+                            <div className="mt-1 text-[10px] text-amber-400/80 font-medium">
+                              {teacher.subject ? `${teacher.subject} Alanınız` : 'Branş Seçilmedi'}
+                            </div>
+                          </div>
+
+                          <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-slate-400">En Çok Çözülen Ders</span>
+                              <Award className="w-4 h-4 text-emerald-400" />
+                            </div>
+                            <div className="mt-2 flex items-baseline gap-1.5 truncate">
+                              <span className="text-lg font-black text-emerald-400 truncate">
+                                {branchChartData[0]?.subject || '-'}
+                              </span>
+                              {branchChartData[0] && (
+                                <span className="text-xs text-slate-400">({branchChartData[0].count} Adet)</span>
+                              )}
+                            </div>
+                            <div className="mt-1 text-[10px] text-slate-500 font-medium">Lider branş denemesi</div>
+                          </div>
                         </div>
-                        <div className="mt-2 flex items-baseline gap-1.5 truncate">
-                          <span className="text-lg font-black text-emerald-400 truncate">
-                            {branchChartData[0]?.subject || '-'}
-                          </span>
-                          {branchChartData[0] && (
-                            <span className="text-xs text-slate-400">({branchChartData[0].count} Adet)</span>
+
+                        {/* Chart: Branch Exams Distribution */}
+                        {branchExams.length > 0 && (
+                          <div className="bg-slate-950/80 border border-white/10 rounded-3xl p-5 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <BarChart3 className="w-4 h-4 text-purple-400" />
+                                <h4 className="text-xs font-bold text-white">Ders Bazlı Branş Deneme Çözüm ve Net Ortalamaları</h4>
+                              </div>
+                              <span className="text-[10px] text-slate-400 font-mono">Ders Dağılımı</span>
+                            </div>
+
+                            <div className="h-48 w-full pt-2">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={branchChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                                  <XAxis dataKey="subject" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                                  <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
+                                  <Tooltip
+                                    contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '11px', color: '#fff' }}
+                                    formatter={(val: any, name: any) => [
+                                      name === 'count' ? `${val} Deneme` : `${val} Net`,
+                                      name === 'count' ? 'Çözülen Deneme Sayısı' : 'Ortalama Net'
+                                    ]}
+                                  />
+                                  <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={32} name="count">
+                                    {branchChartData.map((entry, index) => {
+                                      const isMyBranch = teacherSubj && entry.subject.toLowerCase().includes(teacherSubj);
+                                      return (
+                                        <Cell 
+                                          key={`cell-branch-${index}`} 
+                                          fill={isMyBranch ? '#f59e0b' : '#a855f7'} 
+                                        />
+                                      );
+                                    })}
+                                  </Bar>
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Toolbar: Search, Subject Filters & View Mode */}
+                        <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="relative flex-1">
+                              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                              <input
+                                type="text"
+                                value={branchMockSearch}
+                                onChange={(e) => {
+                                  setBranchMockSearch(e.target.value);
+                                  setBranchExamPage(1);
+                                }}
+                                placeholder="Ders adı veya yayınevinde ara..."
+                                className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50 transition-colors"
+                              />
+                              {branchMockSearch && (
+                                <button
+                                  onClick={() => {
+                                    setBranchMockSearch('');
+                                    setBranchExamPage(1);
+                                  }}
+                                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs px-1"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+
+                            {/* View Mode Toggle */}
+                            <div className="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0 self-end sm:self-auto">
+                              <button
+                                type="button"
+                                onClick={() => setBranchExamViewMode('cards')}
+                                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                                  branchExamViewMode === 'cards' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                                }`}
+                                title="Kart Görünümü"
+                              >
+                                <LayoutGrid className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setBranchExamViewMode('table')}
+                                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                                  branchExamViewMode === 'table' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                                }`}
+                                title="Detaylı Liste / Tablo Görünümü"
+                              >
+                                <Table className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {branchSubjects.length > 2 && (
+                            <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-white/5">
+                              <span className="text-[11px] font-bold text-slate-400 mr-1 flex items-center gap-1">
+                                <Filter className="w-3 h-3 text-purple-400" /> Ders:
+                              </span>
+                              {branchSubjects.map(subj => {
+                                const isMyBranch = teacherSubj && subj.toLowerCase().includes(teacherSubj);
+                                return (
+                                  <button
+                                    key={subj}
+                                    onClick={() => {
+                                      setBranchMockSubjectFilter(subj);
+                                      setBranchExamPage(1);
+                                    }}
+                                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer flex items-center space-x-1 ${
+                                      branchMockSubjectFilter === subj
+                                        ? 'bg-purple-600 text-white font-bold'
+                                        : isMyBranch
+                                        ? 'bg-amber-500/10 text-amber-200 border-amber-500/20 hover:bg-amber-500/20'
+                                        : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-slate-300'
+                                    }`}
+                                  >
+                                    <span>{subj === 'all' ? 'Tüm Dersler' : subj}</span>
+                                    {isMyBranch && <span className="text-[9px] text-amber-300 font-bold">⭐</span>}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           )}
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-500 font-medium">Lider branş denemesi</div>
-                      </div>
-                    </div>
 
-                    {/* Chart: Branch Exams Distribution */}
-                    {branchExams.length > 0 && (
-                      <div className="bg-slate-950/80 border border-white/10 rounded-3xl p-5 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <BarChart3 className="w-4 h-4 text-purple-400" />
-                            <h4 className="text-xs font-bold text-white">Ders Bazlı Branş Deneme Çözüm ve Net Ortalamaları</h4>
+                        {/* Branch Exams Cards OR Table */}
+                        {filteredBranchExams.length === 0 ? (
+                          <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl space-y-2">
+                            <Layers className="w-8 h-8 text-slate-500 mx-auto" />
+                            <p className="text-xs text-slate-400">Eşleşen branş denemesi kaydı bulunamadı.</p>
                           </div>
-                          <span className="text-[10px] text-slate-400 font-mono">Ders Dağılımı</span>
-                        </div>
+                        ) : branchExamViewMode === 'cards' ? (
+                          /* CARD VIEW */
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                            {paginatedBranchExams.map((ex) => {
+                              const isMyBranch = teacherSubj && (ex.subject || '').toLowerCase().includes(teacherSubj);
+                              return (
+                                <div
+                                  key={ex.id}
+                                  className={`p-4 rounded-2xl border transition-all space-y-2.5 ${
+                                    isMyBranch
+                                      ? 'bg-amber-950/20 border-amber-500/40 hover:border-amber-500/60 shadow-md shadow-amber-500/5'
+                                      : 'bg-slate-950/80 border-white/10 hover:border-white/20'
+                                  }`}
+                                >
+                                  {/* Top Row: Subject & Publisher */}
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div>
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-xs font-black text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-lg border border-purple-500/30">
+                                          {ex.subject}
+                                        </span>
+                                        {isMyBranch && (
+                                          <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded border border-amber-400/40 font-bold">
+                                            Branşınız ⭐
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-xs font-bold text-white mt-1">
+                                        {ex.publisher || 'Branş Denemesi'}
+                                      </div>
+                                    </div>
 
-                        <div className="h-48 w-full pt-2">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={branchChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                              <XAxis dataKey="subject" stroke="#94a3b8" fontSize={10} tickLine={false} />
-                              <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
-                              <Tooltip
-                                contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '11px', color: '#fff' }}
-                                formatter={(val: any, name: any) => [
-                                  name === 'count' ? `${val} Deneme` : `${val} Net`,
-                                  name === 'count' ? 'Çözülen Deneme Sayısı' : 'Ortalama Net'
-                                ]}
-                              />
-                              <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={32} name="count">
-                                {branchChartData.map((entry, index) => {
-                                  const isMyBranch = teacherSubj && entry.subject.toLowerCase().includes(teacherSubj);
-                                  return (
-                                    <Cell 
-                                      key={`cell-branch-${index}`} 
-                                      fill={isMyBranch ? '#f59e0b' : '#a855f7'} 
-                                    />
-                                  );
-                                })}
-                              </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Toolbar: Search & Subject Filters */}
-                    <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-3">
-                      <div className="relative">
-                        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={branchMockSearch}
-                          onChange={(e) => setBranchMockSearch(e.target.value)}
-                          placeholder="Ders adı veya yayınevinde ara..."
-                          className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500/50 transition-colors"
-                        />
-                        {branchMockSearch && (
-                          <button
-                            onClick={() => setBranchMockSearch('')}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs px-1"
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-
-                      {branchSubjects.length > 2 && (
-                        <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-white/5">
-                          <span className="text-[11px] font-bold text-slate-400 mr-1 flex items-center gap-1">
-                            <Filter className="w-3 h-3 text-purple-400" /> Ders:
-                          </span>
-                          {branchSubjects.map(subj => {
-                            const isMyBranch = teacherSubj && subj.toLowerCase().includes(teacherSubj);
-                            return (
-                              <button
-                                key={subj}
-                                onClick={() => setBranchMockSubjectFilter(subj)}
-                                className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer flex items-center space-x-1 ${
-                                  branchMockSubjectFilter === subj
-                                    ? 'bg-purple-600 text-white font-bold'
-                                    : isMyBranch
-                                    ? 'bg-amber-500/10 text-amber-200 border-amber-500/20 hover:bg-amber-500/20'
-                                    : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-slate-300'
-                                }`}
-                              >
-                                <span>{subj === 'all' ? 'Tüm Dersler' : subj}</span>
-                                {isMyBranch && <span className="text-[9px] text-amber-300 font-bold">⭐</span>}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Branch Exams Cards */}
-                    {filteredBranchExams.length === 0 ? (
-                      <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl space-y-2">
-                        <Layers className="w-8 h-8 text-slate-500 mx-auto" />
-                        <p className="text-xs text-slate-400">Eşleşen branş denemesi kaydı bulunamadı.</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                        {filteredBranchExams.map((ex) => {
-                          const isMyBranch = teacherSubj && (ex.subject || '').toLowerCase().includes(teacherSubj);
-                          return (
-                            <div
-                              key={ex.id}
-                              className={`p-4 rounded-2xl border transition-all space-y-2.5 ${
-                                isMyBranch
-                                  ? 'bg-amber-950/20 border-amber-500/40 hover:border-amber-500/60 shadow-md shadow-amber-500/5'
-                                  : 'bg-slate-950/80 border-white/10 hover:border-white/20'
-                              }`}
-                            >
-                              {/* Top Row: Subject & Publisher */}
-                              <div className="flex items-start justify-between gap-2">
-                                <div>
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="text-xs font-black text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-lg border border-purple-500/30">
-                                      {ex.subject}
+                                    <span className="text-xs font-black text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-lg border border-purple-500/20">
+                                      {ex.net} Net
                                     </span>
-                                    {isMyBranch && (
-                                      <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.5 rounded border border-amber-400/40 font-bold">
-                                        Branşınız ⭐
-                                      </span>
-                                    )}
                                   </div>
-                                  <div className="text-xs font-bold text-white mt-1">
-                                    {ex.publisher || 'Branş Denemesi'}
+
+                                  {/* Stats Row */}
+                                  <div className="flex items-center justify-between text-xs font-mono bg-slate-900/90 p-2 rounded-xl border border-white/5">
+                                    <span className="text-emerald-400 font-bold">{ex.correct} Doğru</span>
+                                    <span className="text-rose-400 font-bold">{ex.wrong} Yanlış</span>
+                                    <span className="text-slate-400">{ex.empty} Boş</span>
+                                  </div>
+
+                                  {/* Footer */}
+                                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-0.5">
+                                    <span className="flex items-center space-x-1">
+                                      <Calendar className="w-3 h-3 text-slate-500" />
+                                      <span>{ex.date}</span>
+                                    </span>
+                                    {ex.duration ? (
+                                      <span className="flex items-center space-x-1 text-purple-400 font-mono">
+                                        <Clock className="w-3 h-3" />
+                                        <span>{ex.duration} dk</span>
+                                      </span>
+                                    ) : null}
                                   </div>
                                 </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          /* TABLE VIEW */
+                          <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/80 shadow-xl">
+                            <table className="w-full text-left text-xs border-collapse">
+                              <thead>
+                                <tr className="border-b border-white/10 bg-slate-900/90 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                                  <th className="py-3 px-4">Ders</th>
+                                  <th className="py-3 px-4">Yayın / Deneme</th>
+                                  <th className="py-3 px-4">Tarih</th>
+                                  <th className="py-3 px-4 text-center">D / Y / B</th>
+                                  <th className="py-3 px-4 text-center">Net</th>
+                                  <th className="py-3 px-4 text-center">Başarı Oranı</th>
+                                  <th className="py-3 px-4 text-right">Süre</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/5 font-mono">
+                                {paginatedBranchExams.map(ex => {
+                                  const isMyBranch = teacherSubj && (ex.subject || '').toLowerCase().includes(teacherSubj);
+                                  const totalQ = (ex.correct || 0) + (ex.wrong || 0) + (ex.empty || 0);
+                                  const acc = totalQ > 0 ? Math.round(((ex.correct || 0) / totalQ) * 100) : 0;
+                                  return (
+                                    <tr key={ex.id} className={`hover:bg-white/5 transition-colors ${isMyBranch ? 'bg-amber-500/5' : ''}`}>
+                                      <td className="py-3 px-4">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="font-bold text-purple-300 font-sans text-xs">{ex.subject}</span>
+                                          {isMyBranch && <span className="text-[9px] text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded font-bold font-sans">⭐ Branşınız</span>}
+                                        </div>
+                                      </td>
+                                      <td className="py-3 px-4 text-white font-sans text-xs">{ex.publisher || 'Branş Denemesi'}</td>
+                                      <td className="py-3 px-4 text-slate-400 text-[11px] whitespace-nowrap">{ex.date}</td>
+                                      <td className="py-3 px-4 text-center">
+                                        <span className="text-emerald-400 font-bold">{ex.correct}D</span>{' '}
+                                        <span className="text-rose-400 font-bold">{ex.wrong}Y</span>{' '}
+                                        <span className="text-slate-400">{ex.empty}B</span>
+                                      </td>
+                                      <td className="py-3 px-4 text-center">
+                                        <span className="font-black text-purple-300 text-sm">{ex.net} Net</span>
+                                      </td>
+                                      <td className="py-3 px-4 text-center">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                          acc >= 80 ? 'bg-emerald-500/20 text-emerald-300' : acc >= 50 ? 'bg-indigo-500/20 text-indigo-300' : 'bg-rose-500/20 text-rose-300'
+                                        }`}>
+                                          %{acc}
+                                        </span>
+                                      </td>
+                                      <td className="py-3 px-4 text-right text-slate-400 text-xs">
+                                        {ex.duration ? `${ex.duration} dk` : '-'}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
 
-                                <span className="text-xs font-black text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-lg border border-purple-500/20">
-                                  {ex.net} Net
-                                </span>
-                              </div>
+                        {/* Pagination Bar */}
+                        {filteredBranchExams.length > BRANCH_PER_PAGE && (
+                          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/10 text-xs">
+                            <span className="text-slate-400 font-medium">
+                              Toplam <strong className="text-white font-mono">{filteredBranchExams.length}</strong> sınavdan{' '}
+                              <strong className="text-white font-mono">
+                                {(currentBrPage - 1) * BRANCH_PER_PAGE + 1}-{Math.min(currentBrPage * BRANCH_PER_PAGE, filteredBranchExams.length)}
+                              </strong>{' '}
+                              arası gösteriliyor
+                            </span>
 
-                              {/* Stats Row */}
-                              <div className="flex items-center justify-between text-xs font-mono bg-slate-900/90 p-2 rounded-xl border border-white/5">
-                                <span className="text-emerald-400 font-bold">{ex.correct} Doğru</span>
-                                <span className="text-rose-400 font-bold">{ex.wrong} Yanlış</span>
-                                <span className="text-slate-400">{ex.empty} Boş</span>
-                              </div>
+                            <div className="flex items-center space-x-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setBranchExamPage(Math.max(1, currentBrPage - 1))}
+                                disabled={currentBrPage === 1}
+                                className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                                title="Önceki Sayfa"
+                              >
+                                <ChevronLeft className="w-4 h-4" />
+                              </button>
 
-                              {/* Footer */}
-                              <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-0.5">
-                                <span className="flex items-center space-x-1">
-                                  <Calendar className="w-3 h-3 text-slate-500" />
-                                  <span>{ex.date}</span>
-                                </span>
-                                {ex.duration ? (
-                                  <span className="flex items-center space-x-1 text-purple-400 font-mono">
-                                    <Clock className="w-3 h-3" />
-                                    <span>{ex.duration} dk</span>
-                                  </span>
-                                ) : null}
-                              </div>
+                              {Array.from({ length: totalBranchPages }, (_, i) => i + 1).map((pageNum) => (
+                                <button
+                                  key={pageNum}
+                                  type="button"
+                                  onClick={() => setBranchExamPage(pageNum)}
+                                  className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer font-mono ${
+                                    currentBrPage === pageNum
+                                      ? 'bg-purple-600 text-white shadow-md shadow-purple-500/20'
+                                      : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+                                  }`}
+                                >
+                                  {pageNum}
+                                </button>
+                              ))}
+
+                              <button
+                                type="button"
+                                onClick={() => setBranchExamPage(Math.min(totalBranchPages, currentBrPage + 1))}
+                                disabled={currentBrPage === totalBranchPages}
+                                className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                                title="Sonraki Sayfa"
+                              >
+                                <ChevronRight className="w-4 h-4" />
+                              </button>
                             </div>
-                          );
-                        })}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              })()}
+                    );
+                  })()}
 
               {/* ------------------------------------------------------------- */}
               {/* SUB-TAB 3: KURUMSAL DENEMELER (KARNELER) */}
@@ -3299,6 +3612,11 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                   return true;
                 });
 
+                const INST_PER_PAGE = 6;
+                const totalInstPages = Math.ceil(filteredInstMocks.length / INST_PER_PAGE) || 1;
+                const currentInstPage = Math.min(institutionalMockPage, totalInstPages);
+                const paginatedInstMocks = filteredInstMocks.slice((currentInstPage - 1) * INST_PER_PAGE, currentInstPage * INST_PER_PAGE);
+
                 return (
                   <div className="space-y-6">
                     {/* KPI Metrics */}
@@ -3403,20 +3721,26 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                       </div>
                     )}
 
-                    {/* Toolbar: Search & Exam Type */}
+                    {/* Toolbar: Search, Exam Type & View Mode */}
                     <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="relative flex-1">
                         <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type="text"
                           value={institutionalMockSearch}
-                          onChange={(e) => setInstitutionalMockSearch(e.target.value)}
+                          onChange={(e) => {
+                            setInstitutionalMockSearch(e.target.value);
+                            setInstitutionalMockPage(1);
+                          }}
                           placeholder="Sınav adı veya yayınevinde ara..."
                           className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
                         />
                         {institutionalMockSearch && (
                           <button
-                            onClick={() => setInstitutionalMockSearch('')}
+                            onClick={() => {
+                              setInstitutionalMockSearch('');
+                              setInstitutionalMockPage(1);
+                            }}
                             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs px-1"
                           >
                             ✕
@@ -3424,43 +3748,79 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                         )}
                       </div>
 
-                      <div className="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0">
-                        <button
-                          onClick={() => setInstitutionalMockTypeFilter('all')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                            institutionalMockTypeFilter === 'all' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-500/20' : 'text-slate-400 hover:text-white'
-                          }`}
-                        >
-                          Tüm Karneler ({institutionalMocks.length})
-                        </button>
-                        <button
-                          onClick={() => setInstitutionalMockTypeFilter('TYT')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                            institutionalMockTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-500/20' : 'text-slate-400 hover:text-indigo-400'
-                          }`}
-                        >
-                          TYT Karneleri
-                        </button>
-                        <button
-                          onClick={() => setInstitutionalMockTypeFilter('AYT')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                            institutionalMockTypeFilter === 'AYT' ? 'bg-fuchsia-600 text-white font-bold shadow-md shadow-fuchsia-500/20' : 'text-slate-400 hover:text-fuchsia-400'
-                          }`}
-                        >
-                          AYT Karneleri
-                        </button>
+                      <div className="flex items-center space-x-2.5 flex-wrap">
+                        <div className="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0">
+                          <button
+                            onClick={() => {
+                              setInstitutionalMockTypeFilter('all');
+                              setInstitutionalMockPage(1);
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              institutionalMockTypeFilter === 'all' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-500/20' : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            Tüm Karneler ({institutionalMocks.length})
+                          </button>
+                          <button
+                            onClick={() => {
+                              setInstitutionalMockTypeFilter('TYT');
+                              setInstitutionalMockPage(1);
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              institutionalMockTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-500/20' : 'text-slate-400 hover:text-indigo-400'
+                            }`}
+                          >
+                            TYT Karneleri
+                          </button>
+                          <button
+                            onClick={() => {
+                              setInstitutionalMockTypeFilter('AYT');
+                              setInstitutionalMockPage(1);
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                              institutionalMockTypeFilter === 'AYT' ? 'bg-fuchsia-600 text-white font-bold shadow-md shadow-fuchsia-500/20' : 'text-slate-400 hover:text-fuchsia-400'
+                            }`}
+                          >
+                            AYT Karneleri
+                          </button>
+                        </div>
+
+                        {/* View Mode Toggle */}
+                        <div className="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setInstitutionalMockViewMode('cards')}
+                            className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                              institutionalMockViewMode === 'cards' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                            }`}
+                            title="Kart Görünümü"
+                          >
+                            <LayoutGrid className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setInstitutionalMockViewMode('table')}
+                            className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                              institutionalMockViewMode === 'table' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+                            }`}
+                            title="Detaylı Liste / Tablo Görünümü"
+                          >
+                            <Table className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Institutional Mock Exam Report Cards Grid */}
+                    {/* Institutional Mock Exam Report Cards Grid OR Table */}
                     {filteredInstMocks.length === 0 ? (
                       <div className="text-center py-12 border border-dashed border-white/10 rounded-2xl space-y-2">
                         <School className="w-8 h-8 text-slate-500 mx-auto" />
                         <p className="text-xs text-slate-400">Bu öğrenciye ait kayıtlı kurumsal deneme karnesi bulunamadı.</p>
                       </div>
-                    ) : (
+                    ) : institutionalMockViewMode === 'cards' ? (
+                      /* CARD VIEW */
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {filteredInstMocks.map((exam) => {
+                        {paginatedInstMocks.map((exam) => {
                           const examTitle = exam.examTitle || (exam as any).title;
                           const stats = extractInstStats(exam);
 
@@ -3610,6 +3970,121 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                             </div>
                           );
                         })}
+                      </div>
+                    ) : (
+                      /* TABLE VIEW */
+                      <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/80 shadow-xl">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-white/10 bg-slate-900/90 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
+                              <th className="py-3 px-4">Sınav Adı & Yayın</th>
+                              <th className="py-3 px-4">Tarih</th>
+                              <th className="py-3 px-4 text-center">Net & Puan</th>
+                              <th className="py-3 px-4 text-center">Okul Sırası</th>
+                              <th className="py-3 px-4 text-center">Sınıf Sırası</th>
+                              <th className="py-3 px-4 text-center">Genel Sıra</th>
+                              <th className="py-3 px-4 text-right">İşlem</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-white/5 font-mono">
+                            {paginatedInstMocks.map(exam => {
+                              const stats = extractInstStats(exam);
+                              const examTitle = exam.examTitle || (exam as any).title;
+                              return (
+                                <tr key={exam.id} className="hover:bg-white/5 transition-colors">
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border font-sans ${
+                                        exam.examType === 'TYT' ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30'
+                                      }`}>
+                                        {exam.examType || 'TYT'}
+                                      </span>
+                                      <span className="font-bold text-white font-sans text-xs">{examTitle}</span>
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 font-sans mt-0.5">{exam.createdByName || (exam as any).publisher || 'Kurumsal Deneme'}</div>
+                                  </td>
+                                  <td className="py-3 px-4 text-slate-400 text-[11px] whitespace-nowrap">{exam.examDate}</td>
+                                  <td className="py-3 px-4 text-center">
+                                    <div className="font-black text-emerald-400 text-xs">{stats.totalNet.toFixed(2)} Net</div>
+                                    {stats.score > 0 && <div className="text-[10px] text-amber-400 font-bold">{stats.score.toFixed(1)} P</div>}
+                                  </td>
+                                  <td className="py-3 px-4 text-center">
+                                    <span className="font-bold text-white">{stats.schoolRank ? `#${stats.schoolRank}` : '-'}</span>
+                                    {stats.schoolTotal ? <span className="text-slate-500 text-[10px] block">/{stats.schoolTotal}</span> : null}
+                                  </td>
+                                  <td className="py-3 px-4 text-center">
+                                    <span className="font-bold text-white">{stats.classRank ? `#${stats.classRank}` : '-'}</span>
+                                    {stats.classTotal ? <span className="text-slate-500 text-[10px] block">/{stats.classTotal}</span> : null}
+                                  </td>
+                                  <td className="py-3 px-4 text-center">
+                                    <span className="font-bold text-purple-300">{stats.generalRank ? `#${stats.generalRank.toLocaleString('tr-TR')}` : '-'}</span>
+                                    {stats.generalTotal ? <span className="text-slate-500 text-[10px] block">/{stats.generalTotal.toLocaleString('tr-TR')}</span> : null}
+                                  </td>
+                                  <td className="py-3 px-4 text-right">
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedInstitutionalExam(exam)}
+                                      className="inline-flex items-center space-x-1 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-[11px] font-bold rounded-xl transition-all shadow-sm cursor-pointer"
+                                    >
+                                      <Eye className="w-3 h-3" />
+                                      <span>Karne İncele</span>
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Pagination Bar */}
+                    {filteredInstMocks.length > INST_PER_PAGE && (
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-white/10 text-xs">
+                        <span className="text-slate-400 font-medium">
+                          Toplam <strong className="text-white font-mono">{filteredInstMocks.length}</strong> sınavdan{' '}
+                          <strong className="text-white font-mono">
+                            {(currentInstPage - 1) * INST_PER_PAGE + 1}-{Math.min(currentInstPage * INST_PER_PAGE, filteredInstMocks.length)}
+                          </strong>{' '}
+                          arası gösteriliyor
+                        </span>
+
+                        <div className="flex items-center space-x-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setInstitutionalMockPage(Math.max(1, currentInstPage - 1))}
+                            disabled={currentInstPage === 1}
+                            className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                            title="Önceki Sayfa"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+
+                          {Array.from({ length: totalInstPages }, (_, i) => i + 1).map((pageNum) => (
+                            <button
+                              key={pageNum}
+                              type="button"
+                              onClick={() => setInstitutionalMockPage(pageNum)}
+                              className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer font-mono ${
+                                currentInstPage === pageNum
+                                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/20'
+                                  : 'bg-slate-900/90 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          ))}
+
+                          <button
+                            type="button"
+                            onClick={() => setInstitutionalMockPage(Math.min(totalInstPages, currentInstPage + 1))}
+                            disabled={currentInstPage === totalInstPages}
+                            className="p-1.5 rounded-lg border border-white/10 bg-slate-900/90 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+                            title="Sonraki Sayfa"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
