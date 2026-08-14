@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, X, Sliders, ChevronDown, Sparkles, Target, Award, Eye, EyeOff, Info, Globe, BookOpen, Copy, Check, Filter, Layers, Zap, Scale, CheckCircle2 } from 'lucide-react';
+import { Calculator, X, Sliders, ChevronDown, Sparkles, Target, Award, Eye, EyeOff, Info, Globe, BookOpen, Copy, Check, Filter, Layers, Zap, Scale, CheckCircle2, TrendingUp } from 'lucide-react';
 import { GeneralMockExam, StudentProfile, MockExamType } from '../../types';
 import { sanitizeNetInput, parseNetVal } from '../../utils/mockUtils';
 import { getEffectiveMockExamType } from './MockTableSection';
@@ -50,7 +50,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
   const hasSozNets = aytEdebNet > 0 || aytSos2Net > 0;
   const hasDilNets = ydtNet > 0 || examType === 'DIL' || examType === 'TYT_DIL';
 
-  // Compute Official Scores via MEB OGM Engine
+  // Compute Official Scores via MEB OGM & ÖSYM 2026 Engine
   const calculated = calculateYksScores({
     tytTurkce: tytTurkceNet,
     tytMat: tytMatNet,
@@ -87,19 +87,19 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
     text += `--------------------------------------\n`;
 
     if (showTyt || isOnlyTyt) {
-      text += `📊 TYT: Ham: ${tyt.ham} | Yerleştirme: ${tyt.yerlestirme} | MEB Sıra Aralığı: ${tyt.mebHamAralik} (Ham) / ${tyt.mebYerAralik} (Yerl.) | 2025: #${formatRank(tyt.rank2025Yer)}\n`;
+      text += `📊 TYT: Ham: ${tyt.ham} | Yerleştirme: ${tyt.yerlestirme} | 2026 ÖSYM: #${formatRank(tyt.rank2026Yer)} | MEB Sıra Aralığı: ${tyt.mebHamAralik} (Ham) / ${tyt.mebYerAralik} (Yerl.)\n`;
     }
     if (showSay && (hasSayNets || viewMode !== 'auto')) {
-      text += `🔬 SAYISAL: Ham: ${say.ham} | Yerleştirme: ${say.yerlestirme} | MEB Sıra Aralığı: ${say.mebHamAralik} (Ham) / ${say.mebYerAralik} (Yerl.) | 2025: #${formatRank(say.rank2025Yer)}\n`;
+      text += `🔬 SAYISAL: Ham: ${say.ham} | Yerleştirme: ${say.yerlestirme} | 2026 ÖSYM: #${formatRank(say.rank2026Yer)} | MEB Sıra Aralığı: ${say.mebHamAralik} (Ham) / ${say.mebYerAralik} (Yerl.)\n`;
     }
     if (showEa && (hasEaNets || viewMode !== 'auto')) {
-      text += `⚖️ EŞİT AĞIRLIK: Ham: ${ea.ham} | Yerleştirme: ${ea.yerlestirme} | MEB Sıra Aralığı: ${ea.mebHamAralik} (Ham) / ${ea.mebYerAralik} (Yerl.) | 2025: #${formatRank(ea.rank2025Yer)}\n`;
+      text += `⚖️ EŞİT AĞIRLIK: Ham: ${ea.ham} | Yerleştirme: ${ea.yerlestirme} | 2026 ÖSYM: #${formatRank(ea.rank2026Yer)} | MEB Sıra Aralığı: ${ea.mebHamAralik} (Ham) / ${ea.mebYerAralik} (Yerl.)\n`;
     }
     if (showSoz && (hasSozNets || viewMode !== 'auto')) {
-      text += `📚 SÖZEL: Ham: ${soz.ham} | Yerleştirme: ${soz.yerlestirme} | MEB Sıra Aralığı: ${soz.mebHamAralik} (Ham) / ${soz.mebYerAralik} (Yerl.) | 2025: #${formatRank(soz.rank2025Yer)}\n`;
+      text += `📚 SÖZEL: Ham: ${soz.ham} | Yerleştirme: ${soz.yerlestirme} | 2026 ÖSYM: #${formatRank(soz.rank2026Yer)} | MEB Sıra Aralığı: ${soz.mebHamAralik} (Ham) / ${soz.mebYerAralik} (Yerl.)\n`;
     }
     if (showDil && (hasDilNets || viewMode !== 'auto')) {
-      text += `🌐 DİL (YDT): Ham: ${dil.ham} | Yerleştirme: ${dil.yerlestirme} | MEB Sıra Aralığı: ${dil.mebHamAralik} (Ham) / ${dil.mebYerAralik} (Yerl.) | 2025: #${formatRank(dil.rank2025Yer)}\n`;
+      text += `🌐 DİL (YDT): Ham: ${dil.ham} | Yerleştirme: ${dil.yerlestirme} | 2026 ÖSYM: #${formatRank(dil.rank2026Yer)} | MEB Sıra Aralığı: ${dil.mebHamAralik} (Ham) / ${dil.mebYerAralik} (Yerl.)\n`;
     }
 
     navigator.clipboard.writeText(text);
@@ -173,10 +173,27 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
           </div>
         </div>
 
-        {/* 3-Year Simulation Table */}
+        {/* 4-Year Simulation Table (2026 ÖSYM, 2025, 2024, 2023) */}
         <div className="space-y-2 pt-3 border-t border-slate-900">
           <span className="text-[10px] text-slate-400 font-black block uppercase tracking-wider">Yıllara Göre Tahmini Sıralama</span>
           
+          {/* 2026 ÖSYM RESMİ */}
+          <div className="bg-gradient-to-r from-indigo-950/70 via-slate-900 to-indigo-950/70 p-2.5 rounded-2xl border border-indigo-500/40 text-xs shadow-md">
+            <div className="flex justify-between items-center mb-1">
+              <span className="font-black text-white text-[11px] flex items-center space-x-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+                <span>2026 YKS Sıralaması</span>
+              </span>
+              <span className="text-[9px] font-black bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/40">
+                2026 ÖSYM Verisi
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-1 font-mono text-[11px]">
+              <div>Ham: <strong className="text-white">#{formatRank(data.rank2026Ham)}</strong></div>
+              <div>Yerl: <strong className={`${accentTextColor} font-black text-xs`}>#{formatRank(data.rank2026Yer)}</strong></div>
+            </div>
+          </div>
+
           {/* 2025 */}
           <div className="bg-slate-900/90 p-2.5 rounded-2xl border border-slate-800 text-xs hover:border-slate-700 transition-colors">
             <div className="flex justify-between items-center mb-1">
@@ -238,11 +255,11 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
                 <h3 className="text-base sm:text-lg font-black text-white leading-tight">YKS Puan & Sıralama Hesaplayıcı</h3>
                 <span className="inline-flex items-center space-x-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
                   <Sparkles className="w-3 h-3 text-emerald-400" />
-                  <span>MEB OGM & ÖSYM Birebir Uyumlu</span>
+                  <span>2026 ÖSYM Sayısal Bilgiler Dahil</span>
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-medium leading-tight mt-1">
-                MEB OGM Materyal ve ÖSYM resmi katsayıları ile kesin ham, yerleştirme ve sıra aralığı simülasyonu
+                MEB OGM Materyal formülleri ve 2026 ÖSYM resmi yığılma istatistikleri ile anlık ham, yerleştirme ve 4 yıllık sıralama simülasyonu
               </p>
             </div>
           </div>
@@ -610,7 +627,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
         <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 text-[11px] text-slate-400 leading-relaxed flex items-start space-x-2.5 shadow-sm">
           <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
           <span>
-            * Puan ve sıra aralığı hesaplamaları; MEB OGM Materyal ve ÖSYM resmi yığılmalı frekans tabloları ile <strong>%100 hata payı 0</strong> hassasiyetiyle çalışmaktadır. 2023, 2024 ve 2025 yılı sınav simülasyonları ise gerçek sınavların standart sapma ve yığılma dağılımlarını yansıtır.
+            * Puan ve sıra aralığı hesaplamaları; MEB OGM Materyal ve ÖSYM resmi yığılmalı frekans tabloları ile <strong>%100 hata payı 0</strong> hassasiyetiyle çalışmaktadır. 2026 yılı sıralamaları ÖSYM resmi Sayısal Bilgiler bülteni verilerinden logaritmik enterpolasyon ile anlık hesaplanır.
           </span>
         </div>
       </div>

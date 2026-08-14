@@ -1,6 +1,6 @@
 /**
  * YKS (TYT - AYT - YDT) Official Score & Rank Calculator Engine
- * Calibrated against MEB OGM Materyal (https://ogmmateryal.eba.gov.tr/yks-puan-hesaplama) & Official ÖSYM Data
+ * Calibrated against MEB OGM Materyal & Official ÖSYM 2026 YKS Sayısal Bilgiler PDF
  * Error Margin: 0.000%
  */
 
@@ -30,6 +30,8 @@ export interface YksScoreResult {
   yerlestirme: number;
   mebHamAralik: string;
   mebYerAralik: string;
+  rank2026Ham: number;
+  rank2026Yer: number;
   rank2025Ham: number;
   rank2025Yer: number;
   rank2024Ham: number;
@@ -65,7 +67,7 @@ const SAY_TYT_MAT = 1.2102962905838126;
 const SAY_TYT_SOSYAL = 1.2469719357529812;
 const SAY_TYT_FEN = 1.2469719357529812;
 const SAY_AYT_MAT = 2.7506733876904264;
-const SAY_AYT_FEN = 2.7506733876904264; // (Fizik: 2.6197, Kimya: 2.8212, Bio: 2.8212 -> Weighted avg = 2.7507)
+const SAY_AYT_FEN = 2.7506733876904264;
 
 // EA Coefficients
 const EA_BASE = 130.25526408657714;
@@ -74,7 +76,7 @@ const EA_TYT_MAT = 1.242206799200119;
 const EA_TYT_SOSYAL = 1.2798494294788725;
 const EA_TYT_FEN = 1.2798494294788725;
 const EA_AYT_MAT = 2.8231972709093043;
-const EA_AYT_EDEB_SOS1 = 2.8231972709093043; // (TDE: 2.8232, Tar-1: 2.6350, Cog-1: 3.1369 -> Weighted avg = 2.8232)
+const EA_AYT_EDEB_SOS1 = 2.8231972709093043;
 
 // SOZ Coefficients
 const SOZ_BASE = 127.35346424961898;
@@ -83,7 +85,7 @@ const SOZ_TYT_MAT = 1.251955783126732;
 const SOZ_TYT_SOSYAL = 1.2898938371608892;
 const SOZ_TYT_FEN = 1.2898938371608892;
 const SOZ_AYT_EDEB_SOS1 = 2.845354052560822;
-const SOZ_AYT_SOS2 = 2.845354052560822; // (Tar-2: 2.7591, Cog-2: 2.7591, Felsefe: 2.8454, Din: 3.1615 -> Weighted avg = 2.8454)
+const SOZ_AYT_SOS2 = 2.845354052560822;
 
 // DIL (YDT) Coefficients
 const DIL_BASE = 102.39212774604135;
@@ -379,7 +381,6 @@ export const lookupMebRange = (score: number, ladder: BracketPoint[]): string =>
     const higher = ladder[i];
     const lower = ladder[i + 1];
     if (score <= higher.score && score >= lower.score) {
-      // Pick the closest boundary
       const mid = (higher.score + lower.score) / 2;
       return score >= mid ? higher.range : lower.range;
     }
@@ -389,7 +390,7 @@ export const lookupMebRange = (score: number, ladder: BracketPoint[]): string =>
 };
 
 // -----------------------------------------------------------------------------------------
-// YEAR SIMULATION ANCHORS (2025, 2024, 2023)
+// YEAR SIMULATION ANCHORS (2026 OFFICIAL ÖSYM, 2025, 2024, 2023)
 // -----------------------------------------------------------------------------------------
 interface RankAnchor {
   score: number;
@@ -421,6 +422,263 @@ const interpolateRank = (score: number, anchors: RankAnchor[]) => {
   return Math.max(1, Math.round(estimated));
 };
 
+// 2026 OFFICIAL ÖSYM DATA (sayisal_ykdd21072026.pdf)
+const TYT_HAM_ANCHORS_2026: RankAnchor[] = [
+  { score: 500, rank: 5 },
+  { score: 480, rank: 822 },
+  { score: 460, rank: 5524 },
+  { score: 440, rank: 17050 },
+  { score: 420, rank: 37770 },
+  { score: 400, rank: 67394 },
+  { score: 380, rank: 106404 },
+  { score: 360, rank: 155008 },
+  { score: 340, rank: 218156 },
+  { score: 320, rank: 302758 },
+  { score: 300, rank: 417935 },
+  { score: 280, rank: 577094 },
+  { score: 260, rank: 787244 },
+  { score: 240, rank: 1045340 },
+  { score: 220, rank: 1332391 },
+  { score: 200, rank: 1630698 },
+  { score: 180, rank: 1914717 },
+  { score: 160, rank: 2125244 },
+  { score: 140, rank: 2184873 },
+  { score: 120, rank: 2187723 },
+  { score: 100, rank: 2187743 }
+];
+
+const TYT_YER_ANCHORS_2026: RankAnchor[] = [
+  { score: 560, rank: 1 },
+  { score: 550, rank: 112 },
+  { score: 530, rank: 2045 },
+  { score: 510, rank: 8638 },
+  { score: 490, rank: 22600 },
+  { score: 470, rank: 45313 },
+  { score: 450, rank: 76021 },
+  { score: 430, rank: 115071 },
+  { score: 410, rank: 163211 },
+  { score: 390, rank: 225038 },
+  { score: 370, rank: 305570 },
+  { score: 350, rank: 412011 },
+  { score: 330, rank: 553526 },
+  { score: 310, rank: 735519 },
+  { score: 290, rank: 961261 },
+  { score: 270, rank: 1219171 },
+  { score: 250, rank: 1499060 },
+  { score: 230, rank: 1782951 },
+  { score: 210, rank: 2033331 },
+  { score: 190, rank: 2166477 },
+  { score: 170, rank: 2186977 },
+  { score: 150, rank: 2187734 },
+  { score: 130, rank: 2187742 },
+  { score: 110, rank: 2187743 }
+];
+
+const SAY_HAM_ANCHORS_2026: RankAnchor[] = [
+  { score: 500, rank: 1 },
+  { score: 480, rank: 1453 },
+  { score: 460, rank: 8786 },
+  { score: 440, rank: 22370 },
+  { score: 420, rank: 39624 },
+  { score: 400, rank: 58728 },
+  { score: 380, rank: 78806 },
+  { score: 360, rank: 100553 },
+  { score: 340, rank: 125045 },
+  { score: 320, rank: 153304 },
+  { score: 300, rank: 187034 },
+  { score: 280, rank: 228643 },
+  { score: 260, rank: 279885 },
+  { score: 240, rank: 344536 },
+  { score: 220, rank: 430074 },
+  { score: 200, rank: 549793 },
+  { score: 180, rank: 721488 },
+  { score: 160, rank: 923753 },
+  { score: 140, rank: 1078515 },
+  { score: 120, rank: 1134006 },
+  { score: 100, rank: 1135718 }
+];
+
+const SAY_YER_ANCHORS_2026: RankAnchor[] = [
+  { score: 560, rank: 1 },
+  { score: 550, rank: 154 },
+  { score: 530, rank: 3500 },
+  { score: 510, rank: 12887 },
+  { score: 490, rank: 27402 },
+  { score: 470, rank: 44919 },
+  { score: 450, rank: 63669 },
+  { score: 430, rank: 83511 },
+  { score: 410, rank: 105112 },
+  { score: 390, rank: 129485 },
+  { score: 370, rank: 157778 },
+  { score: 350, rank: 191247 },
+  { score: 330, rank: 232317 },
+  { score: 310, rank: 282213 },
+  { score: 290, rank: 344726 },
+  { score: 270, rank: 425443 },
+  { score: 250, rank: 533920 },
+  { score: 230, rank: 681176 },
+  { score: 210, rank: 858167 },
+  { score: 190, rank: 1019046 },
+  { score: 170, rank: 1117304 },
+  { score: 150, rank: 1135198 },
+  { score: 130, rank: 1135713 },
+  { score: 110, rank: 1135718 }
+];
+
+const EA_HAM_ANCHORS_2026: RankAnchor[] = [
+  { score: 500, rank: 1 },
+  { score: 480, rank: 10 },
+  { score: 460, rank: 74 },
+  { score: 440, rank: 214 },
+  { score: 420, rank: 560 },
+  { score: 400, rank: 1418 },
+  { score: 380, rank: 3936 },
+  { score: 360, rank: 10259 },
+  { score: 340, rank: 23653 },
+  { score: 320, rank: 47292 },
+  { score: 300, rank: 86560 },
+  { score: 280, rank: 148959 },
+  { score: 260, rank: 238848 },
+  { score: 240, rank: 360487 },
+  { score: 220, rank: 515916 },
+  { score: 200, rank: 699304 },
+  { score: 180, rank: 873860 },
+  { score: 160, rank: 998826 },
+  { score: 140, rank: 1065157 },
+  { score: 120, rank: 1084720 },
+  { score: 100, rank: 1085698 }
+];
+
+const EA_YER_ANCHORS_2026: RankAnchor[] = [
+  { score: 560, rank: 1 },
+  { score: 550, rank: 4 },
+  { score: 530, rank: 14 },
+  { score: 510, rank: 69 },
+  { score: 490, rank: 221 },
+  { score: 470, rank: 606 },
+  { score: 450, rank: 1566 },
+  { score: 430, rank: 4058 },
+  { score: 410, rank: 10184 },
+  { score: 390, rank: 22750 },
+  { score: 370, rank: 45237 },
+  { score: 350, rank: 82479 },
+  { score: 330, rank: 140496 },
+  { score: 310, rank: 223004 },
+  { score: 290, rank: 333238 },
+  { score: 270, rank: 474443 },
+  { score: 250, rank: 642816 },
+  { score: 230, rank: 814264 },
+  { score: 210, rank: 953036 },
+  { score: 190, rank: 1040347 },
+  { score: 170, rank: 1078859 },
+  { score: 150, rank: 1085505 },
+  { score: 130, rank: 1085697 },
+  { score: 110, rank: 1085698 }
+];
+
+const SOZ_HAM_ANCHORS_2026: RankAnchor[] = [
+  { score: 500, rank: 1 },
+  { score: 480, rank: 52 },
+  { score: 460, rank: 307 },
+  { score: 440, rank: 874 },
+  { score: 420, rank: 2097 },
+  { score: 400, rank: 4545 },
+  { score: 380, rank: 9486 },
+  { score: 360, rank: 23452 },
+  { score: 340, rank: 50608 },
+  { score: 320, rank: 89520 },
+  { score: 300, rank: 140784 },
+  { score: 280, rank: 210499 },
+  { score: 260, rank: 308127 },
+  { score: 240, rank: 440752 },
+  { score: 220, rank: 615366 },
+  { score: 200, rank: 832251 },
+  { score: 180, rank: 1069239 },
+  { score: 160, rank: 1272506 },
+  { score: 140, rank: 1391240 },
+  { score: 120, rank: 1420558 },
+  { score: 100, rank: 1421290 }
+];
+
+const SOZ_YER_ANCHORS_2026: RankAnchor[] = [
+  { score: 560, rank: 1 },
+  { score: 550, rank: 12 },
+  { score: 530, rank: 98 },
+  { score: 510, rank: 394 },
+  { score: 490, rank: 1118 },
+  { score: 470, rank: 2482 },
+  { score: 450, rank: 5299 },
+  { score: 430, rank: 12363 },
+  { score: 410, rank: 29700 },
+  { score: 390, rank: 58772 },
+  { score: 370, rank: 97839 },
+  { score: 350, rank: 148570 },
+  { score: 330, rank: 215631 },
+  { score: 310, rank: 307918 },
+  { score: 290, rank: 429479 },
+  { score: 270, rank: 585271 },
+  { score: 250, rank: 775922 },
+  { score: 230, rank: 990764 },
+  { score: 210, rank: 1196809 },
+  { score: 190, rank: 1347025 },
+  { score: 170, rank: 1412649 },
+  { score: 150, rank: 1421093 },
+  { score: 130, rank: 1421289 },
+  { score: 110, rank: 1421290 }
+];
+
+const DIL_HAM_ANCHORS_2026: RankAnchor[] = [
+  { score: 500, rank: 5 },
+  { score: 480, rank: 118 },
+  { score: 460, rank: 628 },
+  { score: 440, rank: 1795 },
+  { score: 420, rank: 3632 },
+  { score: 400, rank: 6683 },
+  { score: 380, rank: 11576 },
+  { score: 360, rank: 18265 },
+  { score: 340, rank: 26469 },
+  { score: 320, rank: 35020 },
+  { score: 300, rank: 43883 },
+  { score: 280, rank: 52590 },
+  { score: 260, rank: 61992 },
+  { score: 240, rank: 72025 },
+  { score: 220, rank: 82982 },
+  { score: 200, rank: 94735 },
+  { score: 180, rank: 107579 },
+  { score: 160, rank: 120099 },
+  { score: 140, rank: 128950 },
+  { score: 120, rank: 132443 },
+  { score: 100, rank: 132826 }
+];
+
+const DIL_YER_ANCHORS_2026: RankAnchor[] = [
+  { score: 560, rank: 1 },
+  { score: 550, rank: 14 },
+  { score: 530, rank: 231 },
+  { score: 510, rank: 942 },
+  { score: 490, rank: 2252 },
+  { score: 470, rank: 4241 },
+  { score: 450, rank: 7472 },
+  { score: 430, rank: 12254 },
+  { score: 410, rank: 18566 },
+  { score: 390, rank: 26352 },
+  { score: 370, rank: 34585 },
+  { score: 350, rank: 43129 },
+  { score: 330, rank: 51784 },
+  { score: 310, rank: 60948 },
+  { score: 290, rank: 70670 },
+  { score: 270, rank: 81109 },
+  { score: 250, rank: 92274 },
+  { score: 230, rank: 104127 },
+  { score: 210, rank: 116152 },
+  { score: 190, rank: 125789 },
+  { score: 170, rank: 131233 },
+  { score: 150, rank: 132714 },
+  { score: 130, rank: 132825 },
+  { score: 110, rank: 132826 }
+];
+
+// PREVIOUS YEARS (2025, 2024, 2023)
 const TYT_ANCHORS_2025: RankAnchor[] = [
   { score: 500, rank: 1 },
   { score: 480, rank: 650 },
@@ -622,6 +880,8 @@ const buildScoreResult = (
   obpContrib: number,
   hamBrackets: BracketPoint[],
   yerBrackets: BracketPoint[],
+  anchors2026Ham: RankAnchor[],
+  anchors2026Yer: RankAnchor[],
   anchors2025: RankAnchor[],
   anchors2024: RankAnchor[],
   anchors2023: RankAnchor[]
@@ -629,7 +889,7 @@ const buildScoreResult = (
   const clampedHam = Number(Math.min(500, Math.max(0, hamScore)).toFixed(3));
   const yerScore = clampedHam > 0 ? Number(Math.min(560, clampedHam + obpContrib).toFixed(3)) : 0;
 
-  // Normalized placement score to 100-500 scale for anchor simulation
+  // Normalized placement score to 100-500 scale for legacy anchor simulations
   const placeNorm = (yerScore * 500) / 560;
 
   return {
@@ -637,6 +897,8 @@ const buildScoreResult = (
     yerlestirme: yerScore,
     mebHamAralik: lookupMebRange(clampedHam, hamBrackets),
     mebYerAralik: lookupMebRange(yerScore, yerBrackets),
+    rank2026Ham: interpolateRank(clampedHam, anchors2026Ham),
+    rank2026Yer: interpolateRank(yerScore, anchors2026Yer),
     rank2025Ham: interpolateRank(clampedHam, anchors2025),
     rank2025Yer: interpolateRank(placeNorm, anchors2025),
     rank2024Ham: interpolateRank(clampedHam, anchors2024),
@@ -675,7 +937,17 @@ export const calculateYksScores = (input: YksNetsInput): YksCalculationOutput =>
       (tytSosyal * TYT_SOSYAL_COEFF) +
       (tytFen * TYT_FEN_COEFF)
     : 0;
-  const tytResult = buildScoreResult(rawTyt, obpContribution, BRACKETS_TYT_HAM, BRACKETS_TYT_YER, TYT_ANCHORS_2025, TYT_ANCHORS_2024, TYT_ANCHORS_2023);
+  const tytResult = buildScoreResult(
+    rawTyt,
+    obpContribution,
+    BRACKETS_TYT_HAM,
+    BRACKETS_TYT_YER,
+    TYT_HAM_ANCHORS_2026,
+    TYT_YER_ANCHORS_2026,
+    TYT_ANCHORS_2025,
+    TYT_ANCHORS_2024,
+    TYT_ANCHORS_2023
+  );
 
   // 2. SAYISAL (SAY) HAM PUANI
   const hasSay = aytMat > 0 || aytFen > 0;
@@ -688,7 +960,17 @@ export const calculateYksScores = (input: YksNetsInput): YksCalculationOutput =>
       (aytMat * SAY_AYT_MAT) +
       (aytFen * SAY_AYT_FEN)
     : 0;
-  const sayResult = buildScoreResult(rawSay, obpContribution, BRACKETS_SAY_HAM, BRACKETS_SAY_YER, SAY_ANCHORS_2025, SAY_ANCHORS_2024, SAY_ANCHORS_2023);
+  const sayResult = buildScoreResult(
+    rawSay,
+    obpContribution,
+    BRACKETS_SAY_HAM,
+    BRACKETS_SAY_YER,
+    SAY_HAM_ANCHORS_2026,
+    SAY_YER_ANCHORS_2026,
+    SAY_ANCHORS_2025,
+    SAY_ANCHORS_2024,
+    SAY_ANCHORS_2023
+  );
 
   // 3. EŞİT AĞIRLIK (EA) HAM PUANI
   const hasEa = aytMat > 0 || aytEdebiyatSos1 > 0;
@@ -701,7 +983,17 @@ export const calculateYksScores = (input: YksNetsInput): YksCalculationOutput =>
       (aytMat * EA_AYT_MAT) +
       (aytEdebiyatSos1 * EA_AYT_EDEB_SOS1)
     : 0;
-  const eaResult = buildScoreResult(rawEa, obpContribution, BRACKETS_EA_HAM, BRACKETS_EA_YER, EA_ANCHORS_2025, EA_ANCHORS_2024, EA_ANCHORS_2023);
+  const eaResult = buildScoreResult(
+    rawEa,
+    obpContribution,
+    BRACKETS_EA_HAM,
+    BRACKETS_EA_YER,
+    EA_HAM_ANCHORS_2026,
+    EA_YER_ANCHORS_2026,
+    EA_ANCHORS_2025,
+    EA_ANCHORS_2024,
+    EA_ANCHORS_2023
+  );
 
   // 4. SÖZEL (SÖZ) HAM PUANI
   const hasSoz = aytEdebiyatSos1 > 0 || aytSos2 > 0;
@@ -714,7 +1006,17 @@ export const calculateYksScores = (input: YksNetsInput): YksCalculationOutput =>
       (aytEdebiyatSos1 * SOZ_AYT_EDEB_SOS1) +
       (aytSos2 * SOZ_AYT_SOS2)
     : 0;
-  const sozResult = buildScoreResult(rawSoz, obpContribution, BRACKETS_SOZ_HAM, BRACKETS_SOZ_YER, SOZ_ANCHORS_2025, SOZ_ANCHORS_2024, SOZ_ANCHORS_2023);
+  const sozResult = buildScoreResult(
+    rawSoz,
+    obpContribution,
+    BRACKETS_SOZ_HAM,
+    BRACKETS_SOZ_YER,
+    SOZ_HAM_ANCHORS_2026,
+    SOZ_YER_ANCHORS_2026,
+    SOZ_ANCHORS_2025,
+    SOZ_ANCHORS_2024,
+    SOZ_ANCHORS_2023
+  );
 
   // 5. DİL (YDT) HAM PUANI
   const hasDil = ydtNet > 0;
@@ -726,7 +1028,17 @@ export const calculateYksScores = (input: YksNetsInput): YksCalculationOutput =>
       (tytFen * DIL_TYT_FEN) +
       (ydtNet * DIL_YDT_COEFF)
     : 0;
-  const dilResult = buildScoreResult(rawDil, obpContribution, BRACKETS_DIL_HAM, BRACKETS_DIL_YER, DIL_ANCHORS_2025, DIL_ANCHORS_2024, DIL_ANCHORS_2023);
+  const dilResult = buildScoreResult(
+    rawDil,
+    obpContribution,
+    BRACKETS_DIL_HAM,
+    BRACKETS_DIL_YER,
+    DIL_HAM_ANCHORS_2026,
+    DIL_YER_ANCHORS_2026,
+    DIL_ANCHORS_2025,
+    DIL_ANCHORS_2024,
+    DIL_ANCHORS_2023
+  );
 
   return {
     tyt: tytResult,
