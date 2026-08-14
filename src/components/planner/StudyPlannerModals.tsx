@@ -38,8 +38,8 @@ export interface DailyStudyLogModalData {
 interface StudyPlannerModalsProps {
   showAddModal: boolean;
   setShowAddModal: (show: boolean) => void;
-  targetDayForAdd: DayOfWeek;
-  setTargetDayForAdd: (day: DayOfWeek) => void;
+  targetDaysForAdd: DayOfWeek[];
+  setTargetDaysForAdd: React.Dispatch<React.SetStateAction<DayOfWeek[]>> | ((days: DayOfWeek[]) => void);
   subject: string;
   setSubject: (sub: string) => void;
   topic: string;
@@ -124,6 +124,8 @@ interface StudyPlannerModalsProps {
   newTaskTypeValue: string;
   setNewTaskTypeValue: (val: string) => void;
   handleAddTaskType: () => void;
+  handleEditTaskType: (index: number) => void;
+  handleDeleteTaskType: (index: number) => void;
   onUpdateTaskTypes?: (taskTypes: string[], actionText?: string) => void;
   handleAiSuggestTask?: () => void;
   aiSuggestLoading?: boolean;
@@ -142,8 +144,8 @@ interface StudyPlannerModalsProps {
 export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
   showAddModal,
   setShowAddModal,
-  targetDayForAdd,
-  setTargetDayForAdd,
+  targetDaysForAdd,
+  setTargetDaysForAdd,
   subject,
   setSubject,
   topic,
@@ -270,43 +272,116 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
             </div>
             
             <form onSubmit={handleCreatePlan} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Gün Seçimi</label>
-                  <select
-                    value={targetDayForAdd}
-                    onChange={(e) => setTargetDayForAdd(e.target.value as DayOfWeek)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-bold text-indigo-300"
-                  >
-                    {DAYS.map((d) => (
-                      <option key={d} value={d}>{d}</option>
+              {/* 1. Ders Seçimi */}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Ders Seçimi</label>
+                <select
+                  value={subject}
+                  onChange={(e) => {
+                    setSubject(e.target.value);
+                    setTopic('');
+                  }}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-medium focus:border-indigo-400 transition-colors"
+                >
+                  <option value="">Lütfen ders seçimi yapınız</option>
+                  <optgroup label="TYT Dersleri">
+                    {YKS_SUBJECTS.TYT.map((s) => (
+                      <option key={s} value={s}>{s}</option>
                     ))}
-                  </select>
+                  </optgroup>
+                  <optgroup label="AYT Dersleri">
+                    {YKS_SUBJECTS.AYT.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* 2. Gün Seçimi (Çoklu Gün Seçici) */}
+              <div className="space-y-2 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    <CalendarDays className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Planlanacak Günler</span>
+                  </label>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                    targetDaysForAdd.length > 0
+                      ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+                      : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                  }`}>
+                    {targetDaysForAdd.length > 0 ? `${targetDaysForAdd.length} Gün Seçildi` : 'Gün Seçilmedi!'}
+                  </span>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Ders Seçimi</label>
-                  <select
-                    value={subject}
-                    onChange={(e) => {
-                      setSubject(e.target.value);
-                      setTopic('');
-                    }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-medium"
+                {/* Hızlı Seçim Butonları */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  <span className="text-[10px] text-slate-500 font-medium mr-0.5">Hızlı Seç:</span>
+                  <button
+                    type="button"
+                    onClick={() => setTargetDaysForAdd([...DAYS])}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-900 hover:bg-indigo-950/60 text-slate-400 hover:text-indigo-300 border border-slate-800 hover:border-indigo-500/30 transition-all cursor-pointer"
                   >
-                    <option value="">Lütfen ders seçimi yapınız</option>
-                    <optgroup label="TYT Dersleri">
-                      {YKS_SUBJECTS.TYT.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="AYT Dersleri">
-                      {YKS_SUBJECTS.AYT.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </optgroup>
-                  </select>
+                    Tüm Hafta (7 Gün)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTargetDaysForAdd(['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'])}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-900 hover:bg-indigo-950/60 text-slate-400 hover:text-indigo-300 border border-slate-800 hover:border-indigo-500/30 transition-all cursor-pointer"
+                  >
+                    Hafta İçi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTargetDaysForAdd(['Cumartesi', 'Pazar'])}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-900 hover:bg-indigo-950/60 text-slate-400 hover:text-indigo-300 border border-slate-800 hover:border-indigo-500/30 transition-all cursor-pointer"
+                  >
+                    Hafta Sonu
+                  </button>
                 </div>
+
+                {/* 7 Gün Butonları */}
+                <div className="grid grid-cols-7 gap-1 sm:gap-1.5 pt-1">
+                  {DAYS.map((d) => {
+                    const isSelected = targetDaysForAdd.includes(d);
+                    const shortName = d.slice(0, 3);
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => {
+                          if (isSelected) {
+                            setTargetDaysForAdd(targetDaysForAdd.filter((day) => day !== d));
+                          } else {
+                            const updated = [...targetDaysForAdd, d].sort(
+                              (a, b) => DAYS.indexOf(a) - DAYS.indexOf(b)
+                            );
+                            setTargetDaysForAdd(updated);
+                          }
+                        }}
+                        className={`py-2 px-0.5 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer border ${
+                          isSelected
+                            ? 'bg-gradient-to-b from-indigo-600 to-indigo-700 text-white border-indigo-400 shadow-md shadow-indigo-600/30 scale-[1.02]'
+                            : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
+                        }`}
+                        title={`${d} gününü ${isSelected ? 'kaldır' : 'ekle'}`}
+                      >
+                        <span className="text-[11px] sm:text-xs leading-none">{shortName}</span>
+                        {isSelected ? (
+                          <Check className="w-3 h-3 text-white stroke-[3]" />
+                        ) : (
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-700 my-[3px]" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {targetDaysForAdd.length === 0 && (
+                  <p className="text-[11px] text-rose-400 font-semibold flex items-center gap-1 pt-1">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Lütfen görevin ekleneceği en az bir gün seçiniz.</span>
+                  </p>
+                )}
               </div>
 
               {!subject && (
@@ -494,14 +569,16 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
                   </button>
                   <button
                     type="submit"
-                    disabled={!subject || !topic.trim()}
+                    disabled={!subject || !topic.trim() || targetDaysForAdd.length === 0}
                     className={`text-xs font-bold px-5 py-2.5 rounded-xl transition-all shadow-lg ${
-                      subject && topic.trim()
+                      subject && topic.trim() && targetDaysForAdd.length > 0
                         ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 cursor-pointer'
                         : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                     }`}
                   >
-                    Kaydet ve Ekle
+                    {targetDaysForAdd.length > 1
+                      ? `Kaydet ve Ekle (${targetDaysForAdd.length} Güne)`
+                      : 'Kaydet ve Ekle'}
                   </button>
                 </div>
               </div>

@@ -877,7 +877,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   const [plannedMinutes, setPlannedMinutes] = useState(60);
   const [targetQuestionCount, setTargetQuestionCount] = useState<number | ''>('');
   const [notes, setNotes] = useState('');
-  const [targetDayForAdd, setTargetDayForAdd] = useState<DayOfWeek>(today);
+  const [targetDaysForAdd, setTargetDaysForAdd] = useState<DayOfWeek[]>([today]);
 
   // Add YouTube Video Task Modal States
   const [showAddVideoModal, setShowAddVideoModal] = useState(false);
@@ -1031,7 +1031,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profile,
-          targetDay: targetDayForAdd,
+          targetDay: targetDaysForAdd[0] || selectedDay || 'Pazartesi',
           currentWeekPlans,
           lastWeekPlans,
           generalMocks,
@@ -1087,8 +1087,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
 
   // Open add modal
   const openAddModal = (day?: DayOfWeek) => {
-    if (day) setTargetDayForAdd(day);
-    else setTargetDayForAdd(selectedDay);
+    if (day) setTargetDaysForAdd([day]);
+    else setTargetDaysForAdd([selectedDay || today]);
     setSubject('');
     setTopic('');
     setNotes('');
@@ -1101,25 +1101,26 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     setShowAddModal(true);
   };
 
-  // Create Plan Handler
+  // Create Plan Handler (supports multiple target days)
   const handleCreatePlan = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subject || !topic.trim()) return;
+    if (!subject || !topic.trim() || targetDaysForAdd.length === 0) return;
 
-    const { date, weekLabel } = getPlanDateAndWeekLabel(targetDayForAdd);
-
-    onAddPlan({
-      day: targetDayForAdd,
-      subject,
-      topic: topic.trim(),
-      taskType: taskType || actualTaskTypes[0],
-      plannedMinutes: Number(plannedMinutes) || 60,
-      targetQuestionCount: targetQuestionCount !== '' && Number(targetQuestionCount) > 0 ? Number(targetQuestionCount) : undefined,
-      completedMinutes: 0,
-      status: 'pending',
-      notes,
-      date,
-      weekLabel
+    targetDaysForAdd.forEach((targetDay) => {
+      const { date, weekLabel } = getPlanDateAndWeekLabel(targetDay);
+      onAddPlan({
+        day: targetDay,
+        subject,
+        topic: topic.trim(),
+        taskType: taskType || actualTaskTypes[0],
+        plannedMinutes: Number(plannedMinutes) || 60,
+        targetQuestionCount: targetQuestionCount !== '' && Number(targetQuestionCount) > 0 ? Number(targetQuestionCount) : undefined,
+        completedMinutes: 0,
+        status: 'pending',
+        notes,
+        date,
+        weekLabel
+      });
     });
 
     // Mark current draft as saved in localStorage
@@ -2076,8 +2077,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       <StudyPlannerModals
         showAddModal={showAddModal}
         setShowAddModal={setShowAddModal}
-        targetDayForAdd={targetDayForAdd}
-        setTargetDayForAdd={setTargetDayForAdd}
+        targetDaysForAdd={targetDaysForAdd}
+        setTargetDaysForAdd={setTargetDaysForAdd}
         subject={subject}
         setSubject={setSubject}
         topic={topic}
