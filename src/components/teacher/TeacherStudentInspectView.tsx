@@ -62,6 +62,7 @@ import {
   DEFAULT_AVATAR 
 } from '../../data/initialData';
 import { INITIAL_GLOBAL_STATE } from '../../services/storage';
+import { resolveStudentData } from '../../utils/studentDataUtils';
 
 const TURKISH_MONTHS_LOCAL = [
   'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
@@ -189,49 +190,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
   const [resourceSubjectFilter, setResourceSubjectFilter] = useState<string>('all');
   const [expandedPlaylistId, setExpandedPlaylistId] = useState<string | null>(null);
 
-  const studentId = selectedStudentUser.id;
-  const isDemoAhmet = studentId === 'student-1' || selectedStudentUser.email === 'ahmet@okul.edu.tr' || selectedStudentUser.name?.toLowerCase().includes('ahmet');
-  const isDemoBurak = studentId === 'student-4' || selectedStudentUser.email === 'burak@okul.edu.tr' || selectedStudentUser.name?.toLowerCase().includes('burak');
-  const isDemoZeynep = studentId === 'student-2' || selectedStudentUser.email === 'zeynep@okul.edu.tr' || selectedStudentUser.name?.toLowerCase().includes('zeynep');
-  const isDemoMehmet = studentId === 'student-3' || selectedStudentUser.email === 'mehmet@okul.edu.tr' || selectedStudentUser.name?.toLowerCase().includes('mehmet');
-
-  const baseDefaults: YKSDataState = isDemoAhmet 
-    ? INITIAL_STATE 
-    : isDemoBurak 
-    ? INITIAL_STUDENT_4_STATE 
-    : isDemoZeynep 
-    ? INITIAL_STUDENT_2_STATE 
-    : isDemoMehmet 
-    ? INITIAL_STUDENT_3_STATE 
-    : INITIAL_STATE;
-
-  const rawData = (studentsData && studentsData[studentId])
-    || (isDemoAhmet ? INITIAL_STATE : undefined)
-    || (isDemoBurak ? INITIAL_STUDENT_4_STATE : undefined)
-    || (isDemoZeynep ? INITIAL_STUDENT_2_STATE : undefined)
-    || (isDemoMehmet ? INITIAL_STUDENT_3_STATE : undefined)
-    || (INITIAL_GLOBAL_STATE.studentsData && INITIAL_GLOBAL_STATE.studentsData[studentId])
-    || INITIAL_STATE;
-
-  const stData: YKSDataState & { 
-    topics?: Record<string, Record<string, boolean>>; 
-    pomodoroHistory?: any[]; 
-    youtubePlaylists?: any[];
-  } = {
-    ...baseDefaults,
-    ...rawData,
-    profile: { ...baseDefaults.profile, ...(rawData.profile || {}) },
-    questionLogs: (rawData.questionLogs && rawData.questionLogs.length > 0) ? rawData.questionLogs : baseDefaults.questionLogs,
-    studyPlans: (rawData.studyPlans && rawData.studyPlans.length > 0) ? rawData.studyPlans : baseDefaults.studyPlans,
-    generalMocks: (rawData.generalMocks && rawData.generalMocks.length > 0) ? rawData.generalMocks : baseDefaults.generalMocks,
-    branchExams: (rawData.branchExams && rawData.branchExams.length > 0) ? rawData.branchExams : baseDefaults.branchExams,
-    topicErrors: (rawData.topicErrors && rawData.topicErrors.length > 0) ? rawData.topicErrors : baseDefaults.topicErrors,
-    resources: (rawData.resources && rawData.resources.length > 0) ? rawData.resources : (rawData.resourceTrackers || baseDefaults.resources),
-    resourceTrackers: (rawData.resourceTrackers && rawData.resourceTrackers.length > 0) ? rawData.resourceTrackers : (rawData.resources || baseDefaults.resources),
-    routines: (rawData.routines && rawData.routines.length > 0) ? rawData.routines : baseDefaults.routines,
-    youtubeVideos: (rawData.youtubeVideos && rawData.youtubeVideos.length > 0) ? rawData.youtubeVideos : baseDefaults.youtubeVideos
-  };
-
+  const stData = resolveStudentData(selectedStudentUser, studentsData);
   const profile = stData.profile;
   const mocks = stData.generalMocks || [];
   const branchExams = stData.branchExams || [];

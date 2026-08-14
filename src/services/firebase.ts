@@ -561,14 +561,23 @@ export function subscribeToAllStudentsData(
       dataMap[docSnap.id] = parsed;
     });
 
+    // Ensure demo students have full fallback data
+    Object.entries(INITIAL_GLOBAL_STATE.studentsData).forEach(([demoId, demoState]) => {
+      if (!dataMap[demoId]) {
+        dataMap[demoId] = demoState;
+      }
+    });
+
     if (dataMap['student-1']) {
       const st1 = dataMap['student-1'];
       const needsBranch = !st1.branchExams || st1.branchExams.length < INITIAL_STATE.branchExams.length;
       const needsGeneral = !st1.generalMocks || st1.generalMocks.length < INITIAL_STATE.generalMocks.length || st1.generalMocks[2]?.tyt?.totalNet === 87.5;
+      const needsQuestions = !st1.questionLogs || st1.questionLogs.length < INITIAL_STATE.questionLogs.length;
 
-      if (needsBranch || needsGeneral) {
+      if (needsBranch || needsGeneral || needsQuestions) {
         dataMap['student-1'] = {
           ...st1,
+          questionLogs: needsQuestions ? INITIAL_STATE.questionLogs : st1.questionLogs,
           branchExams: needsBranch ? INITIAL_STATE.branchExams : st1.branchExams,
           generalMocks: needsGeneral ? INITIAL_STATE.generalMocks : st1.generalMocks
         };

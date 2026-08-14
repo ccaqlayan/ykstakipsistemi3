@@ -87,6 +87,7 @@ import { TeacherTemplatesTab } from './teacher/TeacherTemplatesTab';
 import { TeacherTeachersTab } from './teacher/TeacherTeachersTab';
 import { TeacherStudentInspectView } from './teacher/TeacherStudentInspectView';
 import { subscribeToPresence } from '../services/firebase';
+import { resolveStudentData } from '../utils/studentDataUtils';
 
 
 
@@ -259,8 +260,8 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   const handleOpenSubjectNotes = (subjectName: string) => {
     if (!selectedStudentUser) return;
     setActiveNotesSubject(subjectName);
-    const studentData = studentsData[selectedStudentUser.id];
-    const existingNotes = studentData?.subjectNotes?.[subjectName] || { studentNote: '', teacherNote: '' };
+    const studentData = resolveStudentData(selectedStudentUser, studentsData);
+    const existingNotes = (studentData as any)?.subjectNotes?.[subjectName] || { studentNote: '', teacherNote: '' };
     setStudentNoteDraft(existingNotes.studentNote || '');
     setTeacherNoteDraft(existingNotes.teacherNote || '');
   };
@@ -283,7 +284,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
       alert('Branş öğretmenlerinin görev durumu değiştirme yetkisi yoktur.');
       return;
     }
-    const studentData = studentsData[studentId];
+    const studentData = resolveStudentData(studentId, studentsData);
     if (!studentData) return;
     const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
     const updatedPlans = (studentData.studyPlans || []).map(p => 
@@ -409,7 +410,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   let totalUnresolvedErrorsInClass = 0;
 
   filteredStudents.forEach((st) => {
-    const data = studentsData[st.id];
+    const data = resolveStudentData(st, studentsData);
     if (data) {
       if (data.generalMocks && data.generalMocks.length > 0) {
         const lastMock = data.generalMocks[data.generalMocks.length - 1];
@@ -438,7 +439,8 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
 
   // --- General Summary (Genel Özet) Calculations ---
   const isStudentActiveInSystem = (studentId: string) => {
-    const data = studentsData[studentId];
+    const stUser = studentUsers.find(u => u.id === studentId) || { id: studentId };
+    const data = resolveStudentData(stUser, studentsData);
     return isStudentActive(studentId, data);
   };
 
@@ -460,7 +462,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
     if (isStudentActiveInSystem(st.id)) {
       activeStudentCountOverall++;
     }
-    const data = studentsData[st.id];
+    const data = resolveStudentData(st, studentsData);
     if (data) {
       (data.questionLogs || []).forEach((ql) => {
         totalWeeklyQuestions += (ql.solvedCount || 0) || ((ql.correctCount || 0) + (ql.wrongCount || 0) + (ql.blankCount || 0));
@@ -490,7 +492,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
     let clsAYTCount = 0;
 
     clsStudents.forEach((st) => {
-      const data = studentsData[st.id];
+      const data = resolveStudentData(st, studentsData);
       if (data) {
         (data.questionLogs || []).forEach((ql) => {
           clsQuestions += (ql.solvedCount || 0) || ((ql.correctCount || 0) + (ql.wrongCount || 0) + (ql.blankCount || 0));
@@ -531,7 +533,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   ) => {
     setSelectedStudentUser(student);
     setInspectModalTab(initialTab);
-    const data = studentsData[student.id];
+    const data = resolveStudentData(student, studentsData);
     if (data && data.profile) {
       setEditingCoachNotes(data.profile.coachNotes || '');
     } else {
@@ -542,7 +544,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   // Save coach note
   const handleSaveCoachNotes = () => {
     if (!selectedStudentUser) return;
-    const currentData = studentsData[selectedStudentUser.id];
+    const currentData = resolveStudentData(selectedStudentUser, studentsData);
     if (currentData) {
       const updatedProf: StudentProfile = {
         ...currentData.profile,
@@ -559,7 +561,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
     e.preventDefault();
     if (!selectedStudentUser || !newTemplateTitle.trim()) return;
 
-    const studentData = studentsData[selectedStudentUser.id];
+    const studentData = resolveStudentData(selectedStudentUser, studentsData);
     const plans = studentData?.studyPlans || [];
 
     if (plans.length === 0) {
@@ -598,7 +600,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
       return;
     }
 
-    const currentPlans = studentsData[selectedStudentUser.id]?.studyPlans || [];
+    const currentPlans = resolveStudentData(selectedStudentUser, studentsData).studyPlans || [];
     const newItem: StudyPlanItem = {
       id: 'plan-' + Date.now(),
       day: newTaskDay,
@@ -623,7 +625,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
       alert('Branş öğretmenlerinin çalışma planı silme yetkisi yoktur.');
       return;
     }
-    const currentPlans = studentsData[studentId]?.studyPlans || [];
+    const currentPlans = resolveStudentData(studentId, studentsData).studyPlans || [];
     const updated = currentPlans.filter(p => p.id !== taskId);
     onUpdateStudentStudyPlans(studentId, updated);
   };
@@ -718,7 +720,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
       return;
     }
     if (!draggedTaskId || !selectedStudentUser) return;
-    const currentStudentPlans = studentsData[selectedStudentUser.id]?.studyPlans || [];
+    const currentStudentPlans = resolveStudentData(selectedStudentUser, studentsData).studyPlans || [];
     const updatedPlans = currentStudentPlans.map(task => {
       if (task.id === draggedTaskId) {
         return { ...task, day: targetDay };

@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { BadgeShield } from '../badges/BadgeShield';
 import { BADGE_DEFINITIONS, evaluateBadges } from '../../services/motivationEngine';
+import { resolveStudentData } from '../../utils/studentDataUtils';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -156,6 +157,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
   OfflineStatusDisplay
 }) => {
   if (!selectedStudentUser) return null;
+  const stData = resolveStudentData(selectedStudentUser, studentsData);
 
   return (
     <div 
@@ -312,7 +314,6 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
         {inspectModalTab === 'performance' && (
           <div className="space-y-6">
             {(() => {
-              const stData = studentsData[selectedStudentUser.id];
               const profile = stData?.profile;
               const mocks = stData?.generalMocks || [];
               const branchExams = stData?.branchExams || [];
@@ -698,7 +699,6 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
         {inspectModalTab === 'planner' && (
           <div className="space-y-6">
             {(() => {
-              const stData = studentsData[selectedStudentUser.id];
               const plans = stData?.studyPlans || [];
 
               return (
@@ -801,7 +801,6 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
         {inspectModalTab === 'questions' && (
           <div className="space-y-6">
             {(() => {
-              const stData = studentsData[selectedStudentUser.id];
               const logs = stData?.questionLogs || [];
               const teacherSubj = (teacher.role === 'teacher' && teacher.subject) ? teacher.subject.toLowerCase() : '';
               const sortedLogs = [...logs].sort((a, b) => {
@@ -868,8 +867,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
         {inspectModalTab === 'resources' && (
           <div className="space-y-6">
             {(() => {
-              const stData = studentsData[selectedStudentUser.id];
-              const resources = stData?.resourceTrackers || [];
+              const resources = stData?.resourceTrackers || stData?.resources || [];
 
               return (
                 <div className="space-y-4">
@@ -920,7 +918,6 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
         {inspectModalTab === 'mocks' && (
           <div className="space-y-6">
             {(() => {
-              const stData = studentsData[selectedStudentUser.id];
               const mocks = stData?.generalMocks || [];
               const branchExams = stData?.branchExams || [];
               const topicErrors = stData?.topicErrors || [];
@@ -1034,7 +1031,6 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
         {inspectModalTab === 'youtube' && (
           <div className="space-y-6">
             {(() => {
-              const stData = studentsData[selectedStudentUser.id];
               const youtubeVideos = stData?.youtubeVideos || [];
               const totalVideos = youtubeVideos.length;
               const watchedCount = youtubeVideos.filter(v => v.isWatched).length;
@@ -1094,9 +1090,6 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
         {inspectModalTab === 'badges' && (
           <div className="space-y-6 animate-fadeIn">
             {(() => {
-              const stData = studentsData[selectedStudentUser.id];
-              if (!stData) return <div className="text-slate-400 text-sm">Öğrenci verisi bulunamadı.</div>;
-
               const { allEarnedBadges, stats, totalXp } = evaluateBadges(stData);
               const earnedKeysSet = new Set(allEarnedBadges.map(b => b.key));
               const earnedCount = allEarnedBadges.length;

@@ -24,6 +24,7 @@ import { UserAccount, YKSDataState } from '../../types';
 import { DEFAULT_AVATAR } from '../../data/initialData';
 import { isUserOnline, isStudentActive } from '../../utils/statusUtils';
 import { evaluateBadges } from '../../services/motivationEngine';
+import { resolveStudentData } from '../../utils/studentDataUtils';
 
 interface TeacherStudentsTabProps {
   totalStudentsCount: number;
@@ -222,7 +223,7 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
           /* 3-Column Grid for spacious user-friendly student cards */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredStudents.map((student) => {
-              const data = studentsData[student.id];
+              const data = resolveStudentData(student, studentsData);
               const profile = data?.profile;
               const lastMock = data?.generalMocks?.[data.generalMocks.length - 1];
               const plans = data?.studyPlans || [];
@@ -232,7 +233,7 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
               
               const hasCoachNote = Boolean(profile?.coachNotes && profile.coachNotes.trim() !== '');
               const unresolvedErrorsCount = (data?.topicErrors || []).filter(e => !e.revised).length;
-              const { allEarnedBadges: cardEarnedBadges, stats: cardStats } = data ? evaluateBadges(data) : { allEarnedBadges: [], stats: { currentStreak: 0 } };
+              const { allEarnedBadges: cardEarnedBadges, stats: cardStats } = evaluateBadges(data);
               const badgesCount = cardEarnedBadges.length;
 
               return (
@@ -252,9 +253,9 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
                         />
                         <span 
                           className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-slate-950 shadow-sm ${
-                            isStudentActive(student.id, studentsData[student.id]) ? 'bg-emerald-500' : 'bg-slate-500'
+                            isStudentActive(student.id, data) ? 'bg-emerald-500' : 'bg-slate-500'
                           }`}
-                          title={isStudentActive(student.id, studentsData[student.id]) ? 'Aktif Öğrenci' : 'Pasif Öğrenci'}
+                          title={isStudentActive(student.id, data) ? 'Aktif Öğrenci' : 'Pasif Öğrenci'}
                         />
                       </div>
 

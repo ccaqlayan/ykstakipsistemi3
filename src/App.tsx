@@ -42,6 +42,7 @@ import {
 } from './services/firebase';
 import { INITIAL_STATE, createEmptyStudentData, DEFAULT_AVATAR } from './data/initialData';
 import { syncCompletedPlanToYoutubeVideos } from './utils/youtubeUtils';
+import { resolveStudentData } from './utils/studentDataUtils';
 
 // Subcomponents
 import { UndoItem, getCachedUserIp, getDeviceType } from './components/app/AppTypes';
@@ -108,11 +109,8 @@ export default function App() {
         setGlobalState((prev) => {
           const sanitizedStudentsData = { ...dataMap };
           (prev.users || []).forEach((u) => {
-            if (u.role === 'student' && u.id !== 'student-1') {
-              const stData = sanitizedStudentsData[u.id];
-              if (!stData || (stData.studyPlans?.[0]?.id === INITIAL_STATE.studyPlans?.[0]?.id && stData.generalMocks?.[0]?.id === INITIAL_STATE.generalMocks?.[0]?.id)) {
-                sanitizedStudentsData[u.id] = createEmptyStudentData(u.name, u.className);
-              }
+            if (u.role === 'student') {
+              sanitizedStudentsData[u.id] = resolveStudentData(u, sanitizedStudentsData);
             }
           });
           return { ...prev, studentsData: sanitizedStudentsData };
