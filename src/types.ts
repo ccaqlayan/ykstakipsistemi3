@@ -451,6 +451,36 @@ export interface YKSDataState {
   taskTypes?: string[];
   institutionalMocks?: InstitutionalMockExam[];
   dailyStudyLogs?: Record<string, DailyStudyTimeLog>;
+  earnedBadges?: EarnedBadge[];
+  motivationStats?: MotivationStats;
+}
+
+export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'legendary';
+export type BadgeCategory = 'streak' | 'mock' | 'topic' | 'question' | 'resource' | 'routine';
+
+export interface EarnedBadge {
+  key: string;
+  earnedAt: string;
+  unlockedValue?: number;
+  metadata?: Record<string, any>;
+}
+
+export interface MotivationStats {
+  currentStreak: number;
+  longestStreak: number;
+  lastActiveDate: string;
+  totalStudyDays: number;
+  lastStreakUpdate?: string;
+}
+
+export interface MotivationToastItem {
+  id: string;
+  type: 'streak' | 'mock' | 'topic' | 'plan' | 'question' | 'routine' | 'general';
+  title: string;
+  message: string;
+  icon?: string;
+  variant?: 'gold' | 'emerald' | 'cyan' | 'purple' | 'rose' | 'amber';
+  timestamp?: number;
 }
 
 export interface AuditLogItem {
@@ -539,6 +569,7 @@ export interface AppGlobalState {
   };
   messages?: DirectMessage[];
   institutionalMockExams?: InstitutionalMockExam[];
+  customMotivationMessages?: Record<string, string>;
 }
 
 export interface ParsedStudentRow {

@@ -47,6 +47,11 @@ import { syncCompletedPlanToYoutubeVideos } from './utils/youtubeUtils';
 import { UndoItem, getCachedUserIp, getDeviceType } from './components/app/AppTypes';
 import { AppToastBanner } from './components/app/AppToastBanner';
 import { AppTabRouter } from './components/app/AppTabRouter';
+import { MotivationToastItem } from './types';
+import { BadgeDefinition, BADGE_DEFINITIONS, evaluateBadges, calculateMotivationStats, generateContextualFeedback, MotivationEvent } from './services/motivationEngine';
+import { BadgeCelebrationModal } from './components/badges/BadgeCelebrationModal';
+import { MotivationToast } from './components/motivation/MotivationToast';
+import { BadgesShowcaseModal } from './components/badges/BadgesShowcaseModal';
 
 export default function App() {
   const [globalState, setGlobalState] = useState<AppGlobalState>(() => loadGlobalState());
@@ -196,6 +201,12 @@ export default function App() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isZenMode, setIsZenMode] = useState(false);
+
+  // Motivation & Badges State
+  const [motivationToast, setMotivationToast] = useState<MotivationToastItem | null>(null);
+  const [celebrationBadge, setCelebrationBadge] = useState<BadgeDefinition | null>(null);
+  const [badgeQueue, setBadgeQueue] = useState<BadgeDefinition[]>([]);
+  const [showBadgesShowcaseModal, setShowBadgesShowcaseModal] = useState(false);
 
   const handleTabChange = (tab: TabType) => {
     setIsZenMode(false);
@@ -610,6 +621,90 @@ export default function App() {
         }
       };
     });
+  };
+
+  // 1. Motivation Event Listener (for action toasts across the app)
+  useEffect(() => {
+    const handleTriggerMotivation = (e: any) => {
+      if (!currentUser || currentUser.role !== 'student') return;
+      const event: MotivationEvent = e.detail;
+      if (!event) return;
+      
+      let customMsgs: Record<string, string> | undefined;
+      try {
+        const saved = localStorage.getItem('yks_motivation_messages');
+        if (saved) customMsgs = JSON.parse(saved);
+      } catch (err) {}
+
+      const toast = generateContextualFeedback(event, currentStudentData, customMsgs);
+      if (toast) {
+        setMotivationToast(toast);
+      }
+    };
+    window.addEventListener('yks_trigger_motivation', handleTriggerMotivation as EventListener);
+    return () => window.removeEventListener('yks_trigger_motivation', handleTriggerMotivation as EventListener);
+  }, [currentUser?.id, currentStudentData]);
+
+  // 2. Daily Streak Greeting (Shown once per day when logging in with an active streak)
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== 'student') return;
+    const lastGreeting = localStorage.getItem('yks_last_streak_greet');
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (lastGreeting !== todayStr) {
+      const stats = calculateMotivationStats(currentStudentData);
+      if (stats.currentStreak > 0) {
+        const timer = setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
+            detail: { type: 'streak_greet', payload: { streak: stats.currentStreak } }
+          }));
+          localStorage.setItem('yks_last_streak_greet', todayStr);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [currentUser?.id, currentStudentData.dailyStudyLogs, currentStudentData.questionLogs, currentStudentData.studyPlans]);
+
+  // 3. Automated Badge Evaluation & Celebration Trigger
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== 'student') return;
+
+    const { newBadges, allEarnedBadges, stats } = evaluateBadges(currentStudentData);
+    if (newBadges.length > 0) {
+      updateCurrentStudentData((prev) => ({
+        ...prev,
+        earnedBadges: allEarnedBadges,
+        motivationStats: stats
+      }));
+
+      const defs = newBadges
+        .map(nb => BADGE_DEFINITIONS.find(d => d.key === nb.key))
+        .filter((d): d is BadgeDefinition => !!d);
+
+      if (defs.length > 0) {
+        setCelebrationBadge(defs[0]);
+        if (defs.length > 1) {
+          setBadgeQueue(defs.slice(1));
+        }
+      }
+    }
+  }, [
+    currentUser?.id,
+    currentStudentData.questionLogs?.length,
+    currentStudentData.generalMocks?.length,
+    currentStudentData.branchExams?.length,
+    currentStudentData.resources?.length,
+    currentStudentData.studyPlans?.length,
+    JSON.stringify(currentStudentData.topicStatuses || {}),
+    JSON.stringify(currentStudentData.dailyStudyLogs || {})
+  ]);
+
+  const handleNextCelebration = () => {
+    if (badgeQueue.length > 0) {
+      setCelebrationBadge(badgeQueue[0]);
+      setBadgeQueue(prev => prev.slice(1));
+    } else {
+      setCelebrationBadge(null);
+    }
   };
 
   const handleUpdateSubjectNotes = (subjectName: string, notes: { studentNote?: string; teacherNote?: string }) => {
@@ -1714,6 +1809,28 @@ export default function App() {
 
     if (plan.status === 'completed') {
       updatedVideos = syncCompletedPlanToYoutubeVideos(plan, prevVideos);
+
+      const todayStr = plan.date || new Date().toISOString().split('T')[0];
+      const todayPlans = prevPlans.filter(p => (p.date || '').startsWith(todayStr) || (!p.date && p.day === plan.day));
+      const willAllBeCompleted = todayPlans.length > 0 && todayPlans.every(p => p.id === plan.id || p.status === 'completed');
+
+      if (willAllBeCompleted) {
+        window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
+          detail: {
+            type: 'all_plans_completed'
+          }
+        }));
+      } else {
+        window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
+          detail: {
+            type: 'plan_completed',
+            payload: {
+              subject: plan.subject,
+              minutes: plan.completedMinutes || plan.plannedMinutes || 45
+            }
+          }
+        }));
+      }
     }
 
     updateCurrentStudentData((prev) => ({
@@ -1808,6 +1925,18 @@ export default function App() {
     const newItem = { ...log, id: 'qlog-' + Date.now() };
     const prevLogs = currentStudentData.questionLogs || [];
     updateCurrentStudentData((prev) => ({ ...prev, questionLogs: [newItem, ...(prev.questionLogs || [])] }));
+
+    if (log.targetCount && log.solvedCount >= log.targetCount) {
+      window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
+        detail: {
+          type: 'question_goal_reached',
+          payload: {
+            solved: log.solvedCount,
+            correct: log.correctCount || log.solvedCount
+          }
+        }
+      }));
+    }
 
     addAuditAndUndo(
       `${currentUser?.name || 'Öğrenci'} ${log.solvedCount} adet ${log.subject} sorusu çözdü (${log.netScore} Net).`,
@@ -1934,6 +2063,15 @@ export default function App() {
         manuallyChangedTopicStatuses: updatedManuals
       };
     });
+
+    if (status === 'Uzmanlaştım') {
+      window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
+        detail: {
+          type: 'topic_mastered',
+          payload: { topicName }
+        }
+      }));
+    }
 
     addAuditAndUndo(
       `${currentUser?.name || 'Öğrenci'} "${topicName}" konusunun çalışma durumunu "${status}" olarak güncelledi.`,
@@ -2897,6 +3035,33 @@ export default function App() {
           profile={currentStudentData?.profile}
           onSave={handleUpdateProfile}
           onClose={() => setShowProfileModal(false)}
+        />
+      )}
+
+      {/* Real-time Motivation Context Toast Banner */}
+      <MotivationToast
+        item={motivationToast}
+        soundEnabled={currentUser?.soundEnabled !== false}
+        onClose={() => setMotivationToast(null)}
+      />
+
+      {/* 3D Badge Unlock Celebration Fanfare Modal */}
+      <BadgeCelebrationModal
+        badge={celebrationBadge}
+        soundEnabled={currentUser?.soundEnabled !== false}
+        onClose={handleNextCelebration}
+        onOpenShowcase={() => {
+          handleNextCelebration();
+          setShowBadgesShowcaseModal(true);
+        }}
+      />
+
+      {/* Badges Collection & Showcase Modal */}
+      {showBadgesShowcaseModal && currentUser && (
+        <BadgesShowcaseModal
+          studentData={currentStudentData}
+          studentName={currentUser.name}
+          onClose={() => setShowBadgesShowcaseModal(false)}
         />
       )}
 

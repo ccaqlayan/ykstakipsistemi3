@@ -6,10 +6,12 @@ import {
   Brain, 
   HardDrive, 
   Settings2, 
-  MessageSquare 
+  MessageSquare,
+  Sparkles
 } from 'lucide-react';
 import { UniversityLogoManagerModal } from './UniversityLogoManagerModal';
 import { AdminMessageManagement } from './AdminMessageManagement';
+import { MotivationMessagesTab } from './system/MotivationMessagesTab';
 import { 
   onQuotaError, 
   getLowDataMode, 
@@ -739,7 +741,7 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
         </div>
 
         {/* TOP TAB NAVIGATION BAR */}
-        <div className="mt-6 pt-4 border-t border-indigo-500/20 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="mt-6 pt-4 border-t border-indigo-500/20 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <button
             onClick={() => setActiveTab('AI')}
             className={`flex flex-col items-start justify-between p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
@@ -772,7 +774,7 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
             <div className="flex items-center space-x-2 w-full justify-between mb-1.5">
               <div className="flex items-center space-x-2">
                 <HardDrive className={`w-4 h-4 ${activeTab === 'STORAGE' ? 'text-emerald-200' : 'text-emerald-400'}`} />
-                <span className="font-extrabold text-xs tracking-tight">Depolama (Storage & Cloud)</span>
+                <span className="font-extrabold text-xs tracking-tight">Depolama</span>
               </div>
             </div>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
@@ -804,6 +806,27 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
           </button>
 
           <button
+            onClick={() => setActiveTab('MOTIVATION')}
+            className={`flex flex-col items-start justify-between p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+              activeTab === 'MOTIVATION'
+                ? 'bg-gradient-to-br from-yellow-500/90 to-amber-600/90 border-yellow-300 text-slate-950 shadow-lg shadow-amber-500/25 ring-2 ring-yellow-400/30'
+                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800/90 hover:border-slate-700'
+            }`}
+          >
+            <div className="flex items-center space-x-2 w-full justify-between mb-1.5">
+              <div className="flex items-center space-x-2">
+                <Sparkles className={`w-4 h-4 ${activeTab === 'MOTIVATION' ? 'text-slate-950' : 'text-amber-400'}`} />
+                <span className="font-extrabold text-xs tracking-tight">Motivasyon</span>
+              </div>
+            </div>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+              activeTab === 'MOTIVATION' ? 'bg-slate-950/30 text-slate-950 font-black' : 'bg-slate-800 text-slate-400 border border-slate-700/50'
+            }`}>
+              Toast & Metinler
+            </span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('MESSAGES')}
             className={`flex flex-col items-start justify-between p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
               activeTab === 'MESSAGES'
@@ -814,7 +837,7 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
             <div className="flex items-center space-x-2 w-full justify-between mb-1.5">
               <div className="flex items-center space-x-2">
                 <MessageSquare className={`w-4 h-4 ${activeTab === 'MESSAGES' ? 'text-rose-200' : 'text-rose-400'}`} />
-                <span className="font-extrabold text-xs tracking-tight">Mesaj Yönetimi</span>
+                <span className="font-extrabold text-xs tracking-tight">Mesajlar</span>
               </div>
             </div>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
@@ -931,6 +954,11 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
           users={users}
           onSendMessage={onSendMessage}
         />
+      )}
+
+      {/* TAB 5: MOTİVASYON METİNLERİ (MOTIVATION) */}
+      {activeTab === 'MOTIVATION' && (
+        <MotivationMessagesTab />
       )}
 
       {/* UNIVERSITY LOGO MANAGER MODAL POPUP */}

@@ -28,7 +28,9 @@ export async function fetchAICoachAdvice(state: YKSDataState, currentUser?: User
       branchExams: state.branchExams,
       institutionalMocks: state.institutionalMocks,
       youtubeVideos: state.youtubeVideos,
-      pomodoroHistory
+      pomodoroHistory,
+      earnedBadges: state.earnedBadges,
+      motivationStats: state.motivationStats
     })
   });
 

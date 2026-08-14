@@ -1,6 +1,6 @@
 import { UserAccount } from '../../types';
 
-export type SystemTab = 'AI' | 'STORAGE' | 'SETTINGS' | 'MESSAGES';
+export type SystemTab = 'AI' | 'STORAGE' | 'SETTINGS' | 'MESSAGES' | 'MOTIVATION';
 
 export interface UsageSummary {
   totalCalls: number;

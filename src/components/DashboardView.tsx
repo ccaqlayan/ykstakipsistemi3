@@ -31,6 +31,7 @@ import { DashboardScheduleWidget } from './dashboard/DashboardScheduleWidget';
 import { renderCoachNotes, renderQuickActions, renderAICoachSummaryWidget } from './dashboard/DashboardSideWidgets';
 import { DashboardQuickNotes } from './dashboard/DashboardQuickNotes';
 import { DashboardSubjectNotesModal } from './dashboard/DashboardSubjectNotesModal';
+import { DashboardBadgesWidget } from './badges/DashboardBadgesWidget';
 
 interface DashboardViewProps {
   state: YKSDataState;
@@ -497,6 +498,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <span>Özeti Düzenle</span>
         </button>
       </div>
+
+      {/* Top 3D Game Badges & Daily Streak Showcase Widget */}
+      <DashboardBadgesWidget studentData={state} studentName={currentUser?.name} />
 
       {/* Main Dynamic Dashboard Content */}
       {renderDashboardContent()}

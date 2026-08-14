@@ -690,6 +690,37 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
       isAnalyzed
     });
 
+    // Contextual motivation trigger with net comparison
+    const prevMocks = [...generalMocks].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const prevTytNet = prevMocks.find(m => (m.tyt?.totalNet || 0) > 0)?.tyt?.totalNet || 0;
+    const prevAytNet = prevMocks.find(m => (m.ayt?.totalNet || 0) > 0)?.ayt?.totalNet || 0;
+
+    if (aytTotal > 0 && tytTotal === 0) {
+      window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
+        detail: {
+          type: 'mock_added',
+          payload: {
+            examType: 'AYT',
+            newNet: aytTotal,
+            oldNet: prevAytNet,
+            hasPrevious: prevAytNet > 0
+          }
+        }
+      }));
+    } else if (tytTotal > 0) {
+      window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
+        detail: {
+          type: 'mock_added',
+          payload: {
+            examType: 'TYT',
+            newNet: tytTotal,
+            oldNet: prevTytNet,
+            hasPrevious: prevTytNet > 0
+          }
+        }
+      }));
+    }
+
     resetAddForm();
     setShowAddModal(false);
   };

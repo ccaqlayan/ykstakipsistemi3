@@ -246,7 +246,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
 
   // Selected student for detailed inspection modal
   const [selectedStudentUser, setSelectedStudentUser] = useState<UserAccount | null>(null);
-  const [inspectModalTab, setInspectModalTab] = useState<'performance' | 'planner' | 'questions' | 'resources' | 'mocks' | 'youtube' | 'audit_logs'>('performance');
+  const [inspectModalTab, setInspectModalTab] = useState<'performance' | 'planner' | 'questions' | 'resources' | 'mocks' | 'youtube' | 'audit_logs' | 'badges'>('performance');
   const [studentAuditPage, setStudentAuditPage] = useState<number>(1);
   const [expandedResourceIds, setExpandedResourceIds] = useState<string[]>([]);
   const [editingCoachNotes, setEditingCoachNotes] = useState('');

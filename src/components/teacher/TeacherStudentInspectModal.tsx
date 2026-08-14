@@ -16,8 +16,15 @@ import {
   AlertTriangle, 
   FileSpreadsheet, 
   BookOpen, 
-  Check 
+  Check,
+  Trophy,
+  Zap,
+  Flame,
+  Lock,
+  Award
 } from 'lucide-react';
+import { BadgeShield } from '../badges/BadgeShield';
+import { BADGE_DEFINITIONS, evaluateBadges } from '../../services/motivationEngine';
 import { 
   ResponsiveContainer, 
   BarChart, 
@@ -110,8 +117,8 @@ const getRelativeTimeStr = (ts: number): string => {
 interface TeacherStudentInspectModalProps {
   selectedStudentUser: UserAccount | null;
   setSelectedStudentUser: (user: UserAccount | null) => void;
-  inspectModalTab: 'performance' | 'planner' | 'questions' | 'resources' | 'mocks' | 'youtube' | 'audit_logs';
-  setInspectModalTab: (tab: 'performance' | 'planner' | 'questions' | 'resources' | 'mocks' | 'youtube' | 'audit_logs') => void;
+  inspectModalTab: 'performance' | 'planner' | 'questions' | 'resources' | 'mocks' | 'youtube' | 'audit_logs' | 'badges';
+  setInspectModalTab: (tab: 'performance' | 'planner' | 'questions' | 'resources' | 'mocks' | 'youtube' | 'audit_logs' | 'badges') => void;
   studentsData: Record<string, YKSDataState>;
   teacher: UserAccount;
   editingCoachNotes: string;
@@ -277,8 +284,20 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
           </button>
 
           <button
+            onClick={() => setInspectModalTab('badges')}
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center sm:justify-start space-x-1.5 ${
+              inspectModalTab === 'badges'
+                ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30 border border-amber-400/40'
+                : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10'
+            }`}
+          >
+            <Trophy className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+            <span className="truncate">Rozetler & Başarılar</span>
+          </button>
+
+          <button
             onClick={() => setInspectModalTab('audit_logs')}
-            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center sm:justify-start space-x-1.5 col-span-2 sm:col-span-1 ${
+            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center sm:justify-start space-x-1.5 ${
               inspectModalTab === 'audit_logs'
                 ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 border border-purple-400/40'
                 : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10'
@@ -1045,6 +1064,127 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                         ))}
                       </div>
                     )}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* TAB: ROZETLER VE BAŞARILAR (TEACHER READ-ONLY) */}
+        {inspectModalTab === 'badges' && (
+          <div className="space-y-6 animate-fadeIn">
+            {(() => {
+              const stData = studentsData[selectedStudentUser.id];
+              if (!stData) return <div className="text-slate-400 text-sm">Öğrenci verisi bulunamadı.</div>;
+
+              const { allEarnedBadges, stats, totalXp } = evaluateBadges(stData);
+              const earnedKeysSet = new Set(allEarnedBadges.map(b => b.key));
+              const earnedCount = allEarnedBadges.length;
+              const totalCount = BADGE_DEFINITIONS.length;
+
+              return (
+                <div className="space-y-6">
+                  {/* Top Stats Banner */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-5 rounded-2xl bg-gradient-to-r from-amber-950/40 via-slate-900 to-indigo-950/40 border border-amber-500/30">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-400/30">
+                        <Trophy className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-400 font-medium">Kazanılan Rozetler</div>
+                        <div className="text-xl font-extrabold text-white">
+                          {earnedCount} / {totalCount}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-2xl bg-orange-500/20 text-orange-400 border border-orange-400/30">
+                        <Flame className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-400 font-medium">Aktif Seri & Rekor</div>
+                        <div className="text-xl font-extrabold text-orange-400">
+                          {stats.currentStreak} Gün <span className="text-xs text-slate-400 font-normal">(Rekor: {stats.longestStreak})</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-400/30">
+                        <Zap className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-400 font-medium">Toplam Başarı Puanı</div>
+                        <div className="text-xl font-extrabold text-amber-400">
+                          {totalXp.toLocaleString('tr-TR')} XP
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Badges Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {BADGE_DEFINITIONS.map(badge => {
+                      const isUnlocked = earnedKeysSet.has(badge.key);
+                      const progress = badge.calcProgress(stData, stats);
+                      const earnedInfo = allEarnedBadges.find(b => b.key === badge.key);
+
+                      return (
+                        <div
+                          key={badge.key}
+                          className={`flex flex-col items-center justify-between p-4 rounded-2xl border transition-all ${
+                            isUnlocked
+                              ? 'bg-slate-900/90 border-amber-500/30 shadow-md shadow-amber-500/10'
+                              : 'bg-slate-900/30 border-slate-800/60 opacity-60'
+                          }`}
+                        >
+                          <div className="w-full flex items-center justify-between text-[10px] mb-2">
+                            <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold uppercase">
+                              {badge.tier}
+                            </span>
+                            {isUnlocked ? (
+                              <span className="text-emerald-400 font-bold">Açıldı</span>
+                            ) : (
+                              <span className="text-slate-500 flex items-center gap-1 font-semibold">
+                                <Lock className="w-3 h-3" />
+                                Kilitli
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="my-2">
+                            <BadgeShield
+                              iconType={badge.iconType}
+                              tier={badge.tier}
+                              isUnlocked={isUnlocked}
+                              size="md"
+                            />
+                          </div>
+
+                          <div className="text-center w-full mt-1">
+                            <h4 className="text-xs font-bold text-white line-clamp-1">{badge.name}</h4>
+                            <p className="text-[10px] text-slate-400 line-clamp-2 mt-1">{badge.description}</p>
+                          </div>
+
+                          <div className="w-full mt-3 pt-2 border-t border-slate-800 text-[10px]">
+                            {isUnlocked ? (
+                              <div className="flex items-center justify-between text-amber-400 font-bold">
+                                <span>+{badge.xpReward} XP</span>
+                                <span className="text-slate-400 font-normal">
+                                  {earnedInfo?.earnedAt ? new Date(earnedInfo.earnedAt).toLocaleDateString('tr-TR') : 'Kazanıldı'}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="text-center text-slate-400">
+                                {progress.label} (%{Math.round(progress.percent)})
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );

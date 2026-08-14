@@ -1189,7 +1189,26 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         });
       }
       setEditingExam(null);
-    } else {
+      // Find previous branch exam of the same subject for net comparison
+      const prevSameSubjectExams = branchExams
+        .filter(b => b.subject === examSubject && b.examType === examType)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      const prevNet = prevSameSubjectExams.length > 0 ? prevSameSubjectExams[0].net : 0;
+      const hasPrevious = prevSameSubjectExams.length > 0;
+
+      window.dispatchEvent(new CustomEvent('yks_trigger_motivation', {
+        detail: {
+          type: 'branch_added',
+          payload: {
+            subject: examSubject,
+            newNet: Number(net.toFixed(2)),
+            oldNet: prevNet,
+            hasPrevious
+          }
+        }
+      }));
+
       onAddBranchExam({
         date: examDate,
         subject: examSubject,

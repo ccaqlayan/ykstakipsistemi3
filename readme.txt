@@ -42,6 +42,7 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
   * DashboardSideWidgets.tsx      : AI Koç tavsiye ve hızlı istatistikler
   * DashboardQuickNotes.tsx       : Hızlı not alma widgetı
   * DashboardSubjectNotesModal.tsx: Ders notu ekleme ve düzenleme modalı
+  * DashboardBadgesWidget.tsx     : 3D rozet vitrini ve günlük çalışma serisi kartı
 
 [3.2. Öğretmen ve Rehberlik Paneli (Teacher Dashboard)]
 - Main Orchestrator : src/components/TeacherDashboardView.tsx
@@ -138,14 +139,22 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - src/components/UniversityLogoManagerModal.tsx: Üniversite amblemleri ve logo yönetim modalı.
 - src/components/UniversityLogo.tsx            : Üniversite amblemleri ve Wikipedia proxy bileşeni.
 - src/components/YouTubeTrackerView.tsx        : YouTube ders playlisti ve video takip ekranı.
+- src/components/badges/BadgeShield.tsx        : 3D fasetli kristal kalkan SVG çizici.
+- src/components/badges/BadgeIcons.tsx         : Roket, alev, kılıç, taç vb. 3D SVG amblemleri.
+- src/components/badges/BadgeCelebrationModal.tsx : Rozet açılma konfeti & zafer töreni modalı.
+- src/components/badges/BadgesShowcaseModal.tsx   : Tam rozet koleksiyonu & albüm modalı.
+- src/components/badges/DashboardBadgesWidget.tsx : Dashboard rozet vitrini ve aktif streak kartı.
+- src/components/motivation/MotivationToast.tsx   : Anlık bağlam duyarlı sağ alt tebrik toast'u.
+- src/components/system/MotivationMessagesTab.tsx : Admin paneli motivasyon metinleri düzenleyici.
 
 --------------------------------------------------------------------------------
-4. BACKEND & SUNUCU ROTALARI (SRC/SERVER/ ROUTES)
+4. SUNUCU VE BACKEND ROTALARI (SERVER & API ROUTES)
 --------------------------------------------------------------------------------
-- src/server/config.ts            : Sunucu ayarları, Firestore veritabanı instance'ı, Gemini API yapılandırması, SMTP e-posta gönderici (`sendEmailHelper`), yetki kontrolörleri.
+- server.ts                   : Sunucu ayağa kaldırma ve express middleware.
+- src/server/config.ts        : Port, Firebase Admin, Gemini AI ve dosya yükleme yolları yapılandırması.
 - src/server/routes/authRoutes.ts  : `/api/auth/*` (Login, Register, Logout, Password Reset, Google OAuth2, 6 Haneli E-posta Kod Doğrulama).
 - src/server/routes/sheetsRoutes.ts: `/api/sheets/*` (Google Tablosu otomatik oluşturma ve canlı veri aktarma).
-- src/server/routes/geminiRoutes.ts: `/api/gemini/*` (Yapay Zeka Bireysel/Sınıf Koçu, Soru Çözücü, Çeldirici Analizi, Benzer Soru Üretici, Model/Harcama ayarları).
+- src/server/routes/geminiRoutes.ts: `/api/gemini/*` (Yapay Zeka Bireysel/Sınıf Koçu, Soru Çözücü, Çeldirici Analizi, Benzer Soru Üretici, Rozet Entegrasyonu).
 - src/server/routes/systemRoutes.ts: `/api/*` (Storage istatistikleri, YouTube playlist scraper, Fotoğraf Yükleme/Silme, Admin Mesaj Yönetimi, Wikipedia Proxy).
 
 --------------------------------------------------------------------------------
@@ -154,6 +163,7 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 [Servisler (src/services/)]
 - firebase.ts        : Firestore ve Authentication gerçek zamanlı abonelik ve kayıt fonksiyonları.
 - geminiService.ts   : Frontend'den Gemini AI endpoint'lerine yapılan istek servisleri.
+- motivationEngine.ts: 26 adet 3D başarım rozeti kuralları, XP sistemi, seri (streak) hesaplayıcı ve anlık geri bildirim motoru.
 - sheetsService.ts   : Google Sheets API istemci istekleri.
 - storage.ts         : LocalStorage yerel önbellek ve yükleme yardımcıları.
 - storageUpload.ts   : Mesaj ve avatar fotoğraflarını sunucuya/Firebase Storage'a yükleyen servis.

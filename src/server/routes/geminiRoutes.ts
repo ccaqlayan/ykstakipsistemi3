@@ -280,6 +280,8 @@ router.post('/coach-advice', async (req, res) => {
     institutionalMocks,
     youtubeVideos,
     pomodoroHistory,
+    earnedBadges,
+    motivationStats,
     coachDataSettings: customSettings
   } = req.body;
 
@@ -352,6 +354,16 @@ Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) derece derece hazırlık
     if (settings.pomodoroHistory?.enabled !== false) {
       const limit = settings.pomodoroHistory?.limit || 3;
       prompt += `\nPOMODORO GEÇMİŞİ ÖZETİ:\n${JSON.stringify(summarizePomodoroForPrompt(pomodoroHistory, limit))}\n`;
+    }
+
+    if (earnedBadges || motivationStats) {
+      const badgeSummary = {
+        totalBadgesEarned: (earnedBadges || []).length,
+        currentStreakDays: motivationStats?.currentStreak || 0,
+        longestStreakDays: motivationStats?.longestStreak || 0,
+        badgesList: (earnedBadges || []).map((b: any) => b.key)
+      };
+      prompt += `\nÖĞRENCİNİN KAZANDIĞI 3D ROZETLER & ÇALIŞMA SERİSİ (MOTİVASYON BİLGİSİ):\n${JSON.stringify(badgeSummary)}\n(Öğrenciyi kazandığı bu rozetler ve çalışma serisi için motive et, tebrik et ve devamlılığını öv.)\n`;
     }
 
     prompt += `
