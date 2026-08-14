@@ -171,35 +171,44 @@ export function handleFirebaseError(err: any) {
 }
 
 /**
- * Her uygulama başlangıcında çalışacak migration — seed marker'ına bakmadan
- * student-1'in questionLogs tarihlerini günceller (eski Haziran tarihleri varsa).
+ * Migration v2: student-1 questionLogs'u son 30 güne yayılmış yeni verilerle günceller.
+ * Bir kez çalışır — meta/migrations/questionlogs_v2 marker ile izlenir.
  */
 export async function migrateStudentQuestionLogs() {
   try {
+    // Migration daha önce yapıldıysa atla
+    const markerRef = doc(db, 'meta', 'migrations');
+    const markerSnap = await getDoc(markerRef);
+    if (markerSnap.exists() && markerSnap.data()?.questionlogs_v2 === true) {
+      return;
+    }
+
+    console.log('[Migration v2] Running questionLogs migration for student-1...');
     const student1Ref = doc(db, STUDENTS_DATA_COL, 'student-1');
     const student1Snap = await getDoc(student1Ref);
-    if (!student1Snap.exists()) return;
 
-    const data = student1Snap.data() as YKSDataState;
-    const hasOldDates = data.questionLogs && data.questionLogs.some(
-      (l: any) => l.date && (
-        l.date.startsWith('2026-06-') ||
-        l.date === '2026-07-25' ||
-        l.date === '2026-07-20' ||
-        l.date === '2026-07-18' ||
-        l.date === '2026-07-15' ||
-        l.date === '2026-07-10'
-      )
-    );
-
-    if (hasOldDates) {
-      console.log('[Migration] student-1 questionLogs contain old dates. Updating...');
+    if (student1Snap.exists()) {
+      const data = student1Snap.data();
       const cleanLogs = sanitizeAndPrepareForFirestore(INITIAL_STATE.questionLogs);
       await setDoc(student1Ref, { ...data, questionLogs: cleanLogs }, { merge: false });
-      console.log('[Migration] student-1 questionLogs updated successfully.');
+      console.log('[Migration v2] student-1 questionLogs updated successfully.');
     }
+
+    // student-4 de güncelle (Burak ÇAKIR)
+    const student4Ref = doc(db, STUDENTS_DATA_COL, 'student-4');
+    const student4Snap = await getDoc(student4Ref);
+    if (student4Snap.exists()) {
+      const data4 = student4Snap.data();
+      const cleanLogs4 = sanitizeAndPrepareForFirestore(INITIAL_STATE.questionLogs);
+      await setDoc(student4Ref, { ...data4, questionLogs: cleanLogs4 }, { merge: false });
+      console.log('[Migration v2] student-4 questionLogs updated successfully.');
+    }
+
+    // Marker'ı kaydet — bir daha çalışmasın
+    await setDoc(markerRef, { questionlogs_v2: true, migratedAt: new Date().toISOString() }, { merge: true });
+    console.log('[Migration v2] Migration marker written. Done.');
   } catch (err) {
-    console.warn('[Migration] migrateStudentQuestionLogs error:', err);
+    console.warn('[Migration v2] migrateStudentQuestionLogs error:', err);
   }
 }
 
