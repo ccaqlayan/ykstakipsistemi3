@@ -1622,20 +1622,26 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
           return (b.date || '').localeCompare(a.date || '');
         });
 
-        // 1. Chart Data: Daily Trends (Aggregated by Date - Last 14 Active Days)
-        const dailyMap: Record<string, { date: string; displayDate: string; solved: number; correct: number; wrong: number; net: number }> = {};
+        // 1. Chart Data: Daily Trends (Aggregated by Date - Last 14 Active Days - Stacked)
+        const dailyMap: Record<string, { date: string; displayDate: string; solved: number; correct: number; wrong: number; empty: number; wrongAndEmpty: number; net: number }> = {};
         questionLogs.forEach(l => {
           if (!l.date) return;
           const key = l.date;
           if (!dailyMap[key]) {
             const parts = key.split('-');
             const displayDate = parts.length === 3 ? `${parts[2]}/${parts[1]}` : key;
-            dailyMap[key] = { date: key, displayDate, solved: 0, correct: 0, wrong: 0, net: 0 };
+            dailyMap[key] = { date: key, displayDate, solved: 0, correct: 0, wrong: 0, empty: 0, wrongAndEmpty: 0, net: 0 };
           }
-          dailyMap[key].solved += (l.solvedCount || 0);
-          dailyMap[key].correct += (l.correctCount || 0);
-          dailyMap[key].wrong += (l.wrongCount || 0);
-          dailyMap[key].net += (l.netScore !== undefined ? l.netScore : ((l.correctCount || 0) - (l.wrongCount || 0) * 0.25));
+          const solved = (l.solvedCount || 0);
+          const correct = (l.correctCount || 0);
+          const wrong = (l.wrongCount || 0);
+          const empty = (l.emptyCount || 0);
+          dailyMap[key].solved += solved;
+          dailyMap[key].correct += correct;
+          dailyMap[key].wrong += wrong;
+          dailyMap[key].empty += empty;
+          dailyMap[key].wrongAndEmpty += (wrong + empty);
+          dailyMap[key].net += (l.netScore !== undefined ? l.netScore : (correct - wrong * 0.25));
         });
 
         const dailyChartData = Object.values(dailyMap)
@@ -1646,16 +1652,26 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
             net: Number(d.net.toFixed(2))
           }));
 
-        // 2. Chart Data: Subject Breakdown
-        const subjectMap: Record<string, { subject: string; solved: number; correct: number; wrong: number; accuracy: number }> = {};
-        questionLogs.forEach(l => {
+        // 2. Chart Data: Subject Breakdown for the LAST 7 DAYS (Stacked Bar)
+        const last7DaysLogs = questionLogs.filter(l => l.date && l.date >= cutoff7);
+        const logsForSubjectChart = last7DaysLogs.length > 0 ? last7DaysLogs : questionLogs;
+        const isUsingLast7Days = last7DaysLogs.length > 0;
+
+        const subjectMap: Record<string, { subject: string; solved: number; correct: number; wrong: number; empty: number; wrongAndEmpty: number; accuracy: number }> = {};
+        logsForSubjectChart.forEach(l => {
           const s = l.subject || 'Diğer';
           if (!subjectMap[s]) {
-            subjectMap[s] = { subject: s, solved: 0, correct: 0, wrong: 0, accuracy: 0 };
+            subjectMap[s] = { subject: s, solved: 0, correct: 0, wrong: 0, empty: 0, wrongAndEmpty: 0, accuracy: 0 };
           }
-          subjectMap[s].solved += (l.solvedCount || 0);
-          subjectMap[s].correct += (l.correctCount || 0);
-          subjectMap[s].wrong += (l.wrongCount || 0);
+          const solved = (l.solvedCount || 0);
+          const correct = (l.correctCount || 0);
+          const wrong = (l.wrongCount || 0);
+          const empty = (l.emptyCount || 0);
+          subjectMap[s].solved += solved;
+          subjectMap[s].correct += correct;
+          subjectMap[s].wrong += wrong;
+          subjectMap[s].empty += empty;
+          subjectMap[s].wrongAndEmpty += (wrong + empty);
         });
 
         const subjectChartData = Object.values(subjectMap)
@@ -1769,21 +1785,21 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
             {/* Visual Charts Section */}
             {questionLogs.length > 0 && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* Chart 1: Daily Question & Correct Trend */}
+                {/* Chart 1: Daily Question & Correct Trend (Yığmalı / Stacked Bar) */}
                 <div className="bg-slate-950/80 border border-white/10 rounded-3xl p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <TrendingUp className="w-4 h-4 text-indigo-400" />
-                      <h4 className="text-xs font-bold text-white">Günlük Soru Çözüm Trendi (Son 14 Gün)</h4>
+                      <h4 className="text-xs font-bold text-white">Günlük Soru Çözüm Trendi (Son 14 Gün - Yığmalı)</h4>
                     </div>
                     <div className="flex items-center space-x-3 text-[10px] font-bold">
-                      <span className="flex items-center space-x-1 text-indigo-400">
-                        <span className="w-2 h-2 rounded-full bg-indigo-500" />
-                        <span>Çözülen</span>
-                      </span>
                       <span className="flex items-center space-x-1 text-emerald-400">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
                         <span>Doğru</span>
+                      </span>
+                      <span className="flex items-center space-x-1 text-rose-400">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-rose-500" />
+                        <span>Yanlış / Boş</span>
                       </span>
                     </div>
                   </div>
@@ -1796,24 +1812,42 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                         <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
                         <Tooltip
                           contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '11px', color: '#fff' }}
-                          formatter={(val: any, name: any) => [val, name === 'solved' ? 'Toplam Çözülen' : name === 'correct' ? 'Doğru Sayısı' : 'Net']}
-                          labelFormatter={(l: any) => `Tarih: ${l}`}
+                          formatter={(val: any, name: any, item: any) => {
+                            if (name === 'correct') return [`${val} Soru`, 'Doğru'];
+                            if (name === 'wrongAndEmpty') return [`${val} Soru (${item.payload.wrong} Yanlış, ${item.payload.empty} Boş)`, 'Yanlış / Boş'];
+                            return [val, name];
+                          }}
+                          labelFormatter={(l: any, payload: any) => {
+                            const item = payload && payload[0]?.payload;
+                            return item ? `Tarih: ${item.date} (Toplam: ${item.solved} Soru, ${item.net} Net)` : `Tarih: ${l}`;
+                          }}
                         />
-                        <Bar dataKey="solved" fill="#6366f1" radius={[4, 4, 0, 0]} name="solved" maxBarSize={28} />
-                        <Bar dataKey="correct" fill="#10b981" radius={[4, 4, 0, 0]} name="correct" maxBarSize={28} />
+                        <Bar dataKey="correct" fill="#10b981" stackId="dailyStack" name="correct" maxBarSize={28} />
+                        <Bar dataKey="wrongAndEmpty" fill="#f43f5e" radius={[4, 4, 0, 0]} stackId="dailyStack" name="wrongAndEmpty" maxBarSize={28} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
 
-                {/* Chart 2: Subject Distribution & Accuracy */}
+                {/* Chart 2: Subject Distribution & Accuracy (Son 7 Gün - Yığmalı / Stacked Bar) */}
                 <div className="bg-slate-950/80 border border-white/10 rounded-3xl p-5 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <BarChart3 className="w-4 h-4 text-emerald-400" />
-                      <h4 className="text-xs font-bold text-white">Ders Bazlı Soru Dağılımı ve Doğruluk</h4>
+                      <h4 className="text-xs font-bold text-white">
+                        Ders Dağılımı ve Doğruluk {isUsingLast7Days ? '(Son 7 Gün - Yığmalı)' : '(Tüm Kayıtlar - Yığmalı)'}
+                      </h4>
                     </div>
-                    <span className="text-[10px] text-slate-400 font-mono">En çok çözülenler</span>
+                    <div className="flex items-center space-x-3 text-[10px] font-bold">
+                      <span className="flex items-center space-x-1 text-emerald-400">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
+                        <span>Doğru</span>
+                      </span>
+                      <span className="flex items-center space-x-1 text-rose-400">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-rose-500" />
+                        <span>Yanlış / Boş</span>
+                      </span>
+                    </div>
                   </div>
 
                   <div className="h-48 w-full pt-2">
@@ -1824,23 +1858,18 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                         <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
                         <Tooltip
                           contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '11px', color: '#fff' }}
-                          formatter={(val: any, name: any, item: any) => [
-                            name === 'solved' ? `${val} Soru (Doğruluk: %${item.payload.accuracy})` : val,
-                            'Çözülen Soru'
-                          ]}
+                          formatter={(val: any, name: any, item: any) => {
+                            if (name === 'correct') return [`${val} Soru (%${item.payload.accuracy} Başarı)`, 'Doğru'];
+                            if (name === 'wrongAndEmpty') return [`${val} Soru (${item.payload.wrong} Yanlış, ${item.payload.empty} Boş)`, 'Yanlış / Boş'];
+                            return [val, name];
+                          }}
+                          labelFormatter={(l: any, payload: any) => {
+                            const item = payload && payload[0]?.payload;
+                            return item ? `${item.subject} (Toplam: ${item.solved} Soru - Başarı %${item.accuracy})` : `${l}`;
+                          }}
                         />
-                        <Bar dataKey="solved" radius={[4, 4, 0, 0]} maxBarSize={32}>
-                          {subjectChartData.map((entry, index) => {
-                            const isMyBranch = teacherSubj && entry.subject.toLowerCase().includes(teacherSubj);
-                            const colors = ['#6366f1', '#10b981', '#f59e0b', '#06b6d4', '#ec4899', '#8b5cf6'];
-                            return (
-                              <Cell 
-                                key={`cell-${index}`} 
-                                fill={isMyBranch ? '#f59e0b' : colors[index % colors.length]} 
-                              />
-                            );
-                          })}
-                        </Bar>
+                        <Bar dataKey="correct" fill="#10b981" stackId="subjStack" name="correct" maxBarSize={32} />
+                        <Bar dataKey="wrongAndEmpty" fill="#f43f5e" radius={[4, 4, 0, 0]} stackId="subjStack" name="wrongAndEmpty" maxBarSize={32} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
