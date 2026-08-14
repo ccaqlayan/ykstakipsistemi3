@@ -921,6 +921,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   const chartData = filteredByCountMocks.map((m) => {
     const tytNet = Number(m.tyt?.totalNet) || 0;
     const aytNet = Number(m.ayt?.totalNet) || 0;
+    const dilNet = (m.ydt?.net !== undefined && Number(m.ydt.net) > 0) ? Number(m.ydt.net) : null;
 
     return {
       id: m.id,
@@ -929,6 +930,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
       date: m.date,
       TYT_Net: tytNet > 0 ? tytNet : null,
       AYT_Net: aytNet > 0 ? aytNet : null,
+      DIL_Net: dilNet,
       Hedef_TYT: profile.targetTYTNet,
       Hedef_AYT: profile.targetAYTNet
     };

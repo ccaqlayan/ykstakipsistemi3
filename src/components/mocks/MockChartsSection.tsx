@@ -117,8 +117,10 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
   toggleActiveSubSubject,
   profile
 }) => {
+  const isDilStudent = profile?.targetField === 'DİL' || profile?.targetField === 'DIL';
   const [showTytLine, setShowTytLine] = useState<boolean>(true);
   const [showAytLine, setShowAytLine] = useState<boolean>(true);
+  const [showDilLine, setShowDilLine] = useState<boolean>(isDilStudent);
 
   if (generalMocks.length === 0) return null;
 
@@ -249,91 +251,89 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
         {/* 2. Satır: Grafik Seçimi & Kişiselleştirme */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
-            <div className="p-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              <BarChart2 className="w-4 h-4" />
+            <div className="p-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
+              <TrendingUp className="w-4 h-4" />
             </div>
-            <span className="text-xs font-bold text-slate-200">Gösterilecek Grafik Modu:</span>
+            <span className="text-xs font-bold text-slate-200">Görüntülenen Grafik:</span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex flex-wrap items-center bg-slate-950 p-1 rounded-2xl border border-slate-800 gap-1">
-              <button
-                type="button"
-                onClick={() => setActiveChartTab('net')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  activeChartTab === 'net'
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                }`}
-              >
-                TYT & AYT Net
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveChartTab('subject')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  activeChartTab === 'subject'
-                    ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                }`}
-              >
-                Ders Bazlı Netler
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveChartTab('detailed')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  activeChartTab === 'detailed'
-                    ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                }`}
-              >
-                Detaylı Ders Analizi
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveChartTab('rank')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  activeChartTab === 'rank'
-                    ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                }`}
-              >
-                Sıralama Trendi
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveChartTab('all')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                  activeChartTab === 'all'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                }`}
-              >
-                Tüm Grafikler
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveChartTab('custom')}
-                className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center space-x-1 ${
-                  activeChartTab === 'custom'
-                    ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>Bana Özel</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowCustomizeModal(true)}
-                className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 transition-all cursor-pointer shadow-sm shrink-0 ml-1"
-                title="Sayfa grafiklerini düzenle ve sabitle"
-              >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Özelleştir</span>
-              </button>
-            </div>
+          <div className="flex flex-wrap items-center gap-1.5 bg-slate-950 p-1 rounded-2xl border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setActiveChartTab('net')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                activeChartTab === 'net'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              Net Gelişim Trendi
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveChartTab('subject')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                activeChartTab === 'subject'
+                  ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              Ders Bazlı Netler
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveChartTab('detailed')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                activeChartTab === 'detailed'
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              Detaylı Ders Analizi
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveChartTab('rank')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                activeChartTab === 'rank'
+                  ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              Sıralama Trendi
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveChartTab('all')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                activeChartTab === 'all'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              Tüm Grafikler
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveChartTab('custom')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center space-x-1 ${
+                activeChartTab === 'custom'
+                  ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Bana Özel</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCustomizeModal(true)}
+              className="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 transition-all cursor-pointer shadow-sm shrink-0 ml-1"
+              title="Sayfa grafiklerini düzenle ve sabitle"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Özelleştir</span>
+            </button>
           </div>
         </div>
       </div>
@@ -344,11 +344,13 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800">
             <h2 className="text-sm font-bold text-white flex items-center space-x-2">
               <BarChart2 className="w-4 h-4 text-emerald-400" />
-              <span><span className="text-indigo-400 font-bold">TYT</span> & <span className="text-emerald-400 font-bold">AYT</span> Net Gelişim Trendi</span>
+              <span>
+                <span className="text-indigo-400 font-bold">TYT</span>, <span className="text-emerald-400 font-bold">AYT</span> & <span className="text-sky-400 font-bold">DİL</span> Net Gelişim Trendi
+              </span>
             </h2>
 
-            {/* Interactive Toggle Buttons for TYT & AYT Net Lines */}
-            <div className="flex items-center space-x-2 text-xs font-mono">
+            {/* Interactive Toggle Buttons for TYT, AYT & DİL Net Lines */}
+            <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
               <button
                 type="button"
                 onClick={() => setShowTytLine(prev => !prev)}
@@ -377,6 +379,21 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                 <span className={`w-2.5 h-2.5 rounded-full ${showAytLine ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'} inline-block`} />
                 <span>AYT Net</span>
                 {showAytLine ? <Eye className="w-3 h-3 text-emerald-400" /> : <EyeOff className="w-3 h-3 text-slate-500" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowDilLine(prev => !prev)}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-bold ${
+                  showDilLine
+                    ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-md shadow-sky-950/40'
+                    : 'bg-slate-950/60 text-slate-500 border-slate-800 opacity-60 hover:opacity-100 hover:text-slate-300'
+                }`}
+                title={showDilLine ? 'DİL (YDT) Net çizgisini gizle' : 'DİL (YDT) Net çizgisini göster'}
+              >
+                <span className={`w-2.5 h-2.5 rounded-full ${showDilLine ? 'bg-sky-400 animate-pulse' : 'bg-slate-600'} inline-block`} />
+                <span>DİL Net</span>
+                {showDilLine ? <Eye className="w-3 h-3 text-sky-400" /> : <EyeOff className="w-3 h-3 text-slate-500" />}
               </button>
             </div>
           </div>
@@ -436,7 +453,7 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                           <div className="pt-1.5 border-t border-slate-800 space-y-1 font-mono font-semibold">
                             {validPayload.map((p: any) => (
                               <div key={p.dataKey} className="flex items-center justify-between gap-4" style={{ color: p.color }}>
-                                <span>{p.dataKey === 'TYT_Net' ? 'TYT Net' : p.dataKey === 'AYT_Net' ? 'AYT Net' : p.name}:</span>
+                                <span>{p.dataKey === 'TYT_Net' ? 'TYT Net' : p.dataKey === 'AYT_Net' ? 'AYT Net' : p.dataKey === 'DIL_Net' ? 'DİL Net' : p.name}:</span>
                                 <span>{String(p.value).replace('.', ',')} Net</span>
                               </div>
                             ))}
@@ -451,6 +468,7 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                   <Line
                     type="monotone"
                     dataKey="TYT_Net"
+                    name="TYT Net"
                     stroke="#6366f1"
                     strokeWidth={3}
                     dot={{ r: 4, fill: '#6366f1' }}
@@ -462,9 +480,22 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                   <Line
                     type="monotone"
                     dataKey="AYT_Net"
+                    name="AYT Net"
                     stroke="#34d399"
                     strokeWidth={3}
                     dot={{ r: 4, fill: '#34d399' }}
+                    activeDot={{ r: 6 }}
+                    connectNulls={true}
+                  />
+                )}
+                {showDilLine && (
+                  <Line
+                    type="monotone"
+                    dataKey="DIL_Net"
+                    name="DİL Net"
+                    stroke="#0ea5e9"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: '#0ea5e9' }}
                     activeDot={{ r: 6 }}
                     connectNulls={true}
                   />

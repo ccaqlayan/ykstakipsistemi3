@@ -456,7 +456,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
             <h4 className="text-sm sm:text-base font-black text-white truncate max-w-lg">{calcMock.title}</h4>
           </div>
 
-          {/* Quick Nets Summary Badges */}
+          {/* Quick Nets & OBP Summary Badges */}
           <div className="flex flex-wrap items-center gap-2 text-xs font-mono font-bold">
             {(hasTytNets || examType === 'TYT' || examType === 'TYT_AYT' || examType === 'TYT_DIL') && (
               <div className="bg-indigo-500/10 border border-indigo-500/20 px-3 py-1.5 rounded-xl text-center">
@@ -485,247 +485,103 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
                 {String((tytTotalNet + parseNetVal(calcMock.ayt.totalNet) + ydtNet).toFixed(2)).replace('.', ',')}
               </span>
             </div>
+
+            {/* Diploma Notu / OBP Button (Tıklanınca aşağı doğru düzenleme alanı açılır) */}
+            <button
+              type="button"
+              onClick={() => setShowObpEdit(prev => !prev)}
+              className={`border px-3 py-1.5 rounded-xl text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                showObpEdit
+                  ? 'bg-indigo-600/30 border-indigo-400 text-white shadow-md shadow-indigo-950/50 ring-1 ring-indigo-400/50'
+                  : 'bg-indigo-500/10 border-indigo-500/30 hover:bg-indigo-500/20 text-indigo-300'
+              }`}
+              title="Diploma Notu (OBP) ve eklenen puanı düzenlemek için tıklayın"
+            >
+              <div className="flex items-center space-x-1">
+                <span className="text-indigo-400 font-bold block text-[10px]">DİPLOMA NOTU (OBP)</span>
+                <Sliders className="w-3 h-3 text-indigo-400" />
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <span className="text-indigo-200 text-sm font-black font-mono">{String(diplomaGrade).replace('.', ',')}</span>
+                <span className="text-[10px] text-indigo-400 font-mono font-bold">(+{String(obpContribution).replace('.', ',')})</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-indigo-400 transition-transform duration-200 ${showObpEdit ? 'rotate-180' : ''}`} />
+              </div>
+            </button>
           </div>
         </div>
 
-        {/* 🎯 SIRALAMA KAYDET ALANI (Dedicated Save Estimated Rank Section) */}
-        <div className="bg-gradient-to-r from-slate-950 via-indigo-950/40 to-slate-950 rounded-2xl border border-indigo-500/40 p-4 sm:p-5 shadow-lg space-y-3 relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-500/20 pb-3">
-            <div className="flex items-center space-x-2.5">
-              <div className="p-2 bg-indigo-600/30 border border-indigo-400/30 rounded-xl text-indigo-300">
-                <Bookmark className="w-4 h-4" />
+        {/* Expandable OBP & Diploma Grade Adjuster */}
+        {showObpEdit && (
+          <div className="bg-slate-950/95 rounded-2xl border border-indigo-500/40 p-4 space-y-3.5 animate-fade-in shadow-xl">
+            <div className="flex flex-wrap justify-between items-center gap-2">
+              <span className="text-xs text-slate-200 font-bold flex items-center space-x-1.5">
+                <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Diploma Notunuzu Ayarlayın (50 - 100):</span>
+              </span>
+              
+              {/* Quick Preset Buttons */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-500 font-semibold mr-1">Hızlı Seçim:</span>
+                {[70, 80, 85, 90, 95, 100].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => handleDiplomaGradeChange(preset)}
+                    className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded-lg border transition-all cursor-pointer ${
+                      diplomaGrade === preset
+                        ? 'bg-indigo-600 text-white border-indigo-400 shadow-sm'
+                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                ))}
               </div>
-              <div>
-                <h4 className="text-xs sm:text-sm font-black text-white flex items-center space-x-2">
-                  <span>Tahmini Deneme Sıralaması Belirle & Kaydet</span>
-                  <span className="text-[10px] font-bold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30">
-                    Grafik & İstatistiklere Yansır
-                  </span>
-                </h4>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  Hesaplanan simülasyonlardan birini seçerek bu denemenin resmi tahmini sıralaması olarak kaydedebilirsiniz.
-                </p>
-              </div>
-            </div>
 
-            {/* Current Saved Badge */}
-            <div className="flex items-center space-x-2 shrink-0 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono">
-              <span className="text-slate-400 text-[11px] font-sans">Kayıtlı Sıralama:</span>
-              {calcMock.estimatedRank ? (
-                <span className="text-emerald-300 font-black text-sm flex items-center space-x-1">
-                  <BookmarkCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>#{formatRank(calcMock.estimatedRank)}</span>
-                </span>
-              ) : (
-                <span className="text-slate-500 italic">Belirlenmedi</span>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Choice Buttons for Primary Field */}
-          <div className="space-y-2">
-            <span className="text-[11px] text-slate-300 font-bold block">
-              Hızlı Seçim ({primaryResult.title} Alanı için Simüle Edilen Sıralamalar):
-            </span>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {/* 2026 Yerleştirme (Önerilen) */}
-              <button
-                type="button"
-                onClick={() => handleSaveRank(primaryResult.result.rank2026Yer, `2026 ${primaryResult.title} Yerleştirme`)}
-                className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
-                  calcMock.estimatedRank === primaryResult.result.rank2026Yer
-                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-900/40'
-                    : 'bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-200 border-indigo-500/40 hover:border-indigo-400'
-                }`}
-              >
-                <Sparkles className="w-3 h-3 text-amber-400" />
-                <span>2026 Yerleştirme: #{formatRank(primaryResult.result.rank2026Yer)} (Önerilen)</span>
-                {calcMock.estimatedRank === primaryResult.result.rank2026Yer && <CheckCheck className="w-3.5 h-3.5" />}
-              </button>
-
-              {/* 2026 Ham */}
-              <button
-                type="button"
-                onClick={() => handleSaveRank(primaryResult.result.rank2026Ham, `2026 ${primaryResult.title} Ham`)}
-                className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
-                  calcMock.estimatedRank === primaryResult.result.rank2026Ham
-                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-900/40'
-                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600'
-                }`}
-              >
-                <span>2026 Ham: #{formatRank(primaryResult.result.rank2026Ham)}</span>
-                {calcMock.estimatedRank === primaryResult.result.rank2026Ham && <CheckCheck className="w-3.5 h-3.5" />}
-              </button>
-
-              {/* 2025 Yerleştirme */}
-              <button
-                type="button"
-                onClick={() => handleSaveRank(primaryResult.result.rank2025Yer, `2025 ${primaryResult.title} Yerleştirme`)}
-                className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
-                  calcMock.estimatedRank === primaryResult.result.rank2025Yer
-                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-900/40'
-                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600'
-                }`}
-              >
-                <span>2025 Yerl: #{formatRank(primaryResult.result.rank2025Yer)}</span>
-                {calcMock.estimatedRank === primaryResult.result.rank2025Yer && <CheckCheck className="w-3.5 h-3.5" />}
-              </button>
-
-              {/* 2024 Yerleştirme */}
-              <button
-                type="button"
-                onClick={() => handleSaveRank(primaryResult.result.rank2024Yer, `2024 ${primaryResult.title} Yerleştirme`)}
-                className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
-                  calcMock.estimatedRank === primaryResult.result.rank2024Yer
-                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-900/40'
-                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600'
-                }`}
-              >
-                <span>2024 Yerl: #{formatRank(primaryResult.result.rank2024Yer)}</span>
-                {calcMock.estimatedRank === primaryResult.result.rank2024Yer && <CheckCheck className="w-3.5 h-3.5" />}
-              </button>
-            </div>
-          </div>
-
-          {/* Custom Input & Save Form */}
-          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800/80">
-            <span className="text-[11px] text-slate-400 font-semibold">Özel Sıralama Girin:</span>
-            <div className="flex items-center space-x-2">
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="Örn: 15400"
-                value={customRankInput}
-                onChange={(e) => setCustomRankInput(sanitizeNetInput(e.target.value))}
-                className="w-32 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs font-mono font-bold focus:outline-none focus:border-indigo-400"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  const num = parseNetVal(customRankInput);
-                  if (num > 0) {
-                    handleSaveRank(num, 'Özel');
-                    setCustomRankInput('');
-                  }
-                }}
-                disabled={!customRankInput || parseNetVal(customRankInput) <= 0}
-                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>Kaydet</span>
-              </button>
-            </div>
-
-            {/* Success Toast */}
-            {saveSuccessMsg && (
-              <div className="ml-auto bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 px-3 py-1 rounded-xl text-xs font-bold flex items-center space-x-1.5 animate-fade-in">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{saveSuccessMsg}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* OBP & Diploma Grade Adjuster */}
-        <div className="bg-slate-950/80 rounded-2xl border border-indigo-500/30 overflow-hidden transition-all shadow-sm">
-          <button
-            type="button"
-            onClick={() => setShowObpEdit(prev => !prev)}
-            className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-900/60 transition-colors cursor-pointer"
-          >
-            <div className="flex items-center space-x-3 min-w-0">
-              <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
-                <Sliders className="w-4 h-4 shrink-0" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs font-black text-white">Diploma Notu (OBP):</span>
-                  <span className="text-xs font-mono font-bold text-indigo-300 bg-indigo-500/20 px-2.5 py-0.5 rounded-full border border-indigo-500/30">
-                    {String(diplomaGrade).replace('.', ',')}
-                  </span>
-                </div>
-                <span className="text-[11px] text-slate-400 block truncate mt-0.5">
-                  Yerleştirme Puanına Eklenen OBP Katkısı: <strong className="text-indigo-300 font-mono">+{String(obpContribution).replace('.', ',')} Puan</strong> (Ayarlamak için tıklayın)
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center space-x-1.5 text-xs text-indigo-400 font-bold shrink-0 ml-2">
-              <span className="hidden sm:inline">{showObpEdit ? 'Kapat' : 'Notu Değiştir'}</span>
-              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showObpEdit ? 'rotate-180' : ''}`} />
-            </div>
-          </button>
-
-          {/* Expandable Slider, Presets & Input Edit Area */}
-          {showObpEdit && (
-            <div className="p-4 border-t border-slate-800/80 bg-slate-900/80 space-y-4 animate-fade-in">
-              <div className="flex flex-wrap justify-between items-center gap-2">
-                <span className="text-xs text-slate-300 font-bold">Diploma Notunuzu Ayarlayın (50 - 100):</span>
-                
-                {/* Quick Preset Buttons */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-slate-500 font-semibold mr-1">Hızlı Seçim:</span>
-                  {[70, 80, 85, 90, 95, 100].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => handleDiplomaGradeChange(preset)}
-                      className={`px-2 py-0.5 text-[10px] font-mono font-bold rounded-lg border transition-all ${
-                        diplomaGrade === preset
-                          ? 'bg-indigo-600 text-white border-indigo-400'
-                          : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
-                      }`}
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="bg-indigo-500/15 border border-indigo-500/30 px-3 py-1 rounded-xl text-xs text-indigo-300 font-mono font-bold flex items-center space-x-2">
-                  <label htmlFor="diploma-grade-input">Diploma Notu:</label>
-                  <input
-                    id="diploma-grade-input"
-                    type="text"
-                    inputMode="decimal"
-                    value={String(diplomaGrade).replace('.', ',')}
-                    onChange={(e) => {
-                      const cleaned = sanitizeNetInput(e.target.value);
-                      setDiplomaGrade(cleaned === '' ? 0 : parseNetVal(cleaned));
-                      if (cleaned !== '') {
-                        const num = parseNetVal(cleaned);
-                        if (!isNaN(num)) {
-                          const clamped = Math.min(100, Math.max(50, num));
-                          handleDiplomaGradeChange(clamped);
-                        }
+              <div className="bg-indigo-500/15 border border-indigo-500/30 px-3 py-1 rounded-xl text-xs text-indigo-300 font-mono font-bold flex items-center space-x-2">
+                <label htmlFor="diploma-grade-input">Diploma Notu:</label>
+                <input
+                  id="diploma-grade-input"
+                  type="text"
+                  inputMode="decimal"
+                  value={String(diplomaGrade).replace('.', ',')}
+                  onChange={(e) => {
+                    const cleaned = sanitizeNetInput(e.target.value);
+                    setDiplomaGrade(cleaned === '' ? 0 : parseNetVal(cleaned));
+                    if (cleaned !== '') {
+                      const num = parseNetVal(cleaned);
+                      if (!isNaN(num)) {
+                        const clamped = Math.min(100, Math.max(50, num));
+                        handleDiplomaGradeChange(clamped);
                       }
-                    }}
-                    className="w-16 bg-slate-950 border border-indigo-500/50 rounded-lg px-2 py-0.5 text-white text-xs text-center font-bold font-mono focus:outline-none focus:border-indigo-400"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
-                <div className="md:col-span-3 flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                  <span className="text-xs text-slate-400 font-mono font-bold">50</span>
-                  <input
-                    type="range"
-                    min="50"
-                    max="100"
-                    step="0.1"
-                    value={diplomaGrade}
-                    onChange={(e) => handleDiplomaGradeChange(Number(e.target.value))}
-                    className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                  />
-                  <span className="text-xs text-slate-400 font-mono font-bold">100</span>
-                </div>
-                <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-center font-mono">
-                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Eklenen OBP Puanı</span>
-                  <span className="text-xs text-indigo-300 font-black">+{String(obpContribution).replace('.', ',')} Puan</span>
-                </div>
+                    }
+                  }}
+                  className="w-16 bg-slate-950 border border-indigo-500/50 rounded-lg px-2 py-0.5 text-white text-xs text-center font-bold font-mono focus:outline-none focus:border-indigo-400"
+                />
               </div>
             </div>
-          )}
-        </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
+              <div className="md:col-span-3 flex items-center space-x-3 bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+                <span className="text-xs text-slate-400 font-mono font-bold">50</span>
+                <input
+                  type="range"
+                  min="50"
+                  max="100"
+                  step="0.1"
+                  value={diplomaGrade}
+                  onChange={(e) => handleDiplomaGradeChange(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                />
+                <span className="text-xs text-slate-400 font-mono font-bold">100</span>
+              </div>
+              <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 text-center font-mono">
+                <span className="text-[10px] text-slate-400 block uppercase font-bold">Eklenen OBP Puanı</span>
+                <span className="text-xs text-indigo-300 font-black">+{String(obpContribution).replace('.', ',')} Puan</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* View Mode Switcher / Field Filters */}
         <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950/80 p-3 rounded-2xl border border-slate-800">
@@ -908,6 +764,145 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
             </div>
           </div>
         )}
+
+        {/* 🎯 SIRALAMA KAYDET ALANI (En Altta Konumlandırılmış) */}
+        <div className="bg-gradient-to-r from-slate-950 via-indigo-950/40 to-slate-950 rounded-2xl border border-indigo-500/40 p-4 sm:p-5 shadow-lg space-y-3 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-500/20 pb-3">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-2 bg-indigo-600/30 border border-indigo-400/30 rounded-xl text-indigo-300">
+                <Bookmark className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-black text-white flex items-center space-x-2">
+                  <span>Tahmini Deneme Sıralaması Belirle & Kaydet</span>
+                  <span className="text-[10px] font-bold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30">
+                    Grafik & İstatistiklere Yansır
+                  </span>
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Hesaplanan simülasyonlardan birini seçerek bu denemenin resmi tahmini sıralaması olarak kaydedebilirsiniz.
+                </p>
+              </div>
+            </div>
+
+            {/* Current Saved Badge */}
+            <div className="flex items-center space-x-2 shrink-0 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono">
+              <span className="text-slate-400 text-[11px] font-sans">Kayıtlı Sıralama:</span>
+              {calcMock.estimatedRank ? (
+                <span className="text-emerald-300 font-black text-sm flex items-center space-x-1">
+                  <BookmarkCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>#{formatRank(calcMock.estimatedRank)}</span>
+                </span>
+              ) : (
+                <span className="text-slate-500 italic">Belirlenmedi</span>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Choice Buttons for Primary Field */}
+          <div className="space-y-2">
+            <span className="text-[11px] text-slate-300 font-bold block">
+              Hızlı Seçim ({primaryResult.title} Alanı için Simüle Edilen Sıralamalar):
+            </span>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* 2026 Yerleştirme (Önerilen) */}
+              <button
+                type="button"
+                onClick={() => handleSaveRank(primaryResult.result.rank2026Yer, `2026 ${primaryResult.title} Yerleştirme`)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  calcMock.estimatedRank === primaryResult.result.rank2026Yer
+                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-900/40'
+                    : 'bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-200 border-indigo-500/40 hover:border-indigo-400'
+                }`}
+              >
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                <span>2026 Yerleştirme: #{formatRank(primaryResult.result.rank2026Yer)} (Önerilen)</span>
+                {calcMock.estimatedRank === primaryResult.result.rank2026Yer && <CheckCheck className="w-3.5 h-3.5" />}
+              </button>
+
+              {/* 2026 Ham */}
+              <button
+                type="button"
+                onClick={() => handleSaveRank(primaryResult.result.rank2026Ham, `2026 ${primaryResult.title} Ham`)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  calcMock.estimatedRank === primaryResult.result.rank2026Ham
+                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-900/40'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600'
+                }`}
+              >
+                <span>2026 Ham: #{formatRank(primaryResult.result.rank2026Ham)}</span>
+                {calcMock.estimatedRank === primaryResult.result.rank2026Ham && <CheckCheck className="w-3.5 h-3.5" />}
+              </button>
+
+              {/* 2025 Yerleştirme */}
+              <button
+                type="button"
+                onClick={() => handleSaveRank(primaryResult.result.rank2025Yer, `2025 ${primaryResult.title} Yerleştirme`)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  calcMock.estimatedRank === primaryResult.result.rank2025Yer
+                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-900/40'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600'
+                }`}
+              >
+                <span>2025 Yerl: #{formatRank(primaryResult.result.rank2025Yer)}</span>
+                {calcMock.estimatedRank === primaryResult.result.rank2025Yer && <CheckCheck className="w-3.5 h-3.5" />}
+              </button>
+
+              {/* 2024 Yerleştirme */}
+              <button
+                type="button"
+                onClick={() => handleSaveRank(primaryResult.result.rank2024Yer, `2024 ${primaryResult.title} Yerleştirme`)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  calcMock.estimatedRank === primaryResult.result.rank2024Yer
+                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-900/40'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600'
+                }`}
+              >
+                <span>2024 Yerl: #{formatRank(primaryResult.result.rank2024Yer)}</span>
+                {calcMock.estimatedRank === primaryResult.result.rank2024Yer && <CheckCheck className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Custom Input & Save Form */}
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800/80">
+            <span className="text-[11px] text-slate-400 font-semibold">Özel Sıralama Girin:</span>
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="Örn: 15400"
+                value={customRankInput}
+                onChange={(e) => setCustomRankInput(sanitizeNetInput(e.target.value))}
+                className="w-32 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs font-mono font-bold focus:outline-none focus:border-indigo-400"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const num = parseNetVal(customRankInput);
+                  if (num > 0) {
+                    handleSaveRank(num, 'Özel');
+                    setCustomRankInput('');
+                  }
+                }}
+                disabled={!customRankInput || parseNetVal(customRankInput) <= 0}
+                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>Kaydet</span>
+              </button>
+            </div>
+
+            {/* Success Toast */}
+            {saveSuccessMsg && (
+              <div className="ml-auto bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 px-3 py-1 rounded-xl text-xs font-bold flex items-center space-x-1.5 animate-fade-in">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{saveSuccessMsg}</span>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Explanatory Footer Info */}
         <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 text-[11px] text-slate-400 leading-relaxed flex items-start space-x-2.5 shadow-sm">
