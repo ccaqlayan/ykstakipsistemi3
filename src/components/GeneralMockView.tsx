@@ -1454,6 +1454,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
         diplomaGrade={diplomaGrade}
         setDiplomaGrade={setDiplomaGrade}
         handleDiplomaGradeChange={handleDiplomaGradeChange}
+        onUpdateMock={onUpdateMock}
       />
 
 

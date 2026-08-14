@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { Calculator, X, Sliders, ChevronDown, Sparkles, Target, Award, Eye, EyeOff, Info, Globe, BookOpen, Copy, Check, Filter, Layers, Zap, Scale, CheckCircle2, TrendingUp } from 'lucide-react';
+import { 
+  Calculator, X, Sliders, ChevronDown, Sparkles, Target, Award, Eye, EyeOff, 
+  Info, Globe, BookOpen, Copy, Check, Filter, Layers, Zap, Scale, 
+  CheckCircle2, TrendingUp, Bookmark, BookmarkCheck, Save, CheckCheck 
+} from 'lucide-react';
 import { GeneralMockExam, StudentProfile, MockExamType } from '../../types';
 import { sanitizeNetInput, parseNetVal } from '../../utils/mockUtils';
 import { getEffectiveMockExamType } from './MockTableSection';
@@ -12,6 +16,7 @@ interface MockRankSimulatorModalProps {
   diplomaGrade: number;
   setDiplomaGrade: (g: number) => void;
   handleDiplomaGradeChange: (grade: number) => void;
+  onUpdateMock?: (mock: GeneralMockExam) => void;
 }
 
 export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
@@ -21,10 +26,13 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
   diplomaGrade,
   setDiplomaGrade,
   handleDiplomaGradeChange,
+  onUpdateMock,
 }) => {
   const [showObpEdit, setShowObpEdit] = useState(false);
   const [viewMode, setViewMode] = useState<'auto' | 'all' | 'TYT' | 'SAY' | 'EA' | 'SOZ' | 'DIL'>('auto');
   const [copied, setCopied] = useState(false);
+  const [customRankInput, setCustomRankInput] = useState<string>('');
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
   if (!calcMock) return null;
 
@@ -70,6 +78,15 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
     return new Intl.NumberFormat('tr-TR').format(num);
   };
 
+  // Determine Primary Target Result for Quick Preset Selection
+  const primaryResult: { title: string; result: YksScoreResult } = (() => {
+    if (examType === 'TYT') return { title: 'TYT', result: tyt };
+    if (examType === 'DIL' || examType === 'TYT_DIL' || registeredField === 'DİL' || registeredField === 'DIL') return { title: 'DİL (YDT)', result: dil };
+    if (registeredField === 'EA') return { title: 'EA', result: ea };
+    if (registeredField === 'SÖZ' || registeredField === 'SOZ') return { title: 'SÖZ', result: soz };
+    return { title: 'SAY', result: say };
+  })();
+
   // Determine visibility for each field card
   const isOnlyTyt = examType === 'TYT' || (hasTytNets && !hasSayNets && !hasEaNets && !hasSozNets && !hasDilNets);
   
@@ -79,11 +96,36 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
   const showSoz = viewMode === 'all' || viewMode === 'SOZ' || (viewMode === 'auto' && (hasSozNets || registeredField === 'SÖZ' || registeredField === 'SOZ') && !isOnlyTyt);
   const showDil = viewMode === 'all' || viewMode === 'DIL' || (viewMode === 'auto' && (hasDilNets || registeredField === 'DİL' || registeredField === 'DIL'));
 
+  // Save Estimated Rank Handler
+  const handleSaveRank = (rankToSave: number, label?: string) => {
+    if (!rankToSave || isNaN(rankToSave) || rankToSave <= 0) return;
+    const updatedMock: GeneralMockExam = {
+      ...calcMock,
+      estimatedRank: rankToSave
+    };
+
+    if (onUpdateMock) {
+      onUpdateMock(updatedMock);
+    }
+    setCalcMock(updatedMock);
+
+    const formatted = formatRank(rankToSave);
+    const msg = label 
+      ? `${label} (#${formatted}) tahmini sıralama olarak kaydedildi!` 
+      : `#${formatted} sıralaması denemeye başarıyla kaydedildi!`;
+    
+    setSaveSuccessMsg(msg);
+    setTimeout(() => setSaveSuccessMsg(null), 3500);
+  };
+
   // Copy Summary Handler
   const handleCopySummary = () => {
     let text = `🎯 YKS PUAN & SIRALAMA HESAPLAMA SONUCU\n`;
     text += `Deneme: ${calcMock.title} (${calcMock.date || 'Tarih belirtilmedi'})\n`;
     text += `Diploma Notu (OBP): ${diplomaGrade} (+${obpContribution} Puan)\n`;
+    if (calcMock.estimatedRank) {
+      text += `Kayıtlı Tahmini Sıralama: #${formatRank(calcMock.estimatedRank)}\n`;
+    }
     text += `--------------------------------------\n`;
 
     if (showTyt || isOnlyTyt) {
@@ -118,6 +160,8 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
     data: YksScoreResult,
     netSummaryText: string
   ) => {
+    const isCurrentSaved = (rankVal: number) => calcMock.estimatedRank === rankVal;
+
     return (
       <div className={`bg-slate-950/90 border ${borderColor} rounded-3xl p-5 flex flex-col justify-between space-y-4 shadow-xl transition-all relative overflow-hidden group`}>
         <div className={`absolute top-0 right-0 w-28 h-28 ${glowBg} rounded-full blur-2xl pointer-events-none`} />
@@ -152,7 +196,7 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
                 <span>MEB Resmi Sıra Aralığı</span>
               </span>
               <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                Resmi ÖSYM
+                Resmi MEB
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs font-mono">
@@ -173,9 +217,12 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
           </div>
         </div>
 
-        {/* 4-Year Simulation Table (2026 ÖSYM, 2025, 2024, 2023) */}
+        {/* 4-Year Simulation Table (2026 ÖSYM, 2025, 2024, 2023) with 1-Click Save */}
         <div className="space-y-2 pt-3 border-t border-slate-900">
-          <span className="text-[10px] text-slate-400 font-black block uppercase tracking-wider">Yıllara Göre Tahmini Sıralama</span>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-slate-400 font-black block uppercase tracking-wider">Yıllara Göre Tahmini Sıralama</span>
+            <span className="text-[9px] text-slate-500">Tıklayarak kaydet</span>
+          </div>
           
           {/* 2026 ÖSYM RESMİ */}
           <div className="bg-gradient-to-r from-indigo-950/70 via-slate-900 to-indigo-950/70 p-2.5 rounded-2xl border border-indigo-500/40 text-xs shadow-md">
@@ -188,9 +235,34 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
                 2026 ÖSYM Verisi
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-1 font-mono text-[11px]">
-              <div>Ham: <strong className="text-white">#{formatRank(data.rank2026Ham)}</strong></div>
-              <div>Yerl: <strong className={`${accentTextColor} font-black text-xs`}>#{formatRank(data.rank2026Yer)}</strong></div>
+            <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px] items-center">
+              <button
+                type="button"
+                onClick={() => handleSaveRank(data.rank2026Ham, `2026 ${title.split(' ')[0]} Ham`)}
+                className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  isCurrentSaved(data.rank2026Ham)
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                    : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-300'
+                }`}
+                title="2026 Ham Sıralamasını Denemeye Kaydet"
+              >
+                <span>Ham: <strong className="text-white">#{formatRank(data.rank2026Ham)}</strong></span>
+                {isCurrentSaved(data.rank2026Ham) && <CheckCheck className="w-3 h-3 text-emerald-400 shrink-0" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSaveRank(data.rank2026Yer, `2026 ${title.split(' ')[0]} Yerleştirme`)}
+                className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  isCurrentSaved(data.rank2026Yer)
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                    : 'bg-slate-950/60 border-slate-800 hover:border-indigo-500/40 text-slate-300'
+                }`}
+                title="2026 Yerleştirme Sıralamasını Denemeye Kaydet"
+              >
+                <span>Yerl: <strong className={`${accentTextColor} font-black text-xs`}>#{formatRank(data.rank2026Yer)}</strong></span>
+                {isCurrentSaved(data.rank2026Yer) ? <CheckCheck className="w-3 h-3 text-emerald-400 shrink-0" /> : <Save className="w-3 h-3 text-slate-500 hover:text-white shrink-0" />}
+              </button>
             </div>
           </div>
 
@@ -200,9 +272,34 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
               <span className="font-bold text-white text-[11px]">2025 YKS Simülasyonu</span>
               <span className="text-[9px] font-bold bg-amber-500/15 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/30">Dengeli</span>
             </div>
-            <div className="grid grid-cols-2 gap-1 font-mono text-[11px]">
-              <div>Ham: <strong className="text-white">#{formatRank(data.rank2025Ham)}</strong></div>
-              <div>Yerl: <strong className={`${accentTextColor} font-bold`}>#{formatRank(data.rank2025Yer)}</strong></div>
+            <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px] items-center">
+              <button
+                type="button"
+                onClick={() => handleSaveRank(data.rank2025Ham, `2025 ${title.split(' ')[0]} Ham`)}
+                className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  isCurrentSaved(data.rank2025Ham)
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                    : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-300'
+                }`}
+                title="2025 Ham Sıralamasını Denemeye Kaydet"
+              >
+                <span>Ham: <strong className="text-white">#{formatRank(data.rank2025Ham)}</strong></span>
+                {isCurrentSaved(data.rank2025Ham) && <CheckCheck className="w-3 h-3 text-emerald-400 shrink-0" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSaveRank(data.rank2025Yer, `2025 ${title.split(' ')[0]} Yerleştirme`)}
+                className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  isCurrentSaved(data.rank2025Yer)
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                    : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-300'
+                }`}
+                title="2025 Yerleştirme Sıralamasını Denemeye Kaydet"
+              >
+                <span>Yerl: <strong className={`${accentTextColor} font-bold`}>#{formatRank(data.rank2025Yer)}</strong></span>
+                {isCurrentSaved(data.rank2025Yer) ? <CheckCheck className="w-3 h-3 text-emerald-400 shrink-0" /> : <Save className="w-3 h-3 text-slate-500 hover:text-white shrink-0" />}
+              </button>
             </div>
           </div>
 
@@ -212,9 +309,34 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
               <span className="font-bold text-white text-[11px]">2024 YKS Simülasyonu</span>
               <span className="text-[9px] font-bold bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30">Zor / Derece</span>
             </div>
-            <div className="grid grid-cols-2 gap-1 font-mono text-[11px]">
-              <div>Ham: <strong className="text-white">#{formatRank(data.rank2024Ham)}</strong></div>
-              <div>Yerl: <strong className={`${accentTextColor} font-bold`}>#{formatRank(data.rank2024Yer)}</strong></div>
+            <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px] items-center">
+              <button
+                type="button"
+                onClick={() => handleSaveRank(data.rank2024Ham, `2024 ${title.split(' ')[0]} Ham`)}
+                className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  isCurrentSaved(data.rank2024Ham)
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                    : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-300'
+                }`}
+                title="2024 Ham Sıralamasını Denemeye Kaydet"
+              >
+                <span>Ham: <strong className="text-white">#{formatRank(data.rank2024Ham)}</strong></span>
+                {isCurrentSaved(data.rank2024Ham) && <CheckCheck className="w-3 h-3 text-emerald-400 shrink-0" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSaveRank(data.rank2024Yer, `2024 ${title.split(' ')[0]} Yerleştirme`)}
+                className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  isCurrentSaved(data.rank2024Yer)
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                    : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-300'
+                }`}
+                title="2024 Yerleştirme Sıralamasını Denemeye Kaydet"
+              >
+                <span>Yerl: <strong className={`${accentTextColor} font-bold`}>#{formatRank(data.rank2024Yer)}</strong></span>
+                {isCurrentSaved(data.rank2024Yer) ? <CheckCheck className="w-3 h-3 text-emerald-400 shrink-0" /> : <Save className="w-3 h-3 text-slate-500 hover:text-white shrink-0" />}
+              </button>
             </div>
           </div>
 
@@ -224,9 +346,34 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
               <span className="font-bold text-white text-[11px]">2023 YKS Simülasyonu</span>
               <span className="text-[9px] font-bold bg-rose-500/15 text-rose-400 px-2 py-0.5 rounded-full border border-rose-500/30">Kolay / Yığılma</span>
             </div>
-            <div className="grid grid-cols-2 gap-1 font-mono text-[11px]">
-              <div>Ham: <strong className="text-white">#{formatRank(data.rank2023Ham)}</strong></div>
-              <div>Yerl: <strong className={`${accentTextColor} font-bold`}>#{formatRank(data.rank2023Yer)}</strong></div>
+            <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px] items-center">
+              <button
+                type="button"
+                onClick={() => handleSaveRank(data.rank2023Ham, `2023 ${title.split(' ')[0]} Ham`)}
+                className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  isCurrentSaved(data.rank2023Ham)
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                    : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-300'
+                }`}
+                title="2023 Ham Sıralamasını Denemeye Kaydet"
+              >
+                <span>Ham: <strong className="text-white">#{formatRank(data.rank2023Ham)}</strong></span>
+                {isCurrentSaved(data.rank2023Ham) && <CheckCheck className="w-3 h-3 text-emerald-400 shrink-0" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSaveRank(data.rank2023Yer, `2023 ${title.split(' ')[0]} Yerleştirme`)}
+                className={`p-1 rounded-lg border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  isCurrentSaved(data.rank2023Yer)
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                    : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-300'
+                }`}
+                title="2023 Yerleştirme Sıralamasını Denemeye Kaydet"
+              >
+                <span>Yerl: <strong className={`${accentTextColor} font-bold`}>#{formatRank(data.rank2023Yer)}</strong></span>
+                {isCurrentSaved(data.rank2023Yer) ? <CheckCheck className="w-3 h-3 text-emerald-400 shrink-0" /> : <Save className="w-3 h-3 text-slate-500 hover:text-white shrink-0" />}
+              </button>
             </div>
           </div>
         </div>
@@ -338,6 +485,145 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
                 {String((tytTotalNet + parseNetVal(calcMock.ayt.totalNet) + ydtNet).toFixed(2)).replace('.', ',')}
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* 🎯 SIRALAMA KAYDET ALANI (Dedicated Save Estimated Rank Section) */}
+        <div className="bg-gradient-to-r from-slate-950 via-indigo-950/40 to-slate-950 rounded-2xl border border-indigo-500/40 p-4 sm:p-5 shadow-lg space-y-3 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-500/20 pb-3">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-2 bg-indigo-600/30 border border-indigo-400/30 rounded-xl text-indigo-300">
+                <Bookmark className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-black text-white flex items-center space-x-2">
+                  <span>Tahmini Deneme Sıralaması Belirle & Kaydet</span>
+                  <span className="text-[10px] font-bold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30">
+                    Grafik & İstatistiklere Yansır
+                  </span>
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Hesaplanan simülasyonlardan birini seçerek bu denemenin resmi tahmini sıralaması olarak kaydedebilirsiniz.
+                </p>
+              </div>
+            </div>
+
+            {/* Current Saved Badge */}
+            <div className="flex items-center space-x-2 shrink-0 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl text-xs font-mono">
+              <span className="text-slate-400 text-[11px] font-sans">Kayıtlı Sıralama:</span>
+              {calcMock.estimatedRank ? (
+                <span className="text-emerald-300 font-black text-sm flex items-center space-x-1">
+                  <BookmarkCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>#{formatRank(calcMock.estimatedRank)}</span>
+                </span>
+              ) : (
+                <span className="text-slate-500 italic">Belirlenmedi</span>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Choice Buttons for Primary Field */}
+          <div className="space-y-2">
+            <span className="text-[11px] text-slate-300 font-bold block">
+              Hızlı Seçim ({primaryResult.title} Alanı için Simüle Edilen Sıralamalar):
+            </span>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* 2026 Yerleştirme (Önerilen) */}
+              <button
+                type="button"
+                onClick={() => handleSaveRank(primaryResult.result.rank2026Yer, `2026 ${primaryResult.title} Yerleştirme`)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  calcMock.estimatedRank === primaryResult.result.rank2026Yer
+                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-900/40'
+                    : 'bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-200 border-indigo-500/40 hover:border-indigo-400'
+                }`}
+              >
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                <span>2026 Yerleştirme: #{formatRank(primaryResult.result.rank2026Yer)} (Önerilen)</span>
+                {calcMock.estimatedRank === primaryResult.result.rank2026Yer && <CheckCheck className="w-3.5 h-3.5" />}
+              </button>
+
+              {/* 2026 Ham */}
+              <button
+                type="button"
+                onClick={() => handleSaveRank(primaryResult.result.rank2026Ham, `2026 ${primaryResult.title} Ham`)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  calcMock.estimatedRank === primaryResult.result.rank2026Ham
+                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-900/40'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600'
+                }`}
+              >
+                <span>2026 Ham: #{formatRank(primaryResult.result.rank2026Ham)}</span>
+                {calcMock.estimatedRank === primaryResult.result.rank2026Ham && <CheckCheck className="w-3.5 h-3.5" />}
+              </button>
+
+              {/* 2025 Yerleştirme */}
+              <button
+                type="button"
+                onClick={() => handleSaveRank(primaryResult.result.rank2025Yer, `2025 ${primaryResult.title} Yerleştirme`)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  calcMock.estimatedRank === primaryResult.result.rank2025Yer
+                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-900/40'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600'
+                }`}
+              >
+                <span>2025 Yerl: #{formatRank(primaryResult.result.rank2025Yer)}</span>
+                {calcMock.estimatedRank === primaryResult.result.rank2025Yer && <CheckCheck className="w-3.5 h-3.5" />}
+              </button>
+
+              {/* 2024 Yerleştirme */}
+              <button
+                type="button"
+                onClick={() => handleSaveRank(primaryResult.result.rank2024Yer, `2024 ${primaryResult.title} Yerleştirme`)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                  calcMock.estimatedRank === primaryResult.result.rank2024Yer
+                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-900/40'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600'
+                }`}
+              >
+                <span>2024 Yerl: #{formatRank(primaryResult.result.rank2024Yer)}</span>
+                {calcMock.estimatedRank === primaryResult.result.rank2024Yer && <CheckCheck className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Custom Input & Save Form */}
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-800/80">
+            <span className="text-[11px] text-slate-400 font-semibold">Özel Sıralama Girin:</span>
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="Örn: 15400"
+                value={customRankInput}
+                onChange={(e) => setCustomRankInput(sanitizeNetInput(e.target.value))}
+                className="w-32 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-white text-xs font-mono font-bold focus:outline-none focus:border-indigo-400"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const num = parseNetVal(customRankInput);
+                  if (num > 0) {
+                    handleSaveRank(num, 'Özel');
+                    setCustomRankInput('');
+                  }
+                }}
+                disabled={!customRankInput || parseNetVal(customRankInput) <= 0}
+                className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>Kaydet</span>
+              </button>
+            </div>
+
+            {/* Success Toast */}
+            {saveSuccessMsg && (
+              <div className="ml-auto bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 px-3 py-1 rounded-xl text-xs font-bold flex items-center space-x-1.5 animate-fade-in">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{saveSuccessMsg}</span>
+              </div>
+            )}
           </div>
         </div>
 
