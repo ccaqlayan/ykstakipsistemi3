@@ -735,6 +735,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
       <div className="space-y-6 font-sans">
         <TeacherStudentInspectView
           selectedStudentUser={selectedStudentUser}
+          initialTab={inspectModalTab}
           onBack={() => setSelectedStudentUser(null)}
           studentsData={studentsData}
           teacher={teacher}

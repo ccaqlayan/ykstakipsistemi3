@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft,
   TrendingUp, 
@@ -24,7 +24,10 @@ import {
   Save,
   GraduationCap,
   Activity,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Trophy,
+  Zap,
+  Lock
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -48,10 +51,17 @@ import {
 import { AuditLogsView } from '../AuditLogsView';
 import { isUserOnline } from '../../utils/statusUtils';
 import { UniversityLogo } from '../UniversityLogo';
-import { YKS_CURRICULUM_TOPICS } from '../../data/initialData';
-
-const DAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
-const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+import { BadgeShield } from '../badges/BadgeShield';
+import { BADGE_DEFINITIONS, evaluateBadges } from '../../services/motivationEngine';
+import { 
+  YKS_CURRICULUM_TOPICS, 
+  INITIAL_STATE, 
+  INITIAL_STUDENT_2_STATE, 
+  INITIAL_STUDENT_3_STATE, 
+  INITIAL_STUDENT_4_STATE, 
+  DEFAULT_AVATAR 
+} from '../../data/initialData';
+import { INITIAL_GLOBAL_STATE } from '../../services/storage';
 
 const TURKISH_MONTHS_LOCAL = [
   'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
@@ -118,6 +128,7 @@ const getRelativeTimeStr = (ts: number): string => {
 
 export type InspectTabType = 
   | 'performance' 
+  | 'badges'
   | 'planner' 
   | 'questions' 
   | 'topics' 
@@ -129,6 +140,7 @@ export type InspectTabType =
 
 interface TeacherStudentInspectViewProps {
   selectedStudentUser: UserAccount;
+  initialTab?: InspectTabType;
   onBack: () => void;
   studentsData: Record<string, YKSDataState>;
   teacher: UserAccount;
@@ -148,6 +160,7 @@ interface TeacherStudentInspectViewProps {
 
 export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps> = ({
   selectedStudentUser,
+  initialTab = 'performance',
   onBack,
   studentsData,
   teacher,
@@ -164,17 +177,61 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
   auditLogs = [],
   OfflineStatusDisplay
 }) => {
-  const [activeTab, setActiveTab] = useState<InspectTabType>('performance');
+  const [activeTab, setActiveTab] = useState<InspectTabType>(initialTab || 'performance');
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const [isNotesSavedToast, setIsNotesSavedToast] = useState(false);
   const [showAllTopics, setShowAllTopics] = useState(false);
   const [resourceSubjectFilter, setResourceSubjectFilter] = useState<string>('all');
   const [expandedPlaylistId, setExpandedPlaylistId] = useState<string | null>(null);
 
-  const stData = (studentsData[selectedStudentUser.id] || {}) as Partial<YKSDataState> & { 
+  const studentId = selectedStudentUser.id;
+  const isDemoAhmet = studentId === 'student-1' || selectedStudentUser.email === 'ahmet@okul.edu.tr' || selectedStudentUser.name?.toLowerCase().includes('ahmet');
+  const isDemoBurak = studentId === 'student-4' || selectedStudentUser.email === 'burak@okul.edu.tr' || selectedStudentUser.name?.toLowerCase().includes('burak');
+  const isDemoZeynep = studentId === 'student-2' || selectedStudentUser.email === 'zeynep@okul.edu.tr' || selectedStudentUser.name?.toLowerCase().includes('zeynep');
+  const isDemoMehmet = studentId === 'student-3' || selectedStudentUser.email === 'mehmet@okul.edu.tr' || selectedStudentUser.name?.toLowerCase().includes('mehmet');
+
+  const baseDefaults: YKSDataState = isDemoAhmet 
+    ? INITIAL_STATE 
+    : isDemoBurak 
+    ? INITIAL_STUDENT_4_STATE 
+    : isDemoZeynep 
+    ? INITIAL_STUDENT_2_STATE 
+    : isDemoMehmet 
+    ? INITIAL_STUDENT_3_STATE 
+    : INITIAL_STATE;
+
+  const rawData = (studentsData && studentsData[studentId])
+    || (isDemoAhmet ? INITIAL_STATE : undefined)
+    || (isDemoBurak ? INITIAL_STUDENT_4_STATE : undefined)
+    || (isDemoZeynep ? INITIAL_STUDENT_2_STATE : undefined)
+    || (isDemoMehmet ? INITIAL_STUDENT_3_STATE : undefined)
+    || (INITIAL_GLOBAL_STATE.studentsData && INITIAL_GLOBAL_STATE.studentsData[studentId])
+    || INITIAL_STATE;
+
+  const stData: YKSDataState & { 
     topics?: Record<string, Record<string, boolean>>; 
     pomodoroHistory?: any[]; 
     youtubePlaylists?: any[];
+  } = {
+    ...baseDefaults,
+    ...rawData,
+    profile: { ...baseDefaults.profile, ...(rawData.profile || {}) },
+    questionLogs: (rawData.questionLogs && rawData.questionLogs.length > 0) ? rawData.questionLogs : baseDefaults.questionLogs,
+    studyPlans: (rawData.studyPlans && rawData.studyPlans.length > 0) ? rawData.studyPlans : baseDefaults.studyPlans,
+    generalMocks: (rawData.generalMocks && rawData.generalMocks.length > 0) ? rawData.generalMocks : baseDefaults.generalMocks,
+    branchExams: (rawData.branchExams && rawData.branchExams.length > 0) ? rawData.branchExams : baseDefaults.branchExams,
+    topicErrors: (rawData.topicErrors && rawData.topicErrors.length > 0) ? rawData.topicErrors : baseDefaults.topicErrors,
+    resources: (rawData.resources && rawData.resources.length > 0) ? rawData.resources : (rawData.resourceTrackers || baseDefaults.resources),
+    resourceTrackers: (rawData.resourceTrackers && rawData.resourceTrackers.length > 0) ? rawData.resourceTrackers : (rawData.resources || baseDefaults.resources),
+    routines: (rawData.routines && rawData.routines.length > 0) ? rawData.routines : baseDefaults.routines,
+    youtubeVideos: (rawData.youtubeVideos && rawData.youtubeVideos.length > 0) ? rawData.youtubeVideos : baseDefaults.youtubeVideos
   };
+
   const profile = stData.profile;
   const mocks = stData.generalMocks || [];
   const branchExams = stData.branchExams || [];
@@ -186,6 +243,12 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
   const pomodoros = stData.pomodoroHistory || [];
   const youtubeList = stData.youtubeVideos || (stData as any).youtubePlaylists || [];
   const topicsState = stData.topics || {};
+
+  // Badges & Motivation engine calculation
+  const { allEarnedBadges, stats: motivationStats, totalXp } = evaluateBadges(stData as any);
+  const earnedKeysSet = new Set(allEarnedBadges.map(b => b.key));
+  const earnedCount = allEarnedBadges.length;
+  const totalBadgesCount = BADGE_DEFINITIONS.length;
 
   // YouTube Summary Metrics Calculation
   let totalYoutubeVideosOverall = 0;
@@ -479,13 +542,26 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
         </div>
 
         {/* EXECUTIVE KPI SUMMARY CARDS */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 pt-2">
           
           <div className="bg-slate-950/60 border border-indigo-500/30 rounded-2xl p-3.5 space-y-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Toplam Çözülen Soru</span>
             <div className="text-lg font-black text-indigo-300 font-mono">{totalSolved.toLocaleString()}</div>
             <span className="text-[10px] text-emerald-400 font-semibold block">Doğruluk: %{accuracyPct}</span>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('badges')}
+            className="bg-slate-950/60 hover:bg-amber-950/40 border border-amber-500/30 hover:border-amber-400/60 rounded-2xl p-3.5 space-y-1 text-left transition-all group cursor-pointer shadow-sm"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Başarılar & Rozet</span>
+              <Trophy className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+            </div>
+            <div className="text-lg font-black text-amber-300 font-mono">{earnedCount} <span className="text-xs font-normal text-slate-400">/ {totalBadgesCount}</span></div>
+            <span className="text-[10px] text-amber-400/90 font-semibold block">{motivationStats.currentStreak} Gün Seri • {totalXp.toLocaleString('tr-TR')} XP</span>
+          </button>
 
           <div className="bg-slate-950/60 border border-purple-500/30 rounded-2xl p-3.5 space-y-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Haftalık Çalışma</span>
@@ -522,8 +598,8 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
         {/* WORKSPACE MAIN NAVIGATION TABS - 2 CLEAN SPACIOUS ROWS */}
         <div className="space-y-2 pt-3 border-t border-white/10">
           
-          {/* ROW 1: CORE PERFORMANCE & PLANNING (5 TABS) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          {/* ROW 1: CORE PERFORMANCE, BADGES & PLANNING (6 TABS) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
             <button
               onClick={() => setActiveTab('performance')}
               className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer text-center w-full shadow-sm ${
@@ -533,7 +609,19 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
               }`}
             >
               <TrendingUp className="w-4 h-4 text-indigo-300 shrink-0" />
-              <span>Performans & Koçluk</span>
+              <span>Performans & Özet</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('badges')}
+              className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer text-center w-full shadow-sm ${
+                activeTab === 'badges'
+                  ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30 border border-amber-400/40'
+                  : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10'
+              }`}
+            >
+              <Trophy className="w-4 h-4 text-amber-300 shrink-0" />
+              <span>Başarılar & Rozetler</span>
             </button>
 
             <button
@@ -897,6 +985,140 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
 
           </div>
 
+        </div>
+      )}
+
+      {/* TAB: BADGES & ACHIEVEMENTS */}
+      {activeTab === 'badges' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Top Header Card */}
+          <div className="bg-slate-900/90 border border-amber-500/30 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                  <Trophy className="w-5 h-5 text-amber-400" />
+                  <span>3D Kristal Başarı Rozetleri & Oyunlaştırma Vitrini</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Öğrencinin soru çözümleri, çalışma süreleri, deneme netleri ve günlük rutinleri ile kazandığı rozetler.
+                </p>
+              </div>
+              <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold px-3 py-1.5 rounded-xl font-mono">
+                {earnedCount} / {totalBadgesCount} Rozet Kazanıldı
+              </span>
+            </div>
+
+            {/* Top 3 Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-950/80 border border-amber-500/20">
+                <div className="p-3 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-400/30 shrink-0">
+                  <Trophy className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-xs text-slate-400 font-medium">Kazanılan Rozetler</div>
+                  <div className="text-xl font-extrabold text-white">
+                    {earnedCount} <span className="text-xs text-slate-400 font-normal">/ {totalBadgesCount}</span>
+                  </div>
+                  <div className="text-[10px] text-amber-400 font-semibold mt-0.5">
+                    %{totalBadgesCount > 0 ? Math.round((earnedCount / totalBadgesCount) * 100) : 0} Tamamlandı
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-950/80 border border-orange-500/20">
+                <div className="p-3 rounded-2xl bg-orange-500/20 text-orange-400 border border-orange-400/30 shrink-0">
+                  <Flame className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-xs text-slate-400 font-medium">Aktif Seri & Rekor</div>
+                  <div className="text-xl font-extrabold text-orange-400">
+                    {motivationStats.currentStreak} Gün
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                    En Uzun Seri: {motivationStats.longestStreak} Gün
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-950/80 border border-indigo-500/20">
+                <div className="p-3 rounded-2xl bg-indigo-500/20 text-indigo-400 border border-indigo-400/30 shrink-0">
+                  <Zap className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-xs text-slate-400 font-medium">Toplam Başarı Puanı</div>
+                  <div className="text-xl font-extrabold text-amber-400">
+                    {totalXp.toLocaleString('tr-TR')} XP
+                  </div>
+                  <div className="text-[10px] text-indigo-300 font-semibold mt-0.5">
+                    Seviye: {Math.floor(totalXp / 500) + 1}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Badges Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {BADGE_DEFINITIONS.map(badge => {
+              const isUnlocked = earnedKeysSet.has(badge.key);
+              const progress = badge.calcProgress(stData as any, motivationStats);
+              const earnedInfo = allEarnedBadges.find(b => b.key === badge.key);
+
+              return (
+                <div
+                  key={badge.key}
+                  className={`flex flex-col items-center justify-between p-4 rounded-2xl border transition-all ${
+                    isUnlocked
+                      ? 'bg-slate-900/90 border-amber-500/30 shadow-md shadow-amber-500/10 hover:border-amber-400/60'
+                      : 'bg-slate-900/30 border-slate-800/60 opacity-60'
+                  }`}
+                >
+                  <div className="w-full flex items-center justify-between text-[10px] mb-2">
+                    <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-bold uppercase">
+                      {badge.tier}
+                    </span>
+                    {isUnlocked ? (
+                      <span className="text-emerald-400 font-bold">Açıldı</span>
+                    ) : (
+                      <span className="text-slate-500 flex items-center gap-1 font-semibold">
+                        <Lock className="w-3 h-3" />
+                        Kilitli
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="my-2">
+                    <BadgeShield
+                      iconType={badge.iconType}
+                      tier={badge.tier}
+                      isUnlocked={isUnlocked}
+                      size="md"
+                    />
+                  </div>
+
+                  <div className="text-center w-full mt-1">
+                    <h4 className="text-xs font-bold text-white line-clamp-1">{badge.name}</h4>
+                    <p className="text-[10px] text-slate-400 line-clamp-2 mt-1">{badge.description}</p>
+                  </div>
+
+                  <div className="w-full mt-3 pt-2 border-t border-slate-800 text-[10px]">
+                    {isUnlocked ? (
+                      <div className="flex items-center justify-between text-amber-400 font-bold">
+                        <span>+{badge.xpReward} XP</span>
+                        <span className="text-slate-400 font-normal">
+                          {earnedInfo?.earnedAt ? new Date(earnedInfo.earnedAt).toLocaleDateString('tr-TR') : 'Kazanıldı'}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="text-center text-slate-400">
+                        {progress.label} (%{Math.round(progress.percent)})
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
