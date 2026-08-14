@@ -128,7 +128,9 @@ export function loadGlobalState(): AppGlobalState {
           ...INITIAL_STATE,
           ...(parsed.studentsData?.['student-1'] || {}),
           questionLogs: enrichLogsWithDuration(
-            (parsed.studentsData?.['student-1']?.questionLogs && parsed.studentsData['student-1'].questionLogs.length >= INITIAL_STATE.questionLogs.length)
+            (parsed.studentsData?.['student-1']?.questionLogs && 
+             parsed.studentsData['student-1'].questionLogs.length >= INITIAL_STATE.questionLogs.length &&
+             !parsed.studentsData['student-1'].questionLogs.some((l: any) => l.date && l.date.startsWith('2026-06-')))
               ? parsed.studentsData['student-1'].questionLogs
               : INITIAL_STATE.questionLogs
           ),
@@ -148,9 +150,12 @@ export function loadGlobalState(): AppGlobalState {
             name: 'Burak ÇAKIR'
           },
           questionLogs: enrichLogsWithDuration(
-            parsed.studentsData?.['student-4']?.questionLogs 
+            (parsed.studentsData?.['student-4']?.questionLogs && 
+             !parsed.studentsData['student-4'].questionLogs.some((l: any) => l.date && l.date.startsWith('2026-06-')))
               ? parsed.studentsData['student-4'].questionLogs
-              : (parsed.studentsData?.['student-1']?.questionLogs && parsed.studentsData['student-1'].questionLogs.length >= INITIAL_STATE.questionLogs.length)
+              : (parsed.studentsData?.['student-1']?.questionLogs && 
+                 parsed.studentsData['student-1'].questionLogs.length >= INITIAL_STATE.questionLogs.length &&
+                 !parsed.studentsData['student-1'].questionLogs.some((l: any) => l.date && l.date.startsWith('2026-06-')))
                 ? parsed.studentsData['student-1'].questionLogs
                 : INITIAL_STATE.questionLogs
           ),

@@ -195,7 +195,7 @@ export async function seedInitialFirestoreData() {
         const data = student1Doc.data() as YKSDataState;
         const needsBranchUpdate = !data.branchExams || data.branchExams.length < INITIAL_STATE.branchExams.length;
         const needsGeneralUpdate = !data.generalMocks || data.generalMocks.length < INITIAL_STATE.generalMocks.length || data.generalMocks[2]?.tyt?.totalNet === 87.5;
-        const needsQuestionLogUpdate = !data.questionLogs || data.questionLogs.length < INITIAL_STATE.questionLogs.length;
+        const needsQuestionLogUpdate = !data.questionLogs || data.questionLogs.length < INITIAL_STATE.questionLogs.length || data.questionLogs.some(l => l.date && l.date.startsWith('2026-06-'));
         
         let finalSt1Data = data;
         if (needsBranchUpdate || needsGeneralUpdate || needsQuestionLogUpdate) {

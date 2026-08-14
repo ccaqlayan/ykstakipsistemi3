@@ -601,7 +601,7 @@ export const INITIAL_STATE: YKSDataState = {
   questionLogs: [
     {
       id: 'qlog-1',
-      date: '2026-07-25',
+      date: '2026-08-14',
       subject: 'TYT Matematik',
       examType: 'TYT',
       targetCount: 60,
@@ -615,7 +615,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-2',
-      date: '2026-07-26',
+      date: '2026-08-14',
       subject: 'AYT Biyoloji',
       examType: 'AYT',
       targetCount: 45,
@@ -629,7 +629,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-3',
-      date: '2026-07-27',
+      date: '2026-08-13',
       subject: 'Paragraf',
       examType: 'TYT',
       targetCount: 40,
@@ -643,7 +643,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-4',
-      date: '2026-07-27',
+      date: '2026-08-13',
       subject: 'AYT Matematik',
       examType: 'AYT',
       targetCount: 50,
@@ -657,7 +657,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-5',
-      date: '2026-07-28',
+      date: '2026-08-12',
       subject: 'AYT Fizik',
       examType: 'AYT',
       targetCount: 35,
@@ -671,7 +671,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-6',
-      date: '2026-07-28',
+      date: '2026-08-12',
       subject: 'TYT Geometri',
       examType: 'TYT',
       targetCount: 30,
@@ -685,7 +685,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-7',
-      date: '2026-07-29',
+      date: '2026-08-11',
       subject: 'AYT Kimya',
       examType: 'AYT',
       targetCount: 40,
@@ -699,7 +699,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-8',
-      date: '2026-07-30',
+      date: '2026-08-11',
       subject: 'AYT Matematik',
       examType: 'AYT',
       targetCount: 55,
@@ -713,7 +713,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-9',
-      date: '2026-06-01',
+      date: '2026-08-10',
       subject: 'TYT Türkçe',
       examType: 'TYT',
       targetCount: 50,
@@ -727,7 +727,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-10',
-      date: '2026-06-03',
+      date: '2026-08-09',
       subject: 'AYT Matematik',
       examType: 'AYT',
       targetCount: 60,
@@ -741,7 +741,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-11',
-      date: '2026-06-05',
+      date: '2026-08-09',
       subject: 'TYT Fizik',
       examType: 'TYT',
       targetCount: 35,
@@ -755,7 +755,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-12',
-      date: '2026-06-07',
+      date: '2026-08-08',
       subject: 'AYT Kimya',
       examType: 'AYT',
       targetCount: 40,
@@ -769,7 +769,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-13',
-      date: '2026-06-09',
+      date: '2026-08-08',
       subject: 'Paragraf',
       examType: 'TYT',
       targetCount: 30,
@@ -783,7 +783,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-14',
-      date: '2026-06-11',
+      date: '2026-08-07',
       subject: 'AYT Biyoloji',
       examType: 'AYT',
       targetCount: 45,
@@ -797,7 +797,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-15',
-      date: '2026-06-14',
+      date: '2026-08-06',
       subject: 'TYT Matematik',
       examType: 'TYT',
       targetCount: 70,
@@ -811,7 +811,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-16',
-      date: '2026-06-16',
+      date: '2026-08-06',
       subject: 'AYT Fizik',
       examType: 'AYT',
       targetCount: 40,
@@ -825,7 +825,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-17',
-      date: '2026-06-18',
+      date: '2026-08-05',
       subject: 'TYT Geometri',
       examType: 'TYT',
       targetCount: 35,
@@ -839,7 +839,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-18',
-      date: '2026-06-20',
+      date: '2026-08-04',
       subject: 'AYT Matematik',
       examType: 'AYT',
       targetCount: 50,
@@ -853,7 +853,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-19',
-      date: '2026-06-22',
+      date: '2026-08-04',
       subject: 'TYT Kimya',
       examType: 'TYT',
       targetCount: 30,
@@ -867,7 +867,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-20',
-      date: '2026-06-24',
+      date: '2026-08-03',
       subject: 'Paragraf',
       examType: 'TYT',
       targetCount: 40,
@@ -881,7 +881,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-21',
-      date: '2026-06-26',
+      date: '2026-08-02',
       subject: 'AYT Biyoloji',
       examType: 'AYT',
       targetCount: 40,
@@ -895,7 +895,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-22',
-      date: '2026-06-29',
+      date: '2026-08-01',
       subject: 'TYT Türkçe',
       examType: 'TYT',
       targetCount: 45,
@@ -909,7 +909,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-23',
-      date: '2026-07-01',
+      date: '2026-07-31',
       subject: 'AYT Matematik',
       examType: 'AYT',
       targetCount: 65,
@@ -923,7 +923,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-24',
-      date: '2026-07-03',
+      date: '2026-07-30',
       subject: 'AYT Fizik',
       examType: 'AYT',
       targetCount: 35,
@@ -937,7 +937,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-25',
-      date: '2026-07-05',
+      date: '2026-07-29',
       subject: 'TYT Matematik',
       examType: 'TYT',
       targetCount: 50,
@@ -951,7 +951,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-26',
-      date: '2026-07-07',
+      date: '2026-07-28',
       subject: 'AYT Kimya',
       examType: 'AYT',
       targetCount: 40,
@@ -965,7 +965,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-27',
-      date: '2026-07-09',
+      date: '2026-07-27',
       subject: 'Paragraf',
       examType: 'TYT',
       targetCount: 30,
@@ -979,7 +979,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-28',
-      date: '2026-07-11',
+      date: '2026-07-26',
       subject: 'TYT Biyoloji',
       examType: 'TYT',
       targetCount: 30,
@@ -993,7 +993,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-29',
-      date: '2026-07-13',
+      date: '2026-07-25',
       subject: 'AYT Matematik',
       examType: 'AYT',
       targetCount: 55,
@@ -1007,7 +1007,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-30',
-      date: '2026-07-15',
+      date: '2026-07-24',
       subject: 'AYT Biyoloji',
       examType: 'AYT',
       targetCount: 40,
@@ -1021,7 +1021,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-31',
-      date: '2026-07-17',
+      date: '2026-07-23',
       subject: 'TYT Geometri',
       examType: 'TYT',
       targetCount: 30,
@@ -1035,7 +1035,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-32',
-      date: '2026-07-19',
+      date: '2026-07-22',
       subject: 'AYT Fizik',
       examType: 'AYT',
       targetCount: 35,
@@ -1049,7 +1049,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-33',
-      date: '2026-07-20',
+      date: '2026-07-21',
       subject: 'TYT Türkçe',
       examType: 'TYT',
       targetCount: 40,
@@ -1063,7 +1063,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-34',
-      date: '2026-07-21',
+      date: '2026-07-20',
       subject: 'AYT Kimya',
       examType: 'AYT',
       targetCount: 45,
@@ -1077,7 +1077,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-35',
-      date: '2026-07-22',
+      date: '2026-07-19',
       subject: 'AYT Matematik',
       examType: 'AYT',
       targetCount: 60,
@@ -1091,7 +1091,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-36',
-      date: '2026-07-23',
+      date: '2026-07-18',
       subject: 'Paragraf',
       examType: 'TYT',
       targetCount: 35,
@@ -1105,7 +1105,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-37',
-      date: '2026-07-24',
+      date: '2026-07-17',
       subject: 'TYT Matematik',
       examType: 'TYT',
       targetCount: 50,
@@ -1119,7 +1119,7 @@ export const INITIAL_STATE: YKSDataState = {
     },
     {
       id: 'qlog-38',
-      date: '2026-07-24',
+      date: '2026-07-16',
       subject: 'AYT Biyoloji',
       examType: 'AYT',
       targetCount: 30,
