@@ -26,7 +26,10 @@ import {
   HelpCircle,
   Activity,
   Flame,
-  FileText
+  FileText,
+  BookOpen,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -38,7 +41,9 @@ import {
   ResponsiveContainer, 
   LineChart, 
   Line,
-  Legend
+  Legend,
+  ReferenceLine,
+  LabelList
 } from 'recharts';
 import { QuestionLog } from '../types';
 import { YKS_SUBJECTS } from '../data/initialData';
@@ -286,10 +291,14 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
   }, [filterExamType, filterSubject, searchQuery, pageSize]);
 
   // Chart Filters
+  const [chartExamType, setChartExamType] = useState<'ALL' | 'TYT' | 'AYT'>('ALL');
+  const [chartSubject, setChartSubject] = useState<string>('ALL');
   const [chartTimeRange, setChartTimeRange] = useState<'7days' | '30days' | '4weeks'>('7days');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>(['ALL']);
   const [hiddenSubjects, setHiddenSubjects] = useState<string[]>([]);
   const [activeGraphType, setActiveGraphType] = useState<'soru' | 'net' | 'sure'>('soru');
+  const [showDataLabels, setShowDataLabels] = useState<boolean>(false);
+  const [showAverageLine, setShowAverageLine] = useState<boolean>(true);
   const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -323,28 +332,53 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     }
   };
 
+  // Subject record counts filtered by active chartExamType (ALL / TYT / AYT)
+  const subjectRecordCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    questionLogs.forEach(l => {
+      const isTyt = l.examType === 'TYT' || l.subject.startsWith('TYT') || YKS_SUBJECTS.TYT.includes(l.subject);
+      const isAyt = l.examType === 'AYT' || l.subject.startsWith('AYT') || YKS_SUBJECTS.AYT.includes(l.subject);
+      if (chartExamType === 'ALL' || (chartExamType === 'TYT' && isTyt) || (chartExamType === 'AYT' && isAyt)) {
+        if (l.subject) {
+          counts[l.subject] = (counts[l.subject] || 0) + 1;
+        }
+      }
+    });
+    return counts;
+  }, [questionLogs, chartExamType]);
+
+  const availableChartSubjects = React.useMemo(() => {
+    return Object.keys(subjectRecordCounts).sort((a, b) => a.localeCompare(b, 'tr'));
+  }, [subjectRecordCounts]);
+
+  const totalFilteredChartLogsCount = React.useMemo(() => {
+    return Object.values(subjectRecordCounts).reduce((acc, c) => acc + c, 0);
+  }, [subjectRecordCounts]);
+
   // Active subjects array for chart series
   const activeSubjects = React.useMemo(() => {
     let candidateSubjects: string[] = [];
-    if (selectedSubjects.includes('ALL')) {
-      candidateSubjects = Array.from(new Set(questionLogs.map(l => l.subject)));
-      if (candidateSubjects.length === 0) {
-        candidateSubjects = [...YKS_SUBJECTS.TYT, ...YKS_SUBJECTS.AYT];
+    if (chartSubject === 'ALL') {
+      if (chartExamType === 'TYT') {
+        candidateSubjects = YKS_SUBJECTS.TYT;
+      } else if (chartExamType === 'AYT') {
+        candidateSubjects = YKS_SUBJECTS.AYT;
+      } else {
+        candidateSubjects = Array.from(new Set(questionLogs.map(l => l.subject)));
+        if (candidateSubjects.length === 0) {
+          candidateSubjects = [...YKS_SUBJECTS.TYT, ...YKS_SUBJECTS.AYT];
+        }
       }
-    } else if (selectedSubjects.includes('TYT_ALL')) {
-      candidateSubjects = YKS_SUBJECTS.TYT;
-    } else if (selectedSubjects.includes('AYT_ALL')) {
-      candidateSubjects = YKS_SUBJECTS.AYT;
-    } else if (selectedSubjects.includes('TYT_FEN')) {
+    } else if (chartSubject === 'TYT_FEN') {
       candidateSubjects = TYT_FEN_SUBJECTS;
-    } else if (selectedSubjects.includes('TYT_SOSYAL')) {
+    } else if (chartSubject === 'TYT_SOSYAL') {
       candidateSubjects = TYT_SOSYAL_SUBJECTS;
-    } else if (selectedSubjects.includes('AYT_FEN')) {
+    } else if (chartSubject === 'AYT_FEN') {
       candidateSubjects = AYT_FEN_SUBJECTS;
-    } else if (selectedSubjects.includes('AYT_SOSYAL')) {
+    } else if (chartSubject === 'AYT_SOSYAL') {
       candidateSubjects = AYT_SOSYAL_SUBJECTS;
     } else {
-      candidateSubjects = selectedSubjects;
+      candidateSubjects = [chartSubject];
     }
 
     const d = new Date();
@@ -361,7 +395,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
       const logsForSubj = questionLogs.filter(l => l.subject === subj && l.date >= cutoffDateStr);
       return logsForSubj.reduce((sum, l) => sum + l.solvedCount, 0) > 0;
     });
-  }, [selectedSubjects, questionLogs, chartTimeRange]);
+  }, [chartSubject, chartExamType, questionLogs, chartTimeRange]);
 
   useEffect(() => {
     if (activeGraphType === 'net') {
@@ -369,7 +403,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     } else {
       setHiddenSubjects([]);
     }
-  }, [selectedSubjects, activeGraphType, activeSubjects]);
+  }, [chartSubject, chartExamType, activeGraphType, activeSubjects]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -510,20 +544,25 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
   // Chart Data Preparation
   const chartData = React.useMemo(() => {
     let baseLogs = questionLogs;
-    if (selectedSubjects.includes('TYT_ALL')) {
+
+    // Filter by exam type if not ALL
+    if (chartExamType === 'TYT') {
       baseLogs = baseLogs.filter(l => l.examType === 'TYT' || l.subject.startsWith('TYT') || YKS_SUBJECTS.TYT.includes(l.subject));
-    } else if (selectedSubjects.includes('AYT_ALL')) {
+    } else if (chartExamType === 'AYT') {
       baseLogs = baseLogs.filter(l => l.examType === 'AYT' || l.subject.startsWith('AYT') || YKS_SUBJECTS.AYT.includes(l.subject));
-    } else if (selectedSubjects.includes('TYT_FEN')) {
+    }
+
+    // Filter by subject if not ALL
+    if (chartSubject === 'TYT_FEN') {
       baseLogs = baseLogs.filter(l => TYT_FEN_SUBJECTS.includes(l.subject));
-    } else if (selectedSubjects.includes('TYT_SOSYAL')) {
+    } else if (chartSubject === 'TYT_SOSYAL') {
       baseLogs = baseLogs.filter(l => TYT_SOSYAL_SUBJECTS.includes(l.subject));
-    } else if (selectedSubjects.includes('AYT_FEN')) {
+    } else if (chartSubject === 'AYT_FEN') {
       baseLogs = baseLogs.filter(l => AYT_FEN_SUBJECTS.includes(l.subject));
-    } else if (selectedSubjects.includes('AYT_SOSYAL')) {
+    } else if (chartSubject === 'AYT_SOSYAL') {
       baseLogs = baseLogs.filter(l => AYT_SOSYAL_SUBJECTS.includes(l.subject));
-    } else if (!selectedSubjects.includes('ALL')) {
-      baseLogs = baseLogs.filter(l => selectedSubjects.includes(l.subject));
+    } else if (chartSubject !== 'ALL') {
+      baseLogs = baseLogs.filter(l => l.subject === chartSubject);
     }
 
     const buildBucketItem = (dateLabel: string, fullDate: string, logsForBucket: QuestionLog[]) => {
@@ -587,7 +626,32 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
         return buildBucketItem(`${sDay}/${sMonth}-${eDay}/${eMonth}`, `${startStr} to ${endStr}`, logsForWeek);
       });
     }
-  }, [questionLogs, chartTimeRange, selectedSubjects, activeSubjects]);
+  }, [questionLogs, chartTimeRange, chartExamType, chartSubject, activeSubjects]);
+
+  // Dynamic average calculation based on active graph mode and active filters
+  const dynamicChartAverage = React.useMemo(() => {
+    if (!chartData || chartData.length === 0) return 0;
+    if (activeGraphType === 'soru') {
+      const sum = chartData.reduce((acc, d) => acc + (Number(d['Çözülen']) || 0), 0);
+      return Math.round((sum / chartData.length) * 10) / 10;
+    } else if (activeGraphType === 'net') {
+      const sum = chartData.reduce((acc, d) => acc + (Number(d['Net']) || 0), 0);
+      return Math.round((sum / chartData.length) * 100) / 100;
+    } else {
+      const sum = chartData.reduce((acc, d) => acc + (Number(d['Süre']) || 0), 0);
+      return Math.round((sum / chartData.length) * 10) / 10;
+    }
+  }, [chartData, activeGraphType]);
+
+  const dynamicChartAverageStr = React.useMemo(() => {
+    if (activeGraphType === 'soru') {
+      return `${dynamicChartAverage} Soru`;
+    } else if (activeGraphType === 'net') {
+      return `${dynamicChartAverage.toString().replace('.', ',')} Net`;
+    } else {
+      return `${dynamicChartAverage} dk`;
+    }
+  }, [dynamicChartAverage, activeGraphType]);
 
   // Modal live speed preview
   const liveSolvedCount = solvedCount === '' ? 0 : Number(solvedCount);
@@ -716,9 +780,9 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
 
       {/* ── 3. VISUAL ANALYTICS & CHARTS SECTION ── */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
-          
-          {/* Left: Section Title */}
+        
+        {/* Top Header Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
           <div className="flex items-center space-x-3">
             <div className="p-2.5 bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-xl shadow-md border border-indigo-400/30">
               <BarChart2 className="w-5 h-5" />
@@ -729,152 +793,162 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
             </div>
           </div>
 
-          {/* Right Controls: Chart Type Selector & Filters */}
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Chart Mode Buttons */}
-            <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800">
+          <div className="flex items-center space-x-2">
+            <span className="text-xs bg-indigo-500/10 text-indigo-300 font-bold px-3 py-1.5 rounded-xl border border-indigo-500/20 shadow-sm flex items-center space-x-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <span>{totalFilteredChartLogsCount} Kayıt • Ort: {dynamicChartAverageStr}</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Dedicated Controls Toolbar Directly Below Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950/70 p-3 rounded-2xl border border-slate-800/80">
+          
+          {/* Left Group: Mode Selector Buttons */}
+          <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setActiveGraphType('soru')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                activeGraphType === 'soru'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <CheckSquare className="w-3.5 h-3.5" />
+              <span>Soru Sayıları</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveGraphType('net')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                activeGraphType === 'net'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>Ders Netleri</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveGraphType('sure')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                activeGraphType === 'sure'
+                  ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>Çözüm Süresi</span>
+            </button>
+          </div>
+
+          {/* Right Group: Filters & Action Toggles */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            
+            {/* Exam Type Filters (Tümü / TYT / AYT) */}
+            <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800">
               <button
                 type="button"
-                onClick={() => setActiveGraphType('soru')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
-                  activeGraphType === 'soru'
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
-                    : 'text-slate-400 hover:text-white'
+                onClick={() => { setChartExamType('ALL'); setChartSubject('ALL'); }}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  chartExamType === 'ALL' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <CheckSquare className="w-3.5 h-3.5" />
-                <span>Soru Sayıları</span>
+                Tümü
               </button>
               <button
                 type="button"
-                onClick={() => setActiveGraphType('net')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
-                  activeGraphType === 'net'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                    : 'text-slate-400 hover:text-white'
+                onClick={() => { setChartExamType('TYT'); setChartSubject('ALL'); }}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  chartExamType === 'TYT' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <TrendingUp className="w-3.5 h-3.5" />
-                <span>Ders Netleri</span>
+                TYT
               </button>
               <button
                 type="button"
-                onClick={() => setActiveGraphType('sure')}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
-                  activeGraphType === 'sure'
-                    ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
-                    : 'text-slate-400 hover:text-white'
+                onClick={() => { setChartExamType('AYT'); setChartSubject('ALL'); }}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  chartExamType === 'AYT' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Clock className="w-3.5 h-3.5" />
-                <span>Çözüm Süresi</span>
+                AYT
               </button>
+            </div>
+
+            {/* Subject Selector Area with individual counts */}
+            <div className="flex items-center space-x-1.5 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+              <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span className="text-xs text-slate-400 font-bold hidden sm:inline">Ders:</span>
+              <select
+                id="question-chart-subject-filter"
+                value={chartSubject}
+                onChange={(e) => setChartSubject(e.target.value)}
+                className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer max-w-[190px] truncate"
+              >
+                <option value="ALL" className="bg-slate-900 text-white">Tüm Dersler ({totalFilteredChartLogsCount})</option>
+                {chartExamType === 'ALL' && (
+                  <>
+                    <option value="TYT_FEN" className="bg-slate-900 text-indigo-300">⚡ TYT Fen Grubu</option>
+                    <option value="TYT_SOSYAL" className="bg-slate-900 text-indigo-300">⚡ TYT Sosyal Grubu</option>
+                    <option value="AYT_FEN" className="bg-slate-900 text-purple-300">⚡ AYT Sayısal / Fen</option>
+                    <option value="AYT_SOSYAL" className="bg-slate-900 text-purple-300">⚡ AYT Eşit Ağırlık / Sosyal</option>
+                  </>
+                )}
+                {availableChartSubjects.map(s => (
+                  <option key={s} value={s} className="bg-slate-900 text-white">
+                    {s} ({subjectRecordCounts[s] || 0})
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Time Range Selector */}
-            <select
-              value={chartTimeRange}
-              onChange={(e) => setChartTimeRange(e.target.value as any)}
-              className="bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-2xl px-3.5 py-2 focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer"
-            >
-              <option value="7days">Son 7 Gün</option>
-              <option value="30days">Son 30 Gün</option>
-              <option value="4weeks">Son 4 Hafta</option>
-            </select>
-
-            {/* Multi-Select Subject Dropdown */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                type="button"
-                onClick={() => setIsSubjectDropdownOpen(!isSubjectDropdownOpen)}
-                className="bg-slate-950 border border-slate-800 hover:border-indigo-500 text-slate-200 text-xs font-bold rounded-2xl px-3.5 py-2 flex items-center justify-between space-x-2 focus:outline-none transition-all cursor-pointer shadow-sm"
+            <div className="flex items-center space-x-1.5 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+              <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <select
+                value={chartTimeRange}
+                onChange={(e) => setChartTimeRange(e.target.value as any)}
+                className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
               >
-                <div className="flex items-center space-x-2">
-                  <Layers className="w-4 h-4 text-indigo-400" />
-                  <span>
-                    {selectedSubjects.includes('ALL') 
-                      ? 'Tüm Dersler' 
-                      : selectedSubjects.includes('TYT_ALL')
-                      ? 'Tüm TYT'
-                      : selectedSubjects.includes('AYT_ALL')
-                      ? 'Tüm AYT'
-                      : selectedSubjects.includes('TYT_FEN')
-                      ? 'TYT Fen'
-                      : selectedSubjects.includes('TYT_SOSYAL')
-                      ? 'TYT Sosyal'
-                      : selectedSubjects.includes('AYT_FEN')
-                      ? 'AYT Fen'
-                      : selectedSubjects.includes('AYT_SOSYAL')
-                      ? 'AYT Sosyal'
-                      : selectedSubjects.length === 1
-                      ? selectedSubjects[0]
-                      : `${selectedSubjects.length} Ders`}
-                  </span>
-                </div>
-                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isSubjectDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {/* Dropdown Menu */}
-              {isSubjectDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl z-50 p-4 space-y-3 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl">
-                  <div className="space-y-1">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Toplu Filtreler</div>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedSubjects(['ALL']); setIsSubjectDropdownOpen(false); }}
-                        className={`col-span-2 w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-between transition-colors ${selectedSubjects.includes('ALL') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
-                      >
-                        <span>Tüm Dersler (Yığılı)</span>
-                        {selectedSubjects.includes('ALL') && <Check className="w-3.5 h-3.5" />}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedSubjects(['TYT_ALL']); setIsSubjectDropdownOpen(false); }}
-                        className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${selectedSubjects.includes('TYT_ALL') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
-                      >
-                        <span>Tüm TYT</span>
-                        {selectedSubjects.includes('TYT_ALL') && <Check className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedSubjects(['AYT_ALL']); setIsSubjectDropdownOpen(false); }}
-                        className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${selectedSubjects.includes('AYT_ALL') ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
-                      >
-                        <span>Tüm AYT</span>
-                        {selectedSubjects.includes('AYT_ALL') && <Check className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="border-t border-slate-800 pt-2 space-y-2 max-h-56 overflow-y-auto custom-scrollbar">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Ayrı Ders Seçimi</div>
-                    {/* TYT List */}
-                    <div className="space-y-0.5">
-                      <div className="text-[10px] font-bold text-sky-400 px-1 pt-1">TYT Dersleri</div>
-                      {YKS_SUBJECTS.TYT.map((s, idx) => {
-                        const isChecked = !selectedSubjects.some(key => PRESET_KEYS.includes(key)) && selectedSubjects.includes(s);
-                        return (
-                          <label key={s} className="flex items-center justify-between px-2 py-1 rounded-xl hover:bg-slate-800 cursor-pointer text-xs">
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => toggleSubject(s)}
-                                className="rounded border-slate-700 bg-slate-950 text-indigo-500 focus:ring-0 w-3.5 h-3.5 cursor-pointer"
-                              />
-                              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: getSubjectColor(s, idx) }} />
-                              <span className={isChecked ? 'text-white font-bold' : 'text-slate-300'}>{s}</span>
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
+                <option value="7days" className="bg-slate-900 text-white">Son 7 Gün</option>
+                <option value="30days" className="bg-slate-900 text-white">Son 30 Gün</option>
+                <option value="4weeks" className="bg-slate-900 text-white">Son 4 Hafta</option>
+              </select>
             </div>
+
+            {/* Average Reference Line Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowAverageLine(prev => !prev)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 border ${
+                showAverageLine
+                  ? 'bg-emerald-600/25 text-emerald-300 border-emerald-500/50 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+              }`}
+              title="Grafikteki dinamik ortalama referans çizgisini aç / kapat"
+            >
+              <span className={`w-2 h-2 rounded-full ${showAverageLine ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
+              <span>Ort. Çizgisi {showAverageLine ? 'Açık' : 'Kapalı'}</span>
+            </button>
+
+            {/* Data Labels (Sayı Bilgisi) Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowDataLabels(prev => !prev)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 border ${
+                showDataLabels
+                  ? 'bg-indigo-600/30 text-indigo-300 border-indigo-500/50 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+              }`}
+              title="Grafik üzerindeki noktaların ve sütunların sayısal değerlerini göster veya gizle"
+            >
+              {showDataLabels ? <Eye className="w-3.5 h-3.5 text-indigo-400" /> : <EyeOff className="w-3.5 h-3.5 text-slate-500" />}
+              <span>Sayılar {showDataLabels ? 'Açık' : 'Kapalı'}</span>
+            </button>
+
           </div>
         </div>
 
@@ -882,12 +956,27 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
         <div className="h-80 w-full pt-2">
           {activeGraphType === 'soru' ? (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={chartData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
                 <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                 <Tooltip content={<CustomBarTooltip hiddenSubjects={hiddenSubjects} />} />
                 <Legend content={(props) => renderInteractiveLegend(props, hiddenSubjects, toggleHiddenSubject)} />
+                {showAverageLine && dynamicChartAverage > 0 && (
+                  <ReferenceLine 
+                    y={dynamicChartAverage} 
+                    stroke="#10b981" 
+                    strokeDasharray="4 4" 
+                    strokeWidth={1.5}
+                    label={{ 
+                      value: `Ort. Soru: ${dynamicChartAverage}`, 
+                      fill: '#10b981', 
+                      fontSize: 10, 
+                      position: 'insideTopRight',
+                      fontWeight: 'bold'
+                    }} 
+                  />
+                )}
                 {activeSubjects.length === 0 ? (
                   <Bar dataKey="Çözülen" fill="#334155" maxBarSize={40} name="Veri Yok" />
                 ) : (
@@ -901,19 +990,45 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       maxBarSize={44}
                       radius={[4, 4, 0, 0]}
                       hide={hiddenSubjects.includes(subj)}
-                    />
+                    >
+                      {showDataLabels && (
+                        <LabelList 
+                          dataKey={subj} 
+                          position="insideTop" 
+                          fill="#ffffff" 
+                          fontSize={9} 
+                          fontWeight="bold" 
+                          formatter={(v: any) => (v > 0 ? `${v}` : '')} 
+                        />
+                      )}
+                    </Bar>
                   ))
                 )}
               </BarChart>
             </ResponsiveContainer>
           ) : activeGraphType === 'net' ? (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <LineChart data={chartData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
                 <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} domain={[0, 'auto']} />
                 <Tooltip content={<CustomLineTooltip hiddenSubjects={hiddenSubjects} />} />
                 <Legend content={(props) => renderInteractiveLegend(props, hiddenSubjects, toggleHiddenSubject)} />
+                {showAverageLine && dynamicChartAverage > 0 && (
+                  <ReferenceLine 
+                    y={dynamicChartAverage} 
+                    stroke="#10b981" 
+                    strokeDasharray="4 4" 
+                    strokeWidth={1.5}
+                    label={{ 
+                      value: `Ort. Net: ${dynamicChartAverageStr}`, 
+                      fill: '#10b981', 
+                      fontSize: 10, 
+                      position: 'insideTopRight',
+                      fontWeight: 'bold'
+                    }} 
+                  />
+                )}
                 {activeSubjects.length === 0 ? (
                   <Line type="monotone" dataKey="Net" stroke="#334155" strokeWidth={2} name="Net Verisi Yok" dot={false} />
                 ) : activeSubjects.length === 1 ? (
@@ -926,7 +1041,19 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                     dot={{ fill: getSubjectColor(activeSubjects[0], 0), strokeWidth: 2 }} 
                     activeDot={{ r: 6 }} 
                     hide={hiddenSubjects.includes(activeSubjects[0])}
-                  />
+                  >
+                    {showDataLabels && (
+                      <LabelList 
+                        dataKey={`Net_${activeSubjects[0]}`} 
+                        position="top" 
+                        fill={getSubjectColor(activeSubjects[0], 0)} 
+                        fontSize={10} 
+                        fontWeight="bold" 
+                        offset={8}
+                        formatter={(v: any) => (v != null && v > 0 ? `${v}` : '')} 
+                      />
+                    )}
+                  </Line>
                 ) : (
                   <>
                     {activeSubjects.map((subj, idx) => (
@@ -940,7 +1067,19 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                         dot={{ fill: getSubjectColor(subj, idx), strokeWidth: 1.5 }} 
                         activeDot={{ r: 5 }} 
                         hide={hiddenSubjects.includes(subj)}
-                      />
+                      >
+                        {showDataLabels && (
+                          <LabelList 
+                            dataKey={`Net_${subj}`} 
+                            position="top" 
+                            fill={getSubjectColor(subj, idx)} 
+                            fontSize={9} 
+                            fontWeight="bold" 
+                            offset={6}
+                            formatter={(v: any) => (v != null && v > 0 ? `${v}` : '')} 
+                          />
+                        )}
+                      </Line>
                     ))}
                     <Line 
                       type="monotone" 
@@ -951,7 +1090,19 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       name="Toplam Net" 
                       dot={false}
                       hide={hiddenSubjects.includes('Net') || hiddenSubjects.includes('Toplam Net')}
-                    />
+                    >
+                      {showDataLabels && (
+                        <LabelList 
+                          dataKey="Net" 
+                          position="top" 
+                          fill="#fbbf24" 
+                          fontSize={10} 
+                          fontWeight="bold" 
+                          offset={8}
+                          formatter={(v: any) => (v != null && v > 0 ? `${v}` : '')} 
+                        />
+                      )}
+                    </Line>
                   </>
                 )}
               </LineChart>
@@ -959,12 +1110,39 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
           ) : (
             /* Çözüm Süresi & Hız Analizi Chart */
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={chartData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
                 <XAxis dataKey="date" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} unit=" dk" />
                 <Tooltip content={<CustomTimeTooltip />} />
-                <Bar dataKey="Süre" fill="#f59e0b" maxBarSize={44} name="Toplam Çalışma Süresi (Dakika)" radius={[6, 6, 0, 0]} />
+                {showAverageLine && dynamicChartAverage > 0 && (
+                  <ReferenceLine 
+                    y={dynamicChartAverage} 
+                    stroke="#10b981" 
+                    strokeDasharray="4 4" 
+                    strokeWidth={1.5}
+                    label={{ 
+                      value: `Ort. Süre: ${dynamicChartAverage} dk`, 
+                      fill: '#10b981', 
+                      fontSize: 10, 
+                      position: 'insideTopRight',
+                      fontWeight: 'bold'
+                    }} 
+                  />
+                )}
+                <Bar dataKey="Süre" fill="#f59e0b" maxBarSize={44} name="Toplam Çalışma Süresi (Dakika)" radius={[6, 6, 0, 0]}>
+                  {showDataLabels && (
+                    <LabelList 
+                      dataKey="Süre" 
+                      position="top" 
+                      fill="#fbbf24" 
+                      fontSize={10} 
+                      fontWeight="bold" 
+                      offset={6}
+                      formatter={(v: any) => (v > 0 ? `${v} dk` : '')} 
+                    />
+                  )}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           )}
