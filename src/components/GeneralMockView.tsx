@@ -4,7 +4,9 @@ import {
   Plus,
   Award,
   GraduationCap,
-  Sparkles
+  Sparkles,
+  BarChart2,
+  Target
 } from 'lucide-react';
 import { GeneralMockExam, StudentProfile, TytDetails, AytDetails, SubSubjectScore, InstitutionalMockExam, MockExamType } from '../types';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
@@ -179,6 +181,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   onUpdateProfile
 }) => {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [activeGeneralTab, setActiveGeneralTab] = useState<'analytics' | 'history'>('analytics');
   const [mockListTab, setMockListTab] = useState<'individual' | 'institutional'>('individual');
   const [selectedInstitutionalExam, setSelectedInstitutionalExam] = useState<InstitutionalMockExam | null>(null);
   const [deletingMock, setDeletingMock] = useState<{ id: string; title: string } | null>(null);
@@ -1268,114 +1271,162 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
 
       </div>
 
-      {/* === TOP TAB SWITCHER: Bireysel / Kurumsal === */}
-      <div className="grid grid-cols-2 gap-4">
-        <button
-          type="button"
-          onClick={() => setMockListTab('individual')}
-          className={`relative flex items-center space-x-3 p-4 rounded-3xl border-2 transition-all duration-200 cursor-pointer group ${
-            mockListTab === 'individual'
-              ? 'bg-indigo-600/15 border-indigo-500 shadow-xl shadow-indigo-600/20 ring-1 ring-indigo-500/30'
-              : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
-          }`}
-        >
-          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
-            mockListTab === 'individual' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/40' : 'bg-slate-800 text-slate-400 group-hover:text-white'
-          }`}>
-            <Award className="w-5 h-5" />
-          </div>
-          <div className="text-left">
-            <div className={`text-sm font-extrabold ${mockListTab === 'individual' ? 'text-white' : 'text-slate-300'}`}>Bireysel Genel Denemelerim</div>
-            <div className={`text-xs mt-0.5 font-semibold font-mono ${mockListTab === 'individual' ? 'text-indigo-300' : 'text-slate-500'}`}>
-              {generalMocks.length} Kayıtlı Deneme
-            </div>
-          </div>
-          {mockListTab === 'individual' && (
-            <div className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-indigo-400 shadow-sm shadow-indigo-400/60" />
-          )}
-        </button>
+      {/* === SUBTABS NAVIGATION BAR: Grafik & Analiz vs Deneme Geçmişi === */}
+      <div className="bg-slate-900/90 border border-slate-800 p-2.5 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-xl backdrop-blur-md">
+        <div className="bg-slate-950 p-1 rounded-xl border border-slate-800 flex flex-wrap gap-1">
+          <button
+            type="button"
+            onClick={() => setActiveGeneralTab('analytics')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
+              activeGeneralTab === 'analytics'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <BarChart2 className="w-4 h-4 text-indigo-400" />
+            <span>Grafik & Analiz</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => setMockListTab('institutional')}
-          className={`relative flex items-center space-x-3 p-4 rounded-3xl border-2 transition-all duration-200 cursor-pointer group ${
-            mockListTab === 'institutional'
-              ? 'bg-emerald-600/15 border-emerald-500 shadow-xl shadow-emerald-600/20 ring-1 ring-emerald-500/30'
-              : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
-          }`}
-        >
-          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
-            mockListTab === 'institutional' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/40' : 'bg-slate-800 text-slate-400 group-hover:text-white'
-          }`}>
-            <GraduationCap className="w-5 h-5" />
-          </div>
-          <div className="text-left">
-            <div className={`text-sm font-extrabold ${mockListTab === 'institutional' ? 'text-white' : 'text-slate-300'}`}>Kurumsal Deneme Karnelerim</div>
-            <div className={`text-xs mt-0.5 font-semibold font-mono ${mockListTab === 'institutional' ? 'text-emerald-300' : 'text-slate-500'}`}>
-              {institutionalMocks.length} Okul Karnesi
-            </div>
-          </div>
-          {mockListTab === 'institutional' && (
-            <div className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/60" />
+          <button
+            type="button"
+            onClick={() => setActiveGeneralTab('history')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
+              activeGeneralTab === 'history'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <Target className="w-4 h-4 text-indigo-400" />
+            <span>Deneme Geçmişi ({totalMockCount})</span>
+          </button>
+        </div>
+
+        <div className="text-xs text-slate-400 font-mono hidden sm:flex items-center space-x-2 pr-2">
+          {activeGeneralTab === 'analytics' ? (
+            <span className="text-[11px] text-indigo-300">📊 Net gelişim trendi ve branş analizleri</span>
+          ) : (
+            <span className="text-[11px] text-emerald-300 font-bold">🎯 {mockListTab === 'individual' ? `${generalMocks.length} Bireysel Deneme` : `${institutionalMocks.length} Kurumsal Karne`}</span>
           )}
-        </button>
+        </div>
       </div>
 
-      {/* Charts Section */}
-      <MockChartsSection
-        generalMocks={mockListTab === 'institutional' ? institutionalAsMocks : generalMocks}
-        filteredByCountMocks={filteredByCountMocks}
-        mockCountFilter={mockCountFilter}
-        setMockCountFilter={setMockCountFilter}
-        activeChartTab={activeChartTab}
-        setActiveChartTab={setActiveChartTab}
-        setShowCustomizeModal={setShowCustomizeModal}
-        visibleCharts={visibleCharts}
-        pinnedSubjects={pinnedSubjects}
-        togglePinnedSubject={togglePinnedSubject}
-        subSubjectStatsMap={subSubjectStatsMap}
-        detailedSubSubjectsMeta={DETAILED_SUB_SUBJECTS_META}
-        mockSubjectConfig={MOCK_SUBJECT_CONFIG}
-        chartData={chartData}
-        subjectChartData={subjectChartData}
-        rankChartData={rankChartData}
-        detailedChartData={detailedChartData}
-        criticalWeakSubjects={criticalWeakSubjects}
-        selectedMockSubjects={selectedMockSubjects}
-        setSelectedMockSubjects={setSelectedMockSubjects}
-        toggleMockSubject={toggleMockSubject}
-        showSubjectFilters={showSubjectFilters}
-        setShowSubjectFilters={setShowSubjectFilters}
-        subSubjectChartType={subSubjectChartType}
-        setSubSubjectChartType={setSubSubjectChartType}
-        subSubjectExamTab={subSubjectExamTab}
-        setSubSubjectExamTab={setSubSubjectExamTab}
-        subSubjectGroupFilter={subSubjectGroupFilter}
-        setSubSubjectGroupFilter={setSubSubjectGroupFilter}
-        activeSubSubjectKeys={activeSubSubjectKeys}
-        setActiveSubSubjectKeys={setActiveSubSubjectKeys}
-        toggleActiveSubSubject={toggleActiveSubSubject}
-        profile={profile}
-      />
+      {/* Tab 1: Grafik & Analiz */}
+      {activeGeneralTab === 'analytics' && (
+        <div className="space-y-6 animate-fade-in">
+          <MockChartsSection
+            generalMocks={mockListTab === 'institutional' ? institutionalAsMocks : generalMocks}
+            filteredByCountMocks={filteredByCountMocks}
+            mockCountFilter={mockCountFilter}
+            setMockCountFilter={setMockCountFilter}
+            activeChartTab={activeChartTab}
+            setActiveChartTab={setActiveChartTab}
+            setShowCustomizeModal={setShowCustomizeModal}
+            visibleCharts={visibleCharts}
+            pinnedSubjects={pinnedSubjects}
+            togglePinnedSubject={togglePinnedSubject}
+            subSubjectStatsMap={subSubjectStatsMap}
+            detailedSubSubjectsMeta={DETAILED_SUB_SUBJECTS_META}
+            mockSubjectConfig={MOCK_SUBJECT_CONFIG}
+            chartData={chartData}
+            subjectChartData={subjectChartData}
+            rankChartData={rankChartData}
+            detailedChartData={detailedChartData}
+            criticalWeakSubjects={criticalWeakSubjects}
+            selectedMockSubjects={selectedMockSubjects}
+            setSelectedMockSubjects={setSelectedMockSubjects}
+            toggleMockSubject={toggleMockSubject}
+            showSubjectFilters={showSubjectFilters}
+            setShowSubjectFilters={setShowSubjectFilters}
+            subSubjectChartType={subSubjectChartType}
+            setSubSubjectChartType={setSubSubjectChartType}
+            subSubjectExamTab={subSubjectExamTab}
+            setSubSubjectExamTab={setSubSubjectExamTab}
+            subSubjectGroupFilter={subSubjectGroupFilter}
+            setSubSubjectGroupFilter={setSubSubjectGroupFilter}
+            activeSubSubjectKeys={activeSubSubjectKeys}
+            setActiveSubSubjectKeys={setActiveSubSubjectKeys}
+            toggleActiveSubSubject={toggleActiveSubSubject}
+            profile={profile}
+          />
+        </div>
+      )}
 
-      {/* Mock Exams List & Table */}
-      <MockTableSection
-        mockListTab={mockListTab}
-        setMockListTab={setMockListTab}
-        generalMocks={generalMocks}
-        institutionalMocks={institutionalMocks}
-        sortOrder={sortOrder}
-        setSortOrder={setSortOrder}
-        sortedGeneralMocks={sortedGeneralMocks}
-        setSelectedInstitutionalExam={setSelectedInstitutionalExam}
-        handleStartEdit={handleStartEdit}
-        onUpdateMock={onUpdateMock}
-        expandedMockDetails={expandedMockDetails}
-        toggleExpandMockDetails={toggleExpandMockDetails}
-        setCalcMock={setCalcMock}
-        setShowAllFields={setShowAllFields}
-        setDeletingMock={setDeletingMock}
-      />
+      {/* Tab 2: Deneme Geçmişi */}
+      {activeGeneralTab === 'history' && (
+        <div className="space-y-5 animate-fade-in">
+          {/* === TOP TAB SWITCHER: Bireysel / Kurumsal === */}
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => setMockListTab('individual')}
+              className={`relative flex items-center space-x-3 p-4 rounded-3xl border-2 transition-all duration-200 cursor-pointer group ${
+                mockListTab === 'individual'
+                  ? 'bg-indigo-600/15 border-indigo-500 shadow-xl shadow-indigo-600/20 ring-1 ring-indigo-500/30'
+                  : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
+              }`}
+            >
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
+                mockListTab === 'individual' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/40' : 'bg-slate-800 text-slate-400 group-hover:text-white'
+              }`}>
+                <Award className="w-5 h-5" />
+              </div>
+              <div className="text-left">
+                <div className={`text-sm font-extrabold ${mockListTab === 'individual' ? 'text-white' : 'text-slate-300'}`}>Bireysel Genel Denemelerim</div>
+                <div className={`text-xs mt-0.5 font-semibold font-mono ${mockListTab === 'individual' ? 'text-indigo-300' : 'text-slate-500'}`}>
+                  {generalMocks.length} Kayıtlı Deneme
+                </div>
+              </div>
+              {mockListTab === 'individual' && (
+                <div className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-indigo-400 shadow-sm shadow-indigo-400/60" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMockListTab('institutional')}
+              className={`relative flex items-center space-x-3 p-4 rounded-3xl border-2 transition-all duration-200 cursor-pointer group ${
+                mockListTab === 'institutional'
+                  ? 'bg-emerald-600/15 border-emerald-500 shadow-xl shadow-emerald-600/20 ring-1 ring-emerald-500/30'
+                  : 'bg-slate-900/90 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
+              }`}
+            >
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${
+                mockListTab === 'institutional' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/40' : 'bg-slate-800 text-slate-400 group-hover:text-white'
+              }`}>
+                <GraduationCap className="w-5 h-5" />
+              </div>
+              <div className="text-left">
+                <div className={`text-sm font-extrabold ${mockListTab === 'institutional' ? 'text-white' : 'text-slate-300'}`}>Kurumsal Deneme Karnelerim</div>
+                <div className={`text-xs mt-0.5 font-semibold font-mono ${mockListTab === 'institutional' ? 'text-emerald-300' : 'text-slate-500'}`}>
+                  {institutionalMocks.length} Okul Karnesi
+                </div>
+              </div>
+              {mockListTab === 'institutional' && (
+                <div className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/60" />
+              )}
+            </button>
+          </div>
+
+          {/* Mock Exams List & Table */}
+          <MockTableSection
+            mockListTab={mockListTab}
+            setMockListTab={setMockListTab}
+            generalMocks={generalMocks}
+            institutionalMocks={institutionalMocks}
+            sortOrder={sortOrder}
+            setSortOrder={setSortOrder}
+            sortedGeneralMocks={sortedGeneralMocks}
+            setSelectedInstitutionalExam={setSelectedInstitutionalExam}
+            handleStartEdit={handleStartEdit}
+            onUpdateMock={onUpdateMock}
+            expandedMockDetails={expandedMockDetails}
+            toggleExpandMockDetails={toggleExpandMockDetails}
+            setCalcMock={setCalcMock}
+            setShowAllFields={setShowAllFields}
+            setDeletingMock={setDeletingMock}
+          />
+        </div>
+      )}
 
 
       {/* Modal: Add General Mock */}

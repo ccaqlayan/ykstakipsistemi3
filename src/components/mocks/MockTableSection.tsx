@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
-import { GraduationCap, ArrowDown, ArrowUp, CheckCircle2, Pencil, Clock, SlidersHorizontal, ChevronDown, Calculator, Trash2, Search, Sparkles, Globe, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  GraduationCap, ArrowDown, ArrowUp, CheckCircle2, Pencil, Clock, SlidersHorizontal, 
+  ChevronDown, Calculator, Trash2, Search, Sparkles, Globe, Filter,
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
+} from 'lucide-react';
 import { GeneralMockExam, InstitutionalMockExam, MockExamType } from '../../types';
 
 interface MockTableSectionProps {
@@ -25,13 +29,11 @@ export const getEffectiveMockExamType = (mock: GeneralMockExam): MockExamType =>
   const hasAyt = (mock.ayt?.totalNet || 0) > 0;
   const hasYdt = (mock.ydt?.net !== undefined && mock.ydt?.net !== null && Number(mock.ydt.net) > 0) || (mock.ydt && Object.keys(mock.ydt).length > 0 && mock.ydt.net !== undefined);
 
-  // If explicit DIL or combination type is set, trust it
   if (mock.examType === 'DIL') return 'DIL';
   if (mock.examType === 'TYT_DIL') return 'TYT_DIL';
   if (mock.examType === 'TYT_AYT') return 'TYT_AYT';
   if (mock.examType === 'AYT' && !hasTyt) return 'AYT';
 
-  // Smart resolution based on actual net payload (fixes cases where examType defaulted to TYT)
   if (hasYdt && !hasAyt && !hasTyt) return 'DIL';
   if (hasYdt && hasTyt && !hasAyt) return 'TYT_DIL';
   if (hasTyt && hasAyt) return 'TYT_AYT';
@@ -56,6 +58,19 @@ const formatMockDate = (dateStr?: string) => {
   };
 };
 
+const getPageNumbers = (current: number, total: number) => {
+  if (total <= 5) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  if (current <= 3) {
+    return [1, 2, 3, 4, '...', total];
+  }
+  if (current >= total - 2) {
+    return [1, '...', total - 3, total - 2, total - 1, total];
+  }
+  return [1, '...', current - 1, current, current + 1, '...', total];
+};
+
 export const MockTableSection: React.FC<MockTableSectionProps> = ({
   mockListTab,
   setMockListTab,
@@ -75,8 +90,13 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [examTypeFilter, setExamTypeFilter] = useState<'all' | 'TYT' | 'AYT' | 'DIL' | 'TYT_AYT'>('all');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
 
-  // Count distribution for filter badges
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, examTypeFilter, sortOrder, mockListTab]);
+
   const totalCount = sortedGeneralMocks.length;
   const tytCount = sortedGeneralMocks.filter(m => {
     const t = getEffectiveMockExamType(m);
@@ -124,9 +144,127 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
     return true;
   });
 
+  const totalGeneralPages = Math.ceil(filteredGeneralMocks.length / itemsPerPage) || 1;
+  const safeGeneralPage = Math.min(Math.max(1, currentPage), totalGeneralPages);
+  const paginatedGeneralMocks = filteredGeneralMocks.slice(
+    (safeGeneralPage - 1) * itemsPerPage,
+    safeGeneralPage * itemsPerPage
+  );
+
+  const renderPaginationControls = (current: number, total: number, totalItems: number, onPageChange: (p: number) => void) => {
+    if (totalItems === 0) return null;
+
+    const start = (current - 1) * itemsPerPage + 1;
+    const end = Math.min(current * itemsPerPage, totalItems);
+    const pageNumbers = getPageNumbers(current, total);
+
+    return (
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-slate-800/80 text-xs">
+        <div className="flex flex-wrap items-center gap-3 text-slate-400 font-medium">
+          <div>
+            Toplam <strong className="text-white font-mono">{totalItems}</strong> denemeden{' '}
+            <strong className="text-indigo-300 font-mono">{start}-{end}</strong> arası gösteriliyor
+          </div>
+
+          <div className="flex items-center space-x-1.5 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800">
+            <span className="text-[11px] text-slate-500">Sayfa Başı:</span>
+            {[5, 10, 20, 50].map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => {
+                  setItemsPerPage(size);
+                  setCurrentPage(1);
+                }}
+                className={`px-2 py-0.5 rounded-lg font-mono font-bold text-[11px] transition-all cursor-pointer ${
+                  itemsPerPage === size
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {total > 1 && (
+          <div className="flex items-center space-x-1 bg-slate-950 p-1 rounded-2xl border border-slate-800 self-center sm:self-auto">
+            <button
+              type="button"
+              disabled={current === 1}
+              onClick={() => onPageChange(1)}
+              className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+              title="İlk Sayfa"
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              disabled={current === 1}
+              onClick={() => onPageChange(current - 1)}
+              className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+              title="Önceki Sayfa"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center space-x-1 px-1">
+              {pageNumbers.map((p, idx) => {
+                if (p === '...') {
+                  return (
+                    <span key={`dots-${idx}`} className="px-1.5 text-slate-600 font-bold">
+                      ...
+                    </span>
+                  );
+                }
+                const pageNum = Number(p);
+                const isActive = current === pageNum;
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => onPageChange(pageNum)}
+                    className={`w-7 h-7 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer flex items-center justify-center ${
+                      isActive
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              disabled={current === total}
+              onClick={() => onPageChange(current + 1)}
+              className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+              title="Sonraki Sayfa"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              disabled={current === total}
+              onClick={() => onPageChange(total)}
+              className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
+              title="Son Sayfa"
+            >
+              <ChevronsRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-5 shadow-2xl backdrop-blur-md">
-      {/* Sınav Türü Filtreleme Barı (TYT / AYT / DİL / TYT+AYT) */}
       {mockListTab === 'individual' && generalMocks.length > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-2.5 pb-4 border-b border-slate-800/80">
           <div className="flex items-center space-x-2 text-xs font-bold text-slate-300">
@@ -204,8 +342,7 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
         </div>
       )}
 
-      {/* Controls bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
         <div className="flex flex-wrap items-center gap-3 flex-1">
           <button
             type="button"
@@ -223,7 +360,6 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
             )}
           </button>
 
-          {/* Live Search Input */}
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
@@ -237,7 +373,7 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
         </div>
 
         {mockListTab === 'individual' && generalMocks.length > 0 && (
-          <div className="flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1.5 rounded-2xl text-xs text-emerald-300 font-semibold shadow-sm">
+          <div className="flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1.5 rounded-2xl text-xs text-emerald-300 font-semibold shadow-sm shrink-0">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
             <span>{generalMocks.filter(m => m.isAnalyzed).length} / {generalMocks.length} Analiz Edildi</span>
           </div>
@@ -252,84 +388,95 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
             return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
           });
 
+          const totalInstPages = Math.ceil(sortedInstitutionalMocks.length / itemsPerPage) || 1;
+          const safeInstPage = Math.min(Math.max(1, currentPage), totalInstPages);
+          const paginatedInstitutionalMocks = sortedInstitutionalMocks.slice(
+            (safeInstPage - 1) * itemsPerPage,
+            safeInstPage * itemsPerPage
+          );
+
           return sortedInstitutionalMocks.length === 0 ? (
             <div className="text-center py-12 border border-dashed border-slate-800 rounded-3xl space-y-2">
               <GraduationCap className="w-8 h-8 text-slate-600 mx-auto" />
               <p className="text-xs text-slate-400 font-medium">Okul tarafından yüklenmiş kurumsal deneme karneniz bulunmuyor.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {sortedInstitutionalMocks.map((exam) => {
-                const dateInfo = formatMockDate(exam.examDate);
-                const displayScores = [];
-                if (exam.scores.sayScore !== undefined) {
-                  displayScores.push({ label: 'SAY', score: exam.scores.sayScore, rank: exam.scores.sayClassRank, total: exam.scores.sayClassTotal });
-                }
-                if (exam.scores.eaScore !== undefined) {
-                  displayScores.push({ label: 'EA', score: exam.scores.eaScore, rank: exam.scores.eaClassRank, total: exam.scores.eaClassTotal });
-                }
-                if (exam.scores.sozScore !== undefined) {
-                  displayScores.push({ label: 'SÖZ', score: exam.scores.sozScore, rank: exam.scores.sozClassRank, total: exam.scores.sozClassTotal });
-                }
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {paginatedInstitutionalMocks.map((exam) => {
+                  const dateInfo = formatMockDate(exam.examDate);
+                  const displayScores = [];
+                  if (exam.scores.sayScore !== undefined) {
+                    displayScores.push({ label: 'SAY', score: exam.scores.sayScore, rank: exam.scores.sayClassRank, total: exam.scores.sayClassTotal });
+                  }
+                  if (exam.scores.eaScore !== undefined) {
+                    displayScores.push({ label: 'EA', score: exam.scores.eaScore, rank: exam.scores.eaClassRank, total: exam.scores.eaClassTotal });
+                  }
+                  if (exam.scores.sozScore !== undefined) {
+                    displayScores.push({ label: 'SÖZ', score: exam.scores.sozScore, rank: exam.scores.sozClassRank, total: exam.scores.sozClassTotal });
+                  }
 
-                return (
-                  <div
-                    key={exam.id}
-                    className="bg-slate-950/80 border border-slate-800/80 rounded-3xl p-5 hover:border-slate-700 transition-all flex flex-col justify-between space-y-4 animate-fade-in relative group shadow-sm hover:shadow-lg"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-mono font-bold text-slate-300 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 cursor-help" title={dateInfo.full}>
-                          {dateInfo.short}
-                        </span>
-                        <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-xl border border-indigo-500/20 uppercase">
-                          {exam.examType || 'Kurumsal'}
-                        </span>
-                      </div>
-
-                      <h3 className="text-sm font-black text-white mt-3 line-clamp-2">
-                        {exam.examTitle}
-                      </h3>
-
-                      {exam.scores.classParticipantCount && (
-                        <p className="text-[11px] text-slate-400 font-semibold mt-1.5 flex items-center space-x-1 font-mono">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
-                          <span>Katılımcı Sayısı: {exam.scores.classParticipantCount} Öğrenci</span>
-                        </p>
-                      )}
-
-                      {displayScores.length > 0 && (
-                        <div className="grid grid-cols-3 gap-2 mt-4">
-                          {displayScores.map((sc, idx) => (
-                            <div key={idx} className="bg-slate-900/80 border border-slate-800/60 rounded-2xl p-2.5 text-center">
-                              <span className="text-[10px] text-slate-400 font-bold block">{sc.label} Puanı</span>
-                              <strong className="text-indigo-300 text-sm font-mono block mt-0.5">{sc.score}</strong>
-                              {sc.rank && (
-                                <span className="text-[9px] text-emerald-400 font-mono mt-0.5 block">Sıra: {sc.rank} / {sc.total || '-'}</span>
-                              )}
-                            </div>
-                          ))}
+                  return (
+                    <div
+                      key={exam.id}
+                      className="bg-slate-950/80 border border-slate-800/80 rounded-3xl p-5 hover:border-slate-700 transition-all flex flex-col justify-between space-y-4 animate-fade-in relative group shadow-sm hover:shadow-lg"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-mono font-bold text-slate-300 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 cursor-help" title={dateInfo.full}>
+                            {dateInfo.short}
+                          </span>
+                          <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-xl border border-indigo-500/20 uppercase">
+                            {exam.examType || 'Kurumsal'}
+                          </span>
                         </div>
-                      )}
-                    </div>
 
-                    <div className="pt-3 border-t border-slate-900/60 flex items-center justify-between gap-2">
-                      <div className="text-[11px] text-slate-500 font-medium truncate">
-                        {exam.studentName} {exam.schoolNumber ? `(#${exam.schoolNumber})` : ''}
+                        <h3 className="text-sm font-black text-white mt-3 line-clamp-2">
+                          {exam.examTitle}
+                        </h3>
+
+                        {exam.scores.classParticipantCount && (
+                          <p className="text-[11px] text-slate-400 font-semibold mt-1.5 flex items-center space-x-1 font-mono">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>Katılımcı Sayısı: {exam.scores.classParticipantCount} Öğrenci</span>
+                          </p>
+                        )}
+
+                        {displayScores.length > 0 && (
+                          <div className="grid grid-cols-3 gap-2 mt-4">
+                            {displayScores.map((sc, idx) => (
+                              <div key={idx} className="bg-slate-900/80 border border-slate-800/60 rounded-2xl p-2.5 text-center">
+                                <span className="text-[10px] text-slate-400 font-bold block">{sc.label} Puanı</span>
+                                <strong className="text-indigo-300 text-sm font-mono block mt-0.5">{sc.score}</strong>
+                                {sc.rank && (
+                                  <span className="text-[9px] text-emerald-400 font-mono mt-0.5 block">Sıra: {sc.rank} / {sc.total || '-'}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setSelectedInstitutionalExam(exam)}
-                        className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-bold px-4 py-2 rounded-2xl transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm"
-                      >
-                        <GraduationCap className="w-4 h-4" />
-                        <span>Karnemi Görüntüle</span>
-                      </button>
+                      <div className="pt-3 border-t border-slate-900/60 flex items-center justify-between gap-2">
+                        <div className="text-[11px] text-slate-500 font-medium truncate">
+                          {exam.studentName} {exam.schoolNumber ? `(#${exam.schoolNumber})` : ''}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedInstitutionalExam(exam)}
+                          className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-bold px-4 py-2 rounded-2xl transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm"
+                        >
+                          <GraduationCap className="w-4 h-4" />
+                          <span>Karnemi Görüntüle</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+
+              {renderPaginationControls(safeInstPage, totalInstPages, sortedInstitutionalMocks.length, (p) => setCurrentPage(p))}
             </div>
           );
         })()
@@ -346,8 +493,9 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
           )}
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredGeneralMocks.map((mock) => {
+        <div className="space-y-4">
+          <div className="space-y-3">
+            {paginatedGeneralMocks.map((mock) => {
             const dateInfo = formatMockDate(mock.date);
             const type = getEffectiveMockExamType(mock);
 
@@ -358,35 +506,33 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
               >
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-mono text-slate-300 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 cursor-help" title={dateInfo.full}>
+                    <span className="text-xs font-mono font-bold text-slate-300 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 cursor-help" title={dateInfo.full}>
                       {dateInfo.short}
                     </span>
 
-                    {/* Sınav Türü Rozeti */}
-                    <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-xl border flex items-center gap-1 ${
+                    <span className={`text-xs font-black px-2.5 py-1 rounded-xl border uppercase tracking-wider ${
                       type === 'DIL'
-                        ? 'bg-sky-500/10 text-sky-300 border-sky-500/25'
+                        ? 'bg-sky-500/10 text-sky-400 border-sky-500/30'
                         : type === 'TYT_DIL'
-                        ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/25'
+                        ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30'
                         : type === 'AYT'
-                        ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25'
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                         : type === 'TYT_AYT'
-                        ? 'bg-purple-500/10 text-purple-300 border-purple-500/25'
-                        : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/25'
+                        ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
+                        : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
                     }`}>
-                      {type === 'DIL' || type === 'TYT_DIL' ? <Globe className="w-3 h-3 text-sky-400" /> : <Sparkles className="w-3 h-3 text-indigo-400" />}
-                      <span>
-                        {type === 'DIL' ? 'DİL (YDT)' : type === 'TYT_DIL' ? 'TYT + DİL' : type === 'AYT' ? 'AYT' : type === 'TYT_AYT' ? 'TYT + AYT' : 'TYT'}
-                      </span>
+                      {type === 'DIL' ? 'DİL (YDT)' : type === 'TYT_DIL' ? 'TYT + DİL' : type === 'AYT' ? 'AYT' : type === 'TYT_AYT' ? 'TYT + AYT' : 'TYT'}
                     </span>
 
-                    <h3 
-                      onClick={() => handleStartEdit(mock)}
-                      className="text-sm font-bold text-white cursor-pointer hover:text-indigo-400 flex items-center gap-1.5 transition-colors group/mock-title"
-                      title="Düzenlemek için tıklayın"
-                    >
-                      <span>{mock.title}</span>
-                      <Pencil className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover/mock-title:opacity-100 transition-opacity" />
+                    {mock.estimatedRank && (
+                      <span className="text-xs font-mono font-black text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-xl flex items-center space-x-1" title="Tahmini YKS Sıralaması">
+                        <Sparkles className="w-3 h-3 text-amber-400" />
+                        <span>#{new Intl.NumberFormat('tr-TR').format(mock.estimatedRank)}</span>
+                      </span>
+                    )}
+
+                    <h3 className="text-sm font-extrabold text-white ml-1 break-words">
+                      {mock.title}
                     </h3>
                   </div>
 
@@ -688,6 +834,10 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
           );
         })}
         </div>
+
+        {/* Individual Pagination Controls */}
+        {renderPaginationControls(safeGeneralPage, totalGeneralPages, filteredGeneralMocks.length, (p) => setCurrentPage(p))}
+      </div>
       )}
     </div>
   );
