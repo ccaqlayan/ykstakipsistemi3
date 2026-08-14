@@ -366,6 +366,7 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
           fullName: `${log.date || ''} (${log.day || ''})`,
           'Net Çalışma': netVal,
           'Görev Süresi': netVal,
+          'Planlanan Süre': netVal,
           rawNetMinutes: rawNetMins,
           rawTaskMinutes: rawNetMins,
           isManual: true,

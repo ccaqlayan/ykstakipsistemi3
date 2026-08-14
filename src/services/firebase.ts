@@ -18,7 +18,7 @@ import {
   limit
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
-import { AppGlobalState, UserAccount, ClassDefinition, YKSDataState, RecommendedChannel, RecommendedBook, DirectMessage, AuditLogItem, InstitutionalMockExam } from '../types';
+import { AppGlobalState, UserAccount, ClassDefinition, YKSDataState, RecommendedChannel, RecommendedBook, DirectMessage, AuditLogItem, InstitutionalMockExam, QuestionLog } from '../types';
 import { INITIAL_GLOBAL_STATE, loadGlobalState } from './storage';
 import { INITIAL_STATE } from '../data/initialData';
 
@@ -171,19 +171,19 @@ export function handleFirebaseError(err: any) {
 }
 
 /**
- * Migration v2: student-1 questionLogs'u son 30 güne yayılmış yeni verilerle günceller.
- * Bir kez çalışır — meta/migrations/questionlogs_v2 marker ile izlenir.
+ * Migration v3: student-1 questionLogs'u son 30 güne yayılmış yeni verilerle günceller.
+ * Bir kez çalışır — meta/migrations/questionlogs_v3 marker ile izlenir.
  */
 export async function migrateStudentQuestionLogs() {
   try {
     // Migration daha önce yapıldıysa atla
     const markerRef = doc(db, 'meta', 'migrations');
     const markerSnap = await getDoc(markerRef);
-    if (markerSnap.exists() && markerSnap.data()?.questionlogs_v2 === true) {
+    if (markerSnap.exists() && markerSnap.data()?.questionlogs_v3 === true) {
       return;
     }
 
-    console.log('[Migration v2] Running questionLogs migration for student-1...');
+    console.log('[Migration v3] Running questionLogs migration for student-1...');
     const student1Ref = doc(db, STUDENTS_DATA_COL, 'student-1');
     const student1Snap = await getDoc(student1Ref);
 
@@ -191,7 +191,7 @@ export async function migrateStudentQuestionLogs() {
       const data = student1Snap.data();
       const cleanLogs = sanitizeAndPrepareForFirestore(INITIAL_STATE.questionLogs);
       await setDoc(student1Ref, { ...data, questionLogs: cleanLogs }, { merge: false });
-      console.log('[Migration v2] student-1 questionLogs updated successfully.');
+      console.log('[Migration v3] student-1 questionLogs updated successfully.');
     }
 
     // student-4 de güncelle (Burak ÇAKIR)
@@ -201,14 +201,14 @@ export async function migrateStudentQuestionLogs() {
       const data4 = student4Snap.data();
       const cleanLogs4 = sanitizeAndPrepareForFirestore(INITIAL_STATE.questionLogs);
       await setDoc(student4Ref, { ...data4, questionLogs: cleanLogs4 }, { merge: false });
-      console.log('[Migration v2] student-4 questionLogs updated successfully.');
+      console.log('[Migration v3] student-4 questionLogs updated successfully.');
     }
 
     // Marker'ı kaydet — bir daha çalışmasın
-    await setDoc(markerRef, { questionlogs_v2: true, migratedAt: new Date().toISOString() }, { merge: true });
-    console.log('[Migration v2] Migration marker written. Done.');
+    await setDoc(markerRef, { questionlogs_v3: true, migratedAt: new Date().toISOString() }, { merge: true });
+    console.log('[Migration v3] Migration marker written. Done.');
   } catch (err) {
-    console.warn('[Migration v2] migrateStudentQuestionLogs error:', err);
+    console.warn('[Migration v3] migrateStudentQuestionLogs error:', err);
   }
 }
 

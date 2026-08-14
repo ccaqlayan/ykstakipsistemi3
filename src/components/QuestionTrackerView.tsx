@@ -49,7 +49,7 @@ import {
   LabelList
 } from 'recharts';
 import { QuestionLog } from '../types';
-import { YKS_SUBJECTS } from '../data/initialData';
+import { YKS_SUBJECTS, INITIAL_STATE } from '../data/initialData';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 const SUBJECT_COLORS: Record<string, string> = {

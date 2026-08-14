@@ -606,12 +606,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'TYT',
       targetCount: 60,
       solvedCount: 60,
-      correctCount: 52,
-      wrongCount: 6,
+      correctCount: 54,
+      wrongCount: 4,
       emptyCount: 2,
-      netScore: 50.5,
+      netScore: 53.0,
       durationMinutes: 75,
-      notes: 'Problemler hızı arttı, 2 işlem hatası var.'
+      notes: 'Problemler hızlandı, 2 işlem hatası incelendi.'
     },
     {
       id: 'qlog-2',
@@ -625,7 +625,7 @@ export const INITIAL_STATE: YKSDataState = {
       emptyCount: 1,
       netScore: 40.25,
       durationMinutes: 45,
-      notes: 'Genden Proteine konusu sorunsuz.'
+      notes: 'Protein sentezi şemaları ve kodon eşleşmeleri tam.'
     },
     {
       id: 'qlog-3',
@@ -634,12 +634,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'TYT',
       targetCount: 40,
       solvedCount: 40,
-      correctCount: 36,
-      wrongCount: 3,
+      correctCount: 37,
+      wrongCount: 2,
       emptyCount: 1,
-      netScore: 35.25,
+      netScore: 36.5,
       durationMinutes: 32,
-      notes: 'Ana düşünce sorularında 2 yanlış çıktı.'
+      notes: 'Zamana karşı odaklı çözüm, 2 yanlış kontrol edildi.'
     },
     {
       id: 'qlog-4',
@@ -648,12 +648,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'AYT',
       targetCount: 50,
       solvedCount: 50,
-      correctCount: 44,
+      correctCount: 45,
       wrongCount: 4,
-      emptyCount: 2,
-      netScore: 43.0,
+      emptyCount: 1,
+      netScore: 44.0,
       durationMinutes: 80,
-      notes: 'Türev alma kuralları pekişti.'
+      notes: 'Türevde teğet eğimi ve normal doğrusu pekişti.'
     },
     {
       id: 'qlog-5',
@@ -662,12 +662,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'AYT',
       targetCount: 35,
       solvedCount: 35,
-      correctCount: 29,
+      correctCount: 30,
       wrongCount: 4,
-      emptyCount: 2,
-      netScore: 28.0,
+      emptyCount: 1,
+      netScore: 29.0,
       durationMinutes: 45,
-      notes: 'Elektrostatik formülleri tekrar edilmeli.'
+      notes: 'Noktasal yüklerin potansiyeli ve iş denklemleri çözüldü.'
     },
     {
       id: 'qlog-6',
@@ -675,13 +675,13 @@ export const INITIAL_STATE: YKSDataState = {
       subject: 'TYT Geometri',
       examType: 'TYT',
       targetCount: 30,
-      solvedCount: 28,
-      correctCount: 26,
-      wrongCount: 3,
+      solvedCount: 30,
+      correctCount: 27,
+      wrongCount: 2,
       emptyCount: 1,
-      netScore: 25.25,
+      netScore: 26.5,
       durationMinutes: 35,
-      notes: 'Analitik geometri soruları tamamlandı.'
+      notes: 'Özel üçgenler ve muhteşem üçlü soruları.'
     },
     {
       id: 'qlog-7',
@@ -695,7 +695,7 @@ export const INITIAL_STATE: YKSDataState = {
       emptyCount: 0,
       netScore: 37.5,
       durationMinutes: 45,
-      notes: 'Organik bileşik adlandırmaları bitti.'
+      notes: 'Alkan ve alkenlerin IUPAC adlandırması sorunsuz.'
     },
     {
       id: 'qlog-8',
@@ -705,11 +705,11 @@ export const INITIAL_STATE: YKSDataState = {
       targetCount: 55,
       solvedCount: 55,
       correctCount: 50,
-      wrongCount: 4,
-      emptyCount: 1,
-      netScore: 49.0,
+      wrongCount: 3,
+      emptyCount: 2,
+      netScore: 49.25,
       durationMinutes: 90,
-      notes: 'İntegral alan hesabı kavrandı.'
+      notes: 'Değişken değiştirme ve Riemann toplamı mantığı.'
     },
     {
       id: 'qlog-9',
@@ -718,12 +718,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'TYT',
       targetCount: 50,
       solvedCount: 50,
-      correctCount: 43,
-      wrongCount: 5,
+      correctCount: 44,
+      wrongCount: 4,
       emptyCount: 2,
-      netScore: 41.75,
+      netScore: 43.0,
       durationMinutes: 45,
-      notes: 'Ses bilgisi ve yazım kuralları soruları çözüldü.'
+      notes: 'Bitişik ve ayrı yazılan kelimeler tekrar edildi.'
     },
     {
       id: 'qlog-10',
@@ -732,12 +732,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'AYT',
       targetCount: 60,
       solvedCount: 60,
-      correctCount: 51,
-      wrongCount: 6,
+      correctCount: 52,
+      wrongCount: 5,
       emptyCount: 3,
-      netScore: 49.5,
+      netScore: 50.75,
       durationMinutes: 95,
-      notes: 'Logaritma grafik ve denklem soruları.'
+      notes: 'Aritmetik ve geometrik dizi formülleri tarandı.'
     },
     {
       id: 'qlog-11',
@@ -746,12 +746,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'TYT',
       targetCount: 35,
       solvedCount: 35,
-      correctCount: 30,
-      wrongCount: 4,
+      correctCount: 31,
+      wrongCount: 3,
       emptyCount: 1,
-      netScore: 29.0,
+      netScore: 30.25,
       durationMinutes: 40,
-      notes: 'Kaldırma kuvveti ve basınç testleri.'
+      notes: 'Sıvı basınç kuvveti ve yüzen cisimler dengesi.'
     },
     {
       id: 'qlog-12',
@@ -760,12 +760,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'AYT',
       targetCount: 40,
       solvedCount: 40,
-      correctCount: 36,
-      wrongCount: 3,
+      correctCount: 37,
+      wrongCount: 2,
       emptyCount: 1,
-      netScore: 35.25,
+      netScore: 36.5,
       durationMinutes: 45,
-      notes: 'Gaz yasaları ve ideal gaz tepkimeleri.'
+      notes: 'Kısmi basınç ve gaz karışımları testi çözüldü.'
     },
     {
       id: 'qlog-13',
@@ -779,7 +779,7 @@ export const INITIAL_STATE: YKSDataState = {
       emptyCount: 0,
       netScore: 27.5,
       durationMinutes: 24,
-      notes: 'Sabah paragraf rutini, süre: 24 dakika.'
+      notes: '24 dakikada 30 soru başarıyla tamamlandı.'
     },
     {
       id: 'qlog-14',
@@ -788,12 +788,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'AYT',
       targetCount: 45,
       solvedCount: 45,
-      correctCount: 39,
-      wrongCount: 4,
+      correctCount: 40,
+      wrongCount: 3,
       emptyCount: 2,
-      netScore: 38.0,
+      netScore: 39.25,
       durationMinutes: 45,
-      notes: 'Sinir sistemi ve hormonlar pekiştirildi.'
+      notes: 'Miyelin kılıf ve sinapslarda kimyasal iletim.'
     },
     {
       id: 'qlog-15',
@@ -802,12 +802,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'TYT',
       targetCount: 70,
       solvedCount: 70,
-      correctCount: 62,
-      wrongCount: 6,
+      correctCount: 63,
+      wrongCount: 5,
       emptyCount: 2,
-      netScore: 60.5,
+      netScore: 61.75,
       durationMinutes: 95,
-      notes: 'Hız ve yaş problemleri ağırlıklı çalışma.'
+      notes: 'Yeni nesil hikayeli sorular ağırlıklı tarandı.'
     },
     {
       id: 'qlog-16',
@@ -816,12 +816,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'AYT',
       targetCount: 40,
       solvedCount: 38,
-      correctCount: 32,
-      wrongCount: 5,
+      correctCount: 33,
+      wrongCount: 4,
       emptyCount: 1,
-      netScore: 30.75,
+      netScore: 32.0,
       durationMinutes: 50,
-      notes: 'Bağıl hareket ve Newton yasaları.'
+      notes: 'Eğik düzlemde dinamik soruları incelendi.'
     },
     {
       id: 'qlog-17',
@@ -830,12 +830,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'TYT',
       targetCount: 35,
       solvedCount: 35,
-      correctCount: 31,
-      wrongCount: 3,
+      correctCount: 32,
+      wrongCount: 2,
       emptyCount: 1,
-      netScore: 30.25,
+      netScore: 31.5,
       durationMinutes: 45,
-      notes: 'Dik üçgen ve açıortay-kenarortay.'
+      notes: 'Öklid bağıntıları ve özel açılı üçgenler.'
     },
     {
       id: 'qlog-18',
@@ -844,12 +844,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'AYT',
       targetCount: 50,
       solvedCount: 50,
-      correctCount: 43,
-      wrongCount: 5,
+      correctCount: 44,
+      wrongCount: 4,
       emptyCount: 2,
-      netScore: 41.75,
+      netScore: 43.0,
       durationMinutes: 80,
-      notes: 'Trigonometri toplam-fark ve yarım açı.'
+      notes: 'Yarım açı formülleriyle denklem çözümleri.'
     },
     {
       id: 'qlog-19',
@@ -863,7 +863,7 @@ export const INITIAL_STATE: YKSDataState = {
       emptyCount: 0,
       netScore: 27.5,
       durationMinutes: 30,
-      notes: 'Asit, baz ve tuzlar soru taraması.'
+      notes: 'Nötralleşme tepkimeleri ve pH hesapları.'
     },
     {
       id: 'qlog-20',
@@ -872,12 +872,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'TYT',
       targetCount: 40,
       solvedCount: 40,
-      correctCount: 35,
-      wrongCount: 4,
+      correctCount: 36,
+      wrongCount: 3,
       emptyCount: 1,
-      netScore: 34.0,
+      netScore: 35.25,
       durationMinutes: 35,
-      notes: 'Paragraf bölme ve akışı bozan cümleler.'
+      notes: 'Karşılaştırma ve tanık gösterme soruları.'
     },
     {
       id: 'qlog-21',
@@ -891,7 +891,7 @@ export const INITIAL_STATE: YKSDataState = {
       emptyCount: 1,
       netScore: 35.25,
       durationMinutes: 40,
-      notes: 'Dolaşım ve bağışıklık sistemi testleri.'
+      notes: 'Büyük ve küçük kan dolaşımı damar basınçları.'
     },
     {
       id: 'qlog-22',
@@ -900,12 +900,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'TYT',
       targetCount: 45,
       solvedCount: 45,
-      correctCount: 40,
-      wrongCount: 4,
+      correctCount: 41,
+      wrongCount: 3,
       emptyCount: 1,
-      netScore: 39.0,
+      netScore: 40.25,
       durationMinutes: 40,
-      notes: 'Noktalama işaretleri ve karma dil bilgisi.'
+      notes: 'Noktalı virgül ve iki nokta ayrımları.'
     },
     {
       id: 'qlog-23',
@@ -914,12 +914,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'AYT',
       targetCount: 65,
       solvedCount: 65,
-      correctCount: 58,
-      wrongCount: 5,
+      correctCount: 59,
+      wrongCount: 4,
       emptyCount: 2,
-      netScore: 56.75,
+      netScore: 58.0,
       durationMinutes: 105,
-      notes: 'Diziler ve aritmetik-geometrik toplam.'
+      notes: 'Aritmetik dizi genel terim bağıntıları.'
     },
     {
       id: 'qlog-24',
@@ -928,12 +928,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'AYT',
       targetCount: 35,
       solvedCount: 35,
-      correctCount: 29,
-      wrongCount: 4,
+      correctCount: 30,
+      wrongCount: 3,
       emptyCount: 2,
-      netScore: 28.0,
+      netScore: 29.25,
       durationMinutes: 45,
-      notes: 'Çembersel hareket ve tork dengesi.'
+      notes: 'Eğimli virajda maksimum hız hesapları.'
     },
     {
       id: 'qlog-25',
@@ -942,12 +942,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'TYT',
       targetCount: 50,
       solvedCount: 50,
-      correctCount: 44,
-      wrongCount: 4,
+      correctCount: 45,
+      wrongCount: 3,
       emptyCount: 2,
-      netScore: 43.0,
+      netScore: 44.25,
       durationMinutes: 65,
-      notes: 'Yüzde, kar-zarar ve karışım problemleri.'
+      notes: 'Karışım formülleri ve grafikli sorular.'
     },
     {
       id: 'qlog-26',
@@ -961,7 +961,7 @@ export const INITIAL_STATE: YKSDataState = {
       emptyCount: 1,
       netScore: 36.5,
       durationMinutes: 45,
-      notes: 'Tepkimelerde hız ve denge bağıntıları.'
+      notes: 'Hız bağıntısı yazma ve katalizör etkisi.'
     },
     {
       id: 'qlog-27',
@@ -970,12 +970,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'TYT',
       targetCount: 30,
       solvedCount: 30,
-      correctCount: 27,
+      correctCount: 28,
       wrongCount: 2,
-      emptyCount: 1,
-      netScore: 26.5,
+      emptyCount: 0,
+      netScore: 27.5,
       durationMinutes: 25,
-      notes: 'Yardımcı fikir soruları pratiği.'
+      notes: 'Olumsuz soru köklerine dikkat edilerek çözüldü.'
     },
     {
       id: 'qlog-28',
@@ -984,12 +984,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'TYT',
       targetCount: 30,
       solvedCount: 30,
-      correctCount: 27,
-      wrongCount: 2,
+      correctCount: 28,
+      wrongCount: 1,
       emptyCount: 1,
-      netScore: 26.5,
+      netScore: 27.75,
       durationMinutes: 28,
-      notes: 'Hücre bölünmeleri ve kalıtım.'
+      notes: 'Kromozom sayısı değişim grafikleri tarandı.'
     },
     {
       id: 'qlog-29',
@@ -998,12 +998,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'AYT',
       targetCount: 55,
       solvedCount: 55,
-      correctCount: 48,
-      wrongCount: 5,
+      correctCount: 49,
+      wrongCount: 4,
       emptyCount: 2,
-      netScore: 46.75,
+      netScore: 48.0,
       durationMinutes: 85,
-      notes: 'Limit ve süreklilik konsept testleri.'
+      notes: '0/0 belirsizliği ve çarpanlara ayırma.'
     },
     {
       id: 'qlog-30',
@@ -1012,12 +1012,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'AYT',
       targetCount: 40,
       solvedCount: 40,
-      correctCount: 35,
+      correctCount: 36,
       wrongCount: 3,
-      emptyCount: 2,
-      netScore: 34.25,
+      emptyCount: 1,
+      netScore: 35.25,
       durationMinutes: 40,
-      notes: 'Solunum ve fotosentez denklemleri.'
+      notes: 'Işıktan bağımsız evre Calvin döngüsü.'
     },
     {
       id: 'qlog-31',
@@ -1031,7 +1031,7 @@ export const INITIAL_STATE: YKSDataState = {
       emptyCount: 1,
       netScore: 26.5,
       durationMinutes: 38,
-      notes: 'Çokgenler ve kare-dikdörtgen testleri.'
+      notes: 'Yamuk ve paralelkenar alan özellikleri.'
     },
     {
       id: 'qlog-32',
@@ -1040,12 +1040,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'AYT',
       targetCount: 35,
       solvedCount: 35,
-      correctCount: 30,
+      correctCount: 31,
       wrongCount: 3,
-      emptyCount: 2,
-      netScore: 29.25,
+      emptyCount: 1,
+      netScore: 30.25,
       durationMinutes: 45,
-      notes: 'Manyetik alan ve indüksiyon akımı.'
+      notes: 'Lenz kanunu ve sağ el kuralı uygulamaları.'
     },
     {
       id: 'qlog-33',
@@ -1054,12 +1054,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'TYT',
       targetCount: 40,
       solvedCount: 40,
-      correctCount: 36,
-      wrongCount: 3,
+      correctCount: 37,
+      wrongCount: 2,
       emptyCount: 1,
-      netScore: 35.25,
+      netScore: 36.5,
       durationMinutes: 35,
-      notes: 'Cümlenin ögeleri ve anlatım bozuklukları.'
+      notes: 'Özne-yüklem uyumu ve tamlamaların ayrılmaması.'
     },
     {
       id: 'qlog-34',
@@ -1073,7 +1073,7 @@ export const INITIAL_STATE: YKSDataState = {
       emptyCount: 1,
       netScore: 40.25,
       durationMinutes: 50,
-      notes: 'Elektrokimya ve pil tepkimeleri.'
+      notes: 'Standart pil potansiyeli ve derişim pili soruları.'
     },
     {
       id: 'qlog-35',
@@ -1082,12 +1082,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'AYT',
       targetCount: 60,
       solvedCount: 60,
-      correctCount: 53,
-      wrongCount: 5,
+      correctCount: 54,
+      wrongCount: 4,
       emptyCount: 2,
-      netScore: 51.75,
+      netScore: 53.0,
       durationMinutes: 90,
-      notes: 'Türevde artan-azalanlık ve maksimum-minimum.'
+      notes: 'Birinci türev tablosu ve dönüm noktaları.'
     },
     {
       id: 'qlog-36',
@@ -1096,12 +1096,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'TYT',
       targetCount: 35,
       solvedCount: 35,
-      correctCount: 32,
-      wrongCount: 2,
+      correctCount: 33,
+      wrongCount: 1,
       emptyCount: 1,
-      netScore: 31.5,
+      netScore: 32.75,
       durationMinutes: 30,
-      notes: 'Çoklu paragraf soruları serisi.'
+      notes: 'Anlamsal bütünlük ve geçiş ifadeleri.'
     },
     {
       id: 'qlog-37',
@@ -1110,12 +1110,12 @@ export const INITIAL_STATE: YKSDataState = {
       examType: 'TYT',
       targetCount: 50,
       solvedCount: 50,
-      correctCount: 45,
-      wrongCount: 4,
+      correctCount: 46,
+      wrongCount: 3,
       emptyCount: 1,
-      netScore: 44.0,
+      netScore: 45.25,
       durationMinutes: 65,
-      notes: 'Kümeler, mantık ve temel kavramlar.'
+      notes: 'Ven şeması ve bileşik önermeler.'
     },
     {
       id: 'qlog-38',
@@ -1129,7 +1129,7 @@ export const INITIAL_STATE: YKSDataState = {
       emptyCount: 1,
       netScore: 27.75,
       durationMinutes: 30,
-      notes: 'Bitki biyolojisi ve madde taşınması.'
+      notes: 'Ksilem-floem taşınması ve oksin hormonu etkisi.'
     }
   ],
   resources: [

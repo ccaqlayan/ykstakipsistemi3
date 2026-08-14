@@ -393,7 +393,9 @@ export const PastExamsView: React.FC<PastExamsViewProps> = ({
                           <td className="p-3 font-semibold text-slate-200">
                             <div className="flex items-center space-x-2">
                               {topic.importance === 'high' && (
-                                <Flame className="w-4 h-4 text-amber-400 fill-amber-400 flex-shrink-0" title="🔥 Çok Soru Çıkan Kritik Konu" />
+                                <span title="🔥 Çok Soru Çıkan Kritik Konu" className="inline-flex">
+                                  <Flame className="w-4 h-4 text-amber-400 fill-amber-400 flex-shrink-0" />
+                                </span>
                               )}
                               <span className={isCompleted ? "line-through text-slate-400 font-normal" : "text-white"}>
                                 {topic.topicName}

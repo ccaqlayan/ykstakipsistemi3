@@ -705,7 +705,7 @@ if (!fs.existsSync(avatarsDir)) {
   } catch (e) {}
 }
 
-function generateFallbackAvatarSvg(): string {
+function generateFallbackAvatarSvg(name?: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
     <rect width="128" height="128" rx="28" fill="#0f172a" />
     <rect x="24" y="38" width="80" height="52" rx="14" fill="#ff0000" />

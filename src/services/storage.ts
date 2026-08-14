@@ -11,7 +11,7 @@ import {
   INITIAL_MESSAGES
 } from '../data/initialData';
 
-const STORAGE_KEY = 'yks_kocluk_global_data_v4';
+const STORAGE_KEY = 'yks_kocluk_global_data_v5';
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000; // 3 gün (72 saat)
 const LAST_ACTIVE_KEY = 'yks_last_active_time';
 
@@ -199,6 +199,7 @@ export function clearDeprecatedStorageKeys(): void {
         key.startsWith('yks_kocluk_global_data_v1') ||
         key.startsWith('yks_kocluk_global_data_v2') ||
         key.startsWith('yks_kocluk_global_data_v3') ||
+        key.startsWith('yks_kocluk_global_data_v4') ||
         key.startsWith('yks_backup_')
       )) {
         keysToRemove.push(key);

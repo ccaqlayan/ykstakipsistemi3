@@ -206,6 +206,9 @@ export interface TytDetails {
   fizik?: SubSubjectScore;
   kimya?: SubSubjectScore;
   biyoloji?: SubSubjectScore;
+  sosyal?: SubSubjectScore;
+  mat?: SubSubjectScore;
+  fen?: SubSubjectScore;
 }
 
 export interface AytDetails {
@@ -221,6 +224,10 @@ export interface AytDetails {
   cografya2?: SubSubjectScore;
   felsefe2?: SubSubjectScore;
   din2?: SubSubjectScore;
+  mat?: SubSubjectScore;
+  fen?: SubSubjectScore;
+  edebiyatSos1?: SubSubjectScore;
+  sos2?: SubSubjectScore;
 }
 
 export type MockExamType = 'TYT' | 'AYT' | 'DIL' | 'TYT_AYT' | 'TYT_DIL';
@@ -517,6 +524,7 @@ export interface RecommendedChannel {
   subscribersText: string;
   subscribersCount: number;
   url: string;
+  avatarUrl?: string;
   isCustom?: boolean;
   isDeleted?: boolean;
 }
