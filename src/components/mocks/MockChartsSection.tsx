@@ -339,7 +339,7 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
       </div>
 
       {/* Recharts Net Trend Graph */}
-      {visibleCharts.netTrend && chartData.length > 0 && (activeChartTab === 'all' || activeChartTab === 'net' || activeChartTab === 'custom') && (
+      {chartData.length > 0 && (activeChartTab === 'all' || activeChartTab === 'net' || (activeChartTab === 'custom' && visibleCharts.netTrend)) && (
         <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800">
             <h2 className="text-sm font-bold text-white flex items-center space-x-2">
@@ -507,7 +507,7 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
       )}
 
       {/* Subject Nets Comparison Graph */}
-      {visibleCharts.subjectComparison && subjectChartData.length > 0 && (activeChartTab === 'all' || activeChartTab === 'subject' || activeChartTab === 'custom') && (
+      {subjectChartData.length > 0 && (activeChartTab === 'all' || activeChartTab === 'subject' || (activeChartTab === 'custom' && visibleCharts.subjectComparison)) && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-5 shadow-sm space-y-3 transition-all duration-300 hover:scale-[1.015] hover:shadow-xl hover:shadow-sky-500/5 hover:border-slate-700/80">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h2 className="text-sm font-bold text-white flex items-center space-x-2">
@@ -754,7 +754,7 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
       )}
 
       {/* Detaylı Ders Analizi Grafiği (Alt Branş Kırılımı & Anlık Zayıf Branş Tespiti) */}
-      {visibleCharts.detailedSubSubjects && (activeChartTab === 'all' || activeChartTab === 'detailed' || activeChartTab === 'custom') && (
+      {(activeChartTab === 'all' || activeChartTab === 'detailed' || (activeChartTab === 'custom' && visibleCharts.detailedSubSubjects)) && (
         <div className="bg-slate-900 border border-purple-500/30 rounded-2xl p-3 sm:p-5 shadow-lg shadow-purple-950/10 space-y-4 transition-all duration-300 hover:scale-[1.015] hover:shadow-xl hover:shadow-purple-500/10 hover:border-purple-500/50">
           {/* Header */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-800 pb-3">
@@ -1229,7 +1229,7 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
       )}
 
       {/* Recharts Rank Trend Graph */}
-      {visibleCharts.rankTrend && rankChartData.length > 0 && (activeChartTab === 'all' || activeChartTab === 'rank' || activeChartTab === 'custom') && (
+      {rankChartData.length > 0 && (activeChartTab === 'all' || activeChartTab === 'rank' || (activeChartTab === 'custom' && visibleCharts.rankTrend)) && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-5 shadow-sm space-y-3 transition-all duration-300 hover:scale-[1.015] hover:shadow-xl hover:shadow-amber-500/5 hover:border-slate-700/80">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h2 className="text-sm font-bold text-white flex items-center space-x-2">
@@ -1325,6 +1325,24 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
               </LineChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      )}
+      {/* Empty state for 'custom' tab when no charts are selected */}
+      {activeChartTab === 'custom' && !visibleCharts.netTrend && !visibleCharts.subjectComparison && !visibleCharts.detailedSubSubjects && !visibleCharts.rankTrend && (
+        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-8 text-center space-y-3">
+          <Sparkles className="w-8 h-8 text-amber-400 mx-auto" />
+          <h3 className="text-sm font-bold text-white">Bana Özel Görünümünde Henüz Grafik Seçilmedi</h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            Özelleştir butonuna tıklayarak bu modda görmek istediğiniz grafikleri işaretleyebilir veya üstteki filtre butonlarından dilediğiniz grafiği doğrudan seçebilirsiniz.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowCustomizeModal(true)}
+            className="inline-flex items-center space-x-1.5 px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-all cursor-pointer shadow-md"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>Grafikleri Özelleştir</span>
+          </button>
         </div>
       )}
     </>
