@@ -105,6 +105,22 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
       .reduce((acc, s) => acc + (s.count || 0), 0);
   }, [branchSubjectStats]);
 
+  // Compute available subjects based on current chartExamType or all
+  const availableSubjects = React.useMemo(() => {
+    const set = new Set<string>();
+    branchSubjectStats.forEach(s => {
+      if (chartExamType === 'ALL' || s.examType === chartExamType) {
+        if (s.subject) set.add(s.subject);
+      }
+    });
+    netChartData.forEach(d => {
+      if (d.subject && (chartExamType === 'ALL' || d.examType === chartExamType)) {
+        set.add(d.subject);
+      }
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'tr'));
+  }, [branchSubjectStats, netChartData, chartExamType]);
+
   const formatHoursAndMinutes = (totalMins: number) => {
     if (!totalMins || totalMins <= 0) return '0 dk';
     const h = Math.floor(totalMins / 60);
@@ -152,17 +168,19 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
             </div>
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl font-black text-emerald-400 font-mono">{avgNetOverall}</span>
-            {maxNetRecord > 0 && (
-              <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-semibold font-mono flex items-center space-x-1">
-                <Award className="w-3 h-3 text-amber-400 inline" />
-                <span>Rekor: {maxNetRecord}</span>
-              </span>
-            )}
+            <div className="flex items-baseline space-x-1">
+              <span className="text-3xl font-black text-emerald-400 font-mono">{avgNetOverall}</span>
+              <span className="text-xs text-slate-400 font-medium">Net</span>
+            </div>
+            <span className="text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
+              Rekor: {maxNetRecord} Net
+            </span>
           </div>
           <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Aktif Filtre Ortalama Net:</span>
-            <span className="text-emerald-300 font-bold font-mono">{avgNetOverall} Net</span>
+            <span>Ders Başına Ort:</span>
+            <span className="text-white font-mono font-bold">
+              {branchSubjectStats.length > 0 ? (branchSubjectStats.reduce((acc, s) => acc + (Number(s.avgNet) || 0), 0) / branchSubjectStats.length).toFixed(1).replace('.', ',') : 0} Net
+            </span>
           </div>
         </div>
 
@@ -218,111 +236,139 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
       {/* ── 2. INTERACTIVE GRAPH ANALYTICS DASHBOARD ── */}
       <div className="bg-slate-900/90 border border-slate-800 p-6 rounded-3xl shadow-2xl backdrop-blur-md space-y-5">
         
-        {/* Header with Mode Switcher & Filters */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
+        {/* 1. Header (Title & Description) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2">
           <div className="flex items-center space-x-3">
-            <div className="p-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+            <div className="p-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
               <BarChart2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">Branş Denemeleri Performans Analitiği</h3>
+              <h3 className="text-base sm:text-lg font-extrabold text-white">Branş Denemeleri Performans Analitiği</h3>
               <p className="text-xs text-slate-400">Net ivmesini, doğru/yanlış dağılımını ve çözüm sürelerini inceleyin</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Graph Mode Buttons */}
-            <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800">
+          <div className="flex items-center space-x-2 text-xs font-mono font-bold text-slate-400">
+            <span className="bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 flex items-center space-x-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>{netChartData.length} Deneme İnceleniyor</span>
+            </span>
+          </div>
+        </div>
+
+        {/* 2. Selection Buttons & Filters Toolbar (Below Title & Description) */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-950/80 rounded-2xl border border-slate-800/90 shadow-inner">
+          
+          {/* Left Group: Graph Mode Switcher */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800">
               <button
+                type="button"
                 onClick={() => setActiveGraphType('net')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
                   activeGraphType === 'net' 
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
                 }`}
               >
                 <TrendingUp className="w-3.5 h-3.5" />
                 <span>Net Trendi</span>
               </button>
               <button
+                type="button"
                 onClick={() => setActiveGraphType('distribution')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
                   activeGraphType === 'distribution' 
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
                 <span>D / Y / B Dağılımı</span>
               </button>
               <button
+                type="button"
                 onClick={() => setActiveGraphType('time')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 ${
                   activeGraphType === 'time' 
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
                 }`}
               >
                 <Clock className="w-3.5 h-3.5" />
                 <span>Çözüm Süreleri</span>
               </button>
             </div>
+          </div>
 
-            {/* Exam Filter Buttons */}
-            <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800">
+          {/* Right Group: Filters (Exam Type, Dedicated Subject Selector, Limit) */}
+          <div className="flex flex-wrap items-center gap-2">
+            
+            {/* Exam Filter Segment */}
+            <div className="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800">
               <button
+                type="button"
                 onClick={() => { setChartExamType('ALL'); setChartSubject('ALL'); }}
-                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                  chartExamType === 'ALL' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  chartExamType === 'ALL' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 Tümü
               </button>
               <button
+                type="button"
                 onClick={() => { setChartExamType('TYT'); setChartSubject('ALL'); }}
-                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                  chartExamType === 'TYT' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  chartExamType === 'TYT' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 TYT
               </button>
               <button
+                type="button"
                 onClick={() => { setChartExamType('AYT'); setChartSubject('ALL'); }}
-                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                  chartExamType === 'AYT' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-white'
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  chartExamType === 'AYT' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
                 }`}
               >
                 AYT
               </button>
             </div>
 
-            {/* Subject Selector */}
-            {chartExamType !== 'ALL' && (
+            {/* Dedicated Subject Selector Area */}
+            <div className="flex items-center space-x-1.5 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+              <BookOpen className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span className="text-xs text-slate-400 font-bold hidden sm:inline">Ders:</span>
               <select
+                id="branch-chart-subject-filter"
                 value={chartSubject}
                 onChange={(e) => setChartSubject(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-300 rounded-2xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer max-w-[160px] truncate"
               >
-                <option value="ALL">Tüm Dersler</option>
-                {branchSubjectStats
-                  .filter(s => s.examType === chartExamType)
-                  .map(s => (
-                    <option key={s.subject} value={s.subject}>{s.subject}</option>
-                  ))
-                }
+                <option value="ALL" className="bg-slate-900 text-white">Tüm Dersler ({availableSubjects.length})</option>
+                {availableSubjects.map(s => (
+                  <option key={s} value={s} className="bg-slate-900 text-white">
+                    {s}
+                  </option>
+                ))}
               </select>
-            )}
+            </div>
 
             {/* Limit Selector */}
-            <select
-              value={chartLimit}
-              onChange={(e) => setChartLimit(e.target.value as any)}
-              className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-300 rounded-2xl px-3 py-1.5 focus:outline-none focus:border-indigo-500 cursor-pointer"
-            >
-              <option value="10">Son 10 Deneme</option>
-              <option value="30">Son 30 Deneme</option>
-              <option value="ALL">Tüm Kayıtlar</option>
-            </select>
+            <div className="flex items-center space-x-1.5 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+              <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <select
+                id="branch-chart-limit-filter"
+                value={chartLimit}
+                onChange={(e) => setChartLimit(e.target.value as any)}
+                className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
+              >
+                <option value="10" className="bg-slate-900 text-white">Son 10 Deneme</option>
+                <option value="30" className="bg-slate-900 text-white">Son 30 Deneme</option>
+                <option value="ALL" className="bg-slate-900 text-white">Tüm Kayıtlar</option>
+              </select>
+            </div>
+
           </div>
         </div>
 
