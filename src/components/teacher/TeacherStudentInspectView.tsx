@@ -2539,18 +2539,23 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                     };
                   });
 
-                // Chart 2: Average TYT Breakdown
-                const tytTurkishAvg = mocks.length > 0 ? (mocks.reduce((acc, m) => acc + (m.tyt?.turkishNet || 0), 0) / mocks.length).toFixed(1) : 0;
-                const tytMathAvg = mocks.length > 0 ? (mocks.reduce((acc, m) => acc + (m.tyt?.mathNet || 0), 0) / mocks.length).toFixed(1) : 0;
-                const tytScienceAvg = mocks.length > 0 ? (mocks.reduce((acc, m) => acc + (m.tyt?.scienceNet || 0), 0) / mocks.length).toFixed(1) : 0;
-                const tytSocialAvg = mocks.length > 0 ? (mocks.reduce((acc, m) => acc + (m.tyt?.socialNet || 0), 0) / mocks.length).toFixed(1) : 0;
-
-                const tytSubjectAverages = [
-                  { subject: 'Türkçe', net: Number(tytTurkishAvg), color: '#ec4899' },
-                  { subject: 'Matematik', net: Number(tytMathAvg), color: '#6366f1' },
-                  { subject: 'Fen Bilimleri', net: Number(tytScienceAvg), color: '#10b981' },
-                  { subject: 'Sosyal Bilgiler', net: Number(tytSocialAvg), color: '#f59e0b' }
-                ];
+                // Chart 2: Estimated Rank Change Progression
+                const rankTrendData = [...mocks]
+                  .filter(m => m.estimatedRank && m.estimatedRank > 0)
+                  .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+                  .slice(-12)
+                  .map(m => {
+                    const parts = (m.date || '').split('-');
+                    const displayDate = parts.length === 3 ? `${parts[2]}/${parts[1]}` : m.date;
+                    return {
+                      date: m.date,
+                      displayDate,
+                      title: m.title,
+                      rank: m.estimatedRank,
+                      tytNet: m.tyt?.totalNet || 0,
+                      aytNet: m.ayt?.totalNet || 0
+                    };
+                  });
 
                 const filteredGeneralMocks = mocks.filter(m => {
                   if (generalMockSearch.trim()) {
@@ -2674,33 +2679,58 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                           </div>
                         </div>
 
-                        {/* Chart 2: Average TYT Breakdown */}
+                        {/* Chart 2: Estimated Rank Change Progression */}
                         <div className="bg-slate-950/80 border border-white/10 rounded-3xl p-5 space-y-3">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
-                              <BarChart3 className="w-4 h-4 text-indigo-400" />
-                              <h4 className="text-xs font-bold text-white">Ders Bazlı TYT Net Ortalamaları</h4>
+                              <Trophy className="w-4 h-4 text-amber-400" />
+                              <h4 className="text-xs font-bold text-white">Tahmini YKS Sıralama Değişim Trendi</h4>
                             </div>
-                            <span className="text-[10px] text-slate-400 font-mono">Tüm Denemeler Ortalaması</span>
+                            <span className="text-[10px] text-amber-300 font-mono bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                              Hedef: #{profile?.targetRank?.toLocaleString('tr-TR') || '20.000'}
+                            </span>
                           </div>
 
                           <div className="h-48 w-full pt-2">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <BarChart data={tytSubjectAverages} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                                <XAxis dataKey="subject" stroke="#94a3b8" fontSize={10} tickLine={false} />
-                                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
-                                <Tooltip
-                                  contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '11px', color: '#fff' }}
-                                  formatter={(val: any) => [`${val} Net`, 'Ortalama Net']}
-                                />
-                                <Bar dataKey="net" radius={[4, 4, 0, 0]} maxBarSize={36}>
-                                  {tytSubjectAverages.map((entry, index) => (
-                                    <Cell key={`cell-tyt-${index}`} fill={entry.color} />
-                                  ))}
-                                </Bar>
-                              </BarChart>
-                            </ResponsiveContainer>
+                            {rankTrendData.length === 0 ? (
+                              <div className="h-full flex items-center justify-center text-xs text-slate-500 italic">
+                                Sıralama hesabı yapılan deneme kaydı henüz yok.
+                              </div>
+                            ) : (
+                              <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={rankTrendData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                                  <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={10} tickLine={false} />
+                                  <YAxis 
+                                    stroke="#94a3b8" 
+                                    fontSize={10} 
+                                    tickLine={false} 
+                                    reversed={true}
+                                    tickFormatter={(v) => `#${(v >= 1000 ? `${Math.round(v / 1000)}k` : v)}`}
+                                  />
+                                  <Tooltip
+                                    contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '11px', color: '#fff' }}
+                                    formatter={(val: any, name: any, item: any) => [
+                                      `#${Number(val).toLocaleString('tr-TR')} (TYT: ${item.payload.tytNet}N, AYT: ${item.payload.aytNet}N)`,
+                                      'Tahmini Başarı Sırası'
+                                    ]}
+                                    labelFormatter={(l: any, payload: any) => {
+                                      const item = payload && payload[0]?.payload;
+                                      return item ? `${item.title} (${item.date})` : `${l}`;
+                                    }}
+                                  />
+                                  <Line 
+                                    type="monotone" 
+                                    dataKey="rank" 
+                                    stroke="#f59e0b" 
+                                    strokeWidth={3} 
+                                    dot={{ r: 4, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }} 
+                                    activeDot={{ r: 6, fill: '#fbbf24' }} 
+                                    name="rank" 
+                                  />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -3118,8 +3148,125 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
               {/* SUB-TAB 3: KURUMSAL DENEMELER (KARNELER) */}
               {/* ------------------------------------------------------------- */}
               {mockSubTab === 'institutional' && (() => {
+                const extractInstStats = (exam: InstitutionalMockExam) => {
+                  if (!exam) return {
+                    totalNet: 0,
+                    totalCorrect: 0,
+                    totalWrong: 0,
+                    totalEmpty: 0,
+                    totalQuestions: 0,
+                    score: 0,
+                    scoreType: 'SAY',
+                    schoolRank: undefined as number | undefined,
+                    schoolTotal: undefined as number | undefined,
+                    classRank: undefined as number | undefined,
+                    classTotal: undefined as number | undefined,
+                    generalRank: undefined as number | undefined,
+                    generalTotal: undefined as number | undefined,
+                    subjects: [] as InstitutionalSubjectDetail[]
+                  };
+
+                  const subjects = exam.subjects || [];
+                  let totalNet = 0;
+                  let totalCorrect = 0;
+                  let totalWrong = 0;
+                  let totalQuestions = 0;
+
+                  subjects.forEach(s => {
+                    const net = s.net !== undefined ? s.net : (s.correct - (s.wrong || 0) * 0.25);
+                    totalNet += net;
+                    totalCorrect += (s.correct || 0);
+                    totalWrong += (s.wrong || 0);
+                    totalQuestions += (s.questionCount || (s.correct + s.wrong + (s.empty || 0)));
+                  });
+
+                  const totalEmpty = Math.max(0, totalQuestions - (totalCorrect + totalWrong));
+
+                  const scores = exam.scores || {};
+                  let score = scores.sayScore || 0;
+                  let scoreType = 'SAY';
+                  let schoolRank = scores.sayInstitutionRank;
+                  let schoolTotal = scores.sayInstitutionTotal;
+                  let classRank = scores.sayClassRank;
+                  let classTotal = scores.sayClassTotal;
+                  let generalRank = scores.sayGeneralRank;
+                  let generalTotal = scores.sayGeneralTotal;
+
+                  if ((scores.eaScore || 0) > score) {
+                    score = scores.eaScore || 0;
+                    scoreType = 'EA';
+                    schoolRank = scores.eaInstitutionRank;
+                    schoolTotal = scores.eaInstitutionTotal;
+                    classRank = scores.eaClassRank;
+                    classTotal = scores.eaClassTotal;
+                    generalRank = scores.eaGeneralRank;
+                    generalTotal = scores.eaGeneralTotal;
+                  }
+                  if ((scores.sozScore || 0) > score) {
+                    score = scores.sozScore || 0;
+                    scoreType = 'SÖZ';
+                    schoolRank = scores.sozInstitutionRank;
+                    schoolTotal = scores.sozInstitutionTotal;
+                    classRank = scores.sozClassRank;
+                    classTotal = scores.sozClassTotal;
+                    generalRank = scores.sozGeneralRank;
+                    generalTotal = scores.sozGeneralTotal;
+                  }
+
+                  // Fallbacks for participant counts if specific area total is not set
+                  if (!schoolTotal && scores.institutionParticipantCount) {
+                    schoolTotal = scores.institutionParticipantCount;
+                  }
+                  if (!classTotal && scores.classParticipantCount) {
+                    classTotal = scores.classParticipantCount;
+                  }
+                  if (!generalTotal && scores.generalParticipantCount) {
+                    generalTotal = scores.generalParticipantCount;
+                  }
+
+                  // Flat field fallbacks if present in legacy records
+                  if (!schoolRank && (exam as any).schoolRank) schoolRank = (exam as any).schoolRank;
+                  if (!generalRank && (exam as any).generalRank) generalRank = (exam as any).generalRank;
+                  if (!classRank && (exam as any).classRank) classRank = (exam as any).classRank;
+                  if (!schoolTotal && (exam as any).schoolTotalCount) schoolTotal = (exam as any).schoolTotalCount;
+                  if (!generalTotal && (exam as any).generalTotalCount) generalTotal = (exam as any).generalTotalCount;
+                  if (score === 0 && (exam as any).score) score = (exam as any).score;
+                  if (totalNet === 0 && (exam as any).totalNet) totalNet = (exam as any).totalNet;
+
+                  return {
+                    totalNet: Number(totalNet.toFixed(2)),
+                    totalCorrect,
+                    totalWrong,
+                    totalEmpty,
+                    totalQuestions,
+                    score: Number(score.toFixed(1)),
+                    scoreType,
+                    schoolRank,
+                    schoolTotal,
+                    classRank,
+                    classTotal,
+                    generalRank,
+                    generalTotal,
+                    subjects
+                  };
+                };
+
                 const totalInstCount = institutionalMocks.length;
-                const latestExam = institutionalMocks[0];
+                const sortedInstMocks = [...institutionalMocks].sort((a, b) => (b.examDate || '').localeCompare(a.examDate || ''));
+                const latestExam = sortedInstMocks[0];
+                const latestStats = latestExam ? extractInstStats(latestExam) : null;
+
+                // Find best ranks across all exams
+                const allStats = institutionalMocks.map(ex => ({ exam: ex, stats: extractInstStats(ex) }));
+                const validSchoolRanks = allStats.filter(s => s.stats.schoolRank && s.stats.schoolRank > 0);
+                const bestSchoolItem = validSchoolRanks.length > 0 
+                  ? validSchoolRanks.reduce((min, cur) => (cur.stats.schoolRank! < min.stats.schoolRank! ? cur : min))
+                  : null;
+
+                const validGeneralRanks = allStats.filter(s => s.stats.generalRank && s.stats.generalRank > 0);
+                const bestGeneralItem = validGeneralRanks.length > 0
+                  ? validGeneralRanks.reduce((min, cur) => (cur.stats.generalRank! < min.stats.generalRank! ? cur : min))
+                  : null;
 
                 // Chart: Trend of institutional exam scores
                 const instTrendData = [...institutionalMocks]
@@ -3128,27 +3275,29 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                   .map(ex => {
                     const parts = (ex.examDate || '').split('-');
                     const displayDate = parts.length === 3 ? `${parts[2]}/${parts[1]}` : ex.examDate;
+                    const st = extractInstStats(ex);
                     return {
                       date: ex.examDate,
                       displayDate,
-                      title: ex.examTitle || ex.title,
-                      totalNet: ex.totalNet || 0,
-                      score: ex.score || 0,
-                      schoolRank: ex.schoolRank || 0
+                      title: ex.examTitle || (ex as any).title,
+                      totalNet: st.totalNet,
+                      score: st.score,
+                      schoolRank: st.schoolRank || 0,
+                      generalRank: st.generalRank || 0
                     };
                   });
 
-                const filteredInstMocks = institutionalMocks.filter(ex => {
+                const filteredInstMocks = sortedInstMocks.filter(ex => {
                   if (institutionalMockSearch.trim()) {
                     const q = institutionalMockSearch.toLowerCase();
-                    const matchTitle = (ex.examTitle || ex.title || '').toLowerCase().includes(q);
-                    const matchPub = (ex.publisher || '').toLowerCase().includes(q);
+                    const matchTitle = (ex.examTitle || (ex as any).title || '').toLowerCase().includes(q);
+                    const matchPub = (ex.createdByName || (ex as any).publisher || '').toLowerCase().includes(q);
                     if (!matchTitle && !matchPub) return false;
                   }
                   if (institutionalMockTypeFilter === 'TYT' && ex.examType !== 'TYT') return false;
                   if (institutionalMockTypeFilter === 'AYT' && ex.examType !== 'AYT') return false;
                   return true;
-                }).sort((a, b) => (b.examDate || '').localeCompare(a.examDate || ''));
+                });
 
                 return (
                   <div className="space-y-6">
@@ -3172,38 +3321,48 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                           <Target className="w-4 h-4 text-sky-400" />
                         </div>
                         <div className="mt-2 flex items-baseline gap-1.5">
-                          <span className="text-2xl font-black text-sky-400">{latestExam?.totalNet || 0}</span>
+                          <span className="text-2xl font-black text-sky-400">{latestStats ? `${latestStats.totalNet}` : '0'}</span>
                           <span className="text-xs text-slate-400 font-bold">Net</span>
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-400">{latestExam?.examTitle || 'Henüz Sınav Yok'}</div>
+                        <div className="mt-1 text-[10px] text-slate-400 truncate max-w-[180px]">
+                          {latestExam ? (latestExam.examTitle || (latestExam as any).title) : 'Henüz Sınav Yok'}
+                        </div>
                       </div>
 
                       <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-400">Son Sınav Puanı</span>
-                          <Award className="w-4 h-4 text-amber-400" />
+                          <span className="text-xs font-semibold text-slate-400">En İyi Okul Sırası</span>
+                          <Trophy className="w-4 h-4 text-amber-400" />
                         </div>
                         <div className="mt-2 flex items-baseline gap-1.5">
-                          <span className="text-2xl font-black text-amber-400">{latestExam?.score ? latestExam.score.toFixed(1) : '-'}</span>
-                          <span className="text-xs text-slate-400 font-bold">Puan</span>
-                        </div>
-                        <div className="mt-1 text-[10px] text-amber-400/80 font-medium">YKS Yerleştirme Puanı</div>
-                      </div>
-
-                      <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-slate-400">Okul Derecesi</span>
-                          <Trophy className="w-4 h-4 text-emerald-400" />
-                        </div>
-                        <div className="mt-2 flex items-baseline gap-1.5">
-                          <span className="text-2xl font-black text-emerald-400">
-                            {latestExam?.schoolRank ? `#${latestExam.schoolRank}` : '-'}
+                          <span className="text-2xl font-black text-amber-400">
+                            {bestSchoolItem?.stats.schoolRank ? `#${bestSchoolItem.stats.schoolRank}` : '-'}
                           </span>
-                          {latestExam?.schoolTotalCount && (
-                            <span className="text-xs text-slate-400 font-bold">/ {latestExam.schoolTotalCount}</span>
+                          {bestSchoolItem?.stats.schoolTotal && (
+                            <span className="text-xs text-slate-400 font-bold">/ {bestSchoolItem.stats.schoolTotal}</span>
                           )}
                         </div>
-                        <div className="mt-1 text-[10px] text-slate-400 font-medium">Okul Sıralama Durumu</div>
+                        <div className="mt-1 text-[10px] text-amber-400/80 font-medium">
+                          {bestSchoolItem ? `Derece: İlk %${((bestSchoolItem.stats.schoolRank! / (bestSchoolItem.stats.schoolTotal || 1)) * 100).toFixed(1)}` : 'Okul Sıralama Durumu'}
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-slate-400">En İyi Genel Sıralama</span>
+                          <Award className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <div className="mt-2 flex items-baseline gap-1.5">
+                          <span className="text-2xl font-black text-purple-400">
+                            {bestGeneralItem?.stats.generalRank ? `#${bestGeneralItem.stats.generalRank.toLocaleString('tr-TR')}` : '-'}
+                          </span>
+                          {bestGeneralItem?.stats.generalTotal && (
+                            <span className="text-xs text-slate-400 font-bold">/ {bestGeneralItem.stats.generalTotal.toLocaleString('tr-TR')}</span>
+                          )}
+                        </div>
+                        <div className="mt-1 text-[10px] text-purple-300/80 font-medium">
+                          {bestGeneralItem ? `İlk %${((bestGeneralItem.stats.generalRank! / (bestGeneralItem.stats.generalTotal || 1)) * 100).toFixed(1)}` : 'Türkiye Geneli Derece'}
+                        </div>
                       </div>
                     </div>
 
@@ -3215,7 +3374,9 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                             <TrendingUp className="w-4 h-4 text-emerald-400" />
                             <h4 className="text-xs font-bold text-white">Kurumsal Deneme Net Gelişim Trendi</h4>
                           </div>
-                          <span className="text-[10px] text-emerald-400 font-mono">Resmi Karne Sonuçları</span>
+                          <span className="text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                            Resmi Karne Sonuçları
+                          </span>
                         </div>
 
                         <div className="h-48 w-full pt-2">
@@ -3226,16 +3387,16 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                               <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
                               <Tooltip
                                 contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '11px', color: '#fff' }}
-                                formatter={(val: any, name: any) => [
-                                  name === 'totalNet' ? `${val} Net` : `${val} Puan`,
-                                  name === 'totalNet' ? 'Toplam Net' : 'Sınav Puanı'
+                                formatter={(val: any, name: any, item: any) => [
+                                  `${val} Net (${item.payload.score > 0 ? `${item.payload.score} P` : ''} ${item.payload.schoolRank ? `• Okul: #${item.payload.schoolRank}` : ''})`,
+                                  'Toplam Net & Puan'
                                 ]}
                                 labelFormatter={(l: any, payload: any) => {
                                   const item = payload && payload[0]?.payload;
                                   return item ? `${item.title} (${item.date})` : `${l}`;
                                 }}
                               />
-                              <Line type="monotone" dataKey="totalNet" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981' }} name="totalNet" />
+                              <Line type="monotone" dataKey="totalNet" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6, fill: '#34d399' }} name="totalNet" />
                             </LineChart>
                           </ResponsiveContainer>
                         </div>
@@ -3267,15 +3428,15 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                         <button
                           onClick={() => setInstitutionalMockTypeFilter('all')}
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                            institutionalMockTypeFilter === 'all' ? 'bg-emerald-600 text-white font-bold' : 'text-slate-400 hover:text-white'
+                            institutionalMockTypeFilter === 'all' ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-500/20' : 'text-slate-400 hover:text-white'
                           }`}
                         >
-                          Tüm Karneler
+                          Tüm Karneler ({institutionalMocks.length})
                         </button>
                         <button
                           onClick={() => setInstitutionalMockTypeFilter('TYT')}
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                            institutionalMockTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold' : 'text-slate-400 hover:text-indigo-400'
+                            institutionalMockTypeFilter === 'TYT' ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-500/20' : 'text-slate-400 hover:text-indigo-400'
                           }`}
                         >
                           TYT Karneleri
@@ -3283,7 +3444,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                         <button
                           onClick={() => setInstitutionalMockTypeFilter('AYT')}
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                            institutionalMockTypeFilter === 'AYT' ? 'bg-fuchsia-600 text-white font-bold' : 'text-slate-400 hover:text-fuchsia-400'
+                            institutionalMockTypeFilter === 'AYT' ? 'bg-fuchsia-600 text-white font-bold shadow-md shadow-fuchsia-500/20' : 'text-slate-400 hover:text-fuchsia-400'
                           }`}
                         >
                           AYT Karneleri
@@ -3300,107 +3461,146 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {filteredInstMocks.map((exam) => {
-                          const examTitle = exam.examTitle || exam.title;
-                          const totalNet = exam.totalNet || 0;
-                          const score = exam.score || 0;
+                          const examTitle = exam.examTitle || (exam as any).title;
+                          const stats = extractInstStats(exam);
+
+                          const schoolPercentile = stats.schoolRank && stats.schoolTotal && stats.schoolTotal > 0
+                            ? ((stats.schoolRank / stats.schoolTotal) * 100).toFixed(1)
+                            : null;
+
+                          const generalPercentile = stats.generalRank && stats.generalTotal && stats.generalTotal > 0
+                            ? ((stats.generalRank / stats.generalTotal) * 100).toFixed(1)
+                            : null;
 
                           return (
                             <div
                               key={exam.id}
-                              className="bg-slate-950/80 border border-white/10 hover:border-emerald-500/40 rounded-2xl p-5 space-y-4 shadow-xl transition-all relative group"
+                              className="bg-slate-950/90 border border-white/10 hover:border-emerald-500/50 rounded-2xl p-5 space-y-4 shadow-xl transition-all relative group flex flex-col justify-between"
                             >
-                              {/* Top Row: Title, Publisher, Exam Type */}
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border ${
-                                      exam.examType === 'TYT'
-                                        ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
-                                        : 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30'
-                                    }`}>
-                                      {exam.examType || 'TYT'}
+                              {/* Top Row: Title, Publisher, Exam Type, Total Net & Score */}
+                              <div className="space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="space-y-1.5 flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-lg border ${
+                                        exam.examType === 'TYT'
+                                          ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                                          : exam.examType === 'AYT'
+                                          ? 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30'
+                                          : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                      }`}>
+                                        {exam.examType || 'Kurumsal Deneme'}
+                                      </span>
+                                      {(exam.createdByName || (exam as any).publisher) && (
+                                        <span className="text-[11px] font-bold text-slate-300 bg-white/10 px-2 py-0.5 rounded-md border border-white/5 truncate max-w-[160px]">
+                                          {exam.createdByName || (exam as any).publisher}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <h4 className="text-base font-black text-white leading-snug tracking-tight">
+                                      {examTitle}
+                                    </h4>
+                                  </div>
+
+                                  <div className="text-right shrink-0 bg-slate-900/90 border border-white/10 px-3.5 py-2 rounded-xl">
+                                    <span className="text-lg font-black text-emerald-400 font-mono block">
+                                      {stats.totalNet.toFixed(2)} Net
                                     </span>
-                                    {exam.publisher && (
-                                      <span className="text-[11px] font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded-md">
-                                        {exam.publisher}
+                                    {stats.score > 0 && (
+                                      <span className="text-[11px] text-amber-400 font-mono font-bold block">
+                                        {stats.score.toFixed(1)} Puan <span className="text-[9px] text-slate-400 font-sans">({stats.scoreType})</span>
                                       </span>
                                     )}
                                   </div>
-                                  <h4 className="text-base font-bold text-white leading-snug">
-                                    {examTitle}
-                                  </h4>
                                 </div>
 
-                                <div className="text-right shrink-0">
-                                  <span className="text-lg font-black text-emerald-400 font-mono block">
-                                    {totalNet.toFixed(2)} Net
-                                  </span>
-                                  {score > 0 && (
-                                    <span className="text-[11px] text-amber-400/90 font-mono font-bold">
-                                      {score.toFixed(1)} Puan
+                                {/* 3-Column Ranking Badges Grid */}
+                                <div className="grid grid-cols-3 gap-2 bg-slate-900/90 p-3 rounded-xl border border-white/10 font-mono text-center">
+                                  {/* 1. Okul Sırası */}
+                                  <div className="space-y-0.5">
+                                    <span className="text-[10px] text-emerald-400 font-sans block font-bold">🏫 Okul Sırası</span>
+                                    <span className="text-sm font-black text-white">
+                                      {stats.schoolRank ? `#${stats.schoolRank}` : '-'}
                                     </span>
-                                  )}
-                                </div>
-                              </div>
+                                    {stats.schoolTotal ? (
+                                      <span className="text-[9px] text-slate-400 block">/ {stats.schoolTotal} Kişi</span>
+                                    ) : null}
+                                    {schoolPercentile && (
+                                      <span className="text-[9px] text-emerald-400/90 font-sans font-semibold block">İlk %{schoolPercentile}</span>
+                                    )}
+                                  </div>
 
-                              {/* Ranking Badges Grid */}
-                              <div className="grid grid-cols-3 gap-2 bg-slate-900/90 p-3 rounded-xl border border-white/5 font-mono text-center">
-                                <div>
-                                  <span className="text-[10px] text-emerald-400 font-sans block font-semibold">Okul Sırası</span>
-                                  <span className="text-sm font-black text-white">
-                                    {exam.schoolRank ? `#${exam.schoolRank}` : '-'}
-                                  </span>
-                                  {exam.schoolTotalCount && (
-                                    <span className="text-[9px] text-slate-500 block">/ {exam.schoolTotalCount} kişi</span>
-                                  )}
-                                </div>
-
-                                <div>
-                                  <span className="text-[10px] text-sky-400 font-sans block font-semibold">İl / İlçe Sırası</span>
-                                  <span className="text-sm font-black text-white">
-                                    {exam.cityRank ? `#${exam.cityRank}` : exam.districtRank ? `#${exam.districtRank}` : '-'}
-                                  </span>
-                                  {exam.cityTotalCount && (
-                                    <span className="text-[9px] text-slate-500 block">/ {exam.cityTotalCount} kişi</span>
-                                  )}
-                                </div>
-
-                                <div>
-                                  <span className="text-[10px] text-purple-400 font-sans block font-semibold">Genel Sıra</span>
-                                  <span className="text-sm font-black text-white">
-                                    {exam.generalRank ? `#${exam.generalRank.toLocaleString('tr-TR')}` : '-'}
-                                  </span>
-                                  {exam.generalTotalCount && (
-                                    <span className="text-[9px] text-slate-500 block">/ {exam.generalTotalCount.toLocaleString('tr-TR')}</span>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Subject Nets Summary */}
-                              {exam.subjects && exam.subjects.length > 0 && (
-                                <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-mono pt-1">
-                                  {exam.subjects.map(s => (
-                                    <span
-                                      key={s.subjectName}
-                                      className="bg-white/5 text-slate-300 px-2 py-0.5 rounded-md border border-white/5"
-                                    >
-                                      <span className="text-slate-400 font-sans">{s.subjectName}:</span>{' '}
-                                      <strong className="text-emerald-300">{s.net !== undefined ? s.net.toFixed(1) : (s.correct - (s.wrong || 0) * 0.25).toFixed(1)}</strong>
+                                  {/* 2. Sınıf Sırası */}
+                                  <div className="space-y-0.5 border-x border-white/5 px-1">
+                                    <span className="text-[10px] text-sky-400 font-sans block font-bold">👥 Sınıf Sırası</span>
+                                    <span className="text-sm font-black text-white">
+                                      {stats.classRank ? `#${stats.classRank}` : '-'}
                                     </span>
-                                  ))}
+                                    {stats.classTotal ? (
+                                      <span className="text-[9px] text-slate-400 block">/ {stats.classTotal} Kişi</span>
+                                    ) : (
+                                      <span className="text-[9px] text-slate-500 block">Sınıf</span>
+                                    )}
+                                  </div>
+
+                                  {/* 3. Genel Sıra */}
+                                  <div className="space-y-0.5">
+                                    <span className="text-[10px] text-purple-400 font-sans block font-bold">🌍 Genel / TR</span>
+                                    <span className="text-sm font-black text-white">
+                                      {stats.generalRank ? `#${stats.generalRank.toLocaleString('tr-TR')}` : '-'}
+                                    </span>
+                                    {stats.generalTotal ? (
+                                      <span className="text-[9px] text-slate-400 block">/ {stats.generalTotal.toLocaleString('tr-TR')}</span>
+                                    ) : null}
+                                    {generalPercentile && (
+                                      <span className="text-[9px] text-purple-300 font-sans font-semibold block">İlk %{generalPercentile}</span>
+                                    )}
+                                  </div>
                                 </div>
-                              )}
+
+                                {/* Subject Nets Detailed Chips */}
+                                {stats.subjects && stats.subjects.length > 0 && (
+                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1">
+                                    {stats.subjects.map(s => {
+                                      const sNet = s.net !== undefined ? s.net : (s.correct - (s.wrong || 0) * 0.25);
+                                      return (
+                                        <div
+                                          key={s.subjectName}
+                                          className="bg-slate-900/80 border border-white/5 p-2 rounded-xl text-center space-y-0.5"
+                                        >
+                                          <div className="text-[10px] text-slate-400 font-semibold truncate" title={s.subjectName}>
+                                            {s.subjectName}
+                                          </div>
+                                          <div className="text-xs font-black text-emerald-300 font-mono">
+                                            {sNet.toFixed(2)} Net
+                                          </div>
+                                          <div className="text-[9px] text-slate-500 font-mono">
+                                            {s.correct}D {s.wrong}Y {s.empty ? `${s.empty}B` : ''}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
 
                               {/* Card Action Footer */}
-                              <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                                <span className="flex items-center space-x-1 text-[11px] text-slate-400">
+                              <div className="flex items-center justify-between pt-3 border-t border-white/10 mt-auto">
+                                <div className="flex items-center space-x-2 text-[11px] text-slate-400 font-mono">
                                   <Calendar className="w-3.5 h-3.5 text-slate-500" />
                                   <span>{exam.examDate}</span>
-                                </span>
+                                  {stats.totalQuestions > 0 && (
+                                    <span className="text-slate-500 text-[10px]">
+                                      • {stats.totalCorrect}D {stats.totalWrong}Y {stats.totalEmpty}B
+                                    </span>
+                                  )}
+                                </div>
 
                                 <button
+                                  type="button"
                                   onClick={() => setSelectedInstitutionalExam(exam)}
-                                  className="flex items-center space-x-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-500/20 cursor-pointer"
+                                  className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-emerald-500/20 cursor-pointer group-hover:scale-105"
                                 >
                                   <Eye className="w-3.5 h-3.5" />
                                   <span>Karneyi İncele</span>
