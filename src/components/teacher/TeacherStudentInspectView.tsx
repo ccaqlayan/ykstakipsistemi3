@@ -206,6 +206,10 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
   const [youtubeSubjectFilter, setYoutubeSubjectFilter] = useState<string>('all');
   const [youtubeStatusFilter, setYoutubeStatusFilter] = useState<'all' | 'playlist' | 'single' | 'completed' | 'in_progress'>('all');
   const [youtubeSearchQuery, setYoutubeSearchQuery] = useState<string>('');
+  const [plannerDayFilter, setPlannerDayFilter] = useState<string>('all');
+  const [plannerStatusFilter, setPlannerStatusFilter] = useState<'all' | 'completed' | 'pending'>('all');
+  const [plannerSubjectFilter, setPlannerSubjectFilter] = useState<string>('all');
+  const [plannerSearchQuery, setPlannerSearchQuery] = useState<string>('');
 
   const stData = resolveStudentData(selectedStudentUser, studentsData);
   const profile = stData.profile;
@@ -1110,113 +1114,458 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
       )}
 
       {/* TAB 2: STUDY PLANNER */}
-      {activeTab === 'planner' && (
-        <div className="bg-slate-900/90 border border-white/15 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
-            <div>
-              <h3 className="text-base font-bold text-white">Haftalık Ders Çalışma Programı</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Öğrencinin haftalık ders çalışma takvimini yönetin ve yeni görev atayın.</p>
+      {activeTab === 'planner' && (() => {
+        const totalPlannerTasks = plans.length;
+        const completedPlannerTasks = plans.filter(p => p.status === 'completed').length;
+        const pendingPlannerTasks = totalPlannerTasks - completedPlannerTasks;
+        const totalPlannerMinutes = plans.reduce((acc, p) => acc + (p.plannedMinutes || 0), 0);
+        const totalTargetQuestions = plans.reduce((acc, p) => acc + (p.targetQuestionCount || 0), 0);
+        const plannerCompletionRate = totalPlannerTasks > 0 ? Math.round((completedPlannerTasks / totalPlannerTasks) * 100) : 0;
+
+        const plannerSubjects = ['all', ...Array.from(new Set(plans.map((p: any) => String(p.subject || '')).filter(Boolean)))];
+
+        const filteredPlans = plans.filter(p => {
+          if (plannerDayFilter !== 'all' && p.day !== plannerDayFilter) return false;
+          if (plannerStatusFilter === 'completed' && p.status !== 'completed') return false;
+          if (plannerStatusFilter === 'pending' && p.status === 'completed') return false;
+          if (plannerSubjectFilter !== 'all' && p.subject !== plannerSubjectFilter) return false;
+          if (plannerSearchQuery.trim()) {
+            const q = plannerSearchQuery.toLowerCase();
+            const matchSubject = (p.subject || '').toLowerCase().includes(q);
+            const matchTopic = (p.topic || '').toLowerCase().includes(q);
+            const matchNotes = (p.notes || '').toLowerCase().includes(q);
+            const matchType = (p.taskType || '').toLowerCase().includes(q);
+            if (!matchSubject && !matchTopic && !matchNotes && !matchType) return false;
+          }
+          return true;
+        });
+
+        return (
+          <div className="bg-slate-900/90 border border-white/15 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl space-y-6">
+            {/* Header & Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center space-x-2">
+                  <Calendar className="w-5 h-5 text-fuchsia-400" />
+                  <span>Haftalık Ders Çalışma Programı</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">Öğrencinin haftalık ders çalışma takvimini yönetin, ilerlemesini takip edin ve yeni görevler atayın.</p>
+              </div>
+
+              {!isBranchTeacher && (
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setShowSaveTemplateModal(true)}
+                    className="bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer"
+                  >
+                    <Bookmark className="w-3.5 h-3.5" />
+                    <span>Şablon Olarak Kaydet</span>
+                  </button>
+                  <button
+                    onClick={() => setShowAddTaskToStudentModal(true)}
+                    className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-md shadow-fuchsia-600/20 flex items-center space-x-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Yeni Görev Ekle</span>
+                  </button>
+                </div>
+              )}
             </div>
 
-            {!isBranchTeacher && (
-              <div className="flex items-center space-x-2">
+            {/* KPI Metrics Header */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-400">Toplam Görev</span>
+                  <Calendar className="w-4 h-4 text-fuchsia-400" />
+                </div>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">{totalPlannerTasks}</span>
+                  <span className="text-xs text-slate-400">görev</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-400">Tamamlanan</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-emerald-400">{completedPlannerTasks}</span>
+                  <span className="text-xs text-emerald-500/80 font-bold">/ {totalPlannerTasks} (%{plannerCompletionRate})</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-400">Bekleyen Görev</span>
+                  <Clock className="w-4 h-4 text-amber-400" />
+                </div>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-amber-400">{pendingPlannerTasks}</span>
+                  <span className="text-xs text-slate-400">kaldı</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-400">Toplam Süre</span>
+                  <Timer className="w-4 h-4 text-sky-400" />
+                </div>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-sky-400">
+                    {Math.floor(totalPlannerMinutes / 60)}s {totalPlannerMinutes % 60}d
+                  </span>
+                  {totalTargetQuestions > 0 && (
+                    <span className="text-xs text-amber-400 font-bold">• {totalTargetQuestions} Soru</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Global Progress Bar */}
+            <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-4 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center space-x-2">
+                  <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" />
+                  <span className="font-bold text-white">Haftalık Görev İlerleme Durumu</span>
+                </div>
+                <span className="font-mono font-bold text-fuchsia-400">
+                  {completedPlannerTasks} / {totalPlannerTasks} Görev Yapıldı (%{plannerCompletionRate})
+                </span>
+              </div>
+              <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden border border-white/10">
+                <div 
+                  className="h-full bg-gradient-to-r from-fuchsia-500 via-indigo-500 to-emerald-500 rounded-full transition-all duration-500 shadow-sm shadow-fuchsia-500/30"
+                  style={{ width: `${plannerCompletionRate}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Filter & Search Toolbar */}
+            <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {/* Search Box */}
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={plannerSearchQuery}
+                    onChange={(e) => setPlannerSearchQuery(e.target.value)}
+                    placeholder="Ders, konu başlığı, görev tipi veya notlarda ara..."
+                    className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-fuchsia-500/50 transition-colors"
+                  />
+                  {plannerSearchQuery && (
+                    <button
+                      onClick={() => setPlannerSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs px-1"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Status Filter Buttons */}
+                <div className="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0">
+                  <button
+                    onClick={() => setPlannerStatusFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      plannerStatusFilter === 'all'
+                        ? 'bg-fuchsia-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Tümü ({totalPlannerTasks})
+                  </button>
+                  <button
+                    onClick={() => setPlannerStatusFilter('completed')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center space-x-1 ${
+                      plannerStatusFilter === 'completed'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-emerald-400'
+                    }`}
+                  >
+                    <Check className="w-3 h-3" />
+                    <span>Yapılanlar ({completedPlannerTasks})</span>
+                  </button>
+                  <button
+                    onClick={() => setPlannerStatusFilter('pending')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center space-x-1 ${
+                      plannerStatusFilter === 'pending'
+                        ? 'bg-amber-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-amber-400'
+                    }`}
+                  >
+                    <Clock className="w-3 h-3" />
+                    <span>Bekleyenler ({pendingPlannerTasks})</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Day Filter Chips */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-white/5">
+                <span className="text-[11px] font-bold text-slate-400 mr-1 flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-fuchsia-400" /> Gün:
+                </span>
                 <button
-                  onClick={() => setShowSaveTemplateModal(true)}
-                  className="bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer"
+                  onClick={() => setPlannerDayFilter('all')}
+                  className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                    plannerDayFilter === 'all'
+                      ? 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-400/40 font-bold'
+                      : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-slate-300'
+                  }`}
                 >
-                  <Bookmark className="w-3.5 h-3.5" />
-                  <span>Şablon Olarak Kaydet</span>
+                  Tüm Günler
                 </button>
+                {DAYS.map(day => {
+                  const count = plans.filter(p => p.day === day).length;
+                  if (count === 0 && plannerDayFilter !== day) return null;
+                  return (
+                    <button
+                      key={day}
+                      onClick={() => setPlannerDayFilter(day)}
+                      className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                        plannerDayFilter === day
+                          ? 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-400/40 font-bold'
+                          : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-slate-300'
+                      }`}
+                    >
+                      {day} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Subject Filter Chips */}
+              {plannerSubjects.length > 2 && (
+                <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-white/5">
+                  <span className="text-[11px] font-bold text-slate-400 mr-1 flex items-center gap-1">
+                    <Filter className="w-3 h-3 text-indigo-400" /> Ders:
+                  </span>
+                  {plannerSubjects.map(subj => (
+                    <button
+                      key={subj}
+                      onClick={() => setPlannerSubjectFilter(subj)}
+                      className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                        plannerSubjectFilter === subj
+                          ? 'bg-indigo-500/20 text-indigo-300 border-indigo-400/40 font-bold'
+                          : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-slate-300'
+                      }`}
+                    >
+                      {subj === 'all' ? 'Tüm Dersler' : subj}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* List & Day Boards */}
+            {plans.length === 0 ? (
+              <div className="text-center py-16 border border-dashed border-white/10 rounded-2xl space-y-3">
+                <Calendar className="w-10 h-10 text-slate-500 mx-auto" />
+                <p className="text-sm text-slate-400 font-medium">Bu öğrencinin haftalık planında henüz kayıtlı görev bulunmuyor.</p>
+                {!isBranchTeacher && (
+                  <button
+                    onClick={() => setShowAddTaskToStudentModal(true)}
+                    className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all inline-flex items-center space-x-1.5 cursor-pointer shadow-lg shadow-fuchsia-600/20 mt-2"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Hemen İlk Görevi Ekle</span>
+                  </button>
+                )}
+              </div>
+            ) : filteredPlans.length === 0 ? (
+              <div className="text-center py-16 border border-dashed border-white/10 rounded-2xl space-y-3">
+                <Filter className="w-10 h-10 text-slate-500 mx-auto" />
+                <p className="text-sm text-slate-400 font-medium">Uygulanan filtrelerle veya arama terimiyle eşleşen görev bulunamadı.</p>
                 <button
-                  onClick={() => setShowAddTaskToStudentModal(true)}
-                  className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-md shadow-fuchsia-600/20 flex items-center space-x-1.5 cursor-pointer"
+                  onClick={() => {
+                    setPlannerDayFilter('all');
+                    setPlannerStatusFilter('all');
+                    setPlannerSubjectFilter('all');
+                    setPlannerSearchQuery('');
+                  }}
+                  className="text-xs text-fuchsia-400 hover:text-fuchsia-300 underline font-semibold cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Yeni Görev Ekle</span>
+                  Filtreleri Temizle
                 </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {DAYS.map(day => {
+                  const dayPlans = filteredPlans.filter(p => p.day === day);
+                  if (dayPlans.length === 0) return null;
+
+                  const dayCompleted = dayPlans.filter(p => p.status === 'completed').length;
+                  const dayTotalMinutes = dayPlans.reduce((acc, p) => acc + (p.plannedMinutes || 0), 0);
+                  const dayTotalQuestions = dayPlans.reduce((acc, p) => acc + (p.targetQuestionCount || 0), 0);
+                  const dayPercent = Math.round((dayCompleted / dayPlans.length) * 100);
+
+                  return (
+                    <div key={day} className="bg-slate-950/80 border border-white/10 rounded-3xl p-5 space-y-4 shadow-xl flex flex-col justify-between">
+                      <div className="space-y-3">
+                        {/* Day Card Header */}
+                        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                          <div className="flex items-center space-x-2.5">
+                            <div className={`w-2.5 h-2.5 rounded-full ${dayCompleted === dayPlans.length ? 'bg-emerald-400 ring-4 ring-emerald-400/20' : 'bg-fuchsia-400 ring-4 ring-fuchsia-400/20'}`} />
+                            <span className="text-sm font-black text-white uppercase tracking-wider">{day}</span>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border ${
+                              dayCompleted === dayPlans.length
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                : 'bg-white/5 text-slate-400 border-white/10'
+                            }`}>
+                              {dayCompleted}/{dayPlans.length} Yapıldı (%{dayPercent})
+                            </span>
+                            <span className="text-xs text-slate-400 font-mono font-semibold">
+                              {dayTotalMinutes} dk
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Mini Day Progress Bar */}
+                        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              dayCompleted === dayPlans.length ? 'bg-emerald-400' : 'bg-gradient-to-r from-fuchsia-500 to-indigo-500'
+                            }`}
+                            style={{ width: `${dayPercent}%` }}
+                          />
+                        </div>
+
+                        {/* Task Cards in Day */}
+                        <div className="space-y-3 pt-1">
+                          {dayPlans.map(task => {
+                            const isMyBranch = teacherSubj && (task.subject || '').toLowerCase().includes(teacherSubj);
+                            const isCompleted = task.status === 'completed';
+
+                            return (
+                              <div 
+                                key={task.id} 
+                                className={`p-4 rounded-2xl border transition-all space-y-2.5 relative group ${
+                                  isCompleted
+                                    ? 'bg-emerald-950/20 border-emerald-500/30 hover:border-emerald-500/50 shadow-md shadow-emerald-500/5'
+                                    : isMyBranch
+                                    ? 'bg-amber-950/20 border-amber-500/40 hover:border-amber-500/60 shadow-md shadow-amber-500/5'
+                                    : 'bg-slate-900/90 border-white/10 hover:border-white/20'
+                                }`}
+                              >
+                                {/* Top Row: Subject Pill & Badges & Quick Actions */}
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-center flex-wrap gap-1.5">
+                                    {/* Subject Badge */}
+                                    <span className="text-xs font-black text-indigo-300 bg-indigo-500/20 px-2.5 py-0.5 rounded-lg border border-indigo-500/30">
+                                      {task.subject}
+                                    </span>
+
+                                    {/* Task Type Badge */}
+                                    {task.taskType && (
+                                      <span className="text-[10px] font-semibold text-slate-300 bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">
+                                        {task.taskType}
+                                      </span>
+                                    )}
+
+                                    {/* Teacher's Branch Badge */}
+                                    {isMyBranch && (
+                                      <span className="text-[10px] font-bold bg-amber-500/30 text-amber-200 px-2 py-0.5 rounded-lg border border-amber-500/40 flex items-center gap-1">
+                                        <Sparkles className="w-2.5 h-2.5" />
+                                        Branşınız
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Action Buttons */}
+                                  <div className="flex items-center space-x-1.5 shrink-0">
+                                    <button
+                                      onClick={() => handleToggleTaskStatusFromTeacher(selectedStudentUser.id, task.id, task.status)}
+                                      className={`px-2 py-1 rounded-xl border transition-all cursor-pointer flex items-center space-x-1 text-xs font-bold ${
+                                        isCompleted
+                                          ? 'bg-emerald-500/25 text-emerald-300 border-emerald-500/50 hover:bg-emerald-500/35'
+                                          : 'bg-white/5 text-slate-400 border-white/10 hover:text-white hover:bg-white/10'
+                                      }`}
+                                      title={isCompleted ? 'Tamamlandı (Geri almak için tıklayın)' : 'Tamamlandı olarak işaretle'}
+                                    >
+                                      <CheckCircle2 className={`w-3.5 h-3.5 ${isCompleted ? 'text-emerald-400' : 'text-slate-400'}`} />
+                                      <span className="text-[10px]">{isCompleted ? 'Yapıldı' : 'Tamamla'}</span>
+                                    </button>
+
+                                    {!isBranchTeacher && (
+                                      <button
+                                        onClick={() => handleDeleteTaskFromStudent(selectedStudentUser.id, task.id)}
+                                        className="p-1.5 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                        title="Görevi Sil"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Second Row: Topic Name (Alt Satırda Geniş, Kalın ve Tam Okunaklı) */}
+                                <div className="pt-0.5">
+                                  <div className={`text-sm font-bold leading-relaxed break-words ${isCompleted ? 'text-emerald-200/90 line-through decoration-emerald-500/40' : 'text-white'}`}>
+                                    {task.topic}
+                                  </div>
+                                  {task.notes && (
+                                    <p className="text-[11px] text-slate-400 mt-1.5 bg-black/30 p-2 rounded-xl border border-white/5 italic">
+                                      "{task.notes}"
+                                    </p>
+                                  )}
+                                </div>
+
+                                {/* Bottom Row: Metadata Tags (Duration, Target Questions, Status) */}
+                                <div className="flex items-center justify-between pt-2 border-t border-white/5 text-[11px] font-medium">
+                                  <div className="flex items-center space-x-3 text-slate-400">
+                                    <span className="flex items-center space-x-1">
+                                      <Clock className="w-3.5 h-3.5 text-sky-400" />
+                                      <span className="font-mono text-slate-200 font-bold">{task.plannedMinutes || 0} dk</span>
+                                    </span>
+
+                                    {task.targetQuestionCount && task.targetQuestionCount > 0 ? (
+                                      <span className="flex items-center space-x-1 text-amber-300">
+                                        <Target className="w-3.5 h-3.5 text-amber-400" />
+                                        <span className="font-mono font-bold">{task.targetQuestionCount} Soru</span>
+                                      </span>
+                                    ) : null}
+                                  </div>
+
+                                  <div>
+                                    {isCompleted ? (
+                                      <span className="inline-flex items-center space-x-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                                        <Check className="w-3 h-3" />
+                                        <span>Tamamlandı</span>
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center space-x-1 text-[10px] font-bold text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30">
+                                        <Clock className="w-3 h-3" />
+                                        <span>Bekliyor</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Day Summary Footer */}
+                      {dayTotalQuestions > 0 && (
+                        <div className="pt-2 border-t border-white/5 text-[10px] text-amber-300/80 font-mono font-semibold flex items-center justify-between">
+                          <span>Günün Soru Hedefi:</span>
+                          <span className="font-bold">{dayTotalQuestions} Soru</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
-
-          {plans.length === 0 ? (
-            <div className="text-center py-16 border border-dashed border-white/10 rounded-2xl space-y-3">
-              <Calendar className="w-10 h-10 text-slate-500 mx-auto" />
-              <p className="text-xs text-slate-400 font-medium">Bu öğrencinin haftalık planında henüz kayıtlı görev bulunmuyor.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {DAYS.map(day => {
-                const dayPlans = plans.filter(p => p.day === day);
-                if (dayPlans.length === 0) return null;
-
-                return (
-                  <div key={day} className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-3">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                      <span className="text-xs font-black text-fuchsia-400 uppercase tracking-wider">{day}</span>
-                      <span className="text-[10px] text-slate-400 font-mono font-semibold">{dayPlans.length} Görev</span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {dayPlans.map(task => {
-                        const isMyBranch = teacherSubj && (task.subject || '').toLowerCase().includes(teacherSubj);
-                        return (
-                          <div 
-                            key={task.id} 
-                            className={`p-3 rounded-xl border flex items-center justify-between gap-3 text-xs ${
-                              isMyBranch 
-                                ? 'bg-amber-500/10 border-amber-500/40' 
-                                : 'bg-white/5 border-white/10'
-                            }`}
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center space-x-1.5">
-                                <span className="font-bold text-indigo-300">{task.subject}:</span>
-                                <span className="text-white font-medium truncate">{task.topic}</span>
-                                {isMyBranch && (
-                                  <span className="text-[9px] bg-amber-500/30 text-amber-200 px-1.5 py-0.2 rounded font-semibold shrink-0">
-                                    Branşınız ⭐
-                                  </span>
-                                )}
-                              </div>
-                              <div className="text-[10px] text-slate-400 mt-0.5 font-mono">
-                                {task.plannedMinutes} Dk • {task.taskType || 'Konu Çalışması'}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center space-x-1.5 shrink-0">
-                              <button
-                                onClick={() => handleToggleTaskStatusFromTeacher(selectedStudentUser.id, task.id, task.status)}
-                                className={`p-1.5 rounded-lg border transition-all ${
-                                  task.status === 'completed'
-                                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                                    : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
-                                }`}
-                                title={task.status === 'completed' ? 'Tamamlandı' : 'Tamamlandı olarak işaretle'}
-                              >
-                                <Check className="w-3.5 h-3.5" />
-                              </button>
-
-                              {!isBranchTeacher && (
-                                <button
-                                  onClick={() => handleDeleteTaskFromStudent(selectedStudentUser.id, task.id)}
-                                  className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                                  title="Görevi Sil"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+        );
+      })()}
 
       {/* TAB 3: QUESTIONS */}
       {activeTab === 'questions' && (
