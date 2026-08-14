@@ -33,7 +33,7 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
   const [selectedSubject, setSelectedSubject] = useState<string>('TYT Türkçe');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [completionFilter, setCompletionFilter] = useState<'ALL' | 'completed' | 'pending'>('ALL');
-  const [sortBy, setSortBy] = useState<'total_desc' | 'default' | 'latest_2025'>('total_desc');
+  const [sortBy, setSortBy] = useState<'total_desc' | 'default' | 'latest_2025'>('default');
 
   // Topics for selected subject (when not searching globally)
   const currentSubjectTopics = useMemo(() => {
@@ -406,8 +406,8 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
               onChange={(e) => setSortBy(e.target.value as any)}
               className="bg-slate-950 border border-slate-800 text-slate-300 font-semibold rounded-xl px-3 py-1.5 text-xs outline-none focus:border-indigo-500 cursor-pointer"
             >
-              <option value="total_desc">📊 Ortalama Soru Sayısına Göre (Çoktan Aza)</option>
               <option value="default">📋 Müfredat / Konu Sırasına Göre</option>
+              <option value="total_desc">📊 Ortalama Soru Sayısına Göre (Çoktan Aza)</option>
               <option value="latest_2025">🔥 2025 YKS'de En Çok Çıkanlar</option>
             </select>
           </div>
