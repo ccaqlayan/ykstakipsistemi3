@@ -29,7 +29,10 @@ import {
   FileText,
   BookOpen,
   Eye,
-  EyeOff
+  EyeOff,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -293,7 +296,9 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
   // Chart Filters
   const [chartExamType, setChartExamType] = useState<'ALL' | 'TYT' | 'AYT'>('ALL');
   const [chartSubject, setChartSubject] = useState<string>('ALL');
-  const [chartTimeRange, setChartTimeRange] = useState<'7days' | '30days' | '4weeks'>('7days');
+  const [chartTimeRange, setChartTimeRange] = useState<
+    'today' | 'thisWeek' | '7days' | '14days' | 'thisMonth' | '30days' | '4weeks' | '90days' | 'all'
+  >('7days');
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>(['ALL']);
   const [hiddenSubjects, setHiddenSubjects] = useState<string[]>([]);
   const [activeGraphType, setActiveGraphType] = useState<'soru' | 'net' | 'sure'>('soru');
@@ -301,6 +306,19 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
   const [showAverageLine, setShowAverageLine] = useState<boolean>(true);
   const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Table Sorting States (Default: Yeniden Eskiye / Date Descending)
+  const [sortField, setSortField] = useState<'date' | 'subject' | 'solvedCount' | 'correctCount' | 'netScore' | 'durationMinutes'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = (field: 'date' | 'subject' | 'solvedCount' | 'correctCount' | 'netScore' | 'durationMinutes') => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
+  };
 
   const toggleHiddenSubject = (subj: string) => {
     setHiddenSubjects(prev => 
@@ -332,20 +350,76 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     }
   };
 
-  // Subject record counts filtered by active chartExamType (ALL / TYT / AYT)
+  // Helper to determine if a date string falls inside the active chartTimeRange
+  const isDateInChartTimeRange = React.useCallback((dateStr: string) => {
+    if (!dateStr) return false;
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    if (chartTimeRange === 'today') {
+      return dateStr === todayStr;
+    }
+    if (chartTimeRange === 'thisWeek') {
+      const day = today.getDay(); // 0 is Sun, 1 is Mon...
+      const diffToMon = (day === 0 ? -6 : 1) - day;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + diffToMon);
+      const mondayStr = monday.toISOString().split('T')[0];
+      return dateStr >= mondayStr && dateStr <= todayStr;
+    }
+    if (chartTimeRange === '7days') {
+      const d = new Date();
+      d.setDate(d.getDate() - 6);
+      return dateStr >= d.toISOString().split('T')[0] && dateStr <= todayStr;
+    }
+    if (chartTimeRange === '14days') {
+      const d = new Date();
+      d.setDate(d.getDate() - 13);
+      return dateStr >= d.toISOString().split('T')[0] && dateStr <= todayStr;
+    }
+    if (chartTimeRange === 'thisMonth') {
+      const firstDayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
+      return dateStr >= firstDayStr && dateStr <= todayStr;
+    }
+    if (chartTimeRange === '30days') {
+      const d = new Date();
+      d.setDate(d.getDate() - 29);
+      return dateStr >= d.toISOString().split('T')[0] && dateStr <= todayStr;
+    }
+    if (chartTimeRange === '4weeks') {
+      const d = new Date();
+      d.setDate(d.getDate() - 27);
+      return dateStr >= d.toISOString().split('T')[0] && dateStr <= todayStr;
+    }
+    if (chartTimeRange === '90days') {
+      const d = new Date();
+      d.setDate(d.getDate() - 89);
+      return dateStr >= d.toISOString().split('T')[0] && dateStr <= todayStr;
+    }
+    if (chartTimeRange === 'all') {
+      return true;
+    }
+    return true;
+  }, [chartTimeRange]);
+
+  // Subject record counts filtered by BOTH active chartExamType (ALL / TYT / AYT) AND chartTimeRange
   const subjectRecordCounts = React.useMemo(() => {
     const counts: Record<string, number> = {};
     questionLogs.forEach(l => {
       const isTyt = l.examType === 'TYT' || l.subject.startsWith('TYT') || YKS_SUBJECTS.TYT.includes(l.subject);
       const isAyt = l.examType === 'AYT' || l.subject.startsWith('AYT') || YKS_SUBJECTS.AYT.includes(l.subject);
-      if (chartExamType === 'ALL' || (chartExamType === 'TYT' && isTyt) || (chartExamType === 'AYT' && isAyt)) {
+      
+      const matchExam = chartExamType === 'ALL' || (chartExamType === 'TYT' && isTyt) || (chartExamType === 'AYT' && isAyt);
+      const matchTime = isDateInChartTimeRange(l.date);
+
+      if (matchExam && matchTime) {
         if (l.subject) {
           counts[l.subject] = (counts[l.subject] || 0) + 1;
         }
       }
     });
     return counts;
-  }, [questionLogs, chartExamType]);
+  }, [questionLogs, chartExamType, isDateInChartTimeRange]);
 
   const availableChartSubjects = React.useMemo(() => {
     return Object.keys(subjectRecordCounts).sort((a, b) => a.localeCompare(b, 'tr'));
@@ -381,21 +455,11 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
       candidateSubjects = [chartSubject];
     }
 
-    const d = new Date();
-    if (chartTimeRange === '7days') {
-      d.setDate(d.getDate() - 6);
-    } else if (chartTimeRange === '30days') {
-      d.setDate(d.getDate() - 29);
-    } else {
-      d.setDate(d.getDate() - 27);
-    }
-    const cutoffDateStr = d.toISOString().split('T')[0];
-
     return candidateSubjects.filter(subj => {
-      const logsForSubj = questionLogs.filter(l => l.subject === subj && l.date >= cutoffDateStr);
+      const logsForSubj = questionLogs.filter(l => l.subject === subj && isDateInChartTimeRange(l.date));
       return logsForSubj.reduce((sum, l) => sum + l.solvedCount, 0) > 0;
     });
-  }, [chartSubject, chartExamType, questionLogs, chartTimeRange]);
+  }, [chartSubject, chartExamType, questionLogs, isDateInChartTimeRange]);
 
   useEffect(() => {
     if (activeGraphType === 'net') {
@@ -487,28 +551,6 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     setShowAddModal(true);
   };
 
-  // Filtered Logs for Table
-  const filteredLogs = questionLogs.filter((log) => {
-    if (filterExamType !== 'ALL' && log.examType !== filterExamType) return false;
-    if (filterSubject !== 'ALL' && log.subject !== filterSubject) return false;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchSubject = log.subject.toLowerCase().includes(q);
-      const matchNotes = (log.notes || '').toLowerCase().includes(q);
-      const matchDate = log.date.includes(q);
-      if (!matchSubject && !matchNotes && !matchDate) return false;
-    }
-    return true;
-  });
-
-  const totalLogs = filteredLogs.length;
-  const totalPages = Math.ceil(totalLogs / pageSize) || 1;
-  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
-  
-  const startIndex = (safeCurrentPage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, totalLogs);
-  const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
-
   // Helper for computing or falling back duration minutes
   const getLogDuration = (log: QuestionLog): number => {
     if (log.durationMinutes && log.durationMinutes > 0) return log.durationMinutes;
@@ -523,6 +565,75 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     else if (log.subject?.includes('Fizik') || log.subject?.includes('Geometri')) factor = 1.3;
     return Math.max(1, Math.round(solved * factor));
   };
+
+  // Filtered & Sorted Logs for Table (Default: Yeniden Eskiye / Date Descending)
+  const filteredLogs = React.useMemo(() => {
+    const list = questionLogs.filter((log) => {
+      if (filterExamType !== 'ALL' && log.examType !== filterExamType) return false;
+      if (filterSubject !== 'ALL' && log.subject !== filterSubject) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchSubject = log.subject.toLowerCase().includes(q);
+        const matchNotes = (log.notes || '').toLowerCase().includes(q);
+        const matchDate = log.date.includes(q);
+        if (!matchSubject && !matchNotes && !matchDate) return false;
+      }
+      return true;
+    });
+
+    return list.sort((a, b) => {
+      let valA: any = a[sortField];
+      let valB: any = b[sortField];
+
+      if (sortField === 'durationMinutes') {
+        valA = getLogDuration(a);
+        valB = getLogDuration(b);
+      }
+
+      if (sortField === 'date') {
+        const timeA = new Date(a.date || '1970-01-01').getTime();
+        const timeB = new Date(b.date || '1970-01-01').getTime();
+        return sortOrder === 'desc' ? timeB - timeA : timeA - timeB;
+      }
+
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return sortOrder === 'desc' ? valB - valA : valA - valB;
+      }
+      
+      return sortOrder === 'desc' 
+        ? String(valB || '').localeCompare(String(valA || ''), 'tr')
+        : String(valA || '').localeCompare(String(valB || ''), 'tr');
+    });
+  }, [questionLogs, filterExamType, filterSubject, searchQuery, sortField, sortOrder]);
+
+  const totalLogs = filteredLogs.length;
+  const totalPages = Math.ceil(totalLogs / pageSize) || 1;
+  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalLogs);
+  const paginatedLogs = filteredLogs.slice(startIndex, endIndex);
+
+  // Subject record counts for Table filter dropdown
+  const tableSubjectCounts = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    questionLogs.forEach(l => {
+      if (filterExamType === 'ALL' || l.examType === filterExamType) {
+        if (l.subject) {
+          counts[l.subject] = (counts[l.subject] || 0) + 1;
+        }
+      }
+    });
+    return counts;
+  }, [questionLogs, filterExamType]);
+
+  const availableTableSubjects = React.useMemo(() => {
+    return Object.keys(tableSubjectCounts).sort((a, b) => a.localeCompare(b, 'tr'));
+  }, [tableSubjectCounts]);
+
+  const totalTableFilteredLogsCount = React.useMemo(() => {
+    return Object.values(tableSubjectCounts).reduce((acc, c) => acc + c, 0);
+  }, [tableSubjectCounts]);
 
   // Aggregated Overall KPI Statistics
   const totalSolved = questionLogs.reduce((acc, q) => acc + q.solvedCount, 0);
@@ -591,6 +702,32 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
       return item;
     };
 
+    const today = new Date();
+
+    if (chartTimeRange === 'today') {
+      const todayStr = today.toISOString().split('T')[0];
+      const logsForDay = baseLogs.filter(l => l.date === todayStr);
+      const [, month, day] = todayStr.split('-');
+      return [buildBucketItem(`Bugün (${day}/${month})`, todayStr, logsForDay)];
+    }
+
+    if (chartTimeRange === 'thisWeek') {
+      const dayOfWeek = today.getDay(); // 0 is Sunday, 1 is Monday...
+      const diffToMon = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + diffToMon);
+
+      return Array.from({ length: 7 }).map((_, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        const dateStr = d.toISOString().split('T')[0];
+        const logsForDay = baseLogs.filter(l => l.date === dateStr);
+        const [, month, day] = dateStr.split('-');
+        const dayNames = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+        return buildBucketItem(`${dayNames[d.getDay()]} ${day}/${month}`, dateStr, logsForDay);
+      });
+    }
+
     if (chartTimeRange === '7days') {
       return Array.from({ length: 7 }).map((_, i) => {
         const d = new Date();
@@ -600,7 +737,31 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
         const [, month, day] = dateStr.split('-');
         return buildBucketItem(`${day}/${month}`, dateStr, logsForDay);
       });
-    } else if (chartTimeRange === '30days') {
+    }
+
+    if (chartTimeRange === '14days') {
+      return Array.from({ length: 14 }).map((_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (13 - i));
+        const dateStr = d.toISOString().split('T')[0];
+        const logsForDay = baseLogs.filter(l => l.date === dateStr);
+        const [, month, day] = dateStr.split('-');
+        return buildBucketItem(`${day}/${month}`, dateStr, logsForDay);
+      });
+    }
+
+    if (chartTimeRange === 'thisMonth') {
+      const currentDay = today.getDate();
+      return Array.from({ length: currentDay }).map((_, i) => {
+        const d = new Date(today.getFullYear(), today.getMonth(), i + 1);
+        const dateStr = d.toISOString().split('T')[0];
+        const logsForDay = baseLogs.filter(l => l.date === dateStr);
+        const [, month, day] = dateStr.split('-');
+        return buildBucketItem(`${day}/${month}`, dateStr, logsForDay);
+      });
+    }
+
+    if (chartTimeRange === '30days') {
       return Array.from({ length: 30 }).map((_, i) => {
         const d = new Date();
         d.setDate(d.getDate() - (29 - i));
@@ -609,7 +770,9 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
         const [, month, day] = dateStr.split('-');
         return buildBucketItem(`${day}/${month}`, dateStr, logsForDay);
       });
-    } else {
+    }
+
+    if (chartTimeRange === '4weeks') {
       return Array.from({ length: 4 }).map((_, i) => {
         const dEnd = new Date();
         dEnd.setDate(dEnd.getDate() - (3 - i) * 7);
@@ -626,6 +789,49 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
         return buildBucketItem(`${sDay}/${sMonth}-${eDay}/${eMonth}`, `${startStr} to ${endStr}`, logsForWeek);
       });
     }
+
+    if (chartTimeRange === '90days') {
+      return Array.from({ length: 12 }).map((_, i) => {
+        const dEnd = new Date();
+        dEnd.setDate(dEnd.getDate() - (11 - i) * 7);
+        const dStart = new Date(dEnd);
+        dStart.setDate(dStart.getDate() - 6);
+        
+        const endStr = dEnd.toISOString().split('T')[0];
+        const startStr = dStart.toISOString().split('T')[0];
+
+        const logsForWeek = baseLogs.filter(l => l.date >= startStr && l.date <= endStr);
+        const [, sMonth, sDay] = startStr.split('-');
+        const [, eMonth, eDay] = endStr.split('-');
+
+        return buildBucketItem(`${sDay}/${sMonth}-${eDay}/${eMonth}`, `${startStr} to ${endStr}`, logsForWeek);
+      });
+    }
+
+    if (chartTimeRange === 'all') {
+      const monthsCount = 6;
+      return Array.from({ length: monthsCount }).map((_, i) => {
+        const targetDate = new Date(today.getFullYear(), today.getMonth() - (monthsCount - 1 - i), 1);
+        const year = targetDate.getFullYear();
+        const monthIndex = targetDate.getMonth();
+        const monthNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+        const monthLabel = `${monthNames[monthIndex]} ${year}`;
+        const prefix = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
+        
+        const logsForMonth = baseLogs.filter(l => l.date && l.date.startsWith(prefix));
+        return buildBucketItem(monthLabel, prefix, logsForMonth);
+      });
+    }
+
+    // Default 7 days
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      const dateStr = d.toISOString().split('T')[0];
+      const logsForDay = baseLogs.filter(l => l.date === dateStr);
+      const [, month, day] = dateStr.split('-');
+      return buildBucketItem(`${day}/${month}`, dateStr, logsForDay);
+    });
   }, [questionLogs, chartTimeRange, chartExamType, chartSubject, activeSubjects]);
 
   // Dynamic average calculation based on active graph mode and active filters
@@ -913,9 +1119,15 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                 onChange={(e) => setChartTimeRange(e.target.value as any)}
                 className="bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
               >
+                <option value="today" className="bg-slate-900 text-white">Bugün</option>
+                <option value="thisWeek" className="bg-slate-900 text-white">Bu Hafta</option>
                 <option value="7days" className="bg-slate-900 text-white">Son 7 Gün</option>
+                <option value="14days" className="bg-slate-900 text-white">Son 14 Gün</option>
+                <option value="thisMonth" className="bg-slate-900 text-white">Bu Ay</option>
                 <option value="30days" className="bg-slate-900 text-white">Son 30 Gün</option>
                 <option value="4weeks" className="bg-slate-900 text-white">Son 4 Hafta</option>
+                <option value="90days" className="bg-slate-900 text-white">Son 3 Ay (90 Gün)</option>
+                <option value="all" className="bg-slate-900 text-white">Tüm Zamanlar</option>
               </select>
             </div>
 
@@ -1198,19 +1410,30 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
               <option value="AYT">Sadece AYT</option>
             </select>
 
-            {/* Subject Filter */}
-            {availableSubjects.length > 0 && (
-              <select
-                value={filterSubject}
-                onChange={(e) => setFilterSubject(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3 py-1.5 focus:outline-none cursor-pointer"
-              >
-                <option value="ALL">Tüm Dersler</option>
-                {availableSubjects.map(s => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            )}
+            {/* Subject Filter with Individual Record Counts */}
+            <select
+              value={filterSubject}
+              onChange={(e) => setFilterSubject(e.target.value)}
+              className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3 py-1.5 focus:outline-none cursor-pointer max-w-[200px] truncate"
+            >
+              <option value="ALL">Tüm Dersler ({totalTableFilteredLogsCount})</option>
+              {availableTableSubjects.map(s => (
+                <option key={s} value={s}>
+                  {s} ({tableSubjectCounts[s] || 0})
+                </option>
+              ))}
+            </select>
+
+            {/* Quick Sort Order Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+              className="bg-slate-950 border border-slate-800 hover:border-slate-700 text-xs font-semibold text-slate-200 rounded-2xl px-3 py-1.5 flex items-center space-x-1.5 cursor-pointer transition-all shrink-0"
+              title="Tarih sıralamasını değiştir (Yeniden Eskiye / Eskiden Yeniye)"
+            >
+              <ArrowUpDown className="w-3.5 h-3.5 text-indigo-400" />
+              <span>{sortOrder === 'desc' ? 'Yeniden Eskiye' : 'Eskiden Yeniye'}</span>
+            </button>
           </div>
         </div>
 
@@ -1225,17 +1448,79 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-800 text-slate-400 font-semibold bg-slate-950/70 text-[11px]">
-                  <th className="py-2.5 px-2 rounded-l-2xl whitespace-nowrap">Tarih</th>
-                  <th className="py-2.5 px-2 whitespace-nowrap">Ders</th>
-                  <th className="py-2.5 px-2 text-center whitespace-nowrap">Çözülen</th>
-                  <th className="py-2.5 px-2 text-center text-emerald-400 whitespace-nowrap">Doğru</th>
+                  <th 
+                    onClick={() => handleSort('date')}
+                    className="py-2.5 px-2 rounded-l-2xl whitespace-nowrap cursor-pointer hover:text-white transition-colors select-none"
+                    title="Tarihe göre sırala"
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Tarih</span>
+                      {sortField === 'date' && (
+                        sortOrder === 'desc' ? <ArrowDown className="w-3 h-3 text-indigo-400" /> : <ArrowUp className="w-3 h-3 text-indigo-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('subject')}
+                    className="py-2.5 px-2 whitespace-nowrap cursor-pointer hover:text-white transition-colors select-none"
+                    title="Derse göre sırala"
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Ders</span>
+                      {sortField === 'subject' && (
+                        sortOrder === 'desc' ? <ArrowDown className="w-3 h-3 text-indigo-400" /> : <ArrowUp className="w-3 h-3 text-indigo-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('solvedCount')}
+                    className="py-2.5 px-2 text-center whitespace-nowrap cursor-pointer hover:text-white transition-colors select-none"
+                    title="Çözülen soru sayısına göre sırala"
+                  >
+                    <div className="flex items-center justify-center space-x-1">
+                      <span>Çözülen</span>
+                      {sortField === 'solvedCount' && (
+                        sortOrder === 'desc' ? <ArrowDown className="w-3 h-3 text-indigo-400" /> : <ArrowUp className="w-3 h-3 text-indigo-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('correctCount')}
+                    className="py-2.5 px-2 text-center text-emerald-400 whitespace-nowrap cursor-pointer hover:text-emerald-300 transition-colors select-none"
+                    title="Doğru sayısına göre sırala"
+                  >
+                    <div className="flex items-center justify-center space-x-1">
+                      <span>Doğru</span>
+                      {sortField === 'correctCount' && (
+                        sortOrder === 'desc' ? <ArrowDown className="w-3 h-3 text-emerald-400" /> : <ArrowUp className="w-3 h-3 text-emerald-400" />
+                      )}
+                    </div>
+                  </th>
                   <th className="py-2.5 px-2 text-center text-rose-400 whitespace-nowrap">Yanlış</th>
                   <th className="py-2.5 px-2 text-center text-slate-400 whitespace-nowrap">Boş</th>
-                  <th className="py-2.5 px-2 text-center text-indigo-400 font-bold whitespace-nowrap">Net</th>
-                  <th className="py-2.5 px-2 text-center text-amber-400 whitespace-nowrap">
+                  <th 
+                    onClick={() => handleSort('netScore')}
+                    className="py-2.5 px-2 text-center text-indigo-400 font-bold whitespace-nowrap cursor-pointer hover:text-indigo-300 transition-colors select-none"
+                    title="Net puanına göre sırala"
+                  >
+                    <div className="flex items-center justify-center space-x-1">
+                      <span>Net</span>
+                      {sortField === 'netScore' && (
+                        sortOrder === 'desc' ? <ArrowDown className="w-3 h-3 text-indigo-400" /> : <ArrowUp className="w-3 h-3 text-indigo-400" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => handleSort('durationMinutes')}
+                    className="py-2.5 px-2 text-center text-amber-400 whitespace-nowrap cursor-pointer hover:text-amber-300 transition-colors select-none"
+                    title="Çalışma süresine göre sırala"
+                  >
                     <div className="inline-flex items-center justify-center space-x-1">
                       <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <span>Süre & Hız</span>
+                      {sortField === 'durationMinutes' && (
+                        sortOrder === 'desc' ? <ArrowDown className="w-3 h-3 text-amber-400" /> : <ArrowUp className="w-3 h-3 text-amber-400" />
+                      )}
                     </div>
                   </th>
                   <th className="py-2.5 px-2">Not</th>
