@@ -27,7 +27,8 @@ import {
   CartesianGrid, 
   Tooltip, 
   Legend, 
-  ReferenceLine 
+  ReferenceLine,
+  LabelList
 } from 'recharts';
 import { GeneralMockExam, StudentProfile } from '../../types';
 
@@ -121,6 +122,7 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
   const [showTytLine, setShowTytLine] = useState<boolean>(true);
   const [showAytLine, setShowAytLine] = useState<boolean>(true);
   const [showDilLine, setShowDilLine] = useState<boolean>(isDilStudent);
+  const [showDataLabels, setShowDataLabels] = useState<boolean>(false);
 
   if (generalMocks.length === 0) return null;
 
@@ -334,6 +336,19 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
               <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-400" />
               <span>Özelleştir</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setShowDataLabels(prev => !prev)}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer shadow-sm shrink-0 ml-1 ${
+                showDataLabels
+                  ? 'bg-indigo-600/30 text-indigo-300 border-indigo-500/50'
+                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+              }`}
+              title="Grafiklerdeki noktaların ve sütunların üzerindeki sayısal değerleri göster / gizle"
+            >
+              {showDataLabels ? <Eye className="w-3.5 h-3.5 text-indigo-400" /> : <EyeOff className="w-3.5 h-3.5 text-slate-500" />}
+              <span>Sayılar {showDataLabels ? 'Açık' : 'Kapalı'}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -474,7 +489,19 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                     dot={{ r: 4, fill: '#6366f1' }}
                     activeDot={{ r: 6 }}
                     connectNulls={true}
-                  />
+                  >
+                    {showDataLabels && (
+                      <LabelList 
+                        dataKey="TYT_Net" 
+                        position="top" 
+                        fill="#a5b4fc" 
+                        fontSize={10} 
+                        fontWeight="bold" 
+                        offset={8}
+                        formatter={(v: any) => (v != null && v !== '' ? `${v}` : '')}
+                      />
+                    )}
+                  </Line>
                 )}
                 {showAytLine && (
                   <Line
@@ -486,7 +513,19 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                     dot={{ r: 4, fill: '#34d399' }}
                     activeDot={{ r: 6 }}
                     connectNulls={true}
-                  />
+                  >
+                    {showDataLabels && (
+                      <LabelList 
+                        dataKey="AYT_Net" 
+                        position="top" 
+                        fill="#6ee7b7" 
+                        fontSize={10} 
+                        fontWeight="bold" 
+                        offset={8}
+                        formatter={(v: any) => (v != null && v !== '' ? `${v}` : '')}
+                      />
+                    )}
+                  </Line>
                 )}
                 {showDilLine && (
                   <Line
@@ -498,7 +537,19 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                     dot={{ r: 4, fill: '#0ea5e9' }}
                     activeDot={{ r: 6 }}
                     connectNulls={true}
-                  />
+                  >
+                    {showDataLabels && (
+                      <LabelList 
+                        dataKey="DIL_Net" 
+                        position="top" 
+                        fill="#38bdf8" 
+                        fontSize={10} 
+                        fontWeight="bold" 
+                        offset={8}
+                        formatter={(v: any) => (v != null && v !== '' ? `${v}` : '')}
+                      />
+                    )}
+                  </Line>
                 )}
               </LineChart>
             </ResponsiveContainer>
@@ -594,7 +645,19 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                     dot={{ r: 4, fill: subj.color }}
                     activeDot={{ r: 6 }}
                     hide={!selectedMockSubjects.includes(subj.key)}
-                  />
+                  >
+                    {showDataLabels && (
+                      <LabelList 
+                        dataKey={subj.key} 
+                        position="top" 
+                        fill={subj.color} 
+                        fontSize={9} 
+                        fontWeight="bold" 
+                        offset={6}
+                        formatter={(v: any) => (v != null && v > 0 ? `${v}` : '')}
+                      />
+                    )}
+                  </Line>
                 ))}
               </LineChart>
             </ResponsiveContainer>
@@ -1026,7 +1089,19 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                         dot={{ r: 4, fill: meta.color, strokeWidth: 1, stroke: '#0f172a' }}
                         activeDot={{ r: 6, strokeWidth: 2 }}
                         connectNulls
-                      />
+                      >
+                        {showDataLabels && (
+                          <LabelList 
+                            dataKey={meta.key} 
+                            position="top" 
+                            fill={meta.color} 
+                            fontSize={9} 
+                            fontWeight="bold" 
+                            offset={6}
+                            formatter={(v: any) => (v != null && v > 0 ? `${v}` : '')}
+                          />
+                        )}
+                      </Line>
                     ))}
                 </LineChart>
               ) : (
@@ -1076,6 +1151,17 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                     {detailedChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
+                    {showDataLabels && (
+                      <LabelList 
+                        dataKey="avgNet" 
+                        position="top" 
+                        fill="#e2e8f0" 
+                        fontSize={10} 
+                        fontWeight="bold" 
+                        offset={6}
+                        formatter={(v: any) => (v != null ? `${v}` : '')}
+                      />
+                    )}
                   </Bar>
                 </BarChart>
               )}
@@ -1321,7 +1407,19 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                   strokeWidth={3}
                   dot={{ r: 5, fill: '#fbbf24' }}
                   activeDot={{ r: 7 }}
-                />
+                >
+                  {showDataLabels && (
+                    <LabelList 
+                      dataKey="Tahmini_Siralama" 
+                      position="top" 
+                      fill="#fbbf24" 
+                      fontSize={10} 
+                      fontWeight="bold" 
+                      offset={8}
+                      formatter={(v: any) => (v ? `#${Number(v).toLocaleString('tr-TR')}` : '')}
+                    />
+                  )}
+                </Line>
               </LineChart>
             </ResponsiveContainer>
           </div>

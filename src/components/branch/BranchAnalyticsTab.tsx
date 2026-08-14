@@ -14,7 +14,9 @@ import {
   Layers,
   Zap,
   CheckCircle2,
-  HelpCircle
+  HelpCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -30,7 +32,8 @@ import {
   PieChart, 
   Pie, 
   Cell, 
-  ReferenceLine 
+  ReferenceLine,
+  LabelList
 } from 'recharts';
 
 interface BranchAnalyticsTabProps {
@@ -85,6 +88,7 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
   SUBJECT_COLORS,
 }) => {
   const [activeGraphType, setActiveGraphType] = useState<'net' | 'distribution' | 'time'>('net');
+  const [showDataLabels, setShowDataLabels] = useState<boolean>(false);
 
   // Compute highest net in the current dataset
   const maxNetRecord = React.useMemo(() => {
@@ -369,6 +373,21 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
               </select>
             </div>
 
+            {/* Data Labels (Sayı Bilgisi) Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setShowDataLabels(prev => !prev)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 border ${
+                showDataLabels
+                  ? 'bg-indigo-600/30 text-indigo-300 border-indigo-500/50 shadow-sm'
+                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
+              }`}
+              title="Grafik üzerindeki noktaların ve sütunların sayısal değerlerini göster veya gizle"
+            >
+              {showDataLabels ? <Eye className="w-3.5 h-3.5 text-indigo-400" /> : <EyeOff className="w-3.5 h-3.5 text-slate-500" />}
+              <span>Sayılar {showDataLabels ? 'Açık' : 'Kapalı'}</span>
+            </button>
+
           </div>
         </div>
 
@@ -378,13 +397,13 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
             <ResponsiveContainer width="100%" height="100%">
               {activeGraphType === 'net' ? (
                 /* Mode 1: Net Gelişim Trendi */
-                <LineChart data={netChartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                <LineChart data={netChartData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
                   <XAxis dataKey="shortName" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} domain={[0, 'auto']} />
                   <Tooltip
                     contentStyle={{ 
-                      backgroundColor: 'rgba(15, 23, 42, 0.95)', 
+                       backgroundColor: 'rgba(15, 23, 42, 0.95)', 
                       borderColor: '#334155', 
                       borderRadius: '1rem', 
                       color: '#fff', 
@@ -417,11 +436,23 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
                     strokeWidth={3}
                     dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#0f172a' }}
                     activeDot={{ r: 7, fill: '#818cf8', stroke: '#fff', strokeWidth: 2 }}
-                  />
+                  >
+                    {showDataLabels && (
+                      <LabelList 
+                        dataKey="net" 
+                        position="top" 
+                        fill="#a5b4fc" 
+                        fontSize={10} 
+                        fontWeight="bold" 
+                        offset={8}
+                        formatter={(v: any) => (v != null && v !== '' ? `${v}` : '')}
+                      />
+                    )}
+                  </Line>
                 </LineChart>
               ) : activeGraphType === 'distribution' ? (
                 /* Mode 2: D / Y / B Dağılımı (Stacked Bar) */
-                <BarChart data={netChartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                <BarChart data={netChartData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
                   <XAxis dataKey="shortName" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
@@ -442,13 +473,46 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
                     }}
                   />
                   <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '11px' }} />
-                  <Bar dataKey="correct" fill="#10b981" name="Doğru" stackId="a" radius={[0, 0, 0, 0]} maxBarSize={36} />
-                  <Bar dataKey="wrong" fill="#ef4444" name="Yanlış" stackId="a" radius={[0, 0, 0, 0]} maxBarSize={36} />
-                  <Bar dataKey="empty" fill="#64748b" name="Boş" stackId="a" radius={[6, 6, 0, 0]} maxBarSize={36} />
+                  <Bar dataKey="correct" fill="#10b981" name="Doğru" stackId="a" radius={[0, 0, 0, 0]} maxBarSize={36}>
+                    {showDataLabels && (
+                      <LabelList 
+                        dataKey="correct" 
+                        position="insideTop" 
+                        fill="#ffffff" 
+                        fontSize={9} 
+                        fontWeight="bold" 
+                        formatter={(v: any) => (v > 0 ? `${v}D` : '')} 
+                      />
+                    )}
+                  </Bar>
+                  <Bar dataKey="wrong" fill="#ef4444" name="Yanlış" stackId="a" radius={[0, 0, 0, 0]} maxBarSize={36}>
+                    {showDataLabels && (
+                      <LabelList 
+                        dataKey="wrong" 
+                        position="insideTop" 
+                        fill="#ffffff" 
+                        fontSize={9} 
+                        fontWeight="bold" 
+                        formatter={(v: any) => (v > 0 ? `${v}Y` : '')} 
+                      />
+                    )}
+                  </Bar>
+                  <Bar dataKey="empty" fill="#64748b" name="Boş" stackId="a" radius={[6, 6, 0, 0]} maxBarSize={36}>
+                    {showDataLabels && (
+                      <LabelList 
+                        dataKey="empty" 
+                        position="insideTop" 
+                        fill="#ffffff" 
+                        fontSize={9} 
+                        fontWeight="bold" 
+                        formatter={(v: any) => (v > 0 ? `${v}B` : '')} 
+                      />
+                    )}
+                  </Bar>
                 </BarChart>
               ) : (
                 /* Mode 3: Çözüm Süreleri (Bar Chart) */
-                <BarChart data={netChartData} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                <BarChart data={netChartData} margin={{ top: 15, right: 15, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
                   <XAxis dataKey="shortName" stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} axisLine={false} unit=" dk" />
@@ -469,7 +533,19 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
                       return label;
                     }}
                   />
-                  <Bar dataKey="durationMinutes" fill="#f59e0b" name="Çözüm Süresi (Dakika)" radius={[6, 6, 0, 0]} maxBarSize={36} />
+                  <Bar dataKey="durationMinutes" fill="#f59e0b" name="Çözüm Süresi (Dakika)" radius={[6, 6, 0, 0]} maxBarSize={36}>
+                    {showDataLabels && (
+                      <LabelList 
+                        dataKey="durationMinutes" 
+                        position="top" 
+                        fill="#fbbf24" 
+                        fontSize={10} 
+                        fontWeight="bold" 
+                        offset={6}
+                        formatter={(v: any) => (v > 0 ? `${v} dk` : '')} 
+                      />
+                    )}
+                  </Bar>
                 </BarChart>
               )}
             </ResponsiveContainer>
