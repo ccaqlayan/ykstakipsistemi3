@@ -23,7 +23,7 @@ import { INITIAL_GLOBAL_STATE, loadGlobalState } from './storage';
 import { INITIAL_STATE } from '../data/initialData';
 
 // Initialize Firebase App
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 const firestoreSettings = {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
