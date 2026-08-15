@@ -440,7 +440,7 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
 
       {/* TOP CONFIGURATION BAR */}
       <div className="bg-slate-900/50 border-b border-white/10 px-6 py-3 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between shrink-0">
-        <div className="flex-1 flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 flex flex-col sm:flex-row gap-3 items-center">
           <div className="flex-1 min-w-[240px]">
             <input
               type="text"
@@ -464,12 +464,23 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
               <option value="DİL">DİL (Yabancı Dil)</option>
             </select>
           </div>
+          {/* COMPACT ACTIVE TASK TYPE CHIP */}
+          {builderMode === 'drag' && selectedTaskType && (() => {
+            const cfg = TASK_TYPE_CONFIG[selectedTaskType] || { icon: FileText, color: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-500/30' };
+            const Icon = cfg.icon;
+            return (
+              <div className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl border ${cfg.bg} ${cfg.border} shrink-0`}>
+                <Icon className={`w-3.5 h-3.5 ${cfg.color}`} />
+                <span className={`text-xs font-extrabold ${cfg.color}`}>{selectedTaskType}</span>
+              </div>
+            );
+          })()}
         </div>
 
         <div className="flex-1 max-w-xl">
           <input
             type="text"
-            placeholder="Şablon Açıklaması ve rehberlik tavsiyesi (Ör: Her gün 2 saat matematik çözümü)..."
+            placeholder="Açıklama (Ör: Her gün 2 saat matematik)..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-slate-300 text-xs focus:outline-none"
@@ -817,23 +828,25 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
 
         {/* RIGHT BOARD (WEEKLY GRID) */}
         <main className="flex-1 bg-slate-950/80 p-4 md:p-6 overflow-y-auto space-y-6">
-          {/* ACTIVE TASK TYPE INDICATOR BANNER */}
-          {builderMode === 'drag' && selectedTaskType && (() => {
-            const activeCfg = TASK_TYPE_CONFIG[selectedTaskType] || { icon: FileText, color: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-500/30' };
-            const ActiveIcon = activeCfg.icon;
-            return (
-              <div className="flex items-center justify-center">
-                <div className={`inline-flex items-center space-x-2.5 px-5 py-2.5 rounded-2xl border ${activeCfg.bg} ${activeCfg.border} shadow-lg backdrop-blur-xl`}>
-                  <ActiveIcon className={`w-4.5 h-4.5 ${activeCfg.color}`} />
-                  <span className="text-xs font-bold text-slate-300">Aktif Görev Türü:</span>
-                  <span className={`text-sm font-extrabold ${activeCfg.color}`}>{selectedTaskType}</span>
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                </div>
-              </div>
-            );
-          })()}
           {/* 📦 GÖREV HAVUZU (TASK POOL) PANEL (DRAG MODE) */}
-          {builderMode === 'drag' && (
+          {builderMode === 'drag' && !isPoolOpen && (
+            <div className="flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => setIsPoolOpen(true)}
+                className="inline-flex items-center space-x-2.5 px-5 py-2.5 rounded-2xl bg-slate-900/90 border border-fuchsia-500/30 hover:border-fuchsia-400/60 text-fuchsia-300 hover:text-white shadow-lg hover:shadow-fuchsia-600/20 transition-all cursor-pointer active:scale-95 backdrop-blur-xl"
+              >
+                <Layers className="w-4.5 h-4.5" />
+                <span className="text-xs font-bold">Görev Havuzunu Aç</span>
+                {poolItems.length > 0 && (
+                  <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40">
+                    {poolItems.length}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+          {builderMode === 'drag' && isPoolOpen && (
             <div className="bg-slate-900/90 border border-fuchsia-500/30 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3.5 transition-all backdrop-blur-xl">
               {/* Header & Toggle Controls */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
