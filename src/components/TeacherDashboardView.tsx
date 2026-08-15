@@ -106,6 +106,7 @@ interface TeacherDashboardViewProps {
   onCreateClass: (className: string, field: FieldType, description?: string) => void;
   onAssignStudentClass: (studentId: string, newClassName: string) => void;
   onUpdateStudentStudyPlans: (studentId: string, updatedPlans: StudyPlanItem[]) => void;
+  onUpdateStudentTopicErrors?: (studentId: string, updatedErrors: TopicErrorItem[], actionDescription?: string) => void;
   onSaveProgramTemplate: (template: Omit<StudyProgramTemplate, 'id' | 'createdAt'>) => void;
   onUpdateProgramTemplate?: (template: StudyProgramTemplate) => void;
   onDeleteProgramTemplate: (templateId: string) => void;
@@ -154,6 +155,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   onCreateClass,
   onAssignStudentClass,
   onUpdateStudentStudyPlans,
+  onUpdateStudentTopicErrors,
   onSaveProgramTemplate,
   onUpdateProgramTemplate,
   onDeleteProgramTemplate,
@@ -756,6 +758,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           programTemplates={programTemplates}
           onApplyTemplateToStudent={onApplyTemplateToStudent}
           onUpdateStudentStudyPlans={onUpdateStudentStudyPlans}
+          onUpdateStudentTopicErrors={onUpdateStudentTopicErrors}
         />
 
         {/* MODAL: SAVE STUDENT PROGRAM AS TEMPLATE */}

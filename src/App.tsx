@@ -1131,6 +1131,37 @@ export default function App() {
     );
   };
 
+  const handleUpdateStudentTopicErrorsByTeacher = (studentId: string, updatedErrors: any[], actionText?: string) => {
+    const targetStudent = globalState.users.find(u => u.id === studentId);
+    const prevErrors = globalState.studentsData[studentId]?.topicErrors || [];
+
+    setGlobalState((prev) => {
+      const studentData = prev.studentsData[studentId] || INITIAL_STATE;
+      const updatedData = { ...studentData, topicErrors: updatedErrors };
+      saveStudentDataToFirestore(studentId, updatedData);
+      return {
+        ...prev,
+        studentsData: {
+          ...prev.studentsData,
+          [studentId]: updatedData
+        }
+      };
+    });
+
+    if (actionText) {
+      addAuditAndUndo(
+        actionText,
+        'exam',
+        'teacher_update_topic_errors',
+        () => {
+          handleUpdateStudentTopicErrorsByTeacher(studentId, prevErrors);
+        },
+        studentId,
+        targetStudent?.name
+      );
+    }
+  };
+
   const handleSaveProgramTemplate = (templateData: any) => {
     const now = new Date();
     const year = now.getFullYear();
@@ -2984,6 +3015,7 @@ export default function App() {
             setIsMobileMenuOpen={setIsMobileMenuOpen}
             handleUpdateStudentProfileByTeacher={handleUpdateStudentProfileByTeacher}
             handleUpdateStudentStudyPlansByTeacher={handleUpdateStudentStudyPlansByTeacher}
+            handleUpdateStudentTopicErrorsByTeacher={handleUpdateStudentTopicErrorsByTeacher}
             handleCreateClass={handleCreateClass}
             handleAssignStudentClass={handleAssignStudentClass}
             handleSaveProgramTemplate={handleSaveProgramTemplate}

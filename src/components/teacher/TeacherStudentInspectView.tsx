@@ -87,8 +87,10 @@ import {
   ClassDefinition, 
   DayOfWeek,
   InstitutionalMockExam,
-  StudyProgramTemplate
+  StudyProgramTemplate,
+  TopicErrorItem
 } from '../../types';
+import { TeacherErrorsTab } from './TeacherErrorsTab';
 import { AuditLogsView } from '../AuditLogsView';
 import { MockInstitutionalDetailView } from '../mocks/MockInstitutionalDetailView';
 import { isUserOnline } from '../../utils/statusUtils';
@@ -179,6 +181,7 @@ export type InspectTabType =
   | 'questions' 
   | 'topics' 
   | 'mocks' 
+  | 'errors'
   | 'resources' 
   | 'routines' 
   | 'youtube' 
@@ -205,6 +208,7 @@ interface TeacherStudentInspectViewProps {
   programTemplates?: StudyProgramTemplate[];
   onApplyTemplateToStudent?: (studentId: string, templateId: string, mode: 'overwrite' | 'merge') => void;
   onUpdateStudentStudyPlans?: (studentId: string, plans: any[]) => void;
+  onUpdateStudentTopicErrors?: (studentId: string, updatedErrors: TopicErrorItem[], actionDescription?: string) => void;
 }
 
 export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps> = ({
@@ -227,7 +231,8 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
   OfflineStatusDisplay,
   programTemplates = [],
   onApplyTemplateToStudent,
-  onUpdateStudentStudyPlans
+  onUpdateStudentStudyPlans,
+  onUpdateStudentTopicErrors
 }) => {
   const [activeTab, setActiveTab] = useState<InspectTabType>(initialTab || 'performance');
 
@@ -670,11 +675,18 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
             <span className="text-[10px] text-emerald-400 font-semibold block">{completedTopicsCount} / {totalTopicsCount} Konu</span>
           </div>
 
-          <div className="bg-slate-950/60 border border-rose-500/30 rounded-2xl p-3.5 space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Açık Hatalı Konular</span>
+          <button
+            type="button"
+            onClick={() => setActiveTab('errors')}
+            className="bg-slate-950/60 hover:bg-rose-950/40 border border-rose-500/30 hover:border-rose-400/60 rounded-2xl p-3.5 space-y-1 text-left transition-all group cursor-pointer shadow-sm"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider block">Açık Hatalı Konular</span>
+              <AlertTriangle className="w-3.5 h-3.5 text-rose-400 group-hover:scale-110 transition-transform" />
+            </div>
             <div className="text-lg font-black text-rose-300 font-mono">{unresolvedErrs.length} <span className="text-xs font-normal text-slate-400">Hata</span></div>
-            <span className="text-[10px] text-rose-400 font-semibold block">Acil İnceleme</span>
-          </div>
+            <span className="text-[10px] text-rose-400 font-semibold block">Hata Defterini Aç →</span>
+          </button>
 
           <div className="bg-slate-950/60 border border-amber-500/30 rounded-2xl p-3.5 space-y-1">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Aktif Kaynaklar</span>
@@ -762,8 +774,25 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
             </button>
           </div>
 
-          {/* ROW 2: RESOURCES, ROUTINES, YOUTUBE & LOGS (4 TABS) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {/* ROW 2: ERRORS, RESOURCES, ROUTINES, YOUTUBE & LOGS (5 TABS) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            <button
+              onClick={() => setActiveTab('errors')}
+              className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer text-center w-full shadow-sm relative ${
+                activeTab === 'errors'
+                  ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 border border-rose-400/40'
+                  : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10'
+              }`}
+            >
+              <AlertTriangle className="w-4 h-4 text-rose-300 shrink-0" />
+              <span>Hata Defteri</span>
+              {unresolvedErrs.length > 0 && (
+                <span className="ml-1 bg-rose-500/40 text-rose-100 font-mono text-[10px] font-black px-1.5 py-0.2 rounded-full border border-rose-400/50">
+                  {unresolvedErrs.length}
+                </span>
+              )}
+            </button>
+
             <button
               onClick={() => setActiveTab('resources')}
               className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer text-center w-full shadow-sm ${
@@ -4747,6 +4776,44 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
             </div>
           )}
         </div>
+      )}
+
+      {/* TAB: HATA DEFTERİ & YANLIŞ SORU İNCELEME */}
+      {activeTab === 'errors' && (
+        <TeacherErrorsTab
+          topicErrors={topicErrors}
+          branchExams={branchExams}
+          generalMocks={mocks}
+          resources={resources}
+          studentUser={selectedStudentUser}
+          teacherUser={teacher}
+          isBranchTeacher={isBranchTeacher}
+          onUpdateTopicError={(studentId, updatedErr, desc) => {
+            const currentErrs = stData.topicErrors || [];
+            const updatedList = currentErrs.map(e => e.id === updatedErr.id ? updatedErr : e);
+            if (onUpdateStudentTopicErrors) {
+              onUpdateStudentTopicErrors(studentId, updatedList, desc);
+            }
+          }}
+          onAddTopicError={(studentId, newErrData, desc) => {
+            const currentErrs = stData.topicErrors || [];
+            const newErr: TopicErrorItem = {
+              ...newErrData,
+              id: 'err-' + Date.now() + '-' + Math.floor(Math.random() * 1000000)
+            };
+            const updatedList = [newErr, ...currentErrs];
+            if (onUpdateStudentTopicErrors) {
+              onUpdateStudentTopicErrors(studentId, updatedList, desc);
+            }
+          }}
+          onDeleteTopicError={(studentId, errId, desc) => {
+            const currentErrs = stData.topicErrors || [];
+            const updatedList = currentErrs.filter(e => e.id !== errId);
+            if (onUpdateStudentTopicErrors) {
+              onUpdateStudentTopicErrors(studentId, updatedList, desc);
+            }
+          }}
+        />
       )}
 
       {/* TAB 6: RESOURCES */}

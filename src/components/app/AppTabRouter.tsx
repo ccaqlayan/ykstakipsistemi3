@@ -44,6 +44,7 @@ interface AppTabRouterProps {
   setIsMobileMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
   handleUpdateStudentProfileByTeacher: (studentId: string, updatedProfile: StudentProfile) => void;
   handleUpdateStudentStudyPlansByTeacher: (studentId: string, updatedPlans: any[]) => void;
+  handleUpdateStudentTopicErrorsByTeacher?: (studentId: string, updatedErrors: any[], actionText?: string) => void;
   handleCreateClass: (className: string, field: FieldType, description?: string) => void;
   handleAssignStudentClass: (studentId: string, newClassName: string) => void;
   handleSaveProgramTemplate: (templateData: any) => void;
@@ -270,6 +271,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           activeTeacherSubView={activeTab === 'teacher_summary' ? 'summary' : activeTab === 'teacher_teachers' ? 'teachers' : activeTab === 'teacher_templates' ? 'templates' : 'students'}
           onUpdateStudentProfile={handleUpdateStudentProfileByTeacher}
           onUpdateStudentStudyPlans={handleUpdateStudentStudyPlansByTeacher}
+          onUpdateStudentTopicErrors={handleUpdateStudentTopicErrorsByTeacher}
           onCreateClass={handleCreateClass}
           onAssignStudentClass={handleAssignStudentClass}
           onSaveProgramTemplate={handleSaveProgramTemplate}
