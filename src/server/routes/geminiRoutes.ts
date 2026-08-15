@@ -1313,8 +1313,8 @@ router.get('/model-settings', (req, res) => {
     hasApiKey: Boolean(currentKey),
     maskedApiKey,
     availableModels: [
-      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Hızlı & Yüksek Doğruluk)', badge: 'Önerilen (Varsayılan)' },
-      { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash-Lite (Süper Hızlı & Ekonomik)', badge: 'Ekonomik' },
+      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Hızlı & Yüksek Doğruluk)', badge: 'Önerilen (Varsayılan)' },
+      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Gelişmiş Flash)', badge: 'Flash' },
       { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (En Derin Düşünme & Karmaşık Sorular)', badge: 'Gelişmiş' }
     ],
     features: [
@@ -1330,12 +1330,48 @@ router.get('/model-settings', (req, res) => {
   });
 });
 
-router.post('/model-settings', (req, res) => {
+router.post('/model-settings', async (req, res) => {
   const { config, aiFeaturesEnabled: newEnabledState, savePromptLogs: newSavePromptLogs, anomalyLimitTRY: newAnomalyLimit, coachDataSettings: newCoachDataSettings, geminiApiKey: newApiKey } = req.body;
   
   if (typeof newApiKey === 'string' && newApiKey.trim()) {
-    setCustomGeminiApiKey(newApiKey.trim());
+    const trimmedKey = newApiKey.trim();
+    // Validate the API key with Google AI Studio before saving
+    try {
+      const testAi = new GoogleGenAI({ apiKey: trimmedKey });
+      await testAi.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: 'test',
+        config: { maxOutputTokens: 2 }
+      });
+    } catch (testErr: any) {
+      const errMsg = testErr?.message || String(testErr || '');
+      if (testErr?.status === 401 || errMsg.includes('401') || errMsg.includes('UNAUTHENTICATED') || errMsg.includes('ACCESS_TOKEN_TYPE_UNSUPPORTED') || errMsg.includes('invalid authentication credentials')) {
+        return res.status(400).json({
+          success: false,
+          error: 'Girilen API anahtarı Google tarafından doğrulanamadı (401). Lütfen Google AI Studio (aistudio.google.com/apikey) üzerinden aldığınız "AIzaSy..." formatındaki geçerli anahtarınızı girdiğinizden emin olun.'
+        });
+      }
+    }
+
+    setCustomGeminiApiKey(trimmedKey);
+
+    // Also update .env file if it exists so server restarts retain the key
+    try {
+      const envPath = path.join(process.cwd(), '.env');
+      if (fs.existsSync(envPath)) {
+        let envContent = fs.readFileSync(envPath, 'utf8');
+        if (envContent.includes('GEMINI_API_KEY=')) {
+          envContent = envContent.replace(/GEMINI_API_KEY=[^\r\n]*/, `GEMINI_API_KEY=${trimmedKey}`);
+        } else {
+          envContent += `\nGEMINI_API_KEY=${trimmedKey}\n`;
+        }
+        fs.writeFileSync(envPath, envContent, 'utf8');
+      }
+    } catch (envErr) {
+      console.warn('Could not sync GEMINI_API_KEY to .env file:', envErr);
+    }
   }
+
   if (typeof newEnabledState === 'boolean') {
     setAiFeaturesEnabled(newEnabledState);
   }
@@ -1351,7 +1387,7 @@ router.post('/model-settings', (req, res) => {
   if (config && typeof config === 'object') {
     const sanitized: Record<string, string> = {};
     for (const [k, v] of Object.entries(config)) {
-      sanitized[k] = (v === 'gemini-2.5-flash-lite' || v === 'gemini-3.5-flash-lite' || v === 'gemini-3.1-flash-lite') ? 'gemini-2.5-flash' : String(v);
+      sanitized[k] = (v === 'gemini-2.5-flash-lite' || v === 'gemini-3.5-flash-lite' || v === 'gemini-3.1-flash-lite' || v === 'gemini-1.5-flash') ? 'gemini-2.5-flash' : String(v);
     }
     setFeatureModelConfig({ ...featureModelConfig, ...sanitized });
   }
@@ -1382,7 +1418,7 @@ router.post('/model-settings', (req, res) => {
     hasApiKey: Boolean(currentKey),
     maskedApiKey,
     message: aiFeaturesEnabled 
-      ? 'Yapay zeka ayarları ve modelleri başarıyla güncellendi.'
+      ? 'Yapay zeka ayarları ve API anahtarı başarıyla güncellendi ve doğrulandı.'
       : 'Tüm yapay zeka servisleri rehber öğretmen / yönetici kararıyla KAPATILDI.'
   });
 });

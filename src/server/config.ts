@@ -32,14 +32,14 @@ export function setAiFeaturesEnabled(val: boolean) { aiFeaturesEnabled = val; }
 
 // Global configurable model mapping for each AI feature
 export let featureModelConfig: Record<string, string> = {
-  AI_COACH_STUDENT: 'gemini-2.5-flash',
-  AI_COACH_CLASS: 'gemini-2.5-flash',
-  SOLVE_QUESTION: 'gemini-2.5-flash',
-  QUESTION_ANALYSIS: 'gemini-2.5-flash',
-  SIMILAR_QUESTION: 'gemini-2.5-flash',
-  ERROR_PRIORITY: 'gemini-2.5-flash',
-  TOPIC_TIPS: 'gemini-2.5-flash',
-  YOUTUBE_PLANNER: 'gemini-2.5-flash'
+  AI_COACH_STUDENT: 'gemini-2.0-flash',
+  AI_COACH_CLASS: 'gemini-2.0-flash',
+  SOLVE_QUESTION: 'gemini-2.0-flash',
+  QUESTION_ANALYSIS: 'gemini-2.0-flash',
+  SIMILAR_QUESTION: 'gemini-2.0-flash',
+  ERROR_PRIORITY: 'gemini-2.0-flash',
+  TOPIC_TIPS: 'gemini-2.0-flash',
+  YOUTUBE_PLANNER: 'gemini-2.0-flash'
 };
 export function setFeatureModelConfig(cfg: Record<string, string>) { featureModelConfig = cfg; }
 
@@ -284,17 +284,11 @@ export async function clearApiUsageLogs(olderThanDays = 30) {
 
 export function mapToActualGeminiModel(modelId: string): string {
   const m = (modelId || '').trim().toLowerCase();
-  if (!m) return 'gemini-2.5-flash';
-  if (m.includes('2.5-pro') || m.includes('pro')) {
-    return 'gemini-2.5-pro';
-  }
-  if (m.includes('2.0-flash-lite') || m.includes('flash-lite') || m.includes('lite')) {
-    return 'gemini-2.0-flash-lite';
-  }
-  if (m.includes('1.5-flash')) {
-    return 'gemini-1.5-flash';
-  }
-  return 'gemini-2.5-flash';
+  if (!m) return 'gemini-2.0-flash';
+  if (m.includes('pro')) return 'gemini-2.5-pro';
+  if (m.includes('2.5-flash')) return 'gemini-2.5-flash';
+  if (m.includes('2.0-flash') || m.includes('flash')) return 'gemini-2.0-flash';
+  return 'gemini-2.0-flash';
 }
 
 export async function generateContentWithFallback(
@@ -305,14 +299,15 @@ export async function generateContentWithFallback(
     config?: any;
   }
 ) {
-  const requestedModel = options.model || 'gemini-2.5-flash';
+  const requestedModel = options.model || 'gemini-2.0-flash';
   const primaryApiModel = mapToActualGeminiModel(requestedModel);
 
   const fallbackList = [
     { requested: requestedModel, apiModel: primaryApiModel },
+    { requested: 'gemini-2.0-flash', apiModel: 'gemini-2.0-flash' },
+    { requested: 'gemini-2.0-flash-001', apiModel: 'gemini-2.0-flash-001' },
     { requested: 'gemini-2.5-flash', apiModel: 'gemini-2.5-flash' },
-    { requested: 'gemini-2.0-flash-lite', apiModel: 'gemini-2.0-flash-lite' },
-    { requested: 'gemini-1.5-flash', apiModel: 'gemini-1.5-flash' }
+    { requested: 'gemini-2.5-pro', apiModel: 'gemini-2.5-pro' }
   ];
 
   const uniqueList: { requested: string; apiModel: string }[] = [];
@@ -347,9 +342,15 @@ export async function generateContentWithFallback(
       } catch (err: any) {
         lastError = err;
         console.warn(`Model ${item.apiModel} failed (Retries left: ${retries}):`, err.message || err);
-        const isAuthOrNotFound = err.status === 401 || err.status === 404 || err.message?.includes('not found') || err.message?.includes('UNAUTHENTICATED') || err.message?.includes('unsupported');
-        if (isAuthOrNotFound) {
-          break; // Don't retry invalid or unauthenticated model; try next fallback model immediately
+        const errMsg = err?.message || String(err || '');
+        const isAuthError = err.status === 401 || errMsg.includes('401') || errMsg.includes('UNAUTHENTICATED') || errMsg.includes('ACCESS_TOKEN_TYPE_UNSUPPORTED') || errMsg.includes('invalid authentication credentials');
+        if (isAuthError) {
+          // Immediately throw authentication failure so user gets the accurate 401 message
+          throw err;
+        }
+        const isNotFound = err.status === 404 || errMsg.includes('not found') || errMsg.includes('unsupported');
+        if (isNotFound) {
+          break; // Try next fallback model
         }
         retries--;
         if (retries >= 0) {
