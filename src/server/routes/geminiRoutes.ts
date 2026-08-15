@@ -21,10 +21,24 @@ import {
   savePromptLogs,
   setSavePromptLogs,
   clearApiUsageLogs,
-  uploadsDir
+  uploadsDir,
+  getEffectiveGeminiApiKey,
+  setCustomGeminiApiKey,
+  customGeminiApiKey
 } from '../config';
 
 const router = Router();
+
+function formatGeminiErrorMessage(err: any, fallbackText: string): string {
+  const msg = err?.message || String(err || '');
+  if (err?.status === 401 || msg.includes('401') || msg.includes('UNAUTHENTICATED') || msg.includes('ACCESS_TOKEN_TYPE_UNSUPPORTED')) {
+    return 'Google Gemini API Anahtarınız geçersiz veya süresi dolmuş (401). Lütfen Google AI Studio (aistudio.google.com/apikey) üzerinden aldığınız geçerli API anahtarınızı (AIzaSy...) Sistem Yönetimi > Yapay Zeka > Model Ayarları bölümünden veya .env dosyasından güncelleyiniz.';
+  }
+  if (err?.status === 429 || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
+    return 'Google Gemini API istek kotası aşıldı (429). Lütfen birkaç saniye sonra tekrar deneyiniz.';
+  }
+  return msg || fallbackText;
+}
 
 async function resolveImagePart(imageUrl: string): Promise<{ inlineData: { mimeType: string; data: string } } | null> {
   if (!imageUrl || typeof imageUrl !== 'string') return null;
@@ -263,7 +277,7 @@ function summarizePomodoroForPrompt(history: any[], limit: number = 3) {
 
 router.post('/coach-advice', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getEffectiveGeminiApiKey();
   if (!apiKey) {
     return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
   }
@@ -288,14 +302,7 @@ router.post('/coach-advice', async (req, res) => {
   const settings = customSettings || coachDataSettings;
 
   try {
-    const ai = new GoogleGenAI({ 
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
+    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
 
     let prompt = `
 Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) derece derece hazırlık konusunda uzman, motivasyonu yüksek ve analitik bir Rehberlik ve YKS Öğrenci Koçusun.
@@ -416,13 +423,13 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
     });
   } catch (err: any) {
     console.error('Gemini AI Coach error:', err);
-    res.status(500).json({ error: err.message || 'Yapay Zeka koç tavsiyesi üretilemedi.' });
+    res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay Zeka koç tavsiyesi üretilemedi.') });
   }
 });
 
 router.post('/class-coach-advice', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getEffectiveGeminiApiKey();
   if (!apiKey) {
     return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
   }
@@ -430,14 +437,7 @@ router.post('/class-coach-advice', async (req, res) => {
   const { className, studentCount, averageTYTNet, averageAYTNet, totalQuestionsSolved, topStrugglingTopics, studentsSummary } = req.body;
 
   try {
-    const ai = new GoogleGenAI({ 
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
+    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
 
     const prompt = `
 Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) derece hazırlık konusunda uzman, analitik ve motivasyonu yüksek bir Okul Rehberlik Uzmanı ve Sınıf YKS Koçusun.
@@ -503,13 +503,13 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
     });
   } catch (err: any) {
     console.error('Gemini Class AI Coach error:', err);
-    res.status(500).json({ error: err.message || 'Yapay Zeka sınıf koçluk tavsiyesi üretilemedi.' });
+    res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay Zeka sınıf koçluk tavsiyesi üretilemedi.') });
   }
 });
 
 router.post('/analyze-error-priority', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getEffectiveGeminiApiKey();
   if (!apiKey) {
     return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
   }
@@ -517,14 +517,7 @@ router.post('/analyze-error-priority', async (req, res) => {
   const { subject, topicName, errorReason, solutionNotes, publisher } = req.body;
 
   try {
-    const ai = new GoogleGenAI({ 
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
+    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
 
     const prompt = `YKS Koçusun. Verilen deneme hatasını teşhis et ve 1-10 arası öncelik puanı ("rating") belirle.
 
@@ -583,14 +576,14 @@ JSON:
       aiUsage: usageRecord
     });
   } catch (err: any) {
-    console.error('Gemini error priority analysis error:', err);
-    res.status(500).json({ error: err.message || 'Yapay zeka öncelik analizi yapılamadı.' });
+    console.error('Gemini error priority analyzer error:', err);
+    res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay zeka öncelik analizi yapılamadı.') });
   }
 });
 
 router.post('/topic-mistake-tips', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getEffectiveGeminiApiKey();
   if (!apiKey) {
     return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
   }
@@ -601,10 +594,7 @@ router.post('/topic-mistake-tips', async (req, res) => {
   }
 
   try {
-    const ai = new GoogleGenAI({ 
-      apiKey,
-      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
-    });
+    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
 
     const prompt = `
 Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecinde öğrencilere ders anlatan uzman ve cana yakın bir branş öğretmenisin.
@@ -662,13 +652,13 @@ Lütfen yanıtını doğrudan öğrenciye hitap eden bir tonda yaz ve YALNIZCA g
     });
   } catch (err: any) {
     console.error('Gemini mistake tips error:', err);
-    res.status(500).json({ error: err.message || 'Yapay zeka konu ipuçları üretilemedi.' });
+    res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay zeka konu ipuçları üretilemedi.') });
   }
 });
 
 router.post('/solve-question', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getEffectiveGeminiApiKey();
   if (!apiKey) {
     return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
   }
@@ -679,10 +669,7 @@ router.post('/solve-question', async (req, res) => {
   }
 
   try {
-    const ai = new GoogleGenAI({ 
-      apiKey,
-      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
-    });
+    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
 
     let contents: any[] = [];
     const imagePart = imageUrl ? await resolveImagePart(imageUrl) : null;
@@ -699,7 +686,7 @@ ${solutionText || existingAnalysis}
 ---
 Bu verilerden faydalanarak sorunun son derece anlaşılır, adım adım detaylı çözümünü sun.
 
-ASLA "Merhaba değerli öğrencim" veya benzeri giriş/selamlama cümleleri ya da sohbet ifadeleri kullanma. Doğrudan çözümle başla.
+ASLA "Merhaba değerli öğrencim" veya benzeri giriş/selamlama cümleleri ya da sohbet ifadeleri kullanma. Doğratan çözümle başla.
 
 İçerik Şunları Kapsamalıdır:
 1. Konu Özeti: Soru hangi konuyla ilgiliyse (${subject} - ${topicName}) o konunun temel kuralını veya formülünü kısaca hatırlat.
@@ -769,13 +756,13 @@ ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, 
     });
   } catch (err: any) {
     console.error('Gemini question solver error:', err);
-    res.status(500).json({ error: err.message || 'Yapay zeka soru çözümü üretilemedi.' });
+    res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay zeka soru çözümü üretilemedi.') });
   }
 });
 
 router.post('/similar-questions', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getEffectiveGeminiApiKey();
   if (!apiKey) {
     return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
   }
@@ -786,10 +773,7 @@ router.post('/similar-questions', async (req, res) => {
   }
 
   try {
-    const ai = new GoogleGenAI({ 
-      apiKey,
-      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
-    });
+    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
 
     let contents: any[] = [];
     const imagePart = imageUrl ? await resolveImagePart(imageUrl) : null;
@@ -897,13 +881,13 @@ Kesinlikle selamlaşma, "İşte senin için soru", "Başarılar dilerim" gibi hi
     });
   } catch (err: any) {
     console.error('Gemini similar questions generator error:', err);
-    res.status(500).json({ error: err.message || 'Yapay zeka benzer sorular üretemedi.' });
+    res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay zeka benzer sorular üretemedi.') });
   }
 });
 
 router.post('/analyze-question-details', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getEffectiveGeminiApiKey();
   if (!apiKey) {
     return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
   }
@@ -914,10 +898,7 @@ router.post('/analyze-question-details', async (req, res) => {
   }
 
   try {
-    const ai = new GoogleGenAI({ 
-      apiKey,
-      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
-    });
+    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
 
     let contents: any[] = [];
     const imagePart = imageUrl ? await resolveImagePart(imageUrl) : null;
@@ -1032,13 +1013,13 @@ BİÇİMLENDİRME:
     });
   } catch (err: any) {
     console.error('Gemini question analysis error:', err);
-    res.status(500).json({ error: err.message || 'Yapay zeka soru analizi üretilemedi.' });
+    res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay zeka soru analizi üretilemedi.') });
   }
 });
 
 router.post('/analyze-photo-question-full', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getEffectiveGeminiApiKey();
   if (!apiKey) {
     return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
   }
@@ -1049,10 +1030,7 @@ router.post('/analyze-photo-question-full', async (req, res) => {
   }
 
   try {
-    const ai = new GoogleGenAI({ 
-      apiKey,
-      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
-    });
+    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
 
     const imagePart = imageUrl ? await resolveImagePart(imageUrl) : null;
     if (!imagePart && !solutionText && !existingAnalysis) {
@@ -1214,7 +1192,7 @@ YANITINI YALNIZCA aşağıdaki JSON formatında döndür. Kesinlikle JSON dış�
     });
   } catch (err: any) {
     console.error('Gemini full photo analysis error:', err);
-    res.status(500).json({ error: err.message || 'Bütünleşik soru analizi yapılamadı.' });
+    res.status(500).json({ error: formatGeminiErrorMessage(err, 'Bütünleşik soru analizi yapılamadı.') });
   }
 });
 
@@ -1320,6 +1298,11 @@ router.post('/clear-usage-logs', async (req, res) => {
 });
 
 router.get('/model-settings', (req, res) => {
+  const currentKey = getEffectiveGeminiApiKey();
+  const maskedApiKey = currentKey 
+    ? (currentKey.length > 10 ? `${currentKey.slice(0, 6)}...${currentKey.slice(-4)}` : '***') 
+    : '';
+
   res.json({
     success: true,
     aiFeaturesEnabled,
@@ -1327,10 +1310,12 @@ router.get('/model-settings', (req, res) => {
     config: featureModelConfig,
     anomalyLimitTRY,
     coachDataSettings,
+    hasApiKey: Boolean(currentKey),
+    maskedApiKey,
     availableModels: [
-      { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash-Lite (Süper Ekonomik & Hızlı)', badge: 'Ekonomik (Varsayılan)' },
-      { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Yüksek Performans & Derin Koçluk)', badge: 'Önerilen' },
-      { id: 'gemini-flash-latest', name: 'Gemini Flash Latest (En Güncel Sürüm)', badge: 'Otomatik Güncel' }
+      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Hızlı & Yüksek Doğruluk)', badge: 'Önerilen (Varsayılan)' },
+      { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash-Lite (Süper Hızlı & Ekonomik)', badge: 'Ekonomik' },
+      { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (En Derin Düşünme & Karmaşık Sorular)', badge: 'Gelişmiş' }
     ],
     features: [
       { key: 'AI_COACH_STUDENT', name: 'Öğrenci Bireysel Yapay Zeka Koç Tavsiyesi', category: 'Yapay Zeka Koçluğu', description: 'Öğrencinin haftalık çalışma tavsiyelerini ve net analizlerini hazırlar.' },
@@ -1346,7 +1331,11 @@ router.get('/model-settings', (req, res) => {
 });
 
 router.post('/model-settings', (req, res) => {
-  const { config, aiFeaturesEnabled: newEnabledState, savePromptLogs: newSavePromptLogs, anomalyLimitTRY: newAnomalyLimit, coachDataSettings: newCoachDataSettings } = req.body;
+  const { config, aiFeaturesEnabled: newEnabledState, savePromptLogs: newSavePromptLogs, anomalyLimitTRY: newAnomalyLimit, coachDataSettings: newCoachDataSettings, geminiApiKey: newApiKey } = req.body;
+  
+  if (typeof newApiKey === 'string' && newApiKey.trim()) {
+    setCustomGeminiApiKey(newApiKey.trim());
+  }
   if (typeof newEnabledState === 'boolean') {
     setAiFeaturesEnabled(newEnabledState);
   }
@@ -1362,7 +1351,7 @@ router.post('/model-settings', (req, res) => {
   if (config && typeof config === 'object') {
     const sanitized: Record<string, string> = {};
     for (const [k, v] of Object.entries(config)) {
-      sanitized[k] = (v === 'gemini-2.5-flash-lite' || v === 'gemini-3.5-flash-lite') ? 'gemini-3.1-flash-lite' : String(v);
+      sanitized[k] = (v === 'gemini-2.5-flash-lite' || v === 'gemini-3.5-flash-lite' || v === 'gemini-3.1-flash-lite') ? 'gemini-2.5-flash' : String(v);
     }
     setFeatureModelConfig({ ...featureModelConfig, ...sanitized });
   }
@@ -1373,9 +1362,15 @@ router.post('/model-settings', (req, res) => {
       savePromptLogs,
       featureModelConfig,
       anomalyLimitTRY,
-      coachDataSettings
+      coachDataSettings,
+      ...(customGeminiApiKey ? { geminiApiKey: customGeminiApiKey } : {})
     }).catch(err => console.error('Failed to save settings to Firestore:', err));
   }
+
+  const currentKey = getEffectiveGeminiApiKey();
+  const maskedApiKey = currentKey 
+    ? (currentKey.length > 10 ? `${currentKey.slice(0, 6)}...${currentKey.slice(-4)}` : '***') 
+    : '';
 
   return res.json({ 
     success: true, 
@@ -1384,8 +1379,10 @@ router.post('/model-settings', (req, res) => {
     config: featureModelConfig, 
     anomalyLimitTRY,
     coachDataSettings,
+    hasApiKey: Boolean(currentKey),
+    maskedApiKey,
     message: aiFeaturesEnabled 
-      ? 'Yapay zeka ayarları başarıyla güncellendi ve sistem aktif kılındı.'
+      ? 'Yapay zeka ayarları ve modelleri başarıyla güncellendi.'
       : 'Tüm yapay zeka servisleri rehber öğretmen / yönetici kararıyla KAPATILDI.'
   });
 });
@@ -1396,7 +1393,7 @@ router.post('/model-settings', (req, res) => {
 // -------------------------------------------------------------
 router.post('/suggest-study-task', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getEffectiveGeminiApiKey();
   if (!apiKey) {
     return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
   }
@@ -1418,10 +1415,7 @@ router.post('/suggest-study-task', async (req, res) => {
   const plannerSettings = settings.studyPlannerTask || { enabled: true };
 
   try {
-    const ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
-    });
+    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
 
     let prompt = `
 Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecinde uzman bir rehber öğretmen ve çalışma planı danışmanısın.
@@ -1545,8 +1539,8 @@ Yanıtın YALNIZCA geçerli bir JSON objesi olmalıdır:
       aiUsage: usageRecord
     });
   } catch (err: any) {
-    console.error('Suggest study task error:', err);
-    res.status(500).json({ error: err.message || 'Yapay zeka görev önerisi üretilemedi.' });
+    console.error('Gemini study planner error:', err);
+    res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay zeka görev önerisi üretilemedi.') });
   }
 });
 

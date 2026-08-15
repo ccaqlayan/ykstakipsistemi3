@@ -19,20 +19,27 @@ if (!fs.existsSync(uploadsDir)) {
 
 export let db: any = null;
 
+// Global dynamic Gemini API key
+export let customGeminiApiKey: string = '';
+export function setCustomGeminiApiKey(val: string) { customGeminiApiKey = val; }
+export function getEffectiveGeminiApiKey(): string { 
+  return (customGeminiApiKey || process.env.GEMINI_API_KEY || '').trim(); 
+}
+
 // Global master switch to turn all AI features ON or OFF for the school
 export let aiFeaturesEnabled: boolean = true;
 export function setAiFeaturesEnabled(val: boolean) { aiFeaturesEnabled = val; }
 
 // Global configurable model mapping for each AI feature
 export let featureModelConfig: Record<string, string> = {
-  AI_COACH_STUDENT: 'gemini-3.1-flash-lite',
-  AI_COACH_CLASS: 'gemini-3.1-flash-lite',
-  SOLVE_QUESTION: 'gemini-3.1-flash-lite',
-  QUESTION_ANALYSIS: 'gemini-3.1-flash-lite',
-  SIMILAR_QUESTION: 'gemini-3.1-flash-lite',
-  ERROR_PRIORITY: 'gemini-3.1-flash-lite',
-  TOPIC_TIPS: 'gemini-3.1-flash-lite',
-  YOUTUBE_PLANNER: 'gemini-3.1-flash-lite'
+  AI_COACH_STUDENT: 'gemini-2.5-flash',
+  AI_COACH_CLASS: 'gemini-2.5-flash',
+  SOLVE_QUESTION: 'gemini-2.5-flash',
+  QUESTION_ANALYSIS: 'gemini-2.5-flash',
+  SIMILAR_QUESTION: 'gemini-2.5-flash',
+  ERROR_PRIORITY: 'gemini-2.5-flash',
+  TOPIC_TIPS: 'gemini-2.5-flash',
+  YOUTUBE_PLANNER: 'gemini-2.5-flash'
 };
 export function setFeatureModelConfig(cfg: Record<string, string>) { featureModelConfig = cfg; }
 
@@ -94,6 +101,9 @@ export async function initFirebaseAndLogs() {
         const settingsDoc = settingsSnap.docs.find(d => d.id === 'gemini_settings');
         if (settingsDoc) {
           const sData = settingsDoc.data();
+          if (typeof sData.geminiApiKey === 'string' && sData.geminiApiKey.trim()) {
+            customGeminiApiKey = sData.geminiApiKey.trim();
+          }
           if (typeof sData.aiFeaturesEnabled === 'boolean') {
             aiFeaturesEnabled = sData.aiFeaturesEnabled;
           }
@@ -103,7 +113,7 @@ export async function initFirebaseAndLogs() {
           if (sData.featureModelConfig && typeof sData.featureModelConfig === 'object') {
             const sanitized: Record<string, string> = {};
             for (const [k, v] of Object.entries(sData.featureModelConfig)) {
-              sanitized[k] = (v === 'gemini-2.5-flash-lite' || v === 'gemini-3.5-flash-lite') ? 'gemini-3.1-flash-lite' : String(v);
+              sanitized[k] = mapToActualGeminiModel(String(v));
             }
             featureModelConfig = { ...featureModelConfig, ...sanitized };
           }
@@ -273,12 +283,18 @@ export async function clearApiUsageLogs(olderThanDays = 30) {
 }
 
 export function mapToActualGeminiModel(modelId: string): string {
-  const m = (modelId || '').trim();
-  if (!m) return 'gemini-3.1-flash-lite';
-  if (m.includes('3.1-flash-lite') || m === 'gemini-3.1-flash-lite') {
-    return 'gemini-3.1-flash-lite';
+  const m = (modelId || '').trim().toLowerCase();
+  if (!m) return 'gemini-2.5-flash';
+  if (m.includes('2.5-pro') || m.includes('pro')) {
+    return 'gemini-2.5-pro';
   }
-  return m;
+  if (m.includes('2.0-flash-lite') || m.includes('flash-lite') || m.includes('lite')) {
+    return 'gemini-2.0-flash-lite';
+  }
+  if (m.includes('1.5-flash')) {
+    return 'gemini-1.5-flash';
+  }
+  return 'gemini-2.5-flash';
 }
 
 export async function generateContentWithFallback(
@@ -289,14 +305,14 @@ export async function generateContentWithFallback(
     config?: any;
   }
 ) {
-  const requestedModel = options.model || 'gemini-3.1-flash-lite';
+  const requestedModel = options.model || 'gemini-2.5-flash';
   const primaryApiModel = mapToActualGeminiModel(requestedModel);
 
   const fallbackList = [
     { requested: requestedModel, apiModel: primaryApiModel },
-    { requested: 'gemini-3.1-flash-lite', apiModel: 'gemini-3.1-flash-lite' },
-    { requested: 'gemini-3.6-flash', apiModel: 'gemini-3.6-flash' },
-    { requested: 'gemini-2.0-flash-lite', apiModel: 'gemini-2.0-flash-lite' }
+    { requested: 'gemini-2.5-flash', apiModel: 'gemini-2.5-flash' },
+    { requested: 'gemini-2.0-flash-lite', apiModel: 'gemini-2.0-flash-lite' },
+    { requested: 'gemini-1.5-flash', apiModel: 'gemini-1.5-flash' }
   ];
 
   const uniqueList: { requested: string; apiModel: string }[] = [];
@@ -312,7 +328,7 @@ export async function generateContentWithFallback(
   let lastError: any = null;
 
   for (const item of uniqueList) {
-    let retries = 2;
+    let retries = 1;
     while (retries >= 0) {
       try {
         console.log(`Generating content using API model: ${item.apiModel} (Requested config model: ${requestedModel}, Retries left: ${retries})`);
@@ -331,8 +347,9 @@ export async function generateContentWithFallback(
       } catch (err: any) {
         lastError = err;
         console.warn(`Model ${item.apiModel} failed (Retries left: ${retries}):`, err.message || err);
-        if (err.status === 404 || err.message?.includes('not found') || err.message?.includes('unsupported model')) {
-          break;
+        const isAuthOrNotFound = err.status === 401 || err.status === 404 || err.message?.includes('not found') || err.message?.includes('UNAUTHENTICATED') || err.message?.includes('unsupported');
+        if (isAuthOrNotFound) {
+          break; // Don't retry invalid or unauthenticated model; try next fallback model immediately
         }
         retries--;
         if (retries >= 0) {

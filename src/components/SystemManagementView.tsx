@@ -523,6 +523,40 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
     }
   };
 
+  const [isSavingApiKey, setIsSavingApiKey] = useState(false);
+  const [apiKeySaveMessage, setApiKeySaveMessage] = useState<{ text: string; isError?: boolean } | null>(null);
+
+  const handleSaveApiKey = async (newKey: string) => {
+    if (!newKey.trim()) return;
+    setIsSavingApiKey(true);
+    setApiKeySaveMessage(null);
+    try {
+      const res = await fetch('/api/gemini/model-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ geminiApiKey: newKey.trim() })
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (modelSettings) {
+          setModelSettings({
+            ...modelSettings,
+            hasApiKey: true,
+            maskedApiKey: data.maskedApiKey
+          });
+        }
+        setApiKeySaveMessage({ text: 'Google Gemini API Anahtarı başarıyla kaydedildi ve aktif edildi!' });
+        setTimeout(() => setApiKeySaveMessage(null), 4000);
+      } else {
+        setApiKeySaveMessage({ text: data.error || 'API anahtarı kaydedilemedi.', isError: true });
+      }
+    } catch (err: any) {
+      setApiKeySaveMessage({ text: err.message || 'Sunucuya bağlanılamadı.', isError: true });
+    } finally {
+      setIsSavingApiKey(false);
+    }
+  };
+
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -890,6 +924,9 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
           handleSetAllModels={handleSetAllModels}
           handleModelChange={handleModelChange}
           handleSaveModelConfig={handleSaveModelConfig}
+          handleSaveApiKey={handleSaveApiKey}
+          isSavingApiKey={isSavingApiKey}
+          apiKeySaveMessage={apiKeySaveMessage}
           isCoachDataExpanded={isCoachDataExpanded}
           setIsCoachDataExpanded={setIsCoachDataExpanded}
           coachDataSaveMessage={coachDataSaveMessage}

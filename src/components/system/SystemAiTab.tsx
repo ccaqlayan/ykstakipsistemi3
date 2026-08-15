@@ -39,6 +39,9 @@ interface SystemAiTabProps {
   handleSetAllModels: (modelId: string) => void;
   handleModelChange: (featureKey: string, newModelId: string) => void;
   handleSaveModelConfig: () => Promise<void>;
+  handleSaveApiKey?: (apiKey: string) => Promise<void>;
+  isSavingApiKey?: boolean;
+  apiKeySaveMessage?: { text: string; isError?: boolean } | null;
   isCoachDataExpanded: boolean;
   setIsCoachDataExpanded: (val: boolean) => void;
   coachDataSaveMessage: string | null;
@@ -73,6 +76,9 @@ export const SystemAiTab: React.FC<SystemAiTabProps> = ({
   handleSetAllModels,
   handleModelChange,
   handleSaveModelConfig,
+  handleSaveApiKey,
+  isSavingApiKey,
+  apiKeySaveMessage,
   isCoachDataExpanded,
   setIsCoachDataExpanded,
   coachDataSaveMessage,
@@ -167,6 +173,9 @@ export const SystemAiTab: React.FC<SystemAiTabProps> = ({
           handleSetAllModels={handleSetAllModels}
           handleModelChange={handleModelChange}
           handleSaveModelConfig={handleSaveModelConfig}
+          handleSaveApiKey={handleSaveApiKey}
+          isSavingApiKey={isSavingApiKey}
+          apiKeySaveMessage={apiKeySaveMessage}
         />
       )}
 

@@ -99,6 +99,8 @@ export interface ModelSettingsData {
   availableModels: { id: string; name: string; badge: string }[];
   features: { key: string; name: string; category: string; description: string }[];
   coachDataSettings?: CoachDataSettingsMap;
+  hasApiKey?: boolean;
+  maskedApiKey?: string;
 }
 
 export interface StorageFolderItem {
