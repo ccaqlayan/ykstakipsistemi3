@@ -316,9 +316,17 @@ export async function fetchLiveGoogleModels(apiKey?: string): Promise<{ id: stri
       if (data.models && Array.isArray(data.models)) {
         const filtered = data.models
           .filter((m: any) => {
-            const name = m.name?.replace('models/', '') || '';
+            const name = (m.name?.replace('models/', '') || '').toLowerCase();
             const isContentGen = Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent');
-            return isContentGen && !name.includes('embedding') && !name.includes('aqa') && !name.includes('image') && !name.includes('vision');
+            return isContentGen && 
+              !name.includes('embedding') && 
+              !name.includes('aqa') && 
+              !name.includes('image') && 
+              !name.includes('vision') && 
+              !name.includes('tts') && 
+              !name.includes('eap') && 
+              !name.includes('imagen') && 
+              !name.includes('robotics');
           })
           .map((m: any) => {
             const id = m.name?.replace('models/', '') || '';
@@ -403,7 +411,6 @@ export async function generateContentWithFallback(
         console.log(`Generating content using API model: ${item.apiModel} (Requested config model: ${requestedModel}, Retries left: ${retries})`);
         const mergedConfig = {
           maxOutputTokens: 2048,
-          thinkingConfig: { thinkingBudget: 0 },
           ...(options.config || {})
         };
         const response = await ai.models.generateContent({
@@ -422,9 +429,9 @@ export async function generateContentWithFallback(
           // Immediately throw authentication failure so user gets the accurate 401 message
           throw err;
         }
-        const isNotFound = err.status === 404 || errMsg.includes('not found') || errMsg.includes('no longer available') || errMsg.includes('unsupported');
+        const isNotFound = err.status === 404 || errMsg.includes('not found') || errMsg.includes('no longer available') || errMsg.includes('unsupported') || errMsg.includes('Thinking is not enabled');
         if (isNotFound) {
-          break; // Model not available, try next fallback model immediately
+          break; // Model not available or invalid arguments, try next fallback model immediately
         }
         retries--;
         if (retries >= 0) {

@@ -20,7 +20,9 @@ import {
   Info,
   Server,
   ArrowUpRight,
-  Search
+  Search,
+  ArrowDown,
+  ChevronDown
 } from 'lucide-react';
 import { APP_VERSION, BUILD_DATE } from '../../version';
 import { GitHubVersion, BackupInfo } from './SystemTypes';
@@ -37,12 +39,19 @@ export const SystemVersionTab: React.FC = () => {
   const [updateLogs, setUpdateLogs] = useState<string[]>([]);
   const [selectedVersionForUpdate, setSelectedVersionForUpdate] = useState<GitHubVersion | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+  const [showLiveUpdateModal, setShowLiveUpdateModal] = useState<boolean>(false);
+
+  // Auto-scroll control states
+  const [autoScroll, setAutoScroll] = useState<boolean>(true);
+  const [isUserScrolledUpModal, setIsUserScrolledUpModal] = useState<boolean>(false);
+  const [isUserScrolledUpInline, setIsUserScrolledUpInline] = useState<boolean>(false);
 
   // Manual Backup State
   const [backupLabel, setBackupLabel] = useState<string>('');
   const [isBackingUp, setIsBackingUp] = useState<boolean>(false);
 
-  const logsEndRef = useRef<HTMLDivElement | null>(null);
+  const modalTerminalRef = useRef<HTMLDivElement | null>(null);
+  const inlineTerminalRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetchVersions();
@@ -60,11 +69,17 @@ export const SystemVersionTab: React.FC = () => {
     };
   }, [isUpdating]);
 
+  // Container-only auto-scroll: NEVER scrolls the browser window or outer document
   useEffect(() => {
-    if (logsEndRef.current) {
-      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (autoScroll) {
+      if (modalTerminalRef.current && !isUserScrolledUpModal) {
+        modalTerminalRef.current.scrollTop = modalTerminalRef.current.scrollHeight;
+      }
+      if (inlineTerminalRef.current && !isUserScrolledUpInline) {
+        inlineTerminalRef.current.scrollTop = inlineTerminalRef.current.scrollHeight;
+      }
     }
-  }, [updateLogs]);
+  }, [updateLogs, autoScroll, isUserScrolledUpModal, isUserScrolledUpInline]);
 
   const fetchVersions = async () => {
     setLoadingVersions(true);
@@ -118,6 +133,9 @@ export const SystemVersionTab: React.FC = () => {
     if (!selectedVersionForUpdate) return;
     setShowConfirmModal(false);
     setIsUpdating(true);
+    setShowLiveUpdateModal(true);
+    setIsUserScrolledUpModal(false);
+    setIsUserScrolledUpInline(false);
     setUpdateLogs([`[${new Date().toLocaleTimeString('tr-TR')}] Güncelleme işlemi başlatılıyor: ${selectedVersionForUpdate.tag}`]);
 
     try {
@@ -169,6 +187,9 @@ export const SystemVersionTab: React.FC = () => {
     }
 
     setIsUpdating(true);
+    setShowLiveUpdateModal(true);
+    setIsUserScrolledUpModal(false);
+    setIsUserScrolledUpInline(false);
     setUpdateLogs([`[${new Date().toLocaleTimeString('tr-TR')}] '${filename}' yedeğini geri yükleme başlatıldı...`]);
 
     try {
@@ -342,9 +363,9 @@ export const SystemVersionTab: React.FC = () => {
       {/* 2. LIVE TERMINAL / UPDATE PROGRESS (IF ACTIVE OR LOGS PRESENT) */}
       {(isUpdating || updateLogs.length > 0) && (
         <div className="bg-slate-950 border border-indigo-500/30 rounded-3xl p-5 shadow-2xl space-y-3">
-          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
             <div className="flex items-center space-x-2">
-              <Terminal className="w-5 h-5 text-indigo-400" />
+              <Terminal className="w-5 h-5 text-indigo-400 shrink-0" />
               <h3 className="text-sm font-bold text-white">Sistem Güncelleme & Derleme Konsolu</h3>
               {isUpdating && (
                 <span className="text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -354,40 +375,89 @@ export const SystemVersionTab: React.FC = () => {
               )}
             </div>
             <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={() => setShowLiveUpdateModal(true)}
+                className="text-xs text-indigo-300 hover:text-white px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 cursor-pointer flex items-center gap-1 transition-all"
+                title="Konsolu tam ekran / açılır pencere olarak göster"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Pencere Olarak Aç</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAutoScroll(!autoScroll)}
+                className={`text-xs px-2.5 py-1 rounded-lg border cursor-pointer transition-all ${
+                  autoScroll 
+                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20' 
+                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-750'
+                }`}
+                title="Yeni loglar geldiğinde otomatik en alta kaydır"
+              >
+                {autoScroll ? 'Otomatik Kaydır: Açık' : 'Otomatik Kaydır: Kapalı'}
+              </button>
+
               {!isUpdating && (
                 <button
+                  type="button"
                   onClick={() => setUpdateLogs([])}
                   className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded-lg bg-white/5 border border-white/10 cursor-pointer"
                 >
-                  Konsolu Temizle
+                  Temizle
                 </button>
               )}
             </div>
           </div>
 
-          <div className="bg-black/80 rounded-2xl p-4 border border-white/5 font-mono text-xs text-indigo-200/90 max-h-64 overflow-y-auto space-y-1.5">
-            {updateLogs.map((log, idx) => {
-              const isError = log.includes('HATA') || log.includes('❌');
-              const isSuccess = log.includes('✅') || log.includes('TEBRİKLER');
-              const isRollback = log.includes('ROLLBACK') || log.includes('🚨');
-              return (
-                <div 
-                  key={idx} 
-                  className={`leading-relaxed ${
-                    isError 
-                      ? 'text-rose-400 font-bold' 
-                      : isRollback 
-                      ? 'text-amber-400 font-bold bg-amber-500/10 p-1 rounded' 
-                      : isSuccess 
-                      ? 'text-emerald-400 font-semibold' 
-                      : 'text-slate-300'
-                  }`}
-                >
-                  {log}
-                </div>
-              );
-            })}
-            <div ref={logsEndRef} />
+          <div className="relative">
+            <div 
+              ref={inlineTerminalRef}
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 30;
+                setIsUserScrolledUpInline(!isNearBottom);
+              }}
+              className="bg-black/90 rounded-2xl p-4 border border-white/5 font-mono text-xs text-indigo-200/90 max-h-64 overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-slate-700 select-text"
+            >
+              {updateLogs.map((log, idx) => {
+                const isError = log.includes('HATA') || log.includes('❌');
+                const isSuccess = log.includes('✅') || log.includes('TEBRİKLER');
+                const isRollback = log.includes('ROLLBACK') || log.includes('🚨');
+                return (
+                  <div 
+                    key={idx} 
+                    className={`leading-relaxed ${
+                      isError 
+                        ? 'text-rose-400 font-bold' 
+                        : isRollback 
+                        ? 'text-amber-400 font-bold bg-amber-500/10 p-1 rounded' 
+                        : isSuccess 
+                        ? 'text-emerald-400 font-semibold' 
+                        : 'text-slate-300'
+                    }`}
+                  >
+                    {log}
+                  </div>
+                );
+              })}
+            </div>
+
+            {isUserScrolledUpInline && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsUserScrolledUpInline(false);
+                  if (inlineTerminalRef.current) {
+                    inlineTerminalRef.current.scrollTop = inlineTerminalRef.current.scrollHeight;
+                  }
+                }}
+                className="absolute bottom-3 right-3 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-full shadow-lg border border-indigo-400/40 flex items-center gap-1.5 transition-all cursor-pointer animate-bounce"
+              >
+                <ArrowDown className="w-3 h-3" />
+                <span>En Alta Kaydır</span>
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -692,6 +762,162 @@ export const SystemVersionTab: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🚀 LIVE UPDATE & TERMINAL MODAL */}
+      {showLiveUpdateModal && (
+        <div 
+          className="fixed inset-0 z-[100000] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-hidden"
+          onClick={(e) => {
+            if (!isUpdating && e.target === e.currentTarget) {
+              setShowLiveUpdateModal(false);
+            }
+          }}
+        >
+          <div className="bg-slate-900/95 backdrop-blur-2xl border border-indigo-500/40 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-4 my-auto flex flex-col max-h-[90vh] animate-fade-in">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 bg-indigo-600/20 text-indigo-400 rounded-xl border border-indigo-500/30">
+                  <Terminal className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>Sistem Güncelleme & Konsol</span>
+                    {isUpdating ? (
+                      <span className="text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                        İşlem Sürüyor
+                      </span>
+                    ) : updateLogs.some(l => l.includes('TEBRİKLER') || l.includes('✅')) ? (
+                      <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <CheckCircle2 className="w-2.5 h-2.5" />
+                        Tamamlandı
+                      </span>
+                    ) : updateLogs.some(l => l.includes('ROLLBACK') || l.includes('🚨')) ? (
+                      <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <AlertTriangle className="w-2.5 h-2.5" />
+                        Yedekten Geri Yüklendi
+                      </span>
+                    ) : null}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {selectedVersionForUpdate ? `Hedef: ${selectedVersionForUpdate.tag}` : 'Güncelleme ve Derleme Konsolu'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setAutoScroll(!autoScroll)}
+                  className={`text-xs px-2.5 py-1 rounded-lg border cursor-pointer transition-all ${
+                    autoScroll 
+                      ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20' 
+                      : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-750'
+                  }`}
+                  title="Yeni loglar geldiğinde otomatik en alta kaydır"
+                >
+                  {autoScroll ? 'Otomatik Kaydır: Açık' : 'Otomatik Kaydır: Kapalı'}
+                </button>
+
+                <button 
+                  onClick={() => setShowLiveUpdateModal(false)} 
+                  className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                  title="Kapat / Küçült"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Terminal Window with Container-only Scrolling */}
+            <div className="relative flex-1 min-h-0 flex flex-col">
+              <div 
+                ref={modalTerminalRef}
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 30;
+                  setIsUserScrolledUpModal(!isNearBottom);
+                }}
+                className="bg-black/90 rounded-2xl p-4 border border-slate-800 font-mono text-xs text-indigo-200/90 overflow-y-auto max-h-[380px] min-h-[220px] space-y-1.5 scrollbar-thin scrollbar-thumb-slate-700 select-text flex-1"
+              >
+                {updateLogs.map((log, idx) => {
+                  const isError = log.includes('HATA') || log.includes('❌');
+                  const isSuccess = log.includes('✅') || log.includes('TEBRİKLER');
+                  const isRollback = log.includes('ROLLBACK') || log.includes('🚨');
+                  return (
+                    <div 
+                      key={idx} 
+                      className={`leading-relaxed ${
+                        isError 
+                          ? 'text-rose-400 font-bold' 
+                          : isRollback 
+                          ? 'text-amber-400 font-bold bg-amber-500/10 p-1 rounded' 
+                          : isSuccess 
+                          ? 'text-emerald-400 font-semibold' 
+                          : 'text-slate-300'
+                      }`}
+                    >
+                      {log}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {isUserScrolledUpModal && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserScrolledUpModal(false);
+                    if (modalTerminalRef.current) {
+                      modalTerminalRef.current.scrollTop = modalTerminalRef.current.scrollHeight;
+                    }
+                  }}
+                  className="absolute bottom-3 right-3 bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold px-3 py-1.5 rounded-full shadow-lg border border-indigo-400/40 flex items-center gap-1.5 transition-all cursor-pointer animate-bounce"
+                >
+                  <ArrowDown className="w-3 h-3" />
+                  <span>En Alta Kaydır</span>
+                </button>
+              )}
+            </div>
+
+            {/* Modal Bottom Actions */}
+            <div className="pt-2 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="text-[11px] text-slate-400">
+                {isUpdating ? (
+                  <span className="flex items-center gap-1.5 text-amber-300 font-medium">
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                    Lütfen güncelleme ve derleme bitene kadar sayfayı kapatmayınız.
+                  </span>
+                ) : (
+                  <span>Toplam {updateLogs.length} işlem kaydı.</span>
+                )}
+              </div>
+
+              <div className="flex items-center space-x-2">
+                {!isUpdating && updateLogs.some(l => l.includes('TEBRİKLER') || l.includes('✅')) ? (
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-lg shadow-emerald-600/30 transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Sayfayı Yenile & Yeni Sürümü Başlat</span>
+                  </button>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() => setShowLiveUpdateModal(false)}
+                  className="bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                >
+                  {isUpdating ? 'Küçült / Arka Planda İzle' : 'Kapat'}
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
