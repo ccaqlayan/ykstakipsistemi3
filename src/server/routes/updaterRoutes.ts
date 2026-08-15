@@ -27,9 +27,9 @@ router.get('/versions', async (req, res) => {
 });
 
 // 2. List backups
-router.get('/backups', (req, res) => {
+router.get('/backups', async (req, res) => {
   try {
-    const backups = listBackups();
+    const backups = await listBackups();
     return res.json({ success: true, backups });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });
@@ -48,9 +48,18 @@ router.post('/backup-now', async (req, res) => {
 });
 
 // 4. Download a backup file
-router.get('/download-backup/:filename', (req, res) => {
+router.get('/download-backup/:filename', async (req, res) => {
   const filename = path.basename(req.params.filename);
   const filepath = path.join(process.cwd(), 'backups', filename);
+
+  if (!fs.existsSync(filepath)) {
+    try {
+      const { downloadBackupFromCloud } = await import('../services/updaterService');
+      await downloadBackupFromCloud(filename, filepath);
+    } catch (e) {
+      // cloud download error
+    }
+  }
 
   if (!fs.existsSync(filepath)) {
     return res.status(404).send('Yedek dosyası bulunamadı');
@@ -62,9 +71,9 @@ router.get('/download-backup/:filename', (req, res) => {
 });
 
 // 5. Delete backup
-router.delete('/backups/:filename', (req, res) => {
+router.delete('/backups/:filename', async (req, res) => {
   try {
-    const success = deleteBackup(req.params.filename);
+    const success = await deleteBackup(req.params.filename);
     return res.json({ success });
   } catch (err: any) {
     return res.status(500).json({ success: false, error: err.message });

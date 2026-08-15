@@ -368,11 +368,11 @@ router.get('/', (req, res) => {
 });
 
 // 2. Recovery Endpoints
-router.get('/api/backups', (req, res) => {
+router.get('/api/backups', async (req, res) => {
   if (!isAuthorized(req)) {
     return res.status(401).json({ success: false, error: 'Yetkisiz erişim: Kurtarma anahtarı geçersiz.' });
   }
-  const backups = listBackups();
+  const backups = await listBackups();
   return res.json({ success: true, backups });
 });
 

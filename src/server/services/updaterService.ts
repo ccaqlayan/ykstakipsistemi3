@@ -139,6 +139,173 @@ export async function getGitHubVersions(): Promise<GitHubVersion[]> {
 }
 
 /**
+ * Helper to upload backup to Firebase Storage & register in Firestore
+ */
+async function syncBackupToCloud(info: BackupInfo, buffer: Buffer): Promise<void> {
+  const configPath = path.join(process.cwd(), 'serviceAccountKey.json');
+  if (!fs.existsSync(configPath)) return;
+
+  try {
+    const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    if (!firebaseConfig || !firebaseConfig.projectId) return;
+
+    const { initializeApp: initAdmin, getApps: getAdminApps } = await import('firebase-admin/app');
+    const { getStorage: getAdminStorage } = await import('firebase-admin/storage');
+    const { getFirestore: getAdminFirestore } = await import('firebase-admin/firestore');
+
+    if (getAdminApps().length === 0) {
+      initAdmin({
+        projectId: firebaseConfig.projectId,
+        storageBucket: firebaseConfig.storageBucket || `${firebaseConfig.projectId}.firebasestorage.app`
+      });
+    }
+
+    // 1. Upload to Firebase Storage
+    const bucketName = firebaseConfig.storageBucket || `${firebaseConfig.projectId}.firebasestorage.app`;
+    const bucket = getAdminStorage().bucket(bucketName);
+    const storageFile = bucket.file(`system-backups/${info.filename}`);
+
+    await storageFile.save(buffer, {
+      metadata: { contentType: 'application/zip' },
+      resumable: false
+    });
+
+    // 2. Save metadata document in Firestore collection 'system_backups'
+    const adminDb = getAdminFirestore();
+    await adminDb.collection('system_backups').doc(info.filename).set({
+      filename: info.filename,
+      filepath: `system-backups/${info.filename}`,
+      sizeBytes: info.sizeBytes,
+      sizeFormatted: info.sizeFormatted,
+      createdAt: info.createdAt,
+      version: info.version,
+      isAuto: info.isAuto,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+
+    console.log(`[Backup Sync] Successfully backed up ${info.filename} to Firebase Storage & Firestore.`);
+  } catch (err: any) {
+    console.warn('[Backup Sync Warning] Failed to upload backup to Cloud (Local backup safe):', err.message);
+  }
+}
+
+/**
+ * Helper to download backup from Firebase Storage if missing locally
+ */
+export async function downloadBackupFromCloud(filename: string, targetPath: string): Promise<boolean> {
+  const configPath = path.join(process.cwd(), 'serviceAccountKey.json');
+  if (!fs.existsSync(configPath)) return false;
+
+  try {
+    const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    if (!firebaseConfig || !firebaseConfig.projectId) return false;
+
+    const { initializeApp: initAdmin, getApps: getAdminApps } = await import('firebase-admin/app');
+    const { getStorage: getAdminStorage } = await import('firebase-admin/storage');
+
+    if (getAdminApps().length === 0) {
+      initAdmin({
+        projectId: firebaseConfig.projectId,
+        storageBucket: firebaseConfig.storageBucket || `${firebaseConfig.projectId}.firebasestorage.app`
+      });
+    }
+
+    const bucketName = firebaseConfig.storageBucket || `${firebaseConfig.projectId}.firebasestorage.app`;
+    const bucket = getAdminStorage().bucket(bucketName);
+    const storageFile = bucket.file(`system-backups/${filename}`);
+
+    const [exists] = await storageFile.exists();
+    if (!exists) return false;
+
+    const [buffer] = await storageFile.download();
+    ensureDir(path.dirname(targetPath));
+    fs.writeFileSync(targetPath, buffer);
+    console.log(`[Backup Restore] Downloaded ${filename} from Firebase Storage.`);
+    return true;
+  } catch (err: any) {
+    console.warn('[Backup Download Warning] Error fetching backup from Cloud:', err.message);
+    return false;
+  }
+}
+
+/**
+ * Helper to delete backup from Firebase Storage & Firestore
+ */
+async function deleteBackupFromCloud(filename: string): Promise<void> {
+  const configPath = path.join(process.cwd(), 'serviceAccountKey.json');
+  if (!fs.existsSync(configPath)) return;
+
+  try {
+    const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    if (!firebaseConfig || !firebaseConfig.projectId) return;
+
+    const { initializeApp: initAdmin, getApps: getAdminApps } = await import('firebase-admin/app');
+    const { getStorage: getAdminStorage } = await import('firebase-admin/storage');
+    const { getFirestore: getAdminFirestore } = await import('firebase-admin/firestore');
+
+    if (getAdminApps().length === 0) {
+      initAdmin({
+        projectId: firebaseConfig.projectId,
+        storageBucket: firebaseConfig.storageBucket || `${firebaseConfig.projectId}.firebasestorage.app`
+      });
+    }
+
+    const bucketName = firebaseConfig.storageBucket || `${firebaseConfig.projectId}.firebasestorage.app`;
+    const bucket = getAdminStorage().bucket(bucketName);
+    await bucket.file(`system-backups/${filename}`).delete({ ignoreNotFound: true });
+
+    const adminDb = getAdminFirestore();
+    await adminDb.collection('system_backups').doc(filename).delete();
+  } catch (err: any) {
+    console.warn('[Backup Cloud Delete Warning]:', err.message);
+  }
+}
+
+/**
+ * Accurately parses ISO timestamp, label and version from backup filename
+ */
+function parseBackupFilename(filename: string, stat?: fs.Stats): { version: string; createdAt: string; isAuto: boolean } {
+  let createdAt = stat?.birthtime && !isNaN(stat.birthtime.getTime()) && stat.birthtime.getTime() > 0
+    ? stat.birthtime.toISOString()
+    : new Date().toISOString();
+
+  // Extract ISO timestamp if present: 2026-08-15T10-49-40-068Z -> 2026-08-15T10:49:40.068Z
+  const isoMatch = filename.match(/(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}[^.]+)\.zip$/);
+  if (isoMatch) {
+    const rawIso = isoMatch[1];
+    const parts = rawIso.split('T');
+    if (parts.length === 2) {
+      const timeParts = parts[1].split('-');
+      if (timeParts.length >= 3) {
+        const hh = timeParts[0];
+        const mm = timeParts[1];
+        const rest = timeParts.slice(2).join('.');
+        const reconstructed = `${parts[0]}T${hh}:${mm}:${rest}`;
+        const d = new Date(reconstructed);
+        if (!isNaN(d.getTime())) {
+          createdAt = d.toISOString();
+        }
+      }
+    }
+  } else if (stat?.mtime && !isNaN(stat.mtime.getTime()) && stat.mtime.getTime() > 0) {
+    createdAt = stat.mtime.toISOString();
+  }
+
+  // Extract version: e.g. "backup_manual_v1_8_8_..." -> "v1.8.8" or "backup_pre_update_from_v1_8_8_..." -> "v1.8.8"
+  let version = APP_VERSION;
+  const versionMatch = filename.match(/(?:v|from_v|vv)?(\d+\.\d+(?:\.\d+)?)/i);
+  if (versionMatch) {
+    version = `v${versionMatch[1]}`;
+  } else if (filename.includes('manual')) {
+    version = 'Manuel Yedek';
+  }
+
+  const isAuto = filename.includes('auto') || filename.includes('pre_update');
+
+  return { version, createdAt, isAuto };
+}
+
+/**
  * 2. Create full backup of current workspace files
  */
 export async function createBackup(label?: string): Promise<BackupInfo> {
@@ -182,66 +349,132 @@ export async function createBackup(label?: string): Promise<BackupInfo> {
   zip.writeZip(filepath);
 
   const stat = fs.statSync(filepath);
-  return {
+  const parsed = parseBackupFilename(filename, stat);
+
+  const backupInfo: BackupInfo = {
     filename,
     filepath,
     sizeBytes: stat.size,
     sizeFormatted: formatBytes(stat.size),
-    createdAt: new Date().toISOString(),
-    version: APP_VERSION,
+    createdAt: parsed.createdAt,
+    version: parsed.version,
     isAuto: label?.includes('auto') || label?.includes('pre_update') || false
   };
+
+  // Sync to Cloud Storage & Firestore asynchronously for permanent persistence
+  try {
+    const buffer = fs.readFileSync(filepath);
+    await syncBackupToCloud(backupInfo, buffer);
+  } catch (err: any) {
+    console.warn('Backup cloud sync error:', err.message);
+  }
+
+  return backupInfo;
 }
 
 /**
- * 3. List existing backups
+ * 3. List existing backups (from local disk + Firestore / Cloud Storage)
  */
-export function listBackups(): BackupInfo[] {
+export async function listBackups(): Promise<BackupInfo[]> {
   ensureDir(BACKUPS_DIR);
-  const files = fs.readdirSync(BACKUPS_DIR);
-  const backups: BackupInfo[] = [];
+  const backupsMap = new Map<string, BackupInfo>();
 
-  for (const file of files) {
-    if (!file.endsWith('.zip')) continue;
-    const filepath = path.join(BACKUPS_DIR, file);
+  // 1. Read local files
+  try {
+    const files = fs.readdirSync(BACKUPS_DIR);
+    for (const file of files) {
+      if (!file.endsWith('.zip')) continue;
+      const filepath = path.join(BACKUPS_DIR, file);
+      try {
+        const stat = fs.statSync(filepath);
+        const parsed = parseBackupFilename(file, stat);
+
+        backupsMap.set(file, {
+          filename: file,
+          filepath,
+          sizeBytes: stat.size,
+          sizeFormatted: formatBytes(stat.size),
+          createdAt: parsed.createdAt,
+          version: parsed.version,
+          isAuto: parsed.isAuto
+        });
+      } catch (e) {
+        console.warn('Backup file stat error:', e);
+      }
+    }
+  } catch (e) {
+    console.warn('Local backups read error:', e);
+  }
+
+  // 2. Read cloud Firestore backups
+  const configPath = path.join(process.cwd(), 'serviceAccountKey.json');
+  if (fs.existsSync(configPath)) {
     try {
-      const stat = fs.statSync(filepath);
-      const versionMatch = file.match(/backup_([^_]+)_/);
-      const version = versionMatch ? versionMatch[1] : 'Bilinmiyor';
+      const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      if (firebaseConfig && firebaseConfig.projectId) {
+        const { initializeApp: initAdmin, getApps: getAdminApps } = await import('firebase-admin/app');
+        const { getFirestore: getAdminFirestore } = await import('firebase-admin/firestore');
 
-      backups.push({
-        filename: file,
-        filepath,
-        sizeBytes: stat.size,
-        sizeFormatted: formatBytes(stat.size),
-        createdAt: stat.birthtime.toISOString(),
-        version,
-        isAuto: file.includes('auto') || file.includes('pre_update')
-      });
-    } catch (e) {
-      console.warn('Backup file stat error:', e);
+        if (getAdminApps().length === 0) {
+          initAdmin({
+            projectId: firebaseConfig.projectId,
+            storageBucket: firebaseConfig.storageBucket || `${firebaseConfig.projectId}.firebasestorage.app`
+          });
+        }
+
+        const adminDb = getAdminFirestore();
+        const snap = await adminDb.collection('system_backups').get();
+        for (const doc of snap.docs) {
+          const data = doc.data();
+          const filename = data.filename || doc.id;
+          if (!backupsMap.has(filename)) {
+            backupsMap.set(filename, {
+              filename,
+              filepath: path.join(BACKUPS_DIR, filename),
+              sizeBytes: data.sizeBytes || 0,
+              sizeFormatted: data.sizeFormatted || formatBytes(data.sizeBytes || 0),
+              createdAt: data.createdAt || new Date().toISOString(),
+              version: data.version || 'Bilinmiyor',
+              isAuto: data.isAuto || false
+            });
+          }
+        }
+      }
+    } catch (fbErr: any) {
+      console.warn('Cloud backups read error:', fbErr.message);
     }
   }
 
+  const backups = Array.from(backupsMap.values());
   // Sort newest first
   return backups.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
 /**
- * 4. Delete backup file safely
+ * 4. Delete backup file safely (Local + Cloud)
  */
-export function deleteBackup(filename: string): boolean {
+export async function deleteBackup(filename: string): Promise<boolean> {
   const safeFilename = path.basename(filename);
   const filepath = path.join(BACKUPS_DIR, safeFilename);
+  let deleted = false;
+
   if (fs.existsSync(filepath)) {
     fs.unlinkSync(filepath);
-    return true;
+    deleted = true;
   }
-  return false;
+
+  try {
+    await deleteBackupFromCloud(safeFilename);
+    deleted = true;
+  } catch (e: any) {
+    console.warn('Cloud backup delete warning:', e.message);
+  }
+
+  return deleted;
 }
 
 /**
- * 5. Restore a backup zip archive
+ * 5. Restore a backup zip archive (Downloads from Cloud if not local)
  */
 export async function restoreBackup(filename: string, log?: (msg: string) => void): Promise<void> {
   const sendLog = log || console.log;
@@ -249,7 +482,11 @@ export async function restoreBackup(filename: string, log?: (msg: string) => voi
   const filepath = path.join(BACKUPS_DIR, safeFilename);
 
   if (!fs.existsSync(filepath)) {
-    throw new Error(`Yedek dosyası bulunamadı: ${safeFilename}`);
+    sendLog(`[1/4] '${safeFilename}' yedeği buluttan indiriliyor...`);
+    const downloaded = await downloadBackupFromCloud(safeFilename, filepath);
+    if (!downloaded || !fs.existsSync(filepath)) {
+      throw new Error(`Yedek dosyası yerel diskte ve bulutta bulunamadı: ${safeFilename}`);
+    }
   }
 
   sendLog(`[1/4] '${safeFilename}' yedeği okunuyor ve doğrulanıyor...`);
