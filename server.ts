@@ -19,6 +19,8 @@ import authRoutes from './src/server/routes/authRoutes';
 import sheetsRoutes from './src/server/routes/sheetsRoutes';
 import geminiRoutes from './src/server/routes/geminiRoutes';
 import systemRoutes from './src/server/routes/systemRoutes';
+import updaterRoutes from './src/server/routes/updaterRoutes';
+import emergencyRecoveryRoute from './src/server/routes/emergencyRecoveryRoute';
 
 const app = express();
 
@@ -30,6 +32,8 @@ app.use('/uploads', express.static(uploadsDir));
 app.use('/api/auth', authRoutes);
 app.use('/api/sheets', sheetsRoutes);
 app.use('/api/gemini', geminiRoutes);
+app.use('/api/system/updater', updaterRoutes);
+app.use('/emergency-restore', emergencyRecoveryRoute);
 app.use('/api', systemRoutes);
 
 // Fallback for /uploads/* when files are missing on local disk after server restart: fetch from Firebase Storage

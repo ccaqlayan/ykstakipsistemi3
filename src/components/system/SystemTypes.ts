@@ -1,6 +1,27 @@
 import { UserAccount } from '../../types';
 
-export type SystemTab = 'AI' | 'STORAGE' | 'SETTINGS' | 'MESSAGES' | 'MOTIVATION';
+export type SystemTab = 'AI' | 'STORAGE' | 'SETTINGS' | 'MESSAGES' | 'MOTIVATION' | 'VERSION';
+
+export interface GitHubVersion {
+  tag: string;
+  name: string;
+  commitSha: string;
+  date: string;
+  message: string;
+  zipballUrl: string;
+  isCurrent: boolean;
+  author?: string;
+}
+
+export interface BackupInfo {
+  filename: string;
+  filepath: string;
+  sizeBytes: number;
+  sizeFormatted: string;
+  createdAt: string;
+  version: string;
+  isAuto: boolean;
+}
 
 export interface UsageSummary {
   totalCalls: number;

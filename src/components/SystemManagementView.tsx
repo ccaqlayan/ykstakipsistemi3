@@ -7,11 +7,13 @@ import {
   HardDrive, 
   Settings2, 
   MessageSquare,
-  Sparkles
+  Sparkles,
+  GitBranch
 } from 'lucide-react';
 import { UniversityLogoManagerModal } from './UniversityLogoManagerModal';
 import { AdminMessageManagement } from './AdminMessageManagement';
 import { MotivationMessagesTab } from './system/MotivationMessagesTab';
+import { SystemVersionTab } from './system/SystemVersionTab';
 import { 
   onQuotaError, 
   getLowDataMode, 
@@ -741,7 +743,7 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
         </div>
 
         {/* TOP TAB NAVIGATION BAR */}
-        <div className="mt-6 pt-4 border-t border-indigo-500/20 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="mt-6 pt-4 border-t border-indigo-500/20 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <button
             onClick={() => setActiveTab('AI')}
             className={`flex flex-col items-start justify-between p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
@@ -844,6 +846,27 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
               activeTab === 'MESSAGES' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400 border border-slate-700/50'
             }`}>
               Denetim
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('VERSION')}
+            className={`flex flex-col items-start justify-between p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+              activeTab === 'VERSION'
+                ? 'bg-gradient-to-br from-indigo-600/90 via-purple-600/90 to-fuchsia-700/90 border-indigo-400 text-white shadow-lg shadow-indigo-500/25 ring-2 ring-indigo-400/30'
+                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800/90 hover:border-slate-700'
+            }`}
+          >
+            <div className="flex items-center space-x-2 w-full justify-between mb-1.5">
+              <div className="flex items-center space-x-2">
+                <GitBranch className={`w-4 h-4 ${activeTab === 'VERSION' ? 'text-indigo-200' : 'text-indigo-400'}`} />
+                <span className="font-extrabold text-xs tracking-tight">Sürüm Güncelleme</span>
+              </div>
+            </div>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+              activeTab === 'VERSION' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400 border border-slate-700/50'
+            }`}>
+              GitHub & Yedekler
             </span>
           </button>
         </div>
@@ -959,6 +982,11 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
       {/* TAB 5: MOTİVASYON METİNLERİ (MOTIVATION) */}
       {activeTab === 'MOTIVATION' && (
         <MotivationMessagesTab />
+      )}
+
+      {/* TAB 6: SÜRÜM & YEDEKLEME YÖNETİMİ (VERSION) */}
+      {activeTab === 'VERSION' && (
+        <SystemVersionTab />
       )}
 
       {/* UNIVERSITY LOGO MANAGER MODAL POPUP */}

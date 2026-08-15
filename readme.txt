@@ -115,6 +115,7 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
   * ai/AiAuditLogsTab.tsx         : Yapay zeka istek günlüğü ve ayakizi takibi
   * SystemSettingsTab.tsx         : Okul adı, veritabanı ve genel sistem ayarları
   * SystemStorageTab.tsx          : Disk kullanımı ve Firestore veritabanı kotası alanı
+  * SystemVersionTab.tsx          : GitHub sürüm güncelleme, commit geçmişi ve sistem yedekleri yönetimi alanı
 
 [3.9. Bağımsız Diğer Ekranlar (Independent Views)]
 - src/components/AICoachView.tsx               : Bireysel öğrenci ve sınıf genel Yapay Zeka Koç Raporu.
@@ -156,6 +157,9 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - src/server/routes/sheetsRoutes.ts: `/api/sheets/*` (Google Tablosu otomatik oluşturma ve canlı veri aktarma).
 - src/server/routes/geminiRoutes.ts: `/api/gemini/*` (Yapay Zeka Bireysel/Sınıf Koçu, Soru Çözücü, Çeldirici Analizi, Benzer Soru Üretici, Rozet Entegrasyonu).
 - src/server/routes/systemRoutes.ts: `/api/*` (Storage istatistikleri, YouTube playlist scraper, Fotoğraf Yükleme/Silme, Admin Mesaj Yönetimi, Wikipedia Proxy).
+- src/server/routes/updaterRoutes.ts: `/api/system/updater/*` (GitHub sürümleri, otomatik güncelleme, anlık yedek alma, log akışı ve rollback).
+- src/server/routes/emergencyRecoveryRoute.ts: `/emergency-restore` (Bağımsız, standalone acil durum felaket kurtarma HTML ve API rotası).
+- src/server/services/updaterService.ts: (GitHub API, AdmZip yedekleme/geri yükleme ve auto-rollback motoru).
 
 --------------------------------------------------------------------------------
 5. SERVİSLER, VERİ SETLERİ VE YARDIMCI YAZILIMLAR (SERVICES, DATA & UTILS)
