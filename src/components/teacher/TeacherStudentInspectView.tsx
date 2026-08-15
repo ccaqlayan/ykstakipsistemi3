@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   ArrowLeft,
   TrendingUp, 
@@ -1540,10 +1541,10 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
           );
         };
 
-        return (
+        const plannerContent = (
           <div className={
             isPlannerFullscreen
-              ? "fixed inset-0 z-[99999] bg-slate-950/98 p-4 sm:p-6 md:p-8 overflow-y-auto overscroll-contain backdrop-blur-3xl shadow-2xl space-y-6"
+              ? "fixed inset-0 z-[999999] bg-slate-950/98 p-4 sm:p-6 md:p-8 overflow-y-auto overscroll-contain backdrop-blur-3xl shadow-2xl space-y-6"
               : "bg-slate-900/90 border border-white/15 rounded-3xl p-6 shadow-2xl backdrop-blur-2xl space-y-6"
           }>
             {/* Header & Actions */}
@@ -1926,6 +1927,8 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
             )}
           </div>
         );
+
+        return isPlannerFullscreen ? createPortal(plannerContent, document.body) : plannerContent;
       })()}
 
       {/* TAB 3: QUESTIONS */}

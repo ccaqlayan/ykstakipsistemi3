@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   TrendingUp, 
@@ -1122,10 +1123,10 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                 );
               };
 
-              return (
+              const plannerContent = (
                 <div className={
                   isPlannerFullscreen
-                    ? "fixed inset-0 z-[10000] bg-slate-950/98 p-4 sm:p-6 md:p-8 overflow-y-auto overscroll-contain backdrop-blur-3xl shadow-2xl space-y-6"
+                    ? "fixed inset-0 z-[999999] bg-slate-950/98 p-4 sm:p-6 md:p-8 overflow-y-auto overscroll-contain backdrop-blur-3xl shadow-2xl space-y-6"
                     : "space-y-6"
                 }>
                   {/* Header & Actions */}
@@ -1457,6 +1458,8 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                   </div>
                 </div>
               );
+
+              return isPlannerFullscreen ? createPortal(plannerContent, document.body) : plannerContent;
             })()}
           </div>
         )}
