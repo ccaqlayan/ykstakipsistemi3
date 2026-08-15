@@ -1,0 +1,13 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      // 1. Resimleri ve dokümanları herkes görüntüleyebilir
+      allow read: if true;
+      
+      // 2. Yalnızca 1 MB'tan küçük görsel dosyaları yüklenebilir (otomatik sıkıştırma sonrası ~50-150 KB)
+      allow write: if request.resource.size < 1 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+  }
+}
