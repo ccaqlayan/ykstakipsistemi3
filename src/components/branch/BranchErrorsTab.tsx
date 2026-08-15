@@ -765,15 +765,15 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                         setAnalysisErrorMsg(null);
                       }}
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm border ${
-                        (item.aiFeedback || item.aiAnalysis)
+                        item.aiFeedback
                           ? 'bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border-purple-500/40'
                           : 'bg-slate-900 hover:bg-purple-950/40 text-slate-400 hover:text-purple-300 border-slate-800 hover:border-purple-500/30'
                       }`}
                       title="Yapay Zeka Hata Analizi ve Koçluk Tavsiyesi"
                     >
-                      <Sparkles className={`w-3.5 h-3.5 ${item.aiFeedback || item.aiAnalysis ? 'text-purple-400' : 'text-slate-500'}`} />
+                      <Sparkles className={`w-3.5 h-3.5 ${item.aiFeedback ? 'text-purple-400' : 'text-slate-500'}`} />
                       <span>Hata Analizi</span>
-                      {!(item.aiFeedback || item.aiAnalysis) && (
+                      {!item.aiFeedback && (
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                       )}
                     </button>
@@ -884,11 +884,11 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
             </div>
 
             {/* CASE A: Analysis Exists */}
-            {(activeAiErrorItem.aiFeedback || activeAiErrorItem.aiAnalysis) ? (
+            {activeAiErrorItem.aiFeedback ? (
               <div className="space-y-4">
                 <div className="p-4 bg-indigo-950/30 border border-indigo-500/25 rounded-2xl space-y-2 text-xs leading-relaxed">
                   <div className="text-slate-200 whitespace-pre-line font-medium leading-relaxed">
-                    {activeAiErrorItem.aiFeedback || activeAiErrorItem.aiAnalysis}
+                    {activeAiErrorItem.aiFeedback}
                   </div>
                 </div>
 

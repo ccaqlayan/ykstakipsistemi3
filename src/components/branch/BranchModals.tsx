@@ -1179,10 +1179,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                 <div className="flex items-center space-x-1.5 border-b border-slate-800 pb-2 shrink-0">
                   <button
                     type="button"
-                    onClick={() => {
-                      setAiModalTab('solution');
-                      triggerFullPhotoAnalysis('solution');
-                    }}
+                    onClick={() => setAiModalTab('solution')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
                       aiModalTab === 'solution'
                         ? 'bg-purple-600 text-white shadow-sm'
@@ -1194,10 +1191,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setAiModalTab('similar');
-                      triggerFullPhotoAnalysis('similar');
-                    }}
+                    onClick={() => setAiModalTab('similar')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
                       aiModalTab === 'similar'
                         ? 'bg-cyan-600 text-white shadow-sm'
@@ -1209,10 +1203,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setAiModalTab('report');
-                      triggerFullPhotoAnalysis('report');
-                    }}
+                    onClick={() => setAiModalTab('report')}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
                       aiModalTab === 'report'
                         ? 'bg-amber-600 text-white shadow-sm'

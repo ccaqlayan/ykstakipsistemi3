@@ -169,7 +169,7 @@ const formatAnalysisTable = (text: string) => {
     .replace(/\|\s*\n\s*\|/g, '\n| ');
 
   const rawLines = cleanText.split('\n');
-  const tableEntries: Array<{ key: string; val: string }> = [];
+  const tableEntries: Array<{ key: string; val: string; isHeader?: boolean }> = [];
   let detectedTitle = 'SORU ANALİZ KARNESİ';
 
   rawLines.forEach(line => {
@@ -187,38 +187,69 @@ const formatAnalysisTable = (text: string) => {
     if (trimmed.includes('---') || trimmed.includes(':---')) return;
     if (/^\|?\s*Kriter\s*\|\s*Değerlendirme\s*\|?$/i.test(trimmed)) return;
 
+    // Helper to process key-value pair and handle distractor analysis splitting
+    const processEntry = (k: string, v: string) => {
+      let cleanK = k.replace(/[\*\#]/g, '').trim();
+      let cleanV = v.replace(/[\*\#]/g, '').trim();
+
+      if (!cleanK || cleanK.toLowerCase().includes('kriter')) return;
+
+      // Check if this is the "Çeldirici Analizi" header or entry
+      if (cleanK.toLowerCase().includes('çeldirici analizi')) {
+        // Push the Çeldirici Analizi header row with empty value
+        tableEntries.push({ key: 'Çeldirici Analizi', val: '', isHeader: true });
+
+        // If cleanV has content, check if it contains A: or option text
+        if (cleanV) {
+          const match = cleanV.match(/^([A-Ea-e])[\:\)\.\-]\s*(.*)$/);
+          if (match) {
+            const letter = match[1].toUpperCase();
+            const rest = match[2].trim();
+            tableEntries.push({ key: `${letter} Şıkkı Çeldiricisi`, val: rest });
+          } else {
+            tableEntries.push({ key: 'A Şıkkı Çeldiricisi', val: cleanV });
+          }
+        }
+        return;
+      }
+
+      // Check if cleanK is a single letter option (A, B, C, D, E) or "A Şıkkı"
+      const letterMatch = cleanK.match(/^([A-Ea-e])(?:\s*Şıkkı|\s*Seçeneği|\s*Şıkkı\s*Çeldiricisi)?$/i);
+      if (letterMatch) {
+        cleanK = `${letterMatch[1].toUpperCase()} Şıkkı Çeldiricisi`;
+      } else if (cleanK.length === 1 && ['A', 'B', 'C', 'D', 'E'].includes(cleanK.toUpperCase())) {
+        cleanK = `${cleanK.toUpperCase()} Şıkkı Çeldiricisi`;
+      }
+
+      tableEntries.push({ key: cleanK, val: cleanV });
+    };
+
     // A) If line contains pipe '|'
     if (trimmed.includes('|')) {
       const parts = trimmed
         .split('|')
-        .map(p => p.replace(/[\*\#]/g, '').trim())
+        .map(p => p.trim())
         .filter(Boolean);
 
       if (parts.length >= 2) {
         let k = parts[0];
         let v = parts.slice(1).join(' · ');
-        if (k && v && !k.toLowerCase().includes('kriter') && !v.toLowerCase().includes('değerlendirme')) {
-          if (k.length === 1 && ['A', 'B', 'C', 'D', 'E'].includes(k.toUpperCase())) {
-            k = `${k.toUpperCase()} Şıkkı Çeldiricisi`;
-          }
-          tableEntries.push({ key: k, val: v });
-          return;
-        }
+        processEntry(k, v);
+        return;
+      } else if (parts.length === 1) {
+        let k = parts[0];
+        processEntry(k, '');
+        return;
       }
     }
 
     // B) If line contains colon ':' (Key: Value)
     const colonIdx = trimmed.indexOf(':');
     if (colonIdx > 0) {
-      let k = trimmed.slice(0, colonIdx).replace(/^[-*•|]\s*/, '').replace(/[\*\#]/g, '').trim();
+      let k = trimmed.slice(0, colonIdx).replace(/^[-*•|]\s*/, '').trim();
       let v = trimmed.slice(colonIdx + 1).replace(/\|$/, '').trim();
-      if (k && v && !k.toLowerCase().includes('kriter')) {
-        if (k.length === 1 && ['A', 'B', 'C', 'D', 'E'].includes(k.toUpperCase())) {
-          k = `${k.toUpperCase()} Şıkkı Çeldiricisi`;
-        }
-        tableEntries.push({ key: k, val: v });
-        return;
-      }
+      processEntry(k, v);
+      return;
     }
   });
 
@@ -239,16 +270,28 @@ const formatAnalysisTable = (text: string) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60">
-              {tableEntries.map((entry, idx) => (
-                <tr key={idx} className="hover:bg-slate-900/40 transition-colors">
-                  <td className="p-3 text-xs leading-relaxed font-bold text-indigo-400 bg-slate-950/40 align-top border-r border-slate-800/60">
-                    {entry.key}
-                  </td>
-                  <td className="p-3 text-xs leading-relaxed text-slate-200 align-top">
-                    {parseCellContent(entry.val)}
-                  </td>
-                </tr>
-              ))}
+              {tableEntries.map((entry, idx) => {
+                const isDistractorHeader = entry.key.toLowerCase().includes('çeldirici analizi') || entry.isHeader;
+                return (
+                  <tr 
+                    key={idx} 
+                    className={`transition-colors ${
+                      isDistractorHeader ? 'bg-indigo-950/30' : 'hover:bg-slate-900/40'
+                    }`}
+                  >
+                    <td className={`p-3 text-xs leading-relaxed align-top border-r border-slate-800/60 ${
+                      isDistractorHeader 
+                        ? 'text-amber-300 font-extrabold bg-slate-950/80' 
+                        : 'font-bold text-indigo-400 bg-slate-950/40'
+                    }`}>
+                      {entry.key}
+                    </td>
+                    <td className="p-3 text-xs leading-relaxed text-slate-200 align-top">
+                      {entry.val ? parseCellContent(entry.val) : <span className="text-slate-600 italic"></span>}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

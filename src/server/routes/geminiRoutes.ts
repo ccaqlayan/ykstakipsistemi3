@@ -947,7 +947,12 @@ BİÇİMLENDİRME:
 | **Okuma Süresi** | [Örn: 0.5 dk veya 1.2 dk cinsinden ortalama okuma süresi] |
 | **Çözme Süresi** | [Örn: 1.5 dk veya 2 dk cinsinden ortalama çözüm süresi] |
 | **Ayırt Edicilik** | [Düşük / Orta / Yüksek] |
-| **Çeldirici Analizi** | **A Şıkkı:** ...<br>**B Şıkkı:** ...<br>**Diğerleri:** ... |
+| **Çeldirici Analizi** | |
+| **A Şıkkı Çeldiricisi** | [A şıkkı çeldirici analizi] |
+| **B Şıkkı Çeldiricisi** | [B şıkkı çeldirici analizi] |
+| **C Şıkkı Çeldiricisi** | [C şıkkı çeldirici analizi] |
+| **D Şıkkı Çeldiricisi** | [D şıkkı çeldirici analizi] |
+| **E Şıkkı Çeldiricisi** | [E şıkkı çeldirici analizi] |
 
 ÖNEMLİ KURALLAR:
 - Çeldirici Analizi Kuralı: Soruda şıklar (A, B, C, D, E) varsa TÜM şıkların ayrı ayrı çeldirici analizini yap. Eğer soruda şık yoksa "Olası Hatalı Yaklaşımlar / Hatalı Cevaplar" analizi yap.
@@ -979,7 +984,12 @@ BİÇİMLENDİRME:
 | **Okuma Süresi** | [Örn: 0.5 dk veya 1.2 dk cinsinden ortalama okuma süresi] |
 | **Çözme Süresi** | [Örn: 1.5 dk veya 2 dk cinsinden ortalama çözüm süresi] |
 | **Ayırt Edicilik** | [Düşük / Orta / Yüksek] |
-| **Çeldirici Analizi** | **A Şıkkı:** ...<br>**B Şıkkı:** ...<br>**Diğerleri:** ... |
+| **Çeldirici Analizi** | |
+| **A Şıkkı Çeldiricisi** | [A şıkkı çeldirici analizi] |
+| **B Şıkkı Çeldiricisi** | [B şıkkı çeldirici analizi] |
+| **C Şıkkı Çeldiricisi** | [C şıkkı çeldirici analizi] |
+| **D Şıkkı Çeldiricisi** | [D şıkkı çeldirici analizi] |
+| **E Şıkkı Çeldiricisi** | [E şıkkı çeldirici analizi] |
 
 ÖNEMLİ KURALLAR:
 - Çeldirici Analizi Kuralı: Soruda şıklar (A, B, C, D, E) varsa TÜM şıkların ayrı ayrı çeldirici analizini yap. Eğer soruda şık yoksa "Olası Hatalı Yaklaşımlar / Hatalı Cevaplar" analizi yap.
@@ -1079,7 +1089,12 @@ Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'G
 | **Okuma Süresi** | [Örn: 0.8 dk] |
 | **Çözme Süresi** | [Örn: 1.5 dk] |
 | **Ayırt Edicilik** | [Düşük/Orta/Yüksek] |
-| **Çeldirici Analizi** | **A:** ...<br>**B:** ...<br>**C:** ...<br>**D:** ...<br>**E:** ... |
+| **Çeldirici Analizi** | |
+| **A Şıkkı Çeldiricisi** | [A şıkkı çeldirici analizi] |
+| **B Şıkkı Çeldiricisi** | [B şıkkı çeldirici analizi] |
+| **C Şıkkı Çeldiricisi** | [C şıkkı çeldirici analizi] |
+| **D Şıkkı Çeldiricisi** | [D şıkkı çeldirici analizi] |
+| **E Şıkkı Çeldiricisi** | [E şıkkı çeldirici analizi] |
 
 YANITINI YALNIZCA aşağıdaki JSON formatında döndür. Kesinlikle JSON dışında açıklama veya Markdown kod bloğu ekleme:
 `;
