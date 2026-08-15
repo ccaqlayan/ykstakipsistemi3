@@ -7,8 +7,19 @@ export function isMessageUnreadForUser(m: DirectMessage | null | undefined, user
   if (!m || !user || !m.senderId || m.senderId === user.id) return false;
 
   // If user has already read the message via readBy array
-  if (m.readBy && Array.isArray(m.readBy) && m.readBy.some(r => r.userId === user.id)) {
-    return false;
+  if (m.readBy && Array.isArray(m.readBy)) {
+    const isReadByThisUser = m.readBy.some(r => {
+      if (!r || !r.userId) return false;
+      if (r.userId === user.id) return true;
+      if (user.email && r.userId === user.email) return true;
+      // Cross-match known demo user IDs and their Firestore Auth UIDs
+      if (user.id === 'teacher-3' && r.userId === 'lK0LITqb2tbRa7pFI0r0Vf6Y2Al2') return true;
+      if (user.id === 'lK0LITqb2tbRa7pFI0r0Vf6Y2Al2' && r.userId === 'teacher-3') return true;
+      if (user.id === 'student-1' && r.userId === 'WMNlPvFggXQJk4DGF03v2vAPBjf1') return true;
+      if (user.id === 'WMNlPvFggXQJk4DGF03v2vAPBjf1' && r.userId === 'student-1') return true;
+      return false;
+    });
+    if (isReadByThisUser) return false;
   }
 
   // 1. Group Chat
@@ -30,7 +41,7 @@ export function isMessageUnreadForUser(m: DirectMessage | null | undefined, user
   }
 
   // 3. Direct 1-on-1 Message
-  if (m.receiverId === user.id) {
+  if (m.receiverId === user.id || (user.email && (m as any).receiverEmail === user.email)) {
     return !m.isRead;
   }
 

@@ -462,7 +462,13 @@ export function subscribeToMessages(onChange: (messages: DirectMessage[]) => voi
   return onSnapshot(collection(db, MESSAGES_COL), (snapshot) => {
     const messages: DirectMessage[] = [];
     snapshot.forEach((docSnap) => {
-      messages.push(reassembleDataFromFirestore(docSnap.data()) as DirectMessage);
+      const parsed = reassembleDataFromFirestore(docSnap.data()) as DirectMessage;
+      if (parsed) {
+        messages.push({
+          ...parsed,
+          id: docSnap.id
+        });
+      }
     });
     messages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
     onChange(messages);
