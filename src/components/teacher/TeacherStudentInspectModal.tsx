@@ -47,7 +47,9 @@ import {
   ArrowRight,
   ArrowLeft,
   RotateCcw,
-  CalendarDays
+  CalendarDays,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -208,6 +210,17 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
   const [plannerStatusFilter, setPlannerStatusFilter] = React.useState<'all' | 'completed' | 'pending'>('all');
   const [plannerSubjectFilter, setPlannerSubjectFilter] = React.useState<string>('all');
   const [plannerSearchQuery, setPlannerSearchQuery] = React.useState<string>('');
+  const [isPlannerFullscreen, setIsPlannerFullscreen] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isPlannerFullscreen) {
+        setIsPlannerFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlannerFullscreen]);
   const [questionSubjectFilter, setQuestionSubjectFilter] = React.useState<string>('all');
   const [questionExamTypeFilter, setQuestionExamTypeFilter] = React.useState<'all' | 'TYT' | 'AYT'>('all');
   const [questionDateFilter, setQuestionDateFilter] = React.useState<'all' | '7days' | '30days'>('all');
@@ -885,35 +898,73 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
               });
 
               return (
-                <div className="space-y-6">
+                <div className={
+                  isPlannerFullscreen
+                    ? "fixed inset-0 z-[10000] bg-slate-950/98 p-4 sm:p-6 md:p-8 overflow-y-auto w-screen h-screen flex flex-col justify-start backdrop-blur-3xl shadow-2xl space-y-6"
+                    : "space-y-6"
+                }>
                   {/* Header & Actions */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/5 p-4 rounded-2xl border border-white/10">
                     <div>
                       <h3 className="text-sm font-bold text-white flex items-center space-x-2">
                         <Calendar className="w-4 h-4 text-fuchsia-400" />
                         <span>Haftalık Çalışma Programı</span>
+                        {isPlannerFullscreen && (
+                          <span className="text-xs font-semibold text-fuchsia-300/90 bg-fuchsia-500/15 border border-fuchsia-500/30 px-2.5 py-0.5 rounded-lg ml-2">
+                            {selectedStudentUser?.name || 'Öğrenci'} ({selectedStudentUser?.className || ''})
+                          </span>
+                        )}
                       </h3>
-                      <p className="text-xs text-slate-400 mt-0.5">Öğrencinin haftalık ders çalışma takvimini yönetin, geçmiş haftalarını inceleyin ve ilerlemesini takip edin.</p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {isPlannerFullscreen
+                          ? "Tam ekran modundasınız. Çıkmak için sağ üstteki butona basabilir veya ESC tuşunu kullanabilirsiniz."
+                          : "Öğrencinin haftalık ders çalışma takvimini yönetin, geçmiş haftalarını inceleyin ve ilerlemesini takip edin."}
+                      </p>
                     </div>
 
-                    {!isBranchTeacher && (
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => setShowSaveTemplateModal(true)}
-                          className="bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer"
-                        >
-                          <Bookmark className="w-3.5 h-3.5" />
-                          <span>Şablon Olarak Kaydet</span>
-                        </button>
-                        <button
-                          onClick={() => setShowAddTaskToStudentModal(true)}
-                          className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-md shadow-fuchsia-600/20 flex items-center space-x-1.5 cursor-pointer"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Yeni Görev Ekle</span>
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex items-center space-x-2">
+                      {!isBranchTeacher && (
+                        <>
+                          <button
+                            onClick={() => setShowSaveTemplateModal(true)}
+                            className="bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer"
+                          >
+                            <Bookmark className="w-3.5 h-3.5" />
+                            <span>Şablon Olarak Kaydet</span>
+                          </button>
+                          <button
+                            onClick={() => setShowAddTaskToStudentModal(true)}
+                            className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-md shadow-fuchsia-600/20 flex items-center space-x-1.5 cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Yeni Görev Ekle</span>
+                          </button>
+                        </>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => setIsPlannerFullscreen(prev => !prev)}
+                        className={`p-2 sm:px-3.5 sm:py-2 rounded-xl border text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer shadow-lg active:scale-95 ${
+                          isPlannerFullscreen
+                            ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border-rose-500/40 shadow-rose-500/10'
+                            : 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 hover:text-white border-white/20 shadow-black/20'
+                        }`}
+                        title={isPlannerFullscreen ? "Tam Ekrandan Çık (ESC)" : "Tam Ekran Görüntüle"}
+                      >
+                        {isPlannerFullscreen ? (
+                          <>
+                            <Minimize2 className="w-4 h-4 text-rose-400" />
+                            <span className="hidden sm:inline">Tam Ekrandan Çık</span>
+                          </>
+                        ) : (
+                          <>
+                            <Maximize2 className="w-4 h-4 text-fuchsia-400" />
+                            <span className="hidden sm:inline">Tam Ekran</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* CENTERED WEEK NAVIGATOR (< Hafta >) WITH SLIDE ANIMATION */}
