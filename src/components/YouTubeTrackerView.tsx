@@ -27,11 +27,59 @@ import {
   ChevronUp,
   ChevronsUpDown,
   CheckCheck,
-  RotateCcw
+  RotateCcw,
+  Calendar,
+  ArrowUpDown,
+  SlidersHorizontal
 } from 'lucide-react';
 import { YouTubeVideoItem } from '../types';
 import { YKS_SUBJECTS } from '../data/initialData';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+
+export type YouTubeSortOption = 
+  | 'newest'
+  | 'oldest'
+  | 'title_asc'
+  | 'title_desc'
+  | 'channel_asc'
+  | 'duration_desc'
+  | 'duration_asc'
+  | 'progress_desc'
+  | 'progress_asc';
+
+const getVideoCreatedTime = (v: any, fallbackIndex: number = 0): number => {
+  if (v?.createdAt) {
+    const t = new Date(v.createdAt).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  if (v?.date) {
+    const t = new Date(v.date).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  if (typeof v?.id === 'string') {
+    const match = v.id.match(/\d{10,15}/);
+    if (match) {
+      const num = parseInt(match[0], 10);
+      if (!isNaN(num) && num > 0) return num;
+    }
+  }
+  return fallbackIndex;
+};
+
+const formatCreationDate = (v: any): string | null => {
+  const time = getVideoCreatedTime(v, 0);
+  if (!time || time <= 100000) return null;
+  const d = new Date(time);
+  if (isNaN(d.getTime())) return null;
+  const day = d.getDate();
+  const months = [
+    'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz',
+    'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'
+  ];
+  const month = months[d.getMonth()];
+  const year = d.getFullYear();
+  return `${day} ${month} ${year}`;
+};
 
 interface YouTubeTrackerViewProps {
   videos: YouTubeVideoItem[];
@@ -218,6 +266,8 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>('Tümü');
   const [contentTypeFilter, setContentTypeFilter] = useState<'all' | 'single' | 'playlist'>('all');
   const [hideWatched, setHideWatched] = useState(false);
+  const [sortOption, setSortOption] = useState<YouTubeSortOption>('newest');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Expanded Playlist Cards map: videoId -> boolean
   const [expandedPlaylists, setExpandedPlaylists] = useState<Record<string, boolean>>({});
@@ -514,26 +564,91 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
 
   const subjectsList = ['Tümü', ...Array.from(new Set(videos.map((v) => v.subject)))];
 
-  const filteredVideos = videos.filter((v) => {
-    const matchesSubject = selectedSubjectFilter === 'Tümü' || v.subject === selectedSubjectFilter;
-    const isPlaylist = isPlaylistItem(v);
+  const filteredVideos = React.useMemo(() => {
+    const filtered = videos.filter((v) => {
+      const matchesSubject = selectedSubjectFilter === 'Tümü' || v.subject === selectedSubjectFilter;
+      const isPlaylist = isPlaylistItem(v);
 
-    const isFullyWatched = isPlaylist && v.playlistVideos && v.playlistVideos.length > 0
-      ? v.playlistVideos.every(sub => sub.isWatched)
-      : v.isWatched;
+      const isFullyWatched = isPlaylist && v.playlistVideos && v.playlistVideos.length > 0
+        ? v.playlistVideos.every(sub => sub.isWatched)
+        : v.isWatched;
 
-    if (hideWatched && isFullyWatched) {
-      return false;
-    }
+      if (hideWatched && isFullyWatched) {
+        return false;
+      }
 
-    if (contentTypeFilter === 'single') {
-      return matchesSubject && !isPlaylist;
-    }
-    if (contentTypeFilter === 'playlist') {
-      return matchesSubject && isPlaylist;
-    }
-    return matchesSubject;
-  });
+      if (contentTypeFilter === 'single' && isPlaylist) return false;
+      if (contentTypeFilter === 'playlist' && !isPlaylist) return false;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const titleMatch = (v.playlistTitle || v.topicName || '').toLowerCase().includes(q);
+        const channelMatch = (v.channelName || '').toLowerCase().includes(q);
+        const subjectMatch = (v.subject || '').toLowerCase().includes(q);
+        const notesMatch = (v.notes || '').toLowerCase().includes(q);
+        const subVideoMatch = v.playlistVideos?.some(sub => sub.title.toLowerCase().includes(q));
+        if (!titleMatch && !channelMatch && !subjectMatch && !notesMatch && !subVideoMatch) {
+          return false;
+        }
+      }
+
+      return matchesSubject;
+    });
+
+    return [...filtered].sort((a, b) => {
+      const indexA = videos.indexOf(a);
+      const indexB = videos.indexOf(b);
+      const timeA = getVideoCreatedTime(a, indexA);
+      const timeB = getVideoCreatedTime(b, indexB);
+
+      switch (sortOption) {
+        case 'newest':
+          if (timeB !== timeA) return timeB - timeA;
+          return indexB - indexA;
+        case 'oldest':
+          if (timeA !== timeB) return timeA - timeB;
+          return indexA - indexB;
+        case 'title_asc': {
+          const titleA = (a.playlistTitle || a.topicName || '').toLocaleLowerCase('tr');
+          const titleB = (b.playlistTitle || b.topicName || '').toLocaleLowerCase('tr');
+          return titleA.localeCompare(titleB, 'tr');
+        }
+        case 'title_desc': {
+          const titleA = (a.playlistTitle || a.topicName || '').toLocaleLowerCase('tr');
+          const titleB = (b.playlistTitle || b.topicName || '').toLocaleLowerCase('tr');
+          return titleB.localeCompare(titleA, 'tr');
+        }
+        case 'channel_asc': {
+          const chA = (a.channelName || '').toLocaleLowerCase('tr');
+          const chB = (b.channelName || '').toLocaleLowerCase('tr');
+          return chA.localeCompare(chB, 'tr');
+        }
+        case 'duration_desc': {
+          const durA = isPlaylistItem(a) && a.playlistVideos ? a.playlistVideos.reduce((sum, s) => sum + (s.durationMinutes || 0), 0) : (a.durationMinutes || 0);
+          const durB = isPlaylistItem(b) && b.playlistVideos ? b.playlistVideos.reduce((sum, s) => sum + (s.durationMinutes || 0), 0) : (b.durationMinutes || 0);
+          return durB - durA;
+        }
+        case 'duration_asc': {
+          const durA = isPlaylistItem(a) && a.playlistVideos ? a.playlistVideos.reduce((sum, s) => sum + (s.durationMinutes || 0), 0) : (a.durationMinutes || 0);
+          const durB = isPlaylistItem(b) && b.playlistVideos ? b.playlistVideos.reduce((sum, s) => sum + (s.durationMinutes || 0), 0) : (b.durationMinutes || 0);
+          return durA - durB;
+        }
+        case 'progress_desc': {
+          const progA = isPlaylistItem(a) && a.playlistVideos && a.playlistVideos.length > 0 ? (a.playlistVideos.filter(s => s.isWatched).length / a.playlistVideos.length) : (a.isWatched ? 1 : 0);
+          const progB = isPlaylistItem(b) && b.playlistVideos && b.playlistVideos.length > 0 ? (b.playlistVideos.filter(s => s.isWatched).length / b.playlistVideos.length) : (b.isWatched ? 1 : 0);
+          return progB - progA;
+        }
+        case 'progress_asc': {
+          const progA = isPlaylistItem(a) && a.playlistVideos && a.playlistVideos.length > 0 ? (a.playlistVideos.filter(s => s.isWatched).length / a.playlistVideos.length) : (a.isWatched ? 1 : 0);
+          const progB = isPlaylistItem(b) && b.playlistVideos && b.playlistVideos.length > 0 ? (b.playlistVideos.filter(s => s.isWatched).length / b.playlistVideos.length) : (b.isWatched ? 1 : 0);
+          return progA - progB;
+        }
+        default:
+          if (timeB !== timeA) return timeB - timeA;
+          return indexB - indexA;
+      }
+    });
+  }, [videos, selectedSubjectFilter, contentTypeFilter, hideWatched, searchQuery, sortOption]);
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
@@ -648,12 +763,55 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
           {/* ── 2. FILTER & CONTROLS BAR ── */}
           {videos.length > 0 && (
             <div className="space-y-3 bg-slate-900/90 border border-slate-800 p-4 rounded-3xl shadow-xl backdrop-blur-md">
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
-                <span className="text-xs font-extrabold text-slate-300 flex items-center space-x-2">
-                  <Search className="w-4 h-4 text-red-400" />
-                  <span>Filtrele ve İncele:</span>
-                </span>
-                
+              {/* Row 1: Search & Sorting Dropdown */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+                {/* Search Box */}
+                <div className="relative flex-1 min-w-[200px] max-w-md">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Video, playlist, kanal veya not ara..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9.5 pr-8 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 transition-colors"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white p-0.5 rounded cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Sort Dropdown */}
+                <div className="flex items-center space-x-2 shrink-0">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden md:inline-flex items-center gap-1">
+                    <ArrowUpDown className="w-3.5 h-3.5 text-red-400" />
+                    <span>Sıralama:</span>
+                  </span>
+                  <select
+                    value={sortOption}
+                    onChange={(e) => setSortOption(e.target.value as any)}
+                    className="bg-slate-950 border border-slate-800 text-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-red-500 cursor-pointer shadow-sm hover:border-slate-700 transition-colors w-full sm:w-auto"
+                  >
+                    <option value="newest">🗓️ Yeniden Eskiye (En Yeni İlk) ⭐</option>
+                    <option value="oldest">🗓️ Eskiden Yeniye (İlk Eklenen)</option>
+                    <option value="title_asc">🔤 İsim / Konu (A → Z)</option>
+                    <option value="title_desc">🔤 İsim / Konu (Z → A)</option>
+                    <option value="channel_asc">🎙️ Kanal Adı (A → Z)</option>
+                    <option value="duration_desc">⏱️ Süre (En Uzun İlk)</option>
+                    <option value="duration_asc">⏱️ Süre (En Kısa İlk)</option>
+                    <option value="progress_desc">📊 İlerleme (En Yüksek İlk)</option>
+                    <option value="progress_asc">📊 İlerleme (En Düşük İlk)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Row 2: Content Type & Action Buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
@@ -693,7 +851,9 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                     <ListVideo className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                     <span>Playlists ({playlistCount})</span>
                   </button>
+                </div>
 
+                <div className="flex flex-wrap items-center gap-2">
                   {playlistCount > 0 && (
                     <button
                       type="button"
@@ -725,8 +885,8 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                 </div>
               </div>
 
-              {/* Subject Chips */}
-              <div className="flex flex-wrap gap-1.5 items-center">
+              {/* Row 3: Subject Chips */}
+              <div className="flex flex-wrap gap-1.5 items-center pt-1 border-t border-slate-800/60">
                 <span className="text-[11px] font-bold text-slate-400 mr-1.5 uppercase tracking-wider">Ders:</span>
                 {subjectsList.map((sub) => (
                   <button
@@ -884,13 +1044,19 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                         <div className="flex-1 min-w-0 space-y-2">
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <div className="flex items-center space-x-2">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <span className="text-[10px] font-black text-red-400 bg-red-500/10 px-2.5 py-0.5 rounded-lg border border-red-500/20 uppercase tracking-wider">
                                   {vid.subject}
                                 </span>
                                 {isPlaylist && (
                                   <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
                                     Oynatma Listesi
+                                  </span>
+                                )}
+                                {formatCreationDate(vid) && (
+                                  <span className="text-[10px] font-medium text-slate-400 bg-slate-950/80 px-2 py-0.5 rounded-lg border border-slate-800 flex items-center space-x-1">
+                                    <Calendar className="w-3 h-3 text-slate-400" />
+                                    <span>{formatCreationDate(vid)}</span>
                                   </span>
                                 )}
                               </div>

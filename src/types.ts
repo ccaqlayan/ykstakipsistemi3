@@ -356,6 +356,7 @@ export interface YouTubeVideoItem {
   notes?: string;
   isPlaylist?: boolean;
   playlistVideos?: YouTubePlaylistVideo[];
+  createdAt?: string;
 }
 
 export interface AICoachAdvice {

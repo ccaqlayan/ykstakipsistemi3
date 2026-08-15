@@ -2371,7 +2371,7 @@ export default function App() {
   };
 
   const handleAddYouTubeVideo = (vid: any) => {
-    const newItem = { ...vid, id: 'yt-' + Date.now() };
+    const newItem = { ...vid, id: 'yt-' + Date.now(), createdAt: vid.createdAt || new Date().toISOString() };
     const prevVideos = currentStudentData.youtubeVideos || [];
     updateCurrentStudentData((prev) => ({ ...prev, youtubeVideos: [...(prev.youtubeVideos || []), newItem] }));
 
