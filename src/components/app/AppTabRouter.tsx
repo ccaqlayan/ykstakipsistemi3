@@ -133,6 +133,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
   setIsMobileMenuOpen,
   handleUpdateStudentProfileByTeacher,
   handleUpdateStudentStudyPlansByTeacher,
+  handleUpdateStudentTopicErrorsByTeacher,
   handleCreateClass,
   handleAssignStudentClass,
   handleSaveProgramTemplate,
