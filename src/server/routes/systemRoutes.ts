@@ -1003,7 +1003,6 @@ router.post('/upload/photo', async (req, res) => {
 
           await file.save(buffer, {
             metadata: { contentType: mimeType },
-            public: true,
             resumable: false
           });
         }
