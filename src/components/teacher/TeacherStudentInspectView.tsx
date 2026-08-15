@@ -1674,9 +1674,9 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                   <Clock className="w-4 h-4 text-sky-400" />
                 </div>
                 <div className="text-2xl font-black text-sky-400 mt-2">
-                  {Math.round(totalPlannedMinutes / 60)} <span className="text-xs font-normal text-slate-400">saat</span>
+                  {Math.round(totalPlannerMinutes / 60)} <span className="text-xs font-normal text-slate-400">saat</span>
                 </div>
-                <span className="text-[10px] text-slate-500 mt-1">{totalPlannedMinutes} toplam dakika</span>
+                <span className="text-[10px] text-slate-500 mt-1">{totalPlannerMinutes} toplam dakika</span>
               </div>
 
               <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
