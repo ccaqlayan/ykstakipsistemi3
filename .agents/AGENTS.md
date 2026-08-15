@@ -6,6 +6,7 @@
 - Target the specific subcomponent file directly rather than loading monolithic parent orchestrators when making edits.
 
 ## Git Commit Formatting Rule
-- Whenever creating a Git commit and publishing to GitHub, **ALWAYS prefix the commit message with the version number** in the format `vX.Y.Z: <description>` (e.g. `v1.1.48: fix(planner): ...`).
+- Whenever creating a Git commit and publishing to GitHub, **ALWAYS prefix the commit message with the version number and write the description in TURKISH** in the format `vX.Y.Z: <Türkçe açıklama>` (e.g. `v1.7.9: Sistem güncelleme ekranındaki otomatik kaydırma düzeltildi`).
+- Commit açıklamaları her zaman anlaşılır ve net bir Türkçe ile yazılmalıdır.
 
-eğer promptum ile bir dosyada değişikliği yaptıysan mutlaka versiyon sayısını arttırıp githup a commit yap
+eğer promptum ile bir dosyada değişikliği yaptıysan mutlaka versiyon sayısını arttırıp githup a commit yap, açıklamaları her zaman Türkçe yaz.
