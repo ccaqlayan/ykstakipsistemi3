@@ -83,11 +83,13 @@ import {
   AuditLogItem, 
   ClassDefinition, 
   DayOfWeek,
-  InstitutionalMockExam
+  InstitutionalMockExam,
+  StudyProgramTemplate
 } from '../../types';
 import { AuditLogsView } from '../AuditLogsView';
 import { MockInstitutionalDetailView } from '../mocks/MockInstitutionalDetailView';
 import { isUserOnline } from '../../utils/statusUtils';
+import { DEFAULT_PROGRAM_TEMPLATES } from '../../data/initialData';
 
 const DAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
 const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
@@ -174,6 +176,9 @@ interface TeacherStudentInspectModalProps {
   allUsers: UserAccount[];
   auditLogs?: AuditLogItem[];
   OfflineStatusDisplay: React.FC<{ user: UserAccount; className?: string }>;
+  programTemplates?: StudyProgramTemplate[];
+  onApplyTemplateToStudent?: (studentId: string, templateId: string, mode: 'overwrite' | 'merge') => void;
+  onUpdateStudentStudyPlans?: (studentId: string, plans: any[]) => void;
 }
 
 export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProps> = ({
@@ -194,7 +199,10 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
   classes,
   allUsers,
   auditLogs = [],
-  OfflineStatusDisplay
+  OfflineStatusDisplay,
+  programTemplates = [],
+  onApplyTemplateToStudent,
+  onUpdateStudentStudyPlans
 }) => {
   if (!selectedStudentUser) return null;
   const stData = resolveStudentData(selectedStudentUser, studentsData);
@@ -211,6 +219,20 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
   const [plannerSubjectFilter, setPlannerSubjectFilter] = React.useState<string>('all');
   const [plannerSearchQuery, setPlannerSearchQuery] = React.useState<string>('');
   const [isPlannerFullscreen, setIsPlannerFullscreen] = React.useState<boolean>(false);
+  const [showApplyTemplateModalInInspect, setShowApplyTemplateModalInInspect] = React.useState<boolean>(false);
+  const [selectedTemplateToApplyInInspect, setSelectedTemplateToApplyInInspect] = React.useState<StudyProgramTemplate | null>(null);
+  const [applyTemplateModeInInspect, setApplyTemplateModeInInspect] = React.useState<'overwrite' | 'merge'>('merge');
+
+  React.useEffect(() => {
+    if (isPlannerFullscreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isPlannerFullscreen]);
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -897,10 +919,213 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                 return true;
               });
 
+              const availableTemplates: StudyProgramTemplate[] = (programTemplates && programTemplates.length > 0)
+                ? programTemplates
+                : DEFAULT_PROGRAM_TEMPLATES;
+
+              const handleApplyTemplateToStudentInInspect = () => {
+                if (!selectedTemplateToApplyInInspect) return;
+
+                const newItems = selectedTemplateToApplyInInspect.items.map((item: any, idx: number) => ({
+                  id: `plan-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+                  day: item.day,
+                  subject: item.subject,
+                  topic: item.topic,
+                  plannedMinutes: item.plannedMinutes || 60,
+                  completedMinutes: 0,
+                  status: 'pending' as const,
+                  notes: item.notes || '',
+                  weekLabel: currentWeekLabel,
+                  taskType: item.taskType || 'Konu Çalışması',
+                  targetQuestionCount: item.targetQuestionCount || 30
+                }));
+
+                const currentPlans = stData.studyPlans || [];
+                let updatedPlans: any[];
+
+                if (applyTemplateModeInInspect === 'overwrite') {
+                  const otherWeeksPlans = currentPlans.filter(p => !isSameWeekLabel(p.weekLabel || '', currentWeekLabel));
+                  updatedPlans = [...newItems, ...otherWeeksPlans];
+                } else {
+                  updatedPlans = [...newItems, ...currentPlans];
+                }
+
+                if (onUpdateStudentStudyPlans) {
+                  onUpdateStudentStudyPlans(selectedStudentUser.id, updatedPlans);
+                } else if (onApplyTemplateToStudent) {
+                  onApplyTemplateToStudent(selectedStudentUser.id, selectedTemplateToApplyInInspect.id, applyTemplateModeInInspect);
+                }
+
+                setShowApplyTemplateModalInInspect(false);
+                alert(`"${selectedTemplateToApplyInInspect.title}" programı ${selectedStudentUser?.name || 'öğrenciye'} (${currentWeekLabel}) başarıyla uygulandı.`);
+              };
+
+              const renderModalDayCard = (day: DayOfWeek) => {
+                const dayPlans = filteredPlans.filter(p => p.day === day);
+                const dayCompleted = dayPlans.filter(p => p.status === 'completed').length;
+                const dayTotalMinutes = dayPlans.reduce((acc, p) => acc + (p.plannedMinutes || 0), 0);
+                const dayTotalQuestions = dayPlans.reduce((acc, p) => acc + (p.targetQuestionCount || 0), 0);
+                const dayPercent = dayPlans.length > 0 ? Math.round((dayCompleted / dayPlans.length) * 100) : 0;
+
+                if (dayPlans.length === 0) {
+                  return (
+                    <div key={day} className="bg-slate-950/60 border border-dashed border-white/10 rounded-2xl p-4 flex flex-col justify-between min-h-[150px] opacity-75 hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                        <span className="text-xs font-black text-slate-300 uppercase tracking-wider">{day}</span>
+                        <span className="text-[10px] text-slate-500 font-medium">0 Görev</span>
+                      </div>
+                      <div className="text-center py-4">
+                        <p className="text-xs text-slate-500">Planlanmış ders yok</p>
+                      </div>
+                      {!isBranchTeacher && isCurrentWeek && (
+                        <button
+                          onClick={() => setShowAddTaskToStudentModal(true)}
+                          className="w-full text-center py-1.5 rounded-xl text-[11px] font-bold text-fuchsia-400 hover:text-fuchsia-300 bg-fuchsia-500/10 hover:bg-fuchsia-500/20 border border-fuchsia-500/20 transition-all cursor-pointer shadow-sm"
+                        >
+                          + Görev Ekle
+                        </button>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={day} className="bg-slate-950/85 border border-white/10 rounded-2xl p-4 space-y-3 shadow-lg flex flex-col justify-between">
+                    <div className="space-y-2.5">
+                      {/* Header */}
+                      <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-2 h-2 rounded-full ${dayCompleted === dayPlans.length ? 'bg-emerald-400' : 'bg-fuchsia-400'}`} />
+                          <span className="text-xs font-black text-white uppercase tracking-wider">{day}</span>
+                        </div>
+                        <div className="flex items-center space-x-1.5">
+                          <span className="text-[10px] font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
+                            {dayCompleted}/{dayPlans.length} (%{dayPercent})
+                          </span>
+                          <span className="text-[11px] text-slate-400 font-mono font-semibold">
+                            {dayTotalMinutes} dk
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Task Cards */}
+                      <div className="space-y-2 pt-0.5">
+                        {dayPlans.map(task => {
+                          const isMyBranch = teacherSubj && (task.subject || '').toLowerCase().includes(teacherSubj);
+                          const isCompleted = task.status === 'completed';
+
+                          return (
+                            <div 
+                              key={task.id} 
+                              className={`p-3 rounded-xl border transition-all space-y-2 ${
+                                isCompleted
+                                  ? 'bg-emerald-950/20 border-emerald-500/30'
+                                  : isMyBranch
+                                  ? 'bg-amber-950/20 border-amber-500/30'
+                                  : 'bg-slate-900/90 border-white/10'
+                              }`}
+                            >
+                              {/* Top Row: Subject & Badges & Actions */}
+                              <div className="flex items-start justify-between gap-1.5">
+                                <div className="flex items-center flex-wrap gap-1">
+                                  <span className="text-[11px] font-bold text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-md border border-indigo-500/30">
+                                    {task.subject}
+                                  </span>
+                                  {task.taskType && (
+                                    <span className="text-[9px] font-semibold text-slate-300 bg-white/10 px-1.5 py-0.5 rounded-md border border-white/10">
+                                      {task.taskType}
+                                    </span>
+                                  )}
+                                  {isMyBranch && (
+                                    <span className="text-[9px] font-bold bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-md border border-amber-500/30">
+                                      Branşınız
+                                    </span>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center space-x-1 shrink-0">
+                                  <button
+                                    onClick={() => handleToggleTaskStatusFromTeacher(selectedStudentUser.id, task.id, task.status)}
+                                    className={`p-1 rounded-lg border transition-all cursor-pointer ${
+                                      isCompleted
+                                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30'
+                                        : 'bg-white/5 text-slate-400 border-white/10 hover:text-white hover:bg-white/10'
+                                    }`}
+                                    title={isCompleted ? 'Tamamlandı' : 'Tamamla'}
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  {!isBranchTeacher && (
+                                    <button
+                                      onClick={() => handleDeleteTaskFromStudent(selectedStudentUser.id, task.id)}
+                                      className="p-1 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer"
+                                      title="Görevi Sil"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Topic Name */}
+                              <div>
+                                <p className={`text-xs font-bold leading-tight break-words ${isCompleted ? 'text-emerald-200/90 line-through' : 'text-white'}`}>
+                                  {task.topic}
+                                </p>
+                                {task.notes && (
+                                  <p className="text-[10px] text-slate-400 mt-1 bg-black/30 p-1.5 rounded-lg border border-white/5 italic">
+                                    "{task.notes}"
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Bottom Metadata */}
+                              <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-white/5">
+                                <div className="flex items-center space-x-2">
+                                  <span className="flex items-center space-x-1">
+                                    <Clock className="w-3 h-3 text-sky-400" />
+                                    <span className="font-mono text-slate-200 font-bold">{task.plannedMinutes || 0} dk</span>
+                                  </span>
+                                  {task.targetQuestionCount && task.targetQuestionCount > 0 ? (
+                                    <span className="flex items-center space-x-1 text-amber-300 font-mono font-bold">
+                                      <Target className="w-3 h-3 text-amber-400" />
+                                      <span>{task.targetQuestionCount} S</span>
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <div>
+                                  {isCompleted ? (
+                                    <span className="text-emerald-400 font-bold text-[9px] bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                      ✓ Yapıldı
+                                    </span>
+                                  ) : (
+                                    <span className="text-amber-400 font-bold text-[9px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                      Bekliyor
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Day Footer */}
+                    {dayTotalQuestions > 0 && (
+                      <div className="pt-2 border-t border-white/5 text-[9px] text-amber-300/80 font-mono flex items-center justify-between">
+                        <span>Hedef:</span>
+                        <span className="font-bold">{dayTotalQuestions} Soru</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              };
+
               return (
                 <div className={
                   isPlannerFullscreen
-                    ? "fixed inset-0 z-[10000] bg-slate-950/98 p-4 sm:p-6 md:p-8 overflow-y-auto w-screen h-screen flex flex-col justify-start backdrop-blur-3xl shadow-2xl space-y-6"
+                    ? "fixed inset-0 z-[10000] bg-slate-950/98 p-4 sm:p-6 md:p-8 overflow-y-auto overscroll-contain backdrop-blur-3xl shadow-2xl space-y-6"
                     : "space-y-6"
                 }>
                   {/* Header & Actions */}
@@ -927,14 +1152,28 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                         <>
                           <button
                             onClick={() => setShowSaveTemplateModal(true)}
-                            className="bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer"
+                            className="bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95"
+                            title="Mevcut haftalık planı şablon kütüphanesine kaydet"
                           >
                             <Bookmark className="w-3.5 h-3.5" />
-                            <span>Şablon Olarak Kaydet</span>
+                            <span className="hidden md:inline">Şablon Olarak Kaydet</span>
+                            <span className="md:hidden">Şablona Kaydet</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedTemplateToApplyInInspect(availableTemplates[0] || null);
+                              setShowApplyTemplateModalInInspect(true);
+                            }}
+                            className="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 font-bold text-xs px-3 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95"
+                            title="Kayıtlı bir haftalık ders çalışma şablonunu bu öğrenciye uygula"
+                          >
+                            <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                            <span className="hidden md:inline">Şablondan Plan Uygula</span>
+                            <span className="md:hidden">Şablon Uygula</span>
                           </button>
                           <button
                             onClick={() => setShowAddTaskToStudentModal(true)}
-                            className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-md shadow-fuchsia-600/20 flex items-center space-x-1.5 cursor-pointer"
+                            className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-md shadow-fuchsia-600/20 flex items-center space-x-1.5 cursor-pointer hover:scale-[1.02] active:scale-95"
                           >
                             <Plus className="w-3.5 h-3.5" />
                             <span>Yeni Görev Ekle</span>
@@ -977,13 +1216,13 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                         title="Önceki Hafta"
                         aria-label="Önceki Hafta"
                       >
-                        <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                        <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
                       </button>
 
                       <div className="flex flex-col items-center justify-center text-center px-3 min-w-0 flex-1 overflow-hidden">
                         <span className="text-[10px] font-bold text-fuchsia-400 uppercase tracking-widest flex items-center gap-1">
-                          <CalendarDays className="w-3 h-3" />
-                          <span>{isCurrentWeek ? 'Aktif Çalışma Haftası' : isPastWeek ? 'Geçmiş Hafta Planı' : 'Gelecek Hafta Planı'}</span>
+                          <CalendarDays className="w-3.5 h-3.5" />
+                          <span>{isCurrentWeek ? 'Aktif Hafta' : isPastWeek ? 'Geçmiş Hafta' : 'Gelecek Hafta'}</span>
                         </span>
                         <AnimatePresence mode="wait" custom={weekSlideDirection}>
                           <motion.h2
@@ -999,7 +1238,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                               opacity: 0,
                             })) as any}
                             transition={{ duration: 0.2, ease: 'easeInOut' }}
-                            className="text-xs sm:text-sm md:text-base font-black text-white tracking-tight truncate max-w-full mt-0.5"
+                            className="text-xs sm:text-sm font-black text-white tracking-tight truncate max-w-full mt-0.5"
                           >
                             {currentWeekLabel}
                           </motion.h2>
@@ -1013,7 +1252,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                         title="Sonraki Hafta"
                         aria-label="Sonraki Hafta"
                       >
-                        <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                        <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
                       </button>
                     </div>
 
@@ -1021,7 +1260,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                       <button
                         type="button"
                         onClick={handleGoToCurrentWeek}
-                        className="px-2.5 py-0.5 bg-fuchsia-500/20 hover:bg-fuchsia-500/30 text-fuchsia-300 border border-fuchsia-500/40 rounded-xl text-[11px] font-bold transition-all cursor-pointer flex items-center space-x-1 shadow-sm active:scale-95"
+                        className="px-2.5 py-1 bg-fuchsia-500/20 hover:bg-fuchsia-500/30 text-fuchsia-300 border border-fuchsia-500/40 rounded-xl text-[10px] font-bold transition-all cursor-pointer flex items-center space-x-1 shadow-sm active:scale-95"
                       >
                         <RotateCcw className="w-3 h-3 text-fuchsia-400" />
                         <span>Mevcut Haftaya Dön</span>
@@ -1029,137 +1268,57 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                     )}
                   </div>
 
-                  {/* KPI Metrics Header */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-400">Toplam Görev</span>
-                        <Calendar className="w-4 h-4 text-fuchsia-400" />
-                      </div>
-                      <div className="mt-2 flex items-baseline gap-2">
-                        <span className="text-xl font-black text-white">{totalPlannerTasks}</span>
-                        <span className="text-xs text-slate-400">görev</span>
-                      </div>
-                    </div>
-
-                    <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-400">Tamamlanan</span>
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      </div>
-                      <div className="mt-2 flex items-baseline gap-2">
-                        <span className="text-xl font-black text-emerald-400">{completedPlannerTasks}</span>
-                        <span className="text-xs text-emerald-500/80 font-bold">/ {totalPlannerTasks} (%{plannerCompletionRate})</span>
-                      </div>
-                    </div>
-
-                    <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-400">Bekleyen</span>
-                        <Clock className="w-4 h-4 text-amber-400" />
-                      </div>
-                      <div className="mt-2 flex items-baseline gap-2">
-                        <span className="text-xl font-black text-amber-400">{pendingPlannerTasks}</span>
-                        <span className="text-xs text-slate-400">görev</span>
-                      </div>
-                    </div>
-
-                    <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-400">Toplam Süre</span>
-                        <Timer className="w-4 h-4 text-sky-400" />
-                      </div>
-                      <div className="mt-2 flex items-baseline gap-2">
-                        <span className="text-xl font-black text-sky-400">
-                          {Math.floor(totalPlannerMinutes / 60)}s {totalPlannerMinutes % 60}d
-                        </span>
-                        {totalTargetQuestions > 0 && (
-                          <span className="text-[10px] text-amber-400 font-bold">• {totalTargetQuestions} S</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="bg-slate-950/60 border border-white/10 rounded-2xl p-3.5 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center space-x-2">
-                        <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" />
-                        <span className="font-bold text-white">Program İlerlemesi</span>
-                      </div>
-                      <span className="font-mono font-bold text-fuchsia-400">
-                        {completedPlannerTasks} / {totalPlannerTasks} Görev Yapıldı (%{plannerCompletionRate})
-                      </span>
-                    </div>
-                    <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden border border-white/10">
-                      <div 
-                        className="h-full bg-gradient-to-r from-fuchsia-500 via-indigo-500 to-emerald-500 rounded-full transition-all duration-500 shadow-sm shadow-fuchsia-500/30"
-                        style={{ width: `${plannerCompletionRate}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Toolbar: Search & Filters */}
-                  <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-3.5 space-y-2.5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                      {/* Search Box */}
+                  {/* Filter Toolbar */}
+                  <div className="bg-slate-950/60 p-3 rounded-2xl border border-white/10 space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="relative flex-1">
-                        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                         <input
                           type="text"
                           value={plannerSearchQuery}
                           onChange={(e) => setPlannerSearchQuery(e.target.value)}
-                          placeholder="Ders, konu, tip veya notlarda ara..."
-                          className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-fuchsia-500/50 transition-colors"
+                          placeholder="Ders, konu, notlarda ara..."
+                          className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-fuchsia-500/50"
                         />
                         {plannerSearchQuery && (
                           <button
                             onClick={() => setPlannerSearchQuery('')}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs px-1"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs"
                           >
-                            ✕
+                            <X className="w-3 h-3" />
                           </button>
                         )}
                       </div>
 
-                      {/* Status Filter Buttons */}
                       <div className="flex items-center space-x-1 bg-slate-900/90 p-1 rounded-xl border border-white/10 shrink-0">
                         <button
                           onClick={() => setPlannerStatusFilter('all')}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                            plannerStatusFilter === 'all'
-                              ? 'bg-fuchsia-600 text-white'
-                              : 'text-slate-400 hover:text-white'
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
+                            plannerStatusFilter === 'all' ? 'bg-fuchsia-600 text-white' : 'text-slate-400 hover:text-white'
                           }`}
                         >
                           Tümü ({totalPlannerTasks})
                         </button>
                         <button
                           onClick={() => setPlannerStatusFilter('completed')}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center space-x-1 ${
-                            plannerStatusFilter === 'completed'
-                              ? 'bg-emerald-600 text-white'
-                              : 'text-slate-400 hover:text-emerald-400'
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
+                            plannerStatusFilter === 'completed' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-emerald-400'
                           }`}
                         >
-                          <Check className="w-3 h-3" />
-                          <span>Yapılanlar ({completedPlannerTasks})</span>
+                          Yapılan ({completedPlannerTasks})
                         </button>
                         <button
                           onClick={() => setPlannerStatusFilter('pending')}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center space-x-1 ${
-                            plannerStatusFilter === 'pending'
-                              ? 'bg-amber-600 text-white'
-                              : 'text-slate-400 hover:text-amber-400'
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
+                            plannerStatusFilter === 'pending' ? 'bg-amber-600 text-white' : 'text-slate-400 hover:text-amber-400'
                           }`}
                         >
-                          <Clock className="w-3 h-3" />
-                          <span>Bekleyenler ({pendingPlannerTasks})</span>
+                          Bekleyen ({pendingPlannerTasks})
                         </button>
                       </div>
                     </div>
 
-                    {/* Day Filter Chips */}
+                    {/* Day Chips */}
                     <div className="flex items-center gap-1 flex-wrap pt-1 border-t border-white/5">
                       <span className="text-[11px] font-bold text-slate-400 mr-1 flex items-center gap-1">
                         <Calendar className="w-3 h-3 text-fuchsia-400" /> Gün:
@@ -1192,28 +1351,6 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                         );
                       })}
                     </div>
-
-                    {/* Subject Filter Chips */}
-                    {plannerSubjects.length > 2 && (
-                      <div className="flex items-center gap-1 flex-wrap pt-1 border-t border-white/5">
-                        <span className="text-[11px] font-bold text-slate-400 mr-1 flex items-center gap-1">
-                          <Filter className="w-3 h-3 text-indigo-400" /> Ders:
-                        </span>
-                        {plannerSubjects.map(subj => (
-                          <button
-                            key={subj}
-                            onClick={() => setPlannerSubjectFilter(subj)}
-                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg border transition-all cursor-pointer ${
-                              plannerSubjectFilter === subj
-                                ? 'bg-indigo-500/20 text-indigo-300 border-indigo-400/40 font-bold'
-                                : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-slate-300'
-                            }`}
-                          >
-                            {subj === 'all' ? 'Tüm Dersler' : subj}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
 
                   {/* Day Boards Grid with Slide Animation */}
@@ -1244,14 +1381,26 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                                 ? `Bu öğrencinin "${currentWeekLabel}" haftasına ait kayıtlı geçmiş planı bulunmuyor.`
                                 : 'Bu öğrencinin haftalık planında kayıtlı görev bulunmuyor.'}
                             </p>
-                            {!isBranchTeacher && isCurrentWeek && (
-                              <button
-                                onClick={() => setShowAddTaskToStudentModal(true)}
-                                className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all inline-flex items-center space-x-1.5 cursor-pointer shadow-lg shadow-fuchsia-600/20 mt-1"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                                <span>İlk Görevi Ekle</span>
-                              </button>
+                            {!isBranchTeacher && (
+                              <div className="flex items-center justify-center gap-2 mt-1">
+                                <button
+                                  onClick={() => {
+                                    setSelectedTemplateToApplyInInspect(availableTemplates[0] || null);
+                                    setShowApplyTemplateModalInInspect(true);
+                                  }}
+                                  className="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 font-bold text-xs px-3 py-1.5 rounded-xl transition-all inline-flex items-center space-x-1.5 cursor-pointer shadow-sm"
+                                >
+                                  <Layers className="w-3.5 h-3.5" />
+                                  <span>Şablondan Plan Uygula</span>
+                                </button>
+                                <button
+                                  onClick={() => setShowAddTaskToStudentModal(true)}
+                                  className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition-all inline-flex items-center space-x-1.5 cursor-pointer shadow-lg shadow-fuchsia-600/20"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>Yeni Görev Ekle</span>
+                                </button>
+                              </div>
                             )}
                           </div>
                         ) : filteredPlans.length === 0 ? (
@@ -1271,149 +1420,37 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                             </button>
                           </div>
                         ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {DAYS.map(day => {
-                              const dayPlans = filteredPlans.filter(p => p.day === day);
-                              if (dayPlans.length === 0) return null;
-
-                              const dayCompleted = dayPlans.filter(p => p.status === 'completed').length;
-                              const dayTotalMinutes = dayPlans.reduce((acc, p) => acc + (p.plannedMinutes || 0), 0);
-                              const dayTotalQuestions = dayPlans.reduce((acc, p) => acc + (p.targetQuestionCount || 0), 0);
-                              const dayPercent = Math.round((dayCompleted / dayPlans.length) * 100);
-
-                              return (
-                                <div key={day} className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-3 shadow-lg flex flex-col justify-between">
-                                  <div className="space-y-2.5">
-                                    {/* Header */}
-                                    <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-                                      <div className="flex items-center space-x-2">
-                                        <div className={`w-2 h-2 rounded-full ${dayCompleted === dayPlans.length ? 'bg-emerald-400' : 'bg-fuchsia-400'}`} />
-                                        <span className="text-xs font-black text-white uppercase tracking-wider">{day}</span>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <span className="text-[10px] font-bold text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
-                                          {dayCompleted}/{dayPlans.length} ({dayPercent}%)
-                                        </span>
-                                        <span className="text-[11px] text-slate-400 font-mono">
-                                          {dayTotalMinutes} dk
-                                        </span>
-                                      </div>
-                                    </div>
-
-                                    {/* Task Cards */}
-                                    <div className="space-y-2">
-                                      {dayPlans.map(task => {
-                                        const isMyBranch = teacherSubj && (task.subject || '').toLowerCase().includes(teacherSubj);
-                                        const isCompleted = task.status === 'completed';
-
-                                        return (
-                                          <div 
-                                            key={task.id} 
-                                            className={`p-3 rounded-xl border transition-all space-y-2 ${
-                                              isCompleted
-                                                ? 'bg-emerald-950/20 border-emerald-500/30'
-                                                : isMyBranch
-                                                ? 'bg-amber-950/20 border-amber-500/30'
-                                                : 'bg-slate-900/90 border-white/10'
-                                            }`}
-                                          >
-                                            {/* Top Row: Subject & Badges & Actions */}
-                                            <div className="flex items-start justify-between gap-2">
-                                              <div className="flex items-center flex-wrap gap-1">
-                                                <span className="text-[11px] font-bold text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded-md border border-indigo-500/30">
-                                                  {task.subject}
-                                                </span>
-                                                {task.taskType && (
-                                                  <span className="text-[9px] font-semibold text-slate-300 bg-white/10 px-1.5 py-0.5 rounded-md border border-white/10">
-                                                    {task.taskType}
-                                                  </span>
-                                                )}
-                                                {isMyBranch && (
-                                                  <span className="text-[9px] font-bold bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-md border border-amber-500/30">
-                                                    Branşınız
-                                                  </span>
-                                                )}
-                                              </div>
-
-                                              <div className="flex items-center space-x-1 shrink-0">
-                                                <button
-                                                  onClick={() => handleToggleTaskStatusFromTeacher(selectedStudentUser.id, task.id, task.status)}
-                                                  className={`p-1 rounded-lg border transition-all cursor-pointer ${
-                                                    isCompleted
-                                                      ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/30'
-                                                      : 'bg-white/5 text-slate-400 border-white/10 hover:text-white hover:bg-white/10'
-                                                  }`}
-                                                  title={isCompleted ? 'Tamamlandı' : 'Tamamla'}
-                                                >
-                                                  <CheckCircle2 className="w-3.5 h-3.5" />
-                                                </button>
-                                                {!isBranchTeacher && (
-                                                  <button
-                                                    onClick={() => handleDeleteTaskFromStudent(selectedStudentUser.id, task.id)}
-                                                    className="p-1 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer"
-                                                    title="Görevi Sil"
-                                                  >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                  </button>
-                                                )}
-                                              </div>
-                                            </div>
-
-                                            {/* Topic Name */}
-                                            <div>
-                                              <p className={`text-xs font-bold leading-tight break-words ${isCompleted ? 'text-emerald-200/90 line-through' : 'text-white'}`}>
-                                                {task.topic}
-                                              </p>
-                                              {task.notes && (
-                                                <p className="text-[10px] text-slate-400 mt-1 bg-black/30 p-1.5 rounded-lg border border-white/5 italic">
-                                                  "{task.notes}"
-                                                </p>
-                                              )}
-                                            </div>
-
-                                            {/* Bottom Metadata */}
-                                            <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1.5 border-t border-white/5">
-                                              <div className="flex items-center space-x-2">
-                                                <span className="flex items-center space-x-1">
-                                                  <Clock className="w-3 h-3 text-sky-400" />
-                                                  <span className="font-mono text-slate-200 font-bold">{task.plannedMinutes || 0} dk</span>
-                                                </span>
-                                                {task.targetQuestionCount && task.targetQuestionCount > 0 ? (
-                                                  <span className="flex items-center space-x-1 text-amber-300 font-mono font-bold">
-                                                    <Target className="w-3 h-3 text-amber-400" />
-                                                    <span>{task.targetQuestionCount} S</span>
-                                                  </span>
-                                                ) : null}
-                                              </div>
-                                              <div>
-                                                {isCompleted ? (
-                                                  <span className="text-emerald-400 font-bold text-[9px] bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                                                    ✓ Yapıldı
-                                                  </span>
-                                                ) : (
-                                                  <span className="text-amber-400 font-bold text-[9px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
-                                                    Bekliyor
-                                                  </span>
-                                                )}
-                                              </div>
-                                            </div>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
+                          <>
+                            {plannerDayFilter !== 'all' ? (
+                              <div className="max-w-xl mx-auto">
+                                {renderModalDayCard(plannerDayFilter as DayOfWeek)}
+                              </div>
+                            ) : (
+                              <div className="space-y-6">
+                                {/* Weekdays Row: Monday - Friday (5 columns) */}
+                                <div className="space-y-2">
+                                  <div className="flex items-center space-x-2 text-xs font-bold text-slate-400 uppercase tracking-wider px-1">
+                                    <span className="w-2 h-2 rounded-full bg-fuchsia-400" />
+                                    <span>Hafta İçi Programı (Pazartesi — Cuma)</span>
                                   </div>
-
-                                  {/* Day Footer */}
-                                  {dayTotalQuestions > 0 && (
-                                    <div className="pt-2 border-t border-white/5 text-[9px] text-amber-300/80 font-mono flex items-center justify-between">
-                                      <span>Hedef:</span>
-                                      <span className="font-bold">{dayTotalQuestions} Soru</span>
-                                    </div>
-                                  )}
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-3.5">
+                                    {['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'].map(d => renderModalDayCard(d as DayOfWeek))}
+                                  </div>
                                 </div>
-                              );
-                            })}
-                          </div>
+
+                                {/* Weekend Row: Saturday - Sunday (2 columns) */}
+                                <div className="space-y-2">
+                                  <div className="flex items-center space-x-2 text-xs font-bold text-slate-400 uppercase tracking-wider px-1">
+                                    <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                                    <span>Hafta Sonu Programı (Cumartesi — Pazar)</span>
+                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-3.5">
+                                    {['Cumartesi', 'Pazar'].map(d => renderModalDayCard(d as DayOfWeek))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </>
                         )}
                       </motion.div>
                     </AnimatePresence>

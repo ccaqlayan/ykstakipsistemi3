@@ -753,6 +753,9 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           allUsers={allUsers}
           auditLogs={auditLogs}
           OfflineStatusDisplay={OfflineStatusDisplay}
+          programTemplates={programTemplates}
+          onApplyTemplateToStudent={onApplyTemplateToStudent}
+          onUpdateStudentStudyPlans={onUpdateStudentStudyPlans}
         />
 
         {/* MODAL: SAVE STUDENT PROGRAM AS TEMPLATE */}
