@@ -32,14 +32,14 @@ export function setAiFeaturesEnabled(val: boolean) { aiFeaturesEnabled = val; }
 
 // Global configurable model mapping for each AI feature
 export let featureModelConfig: Record<string, string> = {
-  AI_COACH_STUDENT: 'gemini-2.0-flash',
-  AI_COACH_CLASS: 'gemini-2.0-flash',
-  SOLVE_QUESTION: 'gemini-2.0-flash',
-  QUESTION_ANALYSIS: 'gemini-2.0-flash',
-  SIMILAR_QUESTION: 'gemini-2.0-flash',
-  ERROR_PRIORITY: 'gemini-2.0-flash',
-  TOPIC_TIPS: 'gemini-2.0-flash',
-  YOUTUBE_PLANNER: 'gemini-2.0-flash'
+  AI_COACH_STUDENT: 'gemini-3.1-flash-lite',
+  AI_COACH_CLASS: 'gemini-3.1-flash-lite',
+  SOLVE_QUESTION: 'gemini-3.1-flash-lite',
+  QUESTION_ANALYSIS: 'gemini-3.1-flash-lite',
+  SIMILAR_QUESTION: 'gemini-3.1-flash-lite',
+  ERROR_PRIORITY: 'gemini-3.1-flash-lite',
+  TOPIC_TIPS: 'gemini-3.1-flash-lite',
+  YOUTUBE_PLANNER: 'gemini-3.1-flash-lite'
 };
 export function setFeatureModelConfig(cfg: Record<string, string>) { featureModelConfig = cfg; }
 
@@ -282,13 +282,72 @@ export async function clearApiUsageLogs(olderThanDays = 30) {
   return { deletedCount: logsToDelete.length };
 }
 
+let cachedGoogleModels: { id: string; name: string; badge: string }[] | null = null;
+let lastModelFetchTime = 0;
+
+export async function fetchLiveGoogleModels(apiKey?: string): Promise<{ id: string; name: string; badge: string }[]> {
+  const key = (apiKey || getEffectiveGeminiApiKey()).trim();
+  const now = Date.now();
+  if (cachedGoogleModels && (now - lastModelFetchTime < 15 * 60 * 1000) && cachedGoogleModels.length > 0) {
+    return cachedGoogleModels;
+  }
+
+  const fallbackStaticList = [
+    { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash-Lite (Süper Hızlı & Ekonomik)', badge: 'Önerilen (Varsayılan)' },
+    { id: 'gemini-3.1-flash', name: 'Gemini 3.1 Flash (Yüksek Performans)', badge: 'Flash' },
+    { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro (En Derin Düşünme & Karmaşık Sorular)', badge: 'Gelişmiş' },
+    { id: 'gemini-3.0-flash', name: 'Gemini 3.0 Flash', badge: 'Flash' },
+    { id: 'gemini-3.0-pro', name: 'Gemini 3.0 Pro', badge: 'Gelişmiş' },
+    { id: 'gemini-3-flash', name: 'Gemini 3 Flash', badge: 'Flash' },
+    { id: 'gemini-3-pro', name: 'Gemini 3 Pro', badge: 'Gelişmiş' },
+    { id: 'gemini-flash-latest', name: 'Gemini Flash Latest (En Güncel Flash)', badge: 'Otomatik' },
+    { id: 'gemini-pro-latest', name: 'Gemini Pro Latest (En Güncel Pro)', badge: 'Otomatik' }
+  ];
+
+  if (!key) {
+    return fallbackStaticList;
+  }
+
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
+    const resp = await fetch(url);
+    if (resp.ok) {
+      const data = await resp.json();
+      if (data.models && Array.isArray(data.models)) {
+        const filtered = data.models
+          .filter((m: any) => {
+            const name = m.name?.replace('models/', '') || '';
+            const isContentGen = Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent');
+            return isContentGen && !name.includes('embedding') && !name.includes('aqa') && !name.includes('image') && !name.includes('vision');
+          })
+          .map((m: any) => {
+            const id = m.name?.replace('models/', '') || '';
+            const name = m.displayName ? `${m.displayName} (${id})` : id;
+            let badge = 'Standart';
+            if (id.includes('flash-lite') || id.includes('lite')) badge = 'Ekonomik';
+            else if (id.includes('flash')) badge = 'Önerilen';
+            else if (id.includes('pro')) badge = 'Gelişmiş';
+            return { id, name, badge };
+          });
+
+        if (filtered.length > 0) {
+          cachedGoogleModels = filtered;
+          lastModelFetchTime = now;
+          return filtered;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Error discovering live Google Gemini models:', err);
+  }
+
+  return cachedGoogleModels || fallbackStaticList;
+}
+
 export function mapToActualGeminiModel(modelId: string): string {
-  const m = (modelId || '').trim().toLowerCase();
-  if (!m) return 'gemini-2.0-flash';
-  if (m.includes('pro')) return 'gemini-2.5-pro';
-  if (m.includes('2.5-flash')) return 'gemini-2.5-flash';
-  if (m.includes('2.0-flash') || m.includes('flash')) return 'gemini-2.0-flash';
-  return 'gemini-2.0-flash';
+  const m = (modelId || '').trim();
+  if (!m) return 'gemini-3.1-flash-lite';
+  return m;
 }
 
 export async function generateContentWithFallback(
@@ -299,16 +358,31 @@ export async function generateContentWithFallback(
     config?: any;
   }
 ) {
-  const requestedModel = options.model || 'gemini-2.0-flash';
+  const requestedModel = options.model || 'gemini-3.1-flash-lite';
   const primaryApiModel = mapToActualGeminiModel(requestedModel);
 
-  const fallbackList = [
-    { requested: requestedModel, apiModel: primaryApiModel },
-    { requested: 'gemini-2.0-flash', apiModel: 'gemini-2.0-flash' },
-    { requested: 'gemini-2.0-flash-001', apiModel: 'gemini-2.0-flash-001' },
-    { requested: 'gemini-2.5-flash', apiModel: 'gemini-2.5-flash' },
-    { requested: 'gemini-2.5-pro', apiModel: 'gemini-2.5-pro' }
+  // Discover active models dynamically from live Google API
+  const liveModels = await fetchLiveGoogleModels();
+  const liveIds = liveModels.map(m => m.id);
+
+  const fallbackList: { requested: string; apiModel: string }[] = [
+    { requested: requestedModel, apiModel: primaryApiModel }
   ];
+
+  // Add live discovered models to fallback list
+  for (const lId of liveIds) {
+    if (lId !== primaryApiModel) {
+      fallbackList.push({ requested: lId, apiModel: lId });
+    }
+  }
+
+  // Add static resilient 3.x fallbacks if not already present
+  const staticFallbacks = ['gemini-3.1-flash-lite', 'gemini-3.1-flash', 'gemini-3.1-pro', 'gemini-3.0-flash', 'gemini-3-flash', 'gemini-flash-latest'];
+  for (const sf of staticFallbacks) {
+    if (!fallbackList.some(f => f.apiModel === sf)) {
+      fallbackList.push({ requested: sf, apiModel: sf });
+    }
+  }
 
   const uniqueList: { requested: string; apiModel: string }[] = [];
   const seenApiModels = new Set<string>();
@@ -348,9 +422,9 @@ export async function generateContentWithFallback(
           // Immediately throw authentication failure so user gets the accurate 401 message
           throw err;
         }
-        const isNotFound = err.status === 404 || errMsg.includes('not found') || errMsg.includes('unsupported');
+        const isNotFound = err.status === 404 || errMsg.includes('not found') || errMsg.includes('no longer available') || errMsg.includes('unsupported');
         if (isNotFound) {
-          break; // Try next fallback model
+          break; // Model not available, try next fallback model immediately
         }
         retries--;
         if (retries >= 0) {

@@ -243,13 +243,13 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
               <div className="space-y-1">
                 <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
                   <Zap className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
-                  <span>Hızlı Toplu Model Değiştirme</span>
+                  <span>Hızlı Toplu Model Değiştirme (Google AI Studio Canlı Modeller)</span>
                 </h5>
                 <p className="text-[10px] text-slate-400">
                   Tüm yapay zeka sistem özelliklerinin aktif modelini tek tıkla aynı anda değiştirebilirsiniz.
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {modelSettings?.availableModels.map((m) => (
                   <button
                     key={m.id}

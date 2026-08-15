@@ -24,7 +24,8 @@ import {
   uploadsDir,
   getEffectiveGeminiApiKey,
   setCustomGeminiApiKey,
-  customGeminiApiKey
+  customGeminiApiKey,
+  fetchLiveGoogleModels
 } from '../config';
 
 const router = Router();
@@ -1297,11 +1298,13 @@ router.post('/clear-usage-logs', async (req, res) => {
   });
 });
 
-router.get('/model-settings', (req, res) => {
+router.get('/model-settings', async (req, res) => {
   const currentKey = getEffectiveGeminiApiKey();
   const maskedApiKey = currentKey 
     ? (currentKey.length > 10 ? `${currentKey.slice(0, 6)}...${currentKey.slice(-4)}` : '***') 
     : '';
+
+  const liveModels = await fetchLiveGoogleModels();
 
   res.json({
     success: true,
@@ -1312,11 +1315,7 @@ router.get('/model-settings', (req, res) => {
     coachDataSettings,
     hasApiKey: Boolean(currentKey),
     maskedApiKey,
-    availableModels: [
-      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Hızlı & Yüksek Doğruluk)', badge: 'Önerilen (Varsayılan)' },
-      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Gelişmiş Flash)', badge: 'Flash' },
-      { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (En Derin Düşünme & Karmaşık Sorular)', badge: 'Gelişmiş' }
-    ],
+    availableModels: liveModels,
     features: [
       { key: 'AI_COACH_STUDENT', name: 'Öğrenci Bireysel Yapay Zeka Koç Tavsiyesi', category: 'Yapay Zeka Koçluğu', description: 'Öğrencinin haftalık çalışma tavsiyelerini ve net analizlerini hazırlar.' },
       { key: 'AI_COACH_CLASS', name: 'Sınıf / Okul Genel Koç Analizi', category: 'Yapay Zeka Koçluğu', description: 'Okul rehber öğretmeni için sınıf geneli etüt ve koçluk raporları üretir.' },
@@ -1328,6 +1327,11 @@ router.get('/model-settings', (req, res) => {
       { key: 'YOUTUBE_PLANNER', name: 'YouTube Kampı & Ders Planlayıcı', category: 'Ders Planlama', description: 'YouTube oynatma listelerini akıllı çalışma müfredatına dönüştürür.' }
     ]
   });
+});
+
+router.post('/refresh-models', async (req, res) => {
+  const models = await fetchLiveGoogleModels();
+  res.json({ success: true, models });
 });
 
 router.post('/model-settings', async (req, res) => {
