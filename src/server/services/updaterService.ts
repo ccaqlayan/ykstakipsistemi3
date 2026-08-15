@@ -25,6 +25,35 @@ export interface BackupInfo {
   isAuto: boolean;
 }
 
+/**
+ * Dynamically reads the current system version directly from src/version.ts or package.json
+ * to prevent stale inlining when the server is bundled or updated at runtime.
+ */
+export function getCurrentAppVersion(): string {
+  try {
+    const versionTsPath = path.join(process.cwd(), 'src', 'version.ts');
+    if (fs.existsSync(versionTsPath)) {
+      const content = fs.readFileSync(versionTsPath, 'utf8');
+      const match = content.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const packageJsonPath = path.join(process.cwd(), 'package.json');
+    if (fs.existsSync(packageJsonPath)) {
+      const content = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      if (content && content.version) {
+        return `v${content.version.replace(/^v/, '')}`;
+      }
+    }
+  } catch (e) {}
+
+  return APP_VERSION || 'v1.8.10';
+}
+
 const REPO_OWNER = 'ccaqlayan';
 const REPO_NAME = 'ykstakipsistemi3';
 const BACKUPS_DIR = path.join(process.cwd(), 'backups');
@@ -73,6 +102,7 @@ function runCommand(command: string, cwd: string = process.cwd()): Promise<{ std
  */
 export async function getGitHubVersions(): Promise<GitHubVersion[]> {
   const versions: GitHubVersion[] = [];
+  const currentAppVersion = getCurrentAppVersion();
   const headers: Record<string, string> = {
     'User-Agent': 'YKS-Takip-Sistemi-Updater/1.0',
     'Accept': 'application/vnd.github.v3+json'
@@ -108,7 +138,7 @@ export async function getGitHubVersions(): Promise<GitHubVersion[]> {
       const messageVersionMatch = firstLine.match(/^(v\d+\.\d+(\.\d+)?)/i);
       const tagLabel = matchedTag || (messageVersionMatch ? messageVersionMatch[1] : `commit-${sha}`);
 
-      const isCurrent = tagLabel === APP_VERSION || firstLine.includes(APP_VERSION);
+      const isCurrent = tagLabel === currentAppVersion || firstLine.includes(currentAppVersion);
 
       versions.push({
         tag: tagLabel,
@@ -125,8 +155,8 @@ export async function getGitHubVersions(): Promise<GitHubVersion[]> {
     console.error('GitHub API error in getGitHubVersions:', err);
     // Return at least current version info on error
     versions.push({
-      tag: APP_VERSION,
-      name: `${APP_VERSION} (Mevcut Yerel Sürüm)`,
+      tag: currentAppVersion,
+      name: `${currentAppVersion} (Mevcut Yerel Sürüm)`,
       commitSha: 'local',
       date: new Date().toISOString(),
       message: 'GitHub API erişilemedi, mevcut sürüm bilgisi gösteriliyor.',
@@ -291,8 +321,8 @@ function parseBackupFilename(filename: string, stat?: fs.Stats): { version: stri
     createdAt = stat.mtime.toISOString();
   }
 
-  // Extract version: e.g. "backup_manual_v1_8_8_..." -> "v1.8.8" or "backup_pre_update_from_v1_8_8_..." -> "v1.8.8"
-  let version = APP_VERSION;
+  // Extract version: e.g. "backup_manual_v1_8_10_..." -> "v1.8.10" or "backup_pre_update_from_v1_8_10_..." -> "v1.8.10"
+  let version = getCurrentAppVersion();
   const versionMatch = filename.match(/(?:v|from_v|vv)?(\d+\.\d+(?:\.\d+)?)/i);
   if (versionMatch) {
     version = `v${versionMatch[1]}`;
@@ -310,9 +340,10 @@ function parseBackupFilename(filename: string, stat?: fs.Stats): { version: stri
  */
 export async function createBackup(label?: string): Promise<BackupInfo> {
   ensureDir(BACKUPS_DIR);
+  const currentAppVer = getCurrentAppVersion();
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const safeLabel = (label || APP_VERSION).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const safeLabel = (label || currentAppVer).replace(/[^a-zA-Z0-9_-]/g, '_');
   const filename = `backup_${safeLabel}_${timestamp}.zip`;
   const filepath = path.join(BACKUPS_DIR, filename);
 
@@ -357,7 +388,7 @@ export async function createBackup(label?: string): Promise<BackupInfo> {
     sizeBytes: stat.size,
     sizeFormatted: formatBytes(stat.size),
     createdAt: parsed.createdAt,
-    version: parsed.version,
+    version: parsed.version || currentAppVer,
     isAuto: label?.includes('auto') || label?.includes('pre_update') || false
   };
 
@@ -535,8 +566,9 @@ export async function updateToVersion(
 
   try {
     // ADIM 1: Otomatik Yedek Al
-    sendLog(`[1/6] 🛡️ Güvenlik Yedeği: Mevcut '${APP_VERSION}' sürümü yedekleniyor...`);
-    backupInfo = await createBackup(`pre_update_from_${APP_VERSION}`);
+    const activeVersion = getCurrentAppVersion();
+    sendLog(`[1/6] 🛡️ Güvenlik Yedeği: Mevcut '${activeVersion}' sürümü yedekleniyor...`);
+    backupInfo = await createBackup(`pre_update_from_${activeVersion}`);
     sendLog(`[1/6] ✅ Yedek oluşturuldu: ${backupInfo.filename} (${backupInfo.sizeFormatted})`);
 
     // ADIM 2: GitHub Paketini İndir
