@@ -20,7 +20,8 @@ import {
   ArrowLeft,
   Clock,
   School,
-  Tag
+  Tag,
+  Layers
 } from 'lucide-react';
 import { DayOfWeek, FieldType, StudyProgramTemplate, StudyProgramTemplateItem } from '../types';
 import { YKS_CURRICULUM_TOPICS, DEFAULT_TASK_TYPES } from '../data/initialData';
