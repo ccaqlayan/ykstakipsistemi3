@@ -167,10 +167,21 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
     });
   };
 
+  const handleAssignPoolItemToAllWeekends = (poolItem: TaskPoolItem) => {
+    WEEKENDS.forEach(d => {
+      handleAddItem(d, poolItem.subject, poolItem.topic, poolItem.taskType, poolItem.plannedMinutes, poolItem.id);
+    });
+  };
+
   const handleAssignPoolItemToAllDays = (poolItem: TaskPoolItem) => {
     [...WEEKDAYS, ...WEEKENDS].forEach(d => {
       handleAddItem(d, poolItem.subject, poolItem.topic, poolItem.taskType, poolItem.plannedMinutes, poolItem.id);
     });
+  };
+
+  const handleUpdatePoolItemMinutes = (id: string, newMinutes: number) => {
+    const validMinutes = Math.max(5, Math.min(300, Number(newMinutes) || 45));
+    setPoolItems(prev => prev.map(it => it.id === id ? { ...it, plannedMinutes: validMinutes } : it));
   };
 
   // Calculates usage count and days on which a pool item is assigned
@@ -394,6 +405,24 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
           </div>
         </div>
 
+        {/* 🎯 AKTİF GÖREV TÜRÜ GÖSTERGESİ (SAYFANIN EN ÜST ORTASINDA) */}
+        {builderMode === 'drag' && selectedTaskType && (() => {
+          const cfg = TASK_TYPE_CONFIG[selectedTaskType] || { icon: FileText, color: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-500/30' };
+          const Icon = cfg.icon;
+          return (
+            <div className="flex items-center space-x-2 px-4 py-1.5 rounded-2xl bg-slate-950/90 border border-fuchsia-500/50 shadow-lg shadow-fuchsia-600/30 backdrop-blur-xl animate-fade-in">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider hidden md:inline">Aktif Görev Türü:</span>
+              <div className="flex items-center space-x-1.5">
+                <span className={`p-1 rounded-lg ${cfg.bg} ${cfg.border} border`}>
+                  <Icon className={`w-3.5 h-3.5 ${cfg.color}`} />
+                </span>
+                <span className={`text-xs font-black ${cfg.color}`}>{selectedTaskType}</span>
+              </div>
+              <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            </div>
+          );
+        })()}
+
         {/* MODE SWITCHER & SAVE ACTIONS */}
         <div className="flex items-center space-x-3">
           <div className="bg-slate-950 p-1 rounded-2xl border border-white/10 flex items-center space-x-1">
@@ -464,17 +493,6 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
               <option value="DİL">DİL (Yabancı Dil)</option>
             </select>
           </div>
-          {/* COMPACT ACTIVE TASK TYPE CHIP */}
-          {builderMode === 'drag' && selectedTaskType && (() => {
-            const cfg = TASK_TYPE_CONFIG[selectedTaskType] || { icon: FileText, color: 'text-purple-400', bg: 'bg-purple-500/20', border: 'border-purple-500/30' };
-            const Icon = cfg.icon;
-            return (
-              <div className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl border ${cfg.bg} ${cfg.border} shrink-0`}>
-                <Icon className={`w-3.5 h-3.5 ${cfg.color}`} />
-                <span className={`text-xs font-extrabold ${cfg.color}`}>{selectedTaskType}</span>
-              </div>
-            );
-          })()}
         </div>
 
         <div className="flex-1 max-w-xl">
@@ -505,6 +523,31 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
                   className="w-full bg-slate-950 border border-white/10 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-fuchsia-400"
                 />
               </div>
+
+              {/* 📦 GÖREV HAVUZU AÇ/KAPA BUTONU (SOL MENÜDE) */}
+              <button
+                type="button"
+                onClick={() => setIsPoolOpen(!isPoolOpen)}
+                className={`w-full py-2.5 px-3 rounded-xl text-xs font-extrabold transition-all flex items-center justify-between border cursor-pointer shadow-sm ${
+                  isPoolOpen
+                    ? 'bg-fuchsia-600 border-fuchsia-400 text-white shadow-md shadow-fuchsia-600/30'
+                    : 'bg-slate-950/90 border-fuchsia-500/40 text-fuchsia-300 hover:bg-fuchsia-950/50 hover:border-fuchsia-400'
+                }`}
+                title={isPoolOpen ? "Görev Havuzunu Kapat" : "Görev Havuzunu Aç"}
+              >
+                <div className="flex items-center space-x-2">
+                  <Layers className="w-4 h-4 text-fuchsia-300 shrink-0" />
+                  <span>Görev Havuzu</span>
+                </div>
+                <div className="flex items-center space-x-1.5">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-black/40 font-extrabold text-fuchsia-200">
+                    {poolItems.length} Görev
+                  </span>
+                  <span className="text-[10px] text-fuchsia-300 font-semibold">
+                    {isPoolOpen ? 'Kapat ▴' : 'Aç ▾'}
+                  </span>
+                </div>
+              </button>
 
               {/* TYT / AYT Category Tabs */}
               <div className="flex bg-slate-950 p-1 rounded-xl border border-white/10 text-[10px] sm:text-[11px] font-bold">
@@ -829,23 +872,6 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
         {/* RIGHT BOARD (WEEKLY GRID) */}
         <main className="flex-1 bg-slate-950/80 p-4 md:p-6 overflow-y-auto space-y-6">
           {/* 📦 GÖREV HAVUZU (TASK POOL) PANEL (DRAG MODE) */}
-          {builderMode === 'drag' && !isPoolOpen && (
-            <div className="flex items-center justify-center">
-              <button
-                type="button"
-                onClick={() => setIsPoolOpen(true)}
-                className="inline-flex items-center space-x-2.5 px-5 py-2.5 rounded-2xl bg-slate-900/90 border border-fuchsia-500/30 hover:border-fuchsia-400/60 text-fuchsia-300 hover:text-white shadow-lg hover:shadow-fuchsia-600/20 transition-all cursor-pointer active:scale-95 backdrop-blur-xl"
-              >
-                <Layers className="w-4.5 h-4.5" />
-                <span className="text-xs font-bold">Görev Havuzunu Aç</span>
-                {poolItems.length > 0 && (
-                  <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40">
-                    {poolItems.length}
-                  </span>
-                )}
-              </button>
-            </div>
-          )}
           {builderMode === 'drag' && isPoolOpen && (
             <div className="bg-slate-900/90 border border-fuchsia-500/30 rounded-3xl p-4 sm:p-5 shadow-2xl space-y-3.5 transition-all backdrop-blur-xl">
               {/* Header & Toggle Controls */}
@@ -1081,9 +1107,23 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
                                   </span>
 
                                   <div className="flex items-center space-x-1.5">
-                                    <span className="text-[10px] font-mono text-slate-300 bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
-                                      {pItem.plannedMinutes} dk
-                                    </span>
+                                    <div 
+                                      className="flex items-center bg-white/5 hover:bg-white/10 rounded-lg px-1.5 py-0.5 border border-white/10 text-[10px] font-mono text-slate-300 focus-within:border-fuchsia-400 focus-within:text-white transition-colors" 
+                                      title="Görevin süresini doğrudan düzenleyin (dk)"
+                                    >
+                                      <Clock className="w-3 h-3 text-fuchsia-400 mr-1 shrink-0" />
+                                      <input
+                                        type="number"
+                                        min={5}
+                                        max={300}
+                                        step={5}
+                                        value={pItem.plannedMinutes}
+                                        onChange={(e) => handleUpdatePoolItemMinutes(pItem.id, Number(e.target.value))}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-7 bg-transparent text-center font-bold text-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      />
+                                      <span className="text-slate-400 text-[9px]">dk</span>
+                                    </div>
                                     <GripVertical className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-300" />
                                   </div>
                                 </div>
@@ -1131,6 +1171,8 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
                                       if (!e.target.value) return;
                                       if (e.target.value === 'ALL_WEEKDAYS') {
                                         handleAssignPoolItemToAllWeekdays(pItem);
+                                      } else if (e.target.value === 'ALL_WEEKENDS') {
+                                        handleAssignPoolItemToAllWeekends(pItem);
                                       } else if (e.target.value === 'ALL_DAYS') {
                                         handleAssignPoolItemToAllDays(pItem);
                                       } else {
@@ -1146,7 +1188,8 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
                                       {WEEKENDS.map(d => <option key={d} value={d}>📅 {d} Gününe Ekle</option>)}
                                     </optgroup>
                                     <optgroup label="Toplu Gün Atama">
-                                      <option value="ALL_WEEKDAYS">🚀 Hafta İçi Tüm Günler (5 Gün)</option>
+                                      <option value="ALL_WEEKDAYS">🚀 Hafta İçi Tüm Günler (Pzt-Cum / 5 Gün)</option>
+                                      <option value="ALL_WEEKENDS">🏖️ Hafta Sonu Tüm Günler (Cts-Paz / 2 Gün)</option>
                                       <option value="ALL_DAYS">🌟 Tüm Hafta (7 Gün)</option>
                                     </optgroup>
                                   </select>
