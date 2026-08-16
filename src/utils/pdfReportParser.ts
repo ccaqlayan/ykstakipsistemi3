@@ -4,9 +4,14 @@ import { UserAccount, YKSDataState, ParsedStudentRow, InstitutionalSubjectDetail
 // Configure worker for pdfjs in Vite / Browser environment
 if (typeof window !== 'undefined') {
   try {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version || '4.10.38'}/build/pdf.worker.min.mjs`;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/build/pdf.worker.mjs',
+      import.meta.url
+    ).toString();
   } catch (e) {
-    console.warn('PDF.js worker setup fallback:', e);
+    try {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs`;
+    } catch {}
   }
 }
 
