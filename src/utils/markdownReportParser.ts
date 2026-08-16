@@ -543,25 +543,33 @@ export function parseMarkdownExamReport(
       }
     }
 
-    // Extract individual topic lines (both single-line and two-line formats)
+    // Extract individual topic lines (only inside DERSLERE GÖRE ANALİZ)
+    let inTopicSection = false;
     let currentTopicSubject = detectedExamType === 'AYT' ? 'Matematik-2' : 'Türkçe';
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      if (/^TYT\s*Türkçe$|^Türkçe$/i.test(line) || (/Türkçe/i.test(line) && /ANALİZ|S D Y B%|TYT/i.test(line))) {
+      if (/DERSLERE\s*GÖRE\s*ANALİZ/i.test(line)) {
+        inTopicSection = true;
+        continue;
+      }
+
+      if (!inTopicSection) continue;
+
+      if (/^TYT\s*Türkçe$|^Türkçe$/i.test(line) || (/Türkçe/i.test(line) && /S D Y B%|TYT/i.test(line))) {
         currentTopicSubject = 'Türkçe';
       } else if (/^Tarih-1$|^Tarih$/i.test(line) || (/Tarih/i.test(line) && /S D Y B%/i.test(line))) {
         currentTopicSubject = 'Tarih-1';
       } else if (/^Coğrafya-1$|^Coğrafya$/i.test(line) || (/Coğrafya/i.test(line) && /S D Y B%/i.test(line))) {
         currentTopicSubject = 'Coğrafya-1';
-      } else if (/^Felsefe\s*\(Seçmeli\)$/i.test(line) || (/Felsefe\s*\(Seçmeli\)/i.test(line) && /S D Y B%/i.test(line))) {
+      } else if (/^Felsefe\s*\(Seçmeli\)/i.test(line) || (/Felsefe\s*\(Seçmeli\)/i.test(line) && /S D Y B%/i.test(line))) {
         currentTopicSubject = 'Felsefe (Seçmeli)';
       } else if (/^Felsefe$/i.test(line) || (/Felsefe/i.test(line) && /S D Y B%/i.test(line))) {
         currentTopicSubject = 'Felsefe';
       } else if (/^Din\s*Kül/i.test(line) || (/Din\s*Kül/i.test(line) && /S D Y B%/i.test(line))) {
         currentTopicSubject = 'Din Kül. ve Ahl. Bil.';
-      } else if (/^Matematik-2$|^Matematik$/i.test(line) && detectedExamType === 'AYT') {
+      } else if ((/^Matematik-2$|^Matematik$/i.test(line) || /Matematik-2/i.test(line)) && detectedExamType === 'AYT') {
         currentTopicSubject = 'Matematik-2';
       } else if (/^Matematik-1$|^Matematik$/i.test(line)) {
         currentTopicSubject = 'Matematik-1';
@@ -585,33 +593,13 @@ export function parseMarkdownExamReport(
       const tmSingle = line.match(/^([A-ZÇĞİÖŞÜa-zçğıöşü0-9\s.,'’()–\/-]+?)(?:\s+|(?<=[^\d\s]))(\d+)\s+(\d+)\s+(\d+)\s+(\d+)$/);
       if (tmSingle) {
         const topicName = tmSingle[1].trim();
-        if (!/Soru|Doğru|Yanlış|Başarı|Ortalama|Cevap|Puan|Katılımlar|S D Y B%/i.test(topicName)) {
+        if (!/\b(Soru|Doğru|Yanlış|Başarı|Ortalama|Cevap|Puan|Katılımlar|SÖZ|SAY|EA|TYT|AYT|Dereceler|Sonuç|Belgesi|Öğrenci|Numara|Sınıf)\b|S\s*D\s*Y\s*B%/i.test(topicName)) {
           const qCount = parseInt(tmSingle[2], 10) || 0;
           const corr = parseInt(tmSingle[3], 10) || 0;
           const wrg = parseInt(tmSingle[4], 10) || 0;
           const sRate = parseInt(tmSingle[5], 10) || 0;
 
-          const subj = getSubject(currentTopicSubject);
-          subj.topics.push({
-            topicName,
-            questionCount: qCount,
-            correct: corr,
-            wrong: wrg,
-            empty: Math.max(0, qCount - (corr + wrg)),
-            successRate: sRate
-          });
-        }
-      } else if (lines[i + 1] && /^\d+\s+\d+\s+\d+\s+\d+$/.test(lines[i + 1])) {
-        // 2. Two lines: Line i is Topic Name, Line i+1 is numbers "1 1 0 100"
-        const topicName = line.trim();
-        if (topicName.length >= 3 && !/Soru|Doğru|Yanlış|Başarı|Ortalama|Cevap|Puan|Katılımlar|S D Y B%|##|TYT|AYT|Numara|Sınıf|Genel|Dereceler|Ortalama|Ders|Net|Katılımlar/i.test(topicName)) {
-          const numParts = lines[i + 1].trim().split(/\s+/);
-          if (numParts.length === 4) {
-            const qCount = parseInt(numParts[0], 10) || 0;
-            const corr = parseInt(numParts[1], 10) || 0;
-            const wrg = parseInt(numParts[2], 10) || 0;
-            const sRate = parseInt(numParts[3], 10) || 0;
-
+          if (qCount <= 50 && corr <= qCount && wrg <= qCount && sRate <= 100) {
             const subj = getSubject(currentTopicSubject);
             subj.topics.push({
               topicName,
@@ -621,7 +609,31 @@ export function parseMarkdownExamReport(
               empty: Math.max(0, qCount - (corr + wrg)),
               successRate: sRate
             });
-            i++; // skip numbers line
+          }
+        }
+      } else if (lines[i + 1] && /^\d+\s+\d+\s+\d+\s+\d+$/.test(lines[i + 1])) {
+        // 2. Two lines: Line i is Topic Name, Line i+1 is numbers "1 1 0 100"
+        const topicName = line.trim();
+        if (topicName.length >= 3 && !/\b(Soru|Doğru|Yanlış|Başarı|Ortalama|Cevap|Puan|Katılımlar|SÖZ|SAY|EA|TYT|AYT|Dereceler|Sonuç|Belgesi|Öğrenci|Numara|Sınıf)\b|S\s*D\s*Y\s*B%|##|Ders|Net/i.test(topicName)) {
+          const numParts = lines[i + 1].trim().split(/\s+/);
+          if (numParts.length === 4) {
+            const qCount = parseInt(numParts[0], 10) || 0;
+            const corr = parseInt(numParts[1], 10) || 0;
+            const wrg = parseInt(numParts[2], 10) || 0;
+            const sRate = parseInt(numParts[3], 10) || 0;
+
+            if (qCount <= 50 && corr <= qCount && wrg <= qCount && sRate <= 100) {
+              const subj = getSubject(currentTopicSubject);
+              subj.topics.push({
+                topicName,
+                questionCount: qCount,
+                correct: corr,
+                wrong: wrg,
+                empty: Math.max(0, qCount - (corr + wrg)),
+                successRate: sRate
+              });
+              i++; // skip numbers line
+            }
           }
         }
       }
