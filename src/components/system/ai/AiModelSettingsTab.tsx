@@ -104,7 +104,16 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
+      
+      const contentType = res.headers.get('content-type') || '';
+      let data: any = {};
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const rawText = await res.text();
+        throw new Error(rawText ? rawText.substring(0, 150) : `Sunucu hatası (${res.status})`);
+      }
+
       if (data.success) {
         setSaveMessages(prev => ({
           ...prev,
@@ -145,7 +154,16 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider, apiKey: customKey?.trim() || undefined })
       });
-      const data = await res.json();
+      
+      const contentType = res.headers.get('content-type') || '';
+      let data: any = {};
+      if (contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const rawText = await res.text();
+        throw new Error(rawText ? rawText.substring(0, 150) : `Sunucu hatası (${res.status})`);
+      }
+
       setTestResults(prev => ({
         ...prev,
         [provider]: {
