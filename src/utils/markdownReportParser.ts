@@ -236,91 +236,98 @@ export function parseMarkdownExamReport(
 
     // Scores & Rankings
     let tytScore = 0;
-    let sayScore = 0;
-    let eaScore = 0;
-    let sozScore = 0;
-
+    let tytGeneralAvg = 0;
     let tytClassRank = 0;
     let tytInstitutionRank = 0;
+    let tytDistrictRank = 0;
+    let tytCityRank = 0;
     let tytGeneralRank = 0;
 
+    let sayScore = 0;
+    let sayGeneralAvg = 0;
     let sayClassRank = 0;
     let sayInstitutionRank = 0;
+    let sayDistrictRank = 0;
+    let sayCityRank = 0;
     let sayGeneralRank = 0;
 
+    let eaScore = 0;
+    let eaGeneralAvg = 0;
     let eaClassRank = 0;
     let eaInstitutionRank = 0;
+    let eaDistrictRank = 0;
+    let eaCityRank = 0;
     let eaGeneralRank = 0;
 
+    let sozScore = 0;
+    let sozGeneralAvg = 0;
     let sozClassRank = 0;
     let sozInstitutionRank = 0;
+    let sozDistrictRank = 0;
+    let sozCityRank = 0;
     let sozGeneralRank = 0;
 
     let classParticipantCount = 0;
     let institutionParticipantCount = 0;
+    let districtParticipantCount = 0;
+    let cityParticipantCount = 0;
     let generalParticipantCount = 0;
 
-    // Search for Table format ranking line:
+    // Search for Table format ranking line for TYT:
     // TYT 336,138 285,020 11 44 50 387 17032 Katılımlar: 18 102 381 1709 57432
-    const tytTableMatch = chunk.match(/TYT\s+([\d,.]+)\s+([\d,.]+)\s+(\d+)\s+(\d+)\s+(?:\d+)?\s*(?:\d+)?\s*(\d+)\s+Katılımlar:\s*(\d+)\s+(\d+)\s+(?:\d+)?\s*(?:\d+)?\s*(\d+)/i);
+    const tytTableMatch = chunk.match(/TYT\s+([\d,.]+)\s+([\d,.]+)\s+(\d+)\s+(\d+)\s+(?:(\d+)\s+)?(?:(\d+)\s+)?(\d+)/i);
     if (tytTableMatch) {
       tytScore = cleanNum(tytTableMatch[1]);
+      tytGeneralAvg = cleanNum(tytTableMatch[2]);
       tytClassRank = parseInt(tytTableMatch[3], 10) || 0;
       tytInstitutionRank = parseInt(tytTableMatch[4], 10) || 0;
-      tytGeneralRank = parseInt(tytTableMatch[5], 10) || 0;
-      classParticipantCount = parseInt(tytTableMatch[6], 10) || 0;
-      institutionParticipantCount = parseInt(tytTableMatch[7], 10) || 0;
-      generalParticipantCount = parseInt(tytTableMatch[8], 10) || 0;
-    } else {
-      // Flow format: Dereceler ... Snf Kurum İlçe İl Genel ... 357,697 TYT 27 272 12838 1709 57432
-      const rankBlockMatch = chunk.match(/(\d{3}[,.]\d{2,3})\s*(?:\n|\s)*TYT\s*(?:\n|\s)*(\d+)\s*(?:\n|\s)*(\d+)\s*(?:\n|\s)*(\d+)\s*(?:\n|\s)*(\d+)\s*(?:\n|\s)*(\d+)/i);
-      if (rankBlockMatch) {
-        tytScore = cleanNum(rankBlockMatch[1]);
-        tytClassRank = parseInt(rankBlockMatch[2], 10) || 0;
-        tytInstitutionRank = parseInt(rankBlockMatch[3], 10) || 0;
-        tytGeneralRank = parseInt(rankBlockMatch[6] || rankBlockMatch[4], 10) || 0;
-      } else {
-        // Find highest score in chunk that is not the general average
-        const puanMatches = [...chunk.matchAll(/(?:Puan|TYT|Ortalama)[\s\S]{0,100}?(\d{3}[,.]\d{2,3})/gi)];
-        for (const pm of puanMatches) {
-          const val = cleanNum(pm[1]);
-          if (val > 100) {
-            tytScore = val;
-          }
-        }
-      }
+      if (tytTableMatch[5]) tytDistrictRank = parseInt(tytTableMatch[5], 10) || 0;
+      if (tytTableMatch[6]) tytCityRank = parseInt(tytTableMatch[6], 10) || 0;
+      tytGeneralRank = parseInt(tytTableMatch[7] || tytTableMatch[5], 10) || 0;
+    }
 
-      // Check AYT score lines if present (SAY / EA / SÖZ)
-      const sayMatch = chunk.match(/SAY\s+([\d,.]+)\s*(?:[\d,.]+)?\s*(\d+)?\s*(\d+)?\s*(\d+)?/i);
-      if (sayMatch) {
-        sayScore = cleanNum(sayMatch[1]);
-        if (sayMatch[2]) sayClassRank = parseInt(sayMatch[2], 10) || 0;
-        if (sayMatch[3]) sayInstitutionRank = parseInt(sayMatch[3], 10) || 0;
-        if (sayMatch[4]) sayGeneralRank = parseInt(sayMatch[4], 10) || 0;
-      }
+    // Check AYT score lines if present (SAY / EA / SÖZ)
+    // SÖZ 214,733 212,830 3 11 19 1395 37219
+    const sozMatch = chunk.match(/SÖZ\s+([\d,.]+)\s+([\d,.]+)\s+(\d+)\s+(\d+)\s+(?:(\d+)\s+)?(?:(\d+)\s+)?(\d+)/i);
+    if (sozMatch) {
+      sozScore = cleanNum(sozMatch[1]);
+      sozGeneralAvg = cleanNum(sozMatch[2]);
+      sozClassRank = parseInt(sozMatch[3], 10) || 0;
+      sozInstitutionRank = parseInt(sozMatch[4], 10) || 0;
+      if (sozMatch[5]) sozDistrictRank = parseInt(sozMatch[5], 10) || 0;
+      if (sozMatch[6]) sozCityRank = parseInt(sozMatch[6], 10) || 0;
+      sozGeneralRank = parseInt(sozMatch[7] || sozMatch[5], 10) || 0;
+    }
 
-      const eaMatch = chunk.match(/EA\s+([\d,.]+)\s*(?:[\d,.]+)?\s*(\d+)?\s*(\d+)?\s*(\d+)?/i);
-      if (eaMatch) {
-        eaScore = cleanNum(eaMatch[1]);
-        if (eaMatch[2]) eaClassRank = parseInt(eaMatch[2], 10) || 0;
-        if (eaMatch[3]) eaInstitutionRank = parseInt(eaMatch[3], 10) || 0;
-        if (eaMatch[4]) eaGeneralRank = parseInt(eaMatch[4], 10) || 0;
-      }
+    const sayMatch = chunk.match(/SAY\s+([\d,.]+)\s+([\d,.]+)\s+(\d+)\s+(\d+)\s+(?:(\d+)\s+)?(?:(\d+)\s+)?(\d+)/i);
+    if (sayMatch) {
+      sayScore = cleanNum(sayMatch[1]);
+      sayGeneralAvg = cleanNum(sayMatch[2]);
+      sayClassRank = parseInt(sayMatch[3], 10) || 0;
+      sayInstitutionRank = parseInt(sayMatch[4], 10) || 0;
+      if (sayMatch[5]) sayDistrictRank = parseInt(sayMatch[5], 10) || 0;
+      if (sayMatch[6]) sayCityRank = parseInt(sayMatch[6], 10) || 0;
+      sayGeneralRank = parseInt(sayMatch[7] || sayMatch[5], 10) || 0;
+    }
 
-      const sozMatch = chunk.match(/SÖZ\s+([\d,.]+)\s*(?:[\d,.]+)?\s*(\d+)?\s*(\d+)?\s*(\d+)?/i);
-      if (sozMatch) {
-        sozScore = cleanNum(sozMatch[1]);
-        if (sozMatch[2]) sozClassRank = parseInt(sozMatch[2], 10) || 0;
-        if (sozMatch[3]) sozInstitutionRank = parseInt(sozMatch[3], 10) || 0;
-        if (sozMatch[4]) sozGeneralRank = parseInt(sozMatch[4], 10) || 0;
-      }
+    const eaMatch = chunk.match(/EA\s+([\d,.]+)\s+([\d,.]+)\s+(\d+)\s+(\d+)\s+(?:(\d+)\s+)?(?:(\d+)\s+)?(\d+)/i);
+    if (eaMatch) {
+      eaScore = cleanNum(eaMatch[1]);
+      eaGeneralAvg = cleanNum(eaMatch[2]);
+      eaClassRank = parseInt(eaMatch[3], 10) || 0;
+      eaInstitutionRank = parseInt(eaMatch[4], 10) || 0;
+      if (eaMatch[5]) eaDistrictRank = parseInt(eaMatch[5], 10) || 0;
+      if (eaMatch[6]) eaCityRank = parseInt(eaMatch[6], 10) || 0;
+      eaGeneralRank = parseInt(eaMatch[7] || eaMatch[5], 10) || 0;
+    }
 
-      const katMatch = chunk.match(/Katılımlar:\s*(\d+)\s+(\d+)\s+(\d+)(?:\s+(\d+)\s+(\d+))?/i);
-      if (katMatch) {
-        classParticipantCount = parseInt(katMatch[1], 10) || 0;
-        institutionParticipantCount = parseInt(katMatch[2], 10) || 0;
-        generalParticipantCount = parseInt(katMatch[5] || katMatch[3], 10) || 0;
-      }
+    const katMatch = chunk.match(/Katılımlar:\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/i) || chunk.match(/Katılımlar:\s*(\d+)\s+(\d+)\s+(\d+)/i);
+    if (katMatch) {
+      classParticipantCount = parseInt(katMatch[1], 10) || 0;
+      institutionParticipantCount = parseInt(katMatch[2], 10) || 0;
+      districtParticipantCount = parseInt(katMatch[3], 10) || 0;
+      cityParticipantCount = parseInt(katMatch[4], 10) || 0;
+      generalParticipantCount = parseInt(katMatch[5] || katMatch[3], 10) || 0;
     }
 
     // Subjects and Topic Breakdown
@@ -328,10 +335,12 @@ export function parseMarkdownExamReport(
 
     const getSubject = (name: string, defaultQ = 0): InstitutionalSubjectDetail => {
       let key = name.trim();
-      if (key === 'TYT Türkçe') key = 'Türkçe';
-      if (key === 'Sosyal' || key === 'Sosyal Bilimler') key = 'TYT Sosyal';
-      if (key === 'Matematik') key = 'TYT Matematik';
-      if (key === 'Fen' || key === 'Fen Bilimleri') key = 'TYT Fen';
+      if (detectedExamType === 'TYT') {
+        if (key === 'TYT Türkçe') key = 'Türkçe';
+        if (key === 'Sosyal' || key === 'Sosyal Bilimler') key = 'TYT Sosyal';
+        if (key === 'Matematik') key = 'TYT Matematik';
+        if (key === 'Fen' || key === 'Fen Bilimleri') key = 'TYT Fen';
+      }
 
       if (!subjectsMap.has(key)) {
         subjectsMap.set(key, {
@@ -745,35 +754,49 @@ export function parseMarkdownExamReport(
       matchReason: matchResult.matchReason,
       isSelected: matchResult.matchedStudentId !== null,
       tytScore,
+      tytGeneralAvg,
       tytClassRank,
       tytClassTotal: classParticipantCount,
       tytInstitutionRank,
       tytInstitutionTotal: institutionParticipantCount,
+      tytDistrictRank,
+      tytCityRank,
       tytGeneralRank,
       tytGeneralTotal: generalParticipantCount,
       sayScore,
+      sayGeneralAvg,
       sayClassRank,
       sayClassTotal: classParticipantCount,
       sayInstitutionRank,
       sayInstitutionTotal: institutionParticipantCount,
+      sayDistrictRank,
+      sayCityRank,
       sayGeneralRank,
       sayGeneralTotal: generalParticipantCount,
       eaScore,
+      eaGeneralAvg,
       eaClassRank,
       eaClassTotal: classParticipantCount,
       eaInstitutionRank,
       eaInstitutionTotal: institutionParticipantCount,
+      eaDistrictRank,
+      eaCityRank,
       eaGeneralRank,
       eaGeneralTotal: generalParticipantCount,
       sozScore,
+      sozGeneralAvg,
       sozClassRank,
       sozClassTotal: classParticipantCount,
       sozInstitutionRank,
       sozInstitutionTotal: institutionParticipantCount,
+      sozDistrictRank,
+      sozCityRank,
       sozGeneralRank,
       sozGeneralTotal: generalParticipantCount,
       classParticipantCount,
       institutionParticipantCount,
+      districtParticipantCount,
+      cityParticipantCount,
       generalParticipantCount,
       totalNet,
       opticalAnswers: opticalAnswersMap,

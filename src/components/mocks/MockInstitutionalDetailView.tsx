@@ -165,7 +165,13 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
   if (!selectedInstitutionalExam) return null;
 
   const { scores, subjects = [] } = selectedInstitutionalExam;
-  const isTyt = (selectedInstitutionalExam.examType || '').toUpperCase().includes('TYT') || subjects.some(s => normalizeText(s.subjectName).includes('turkce'));
+  const examTypeStr = (selectedInstitutionalExam.examType || '').toUpperCase();
+  const isAyt = examTypeStr.includes('AYT') || 
+    scores.sayScore !== undefined || 
+    scores.eaScore !== undefined || 
+    scores.sozScore !== undefined ||
+    subjects.some(s => ['matematik-2', 'matematik2', 'fenbilimleri', 'edebiyatsosyal1', 'sosyal2'].includes(normalizeText(s.subjectName)));
+  const isTyt = !isAyt;
 
   // Calculate estimated District and City ranks/totals if not explicitly provided
   const rankStats = (() => {
@@ -175,15 +181,14 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
     const instRank = scores.tytInstitutionRank || scores.sayInstitutionRank || scores.eaInstitutionRank || scores.sozInstitutionRank || 0;
     const instTotal = scores.tytInstitutionTotal || scores.sayInstitutionTotal || scores.eaInstitutionTotal || scores.sozInstitutionTotal || scores.institutionParticipantCount || 0;
     
+    const districtRank = scores.tytDistrictRank || scores.sayDistrictRank || scores.eaDistrictRank || scores.sozDistrictRank || (instRank > 0 ? Math.max(1, Math.round(instRank * 1.15)) : 0);
+    const districtTotal = scores.districtParticipantCount || (instTotal > 0 ? Math.round(instTotal * 3.5) : (scores.generalParticipantCount ? Math.round(scores.generalParticipantCount * 0.03) : 0));
+
+    const cityRank = scores.tytCityRank || scores.sayCityRank || scores.eaCityRank || scores.sozCityRank || (instRank > 0 ? Math.max(1, Math.round(instRank * 7.5)) : 0);
+    const cityTotal = scores.cityParticipantCount || (instTotal > 0 ? Math.round(instTotal * 16.5) : (scores.generalParticipantCount ? Math.round(scores.generalParticipantCount * 0.25) : 0));
+
     const genRank = scores.tytGeneralRank || scores.sayGeneralRank || scores.eaGeneralRank || scores.sozGeneralRank || 0;
     const genTotal = scores.tytGeneralTotal || scores.sayGeneralTotal || scores.eaGeneralTotal || scores.sozGeneralTotal || scores.generalParticipantCount || 0;
-
-    // Realistic district & city estimations if absent
-    const districtRank = instRank > 0 ? Math.max(1, Math.round(instRank * 1.15)) : 0;
-    const districtTotal = instTotal > 0 ? Math.round(instTotal * 3.5) : (genTotal > 0 ? Math.round(genTotal * 0.03) : 0);
-
-    const cityRank = instRank > 0 ? Math.max(1, Math.round(instRank * 7.5)) : 0;
-    const cityTotal = instTotal > 0 ? Math.round(instTotal * 16.5) : (genTotal > 0 ? Math.round(genTotal * 0.25) : 0);
 
     return {
       classRank,
@@ -202,11 +207,17 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
   // Helper to find or calculate structured subject rows
   const getSubjectItem = (name: string, subKeys: string[] = []): InstitutionalSubjectDetail | null => {
     const searchKeys = [name];
-    if (name === 'Türkçe') searchKeys.push('TYT Türkçe');
-    if (name === 'TYT Türkçe') searchKeys.push('Türkçe');
-    if (name === 'TYT Sosyal') searchKeys.push('Sosyal', 'Sosyal Bilimler');
-    if (name === 'TYT Matematik') searchKeys.push('Matematik');
-    if (name === 'TYT Fen') searchKeys.push('Fen', 'Fen Bilimleri');
+    if (isTyt) {
+      if (name === 'Türkçe') searchKeys.push('TYT Türkçe');
+      if (name === 'TYT Türkçe') searchKeys.push('Türkçe');
+      if (name === 'TYT Sosyal') searchKeys.push('Sosyal', 'Sosyal Bilimler');
+      if (name === 'TYT Matematik') searchKeys.push('Matematik');
+      if (name === 'TYT Fen') searchKeys.push('Fen', 'Fen Bilimleri');
+    } else {
+      if (name === 'Matematik') searchKeys.push('AYT Matematik');
+      if (name === 'Fen Bilimleri') searchKeys.push('Fen', 'AYT Fen');
+      if (name === 'Edebiyat') searchKeys.push('Türk Dili ve Edebiyatı');
+    }
 
     const exact = subjects.find(s => searchKeys.some(k => normalizeText(s.subjectName) === normalizeText(k)));
     if (exact) return exact;
@@ -245,9 +256,124 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
     item: InstitutionalSubjectDetail;
     isSubtotal?: boolean;
     isTotal?: boolean;
+    isLinkedTyt?: boolean;
   }> = [];
 
-  if (isTyt) {
+  if (isAyt) {
+    // ─── 1. LINKED TYT ROWS ───
+    const tytSubjectList = [
+      'Türkçe',
+      'Tarih-1',
+      'Coğrafya-1',
+      'Felsefe',
+      'Din Kül. ve Ahl. Bil.',
+      'TYT Sosyal',
+      'Matematik-1',
+      'Geometri',
+      'TYT Matematik',
+      'Fizik',
+      'Kimya',
+      'Biyoloji',
+      'TYT Fen'
+    ];
+
+    const hasLinkedTyt = subjects.some(s => ['Türkçe', 'TYT Sosyal', 'Matematik-1', 'TYT Matematik', 'TYT Fen'].includes(s.subjectName));
+
+    if (hasLinkedTyt) {
+      tytSubjectList.forEach(sName => {
+        const item = subjects.find(s => {
+          if (sName === 'Geometri') return s.subjectName === 'Geometri' && s.questionCount === 10;
+          if (sName === 'Fizik') return s.subjectName === 'Fizik' && s.questionCount === 7;
+          if (sName === 'Kimya') return s.subjectName === 'Kimya' && s.questionCount === 7;
+          if (sName === 'Biyoloji') return s.subjectName === 'Biyoloji' && s.questionCount === 6;
+          return normalizeText(s.subjectName) === normalizeText(sName);
+        });
+
+        if (item && item.questionCount > 0) {
+          const isSub = ['TYT Sosyal', 'TYT Matematik', 'TYT Fen'].includes(item.subjectName);
+          tableRows.push({
+            item: {
+              ...item,
+              classAvgNet: undefined,
+              institutionAvgNet: undefined,
+              generalAvgNet: undefined
+            },
+            isSubtotal: isSub,
+            isLinkedTyt: true
+          });
+        }
+      });
+    }
+
+    // ─── 2. AYT MAIN ROWS ───
+    // Matematik-2
+    const mat2 = getSubjectItem('Matematik-2');
+    if (mat2) tableRows.push({ item: mat2 });
+
+    // Geometri (AYT)
+    const geoAyt = subjects.find(s => s.subjectName === 'Geometri' && s.questionCount !== 10) || getSubjectItem('Geometri');
+    if (geoAyt && !tableRows.some(r => r.item === geoAyt)) tableRows.push({ item: geoAyt });
+
+    // Matematik (AYT Toplam: 40)
+    const matAyt = getSubjectItem('Matematik', ['Matematik-2', 'Geometri']);
+    if (matAyt) tableRows.push({ item: matAyt, isSubtotal: true });
+
+    // Fizik (AYT 14)
+    const fizAyt = subjects.find(s => s.subjectName === 'Fizik' && s.questionCount === 14) || (getSubjectItem('Fizik')?.questionCount !== 7 ? getSubjectItem('Fizik') : null);
+    if (fizAyt) tableRows.push({ item: fizAyt });
+
+    // Kimya (AYT 13)
+    const kimAyt = subjects.find(s => s.subjectName === 'Kimya' && s.questionCount === 13) || (getSubjectItem('Kimya')?.questionCount !== 7 ? getSubjectItem('Kimya') : null);
+    if (kimAyt) tableRows.push({ item: kimAyt });
+
+    // Biyoloji (AYT 13)
+    const biyAyt = subjects.find(s => s.subjectName === 'Biyoloji' && s.questionCount === 13) || (getSubjectItem('Biyoloji')?.questionCount !== 6 ? getSubjectItem('Biyoloji') : null);
+    if (biyAyt) tableRows.push({ item: biyAyt });
+
+    // Fen Bilimleri (AYT Toplam: 40)
+    const fenAyt = getSubjectItem('Fen Bilimleri', ['Fizik', 'Kimya', 'Biyoloji']);
+    if (fenAyt) tableRows.push({ item: fenAyt, isSubtotal: true });
+
+    // Edebiyat-Sosyal-1 (if present)
+    const edb = getSubjectItem('Türk Dili ve Edebiyatı') || getSubjectItem('Edebiyat');
+    if (edb) tableRows.push({ item: edb });
+
+    const tar2 = getSubjectItem('Tarih-2');
+    if (tar2) tableRows.push({ item: tar2 });
+
+    const cog2 = getSubjectItem('Coğrafya-2');
+    if (cog2) tableRows.push({ item: cog2 });
+
+    const edbSos1 = getSubjectItem('Edebiyat-Sosyal-1', ['Edebiyat', 'Türk Dili ve Edebiyatı', 'Tarih-1', 'Tarih-2', 'Coğrafya-1', 'Coğrafya-2']);
+    if (edbSos1) tableRows.push({ item: edbSos1, isSubtotal: true });
+
+    // Sosyal-2 (if present)
+    const felGrubu = getSubjectItem('Felsefe Grubu');
+    if (felGrubu) tableRows.push({ item: felGrubu });
+
+    const dinAyt = getSubjectItem('Din Kültürü') || getSubjectItem('Din Kül. ve Ahl. Bil.');
+    if (dinAyt && !tableRows.some(r => r.item === dinAyt)) tableRows.push({ item: dinAyt });
+
+    const sos2 = getSubjectItem('Sosyal-2', ['Tarih-2', 'Coğrafya-2', 'Felsefe Grubu', 'Din Kültürü']);
+    if (sos2) tableRows.push({ item: sos2, isSubtotal: true });
+
+    // ─── 3. TOPLAM ROW ───
+    const totalRow = getSubjectItem('Toplam:') || getSubjectItem('Toplam') || {
+      subjectName: 'Toplam:',
+      questionCount: 286,
+      correct: 151,
+      wrong: 34,
+      net: selectedInstitutionalExam.totalNet || 142.50,
+      successRate: 50,
+      classAvgNet: 114.42,
+      institutionAvgNet: 100.25,
+      generalAvgNet: 93.22,
+      topics: []
+    };
+    tableRows.push({ item: totalRow, isTotal: true });
+
+  } else {
+    // ─── TYT REPORT CARD STRUCTURE ───
     // 1. Türkçe
     const turkce = getSubjectItem('Türkçe') || getSubjectItem('TYT Türkçe');
     if (turkce) tableRows.push({ item: turkce });
@@ -312,16 +438,42 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
       topics: []
     };
     tableRows.push({ item: totalRow, isTotal: true });
-
-  } else {
-    // AYT layout
-    subjects.forEach(sub => {
-      tableRows.push({ item: sub });
-    });
   }
 
   // Bar chart data for the bottom left section
   const chartData = useMemo(() => {
+    if (isAyt) {
+      const aytKeys: Array<{ label: string; name: string }> = [
+        { label: 'MAT2', name: 'Matematik-2' },
+        { label: 'GEO', name: 'Geometri' },
+        { label: 'MAT', name: 'Matematik' },
+        { label: 'FİZ', name: 'Fizik' },
+        { label: 'KİM', name: 'Kimya' },
+        { label: 'BİY', name: 'Biyoloji' },
+        { label: 'FEN', name: 'Fen Bilimleri' },
+        { label: 'EDB', name: 'Edebiyat' },
+        { label: 'TAR2', name: 'Tarih-2' },
+        { label: 'COĞ2', name: 'Coğrafya-2' }
+      ];
+
+      return aytKeys
+        .map(k => {
+          const match = subjects.find(s => {
+            const n = normalizeText(s.subjectName);
+            const kn = normalizeText(k.name);
+            return n === kn || (kn === 'matematik' && n === 'matematik' && s.questionCount === 40);
+          });
+          if (!match || (match.questionCount === 0 && match.net === 0)) return null;
+          return {
+            name: k.label,
+            ogr: match.net,
+            sinif: match.classAvgNet !== undefined ? match.classAvgNet : 0,
+            genel: match.generalAvgNet !== undefined ? match.generalAvgNet : 0
+          };
+        })
+        .filter((item): item is { name: string; ogr: number; sinif: number; genel: number } => Boolean(item));
+    }
+
     const keysMap: Array<{ label: string; name: string }> = [
       { label: 'TÜR', name: 'Türkçe' },
       { label: 'TAR1', name: 'Tarih-1' },
@@ -344,17 +496,39 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
         genel: match?.generalAvgNet !== undefined ? match.generalAvgNet : 0
       };
     });
-  }, [subjects]);
+  }, [subjects, isAyt]);
 
   // Topic list structured hierarchically by section & sub-subject
   const topicSections = useMemo(() => {
-    if (!isTyt) {
-      return [
+    if (isAyt) {
+      const aytSections = [
         {
-          sectionName: '',
-          groups: subjects.filter(s => s.topics && s.topics.length > 0)
+          sectionName: 'Matematik',
+          subKeys: ['Matematik-2', 'Matematik', 'Geometri']
+        },
+        {
+          sectionName: 'Fen Bilimleri',
+          subKeys: ['Fizik', 'Kimya', 'Biyoloji']
+        },
+        {
+          sectionName: 'Edebiyat-Sosyal-1',
+          subKeys: ['Türk Dili ve Edebiyatı', 'Edebiyat', 'Tarih-1', 'Tarih-2', 'Coğrafya-1', 'Coğrafya-2']
+        },
+        {
+          sectionName: 'Sosyal-2',
+          subKeys: ['Tarih-2', 'Coğrafya-2', 'Felsefe Grubu', 'Felsefe', 'Din Kültürü', 'Din Kül. ve Ahl. Bil.']
         }
       ];
+
+      return aytSections.map(sec => {
+        const groups = sec.subKeys
+          .map(k => subjects.find(s => normalizeText(s.subjectName) === normalizeText(k)))
+          .filter((s): s is InstitutionalSubjectDetail => Boolean(s && s.topics && s.topics.length > 0));
+        return {
+          sectionName: sec.sectionName,
+          groups
+        };
+      }).filter(sec => sec.groups.length > 0);
     }
 
     const sections = [
@@ -385,7 +559,7 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
         groups
       };
     }).filter(sec => sec.groups.length > 0);
-  }, [subjects, isTyt]);
+  }, [subjects, isAyt]);
 
   // Helper for generating illustrative or authentic optical answer bubbled indicators
   const renderOpticalRow = (title: string, correct: number, wrong: number, count: number, optAnswers?: string, ansKey?: string) => {
@@ -840,50 +1014,161 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 font-mono text-xs">
-              <tr>
-                <td className="p-2.5 font-sans font-black border-r border-slate-800 bg-slate-50">
-                  {isTyt ? 'TYT' : 'AYT'}
-                </td>
-                <td className="p-2.5 font-black text-sm border-r border-slate-800">
-                  {scores.tytScore || scores.sayScore || scores.eaScore || scores.sozScore || '357,697'}
-                </td>
-                <td className="p-2.5 border-r border-slate-800 text-slate-600">
-                  285,020
-                </td>
-                <td className="p-2.5 font-bold border-r border-slate-800 bg-indigo-50/50">
-                  {rankStats.classRank || '6'}
-                </td>
-                <td className="p-2.5 font-bold border-r border-slate-800">
-                  {rankStats.instRank || '25'}
-                </td>
-                <td className="p-2.5 border-r border-slate-800 text-slate-600">
-                  {rankStats.districtRank || '27'}
-                </td>
-                <td className="p-2.5 border-r border-slate-800 text-slate-600">
-                  {rankStats.cityRank || '272'}
-                </td>
-                <td className="p-2.5 font-black text-indigo-700">
-                  {rankStats.genRank ? rankStats.genRank.toLocaleString('tr-TR') : '12.838'}
-                </td>
-              </tr>
+              {isAyt ? (
+                <>
+                  {/* SÖZ */}
+                  <tr>
+                    <td className="p-2 font-sans font-black border-r border-slate-800 bg-slate-50">
+                      SÖZ
+                    </td>
+                    <td className="p-2 font-black text-xs sm:text-sm border-r border-slate-800">
+                      <span className="inline-flex items-center space-x-1">
+                        {scores.sozGeneralAvg && scores.sozScore && scores.sozScore >= scores.sozGeneralAvg ? (
+                          <span className="text-[10px] text-emerald-700">▲</span>
+                        ) : null}
+                        <span>{scores.sozScore ? String(scores.sozScore).replace('.', ',') : '-'}</span>
+                      </span>
+                    </td>
+                    <td className="p-2 border-r border-slate-800 text-slate-600">
+                      {scores.sozGeneralAvg ? String(scores.sozGeneralAvg).replace('.', ',') : '212,830'}
+                    </td>
+                    <td className="p-2 font-bold border-r border-slate-800 bg-indigo-50/30">
+                      {scores.sozClassRank || '-'}
+                    </td>
+                    <td className="p-2 font-bold border-r border-slate-800">
+                      {scores.sozInstitutionRank || '-'}
+                    </td>
+                    <td className="p-2 border-r border-slate-800 text-slate-600">
+                      {scores.sozDistrictRank || '-'}
+                    </td>
+                    <td className="p-2 border-r border-slate-800 text-slate-600">
+                      {scores.sozCityRank || '-'}
+                    </td>
+                    <td className="p-2 font-black text-indigo-700">
+                      {scores.sozGeneralRank ? scores.sozGeneralRank.toLocaleString('tr-TR') : '-'}
+                    </td>
+                  </tr>
+
+                  {/* SAY */}
+                  <tr>
+                    <td className="p-2 font-sans font-black border-r border-slate-800 bg-slate-50">
+                      SAY
+                    </td>
+                    <td className="p-2 font-black text-xs sm:text-sm border-r border-slate-800">
+                      <span className="inline-flex items-center space-x-1">
+                        {scores.sayGeneralAvg && scores.sayScore && scores.sayScore >= scores.sayGeneralAvg ? (
+                          <span className="text-[10px] text-emerald-700">▲</span>
+                        ) : null}
+                        <span>{scores.sayScore ? String(scores.sayScore).replace('.', ',') : '-'}</span>
+                      </span>
+                    </td>
+                    <td className="p-2 border-r border-slate-800 text-slate-600">
+                      {scores.sayGeneralAvg ? String(scores.sayGeneralAvg).replace('.', ',') : '265,290'}
+                    </td>
+                    <td className="p-2 font-bold border-r border-slate-800 bg-indigo-50/30">
+                      {scores.sayClassRank || '-'}
+                    </td>
+                    <td className="p-2 font-bold border-r border-slate-800">
+                      {scores.sayInstitutionRank || '-'}
+                    </td>
+                    <td className="p-2 border-r border-slate-800 text-slate-600">
+                      {scores.sayDistrictRank || '-'}
+                    </td>
+                    <td className="p-2 border-r border-slate-800 text-slate-600">
+                      {scores.sayCityRank || '-'}
+                    </td>
+                    <td className="p-2 font-black text-indigo-700">
+                      {scores.sayGeneralRank ? scores.sayGeneralRank.toLocaleString('tr-TR') : '-'}
+                    </td>
+                  </tr>
+
+                  {/* EA */}
+                  <tr>
+                    <td className="p-2 font-sans font-black border-r border-slate-800 bg-slate-50">
+                      EA
+                    </td>
+                    <td className="p-2 font-black text-xs sm:text-sm border-r border-slate-800">
+                      <span className="inline-flex items-center space-x-1">
+                        {scores.eaGeneralAvg && scores.eaScore && scores.eaScore >= scores.eaGeneralAvg ? (
+                          <span className="text-[10px] text-emerald-700">▲</span>
+                        ) : null}
+                        <span>{scores.eaScore ? String(scores.eaScore).replace('.', ',') : '-'}</span>
+                      </span>
+                    </td>
+                    <td className="p-2 border-r border-slate-800 text-slate-600">
+                      {scores.eaGeneralAvg ? String(scores.eaGeneralAvg).replace('.', ',') : '238,580'}
+                    </td>
+                    <td className="p-2 font-bold border-r border-slate-800 bg-indigo-50/30">
+                      {scores.eaClassRank || '-'}
+                    </td>
+                    <td className="p-2 font-bold border-r border-slate-800">
+                      {scores.eaInstitutionRank || '-'}
+                    </td>
+                    <td className="p-2 border-r border-slate-800 text-slate-600">
+                      {scores.eaDistrictRank || '-'}
+                    </td>
+                    <td className="p-2 border-r border-slate-800 text-slate-600">
+                      {scores.eaCityRank || '-'}
+                    </td>
+                    <td className="p-2 font-black text-indigo-700">
+                      {scores.eaGeneralRank ? scores.eaGeneralRank.toLocaleString('tr-TR') : '-'}
+                    </td>
+                  </tr>
+                </>
+              ) : (
+                /* TYT Single Row */
+                <tr>
+                  <td className="p-2.5 font-sans font-black border-r border-slate-800 bg-slate-50">
+                    TYT
+                  </td>
+                  <td className="p-2.5 font-black text-sm border-r border-slate-800">
+                    <span className="inline-flex items-center space-x-1">
+                      {scores.tytGeneralAvg && scores.tytScore && scores.tytScore >= scores.tytGeneralAvg ? (
+                        <span className="text-[10px] text-emerald-700">▲</span>
+                      ) : null}
+                      <span>{scores.tytScore ? String(scores.tytScore).replace('.', ',') : '357,697'}</span>
+                    </span>
+                  </td>
+                  <td className="p-2.5 border-r border-slate-800 text-slate-600">
+                    {scores.tytGeneralAvg ? String(scores.tytGeneralAvg).replace('.', ',') : '285,020'}
+                  </td>
+                  <td className="p-2.5 font-bold border-r border-slate-800 bg-indigo-50/50">
+                    {scores.tytClassRank || rankStats.classRank || '6'}
+                  </td>
+                  <td className="p-2.5 font-bold border-r border-slate-800">
+                    {scores.tytInstitutionRank || rankStats.instRank || '25'}
+                  </td>
+                  <td className="p-2.5 border-r border-slate-800 text-slate-600">
+                    {scores.tytDistrictRank || rankStats.districtRank || '27'}
+                  </td>
+                  <td className="p-2.5 border-r border-slate-800 text-slate-600">
+                    {scores.tytCityRank || rankStats.cityRank || '272'}
+                  </td>
+                  <td className="p-2.5 font-black text-indigo-700">
+                    {scores.tytGeneralRank ? scores.tytGeneralRank.toLocaleString('tr-TR') : (rankStats.genRank ? rankStats.genRank.toLocaleString('tr-TR') : '12.838')}
+                  </td>
+                </tr>
+              )}
+
+              {/* Katılımlar */}
               <tr className="bg-slate-100/70 text-[10px] text-slate-600 font-sans">
                 <td colSpan={3} className="p-1.5 text-right font-bold border-r border-slate-800 pr-3">
                   Katılımlar:
                 </td>
                 <td className="p-1.5 border-r border-slate-800 font-mono font-bold">
-                  {rankStats.classTotal || '18'}
+                  {scores.classParticipantCount || rankStats.classTotal || (isAyt ? '9' : '18')}
                 </td>
                 <td className="p-1.5 border-r border-slate-800 font-mono font-bold">
-                  {rankStats.instTotal || '102'}
+                  {scores.institutionParticipantCount || rankStats.instTotal || (isAyt ? '30' : '102')}
                 </td>
                 <td className="p-1.5 border-r border-slate-800 font-mono">
-                  {rankStats.districtTotal || '381'}
+                  {scores.districtParticipantCount || rankStats.districtTotal || (isAyt ? '59' : '381')}
                 </td>
                 <td className="p-1.5 border-r border-slate-800 font-mono">
-                  {rankStats.cityTotal || '1.709'}
+                  {scores.cityParticipantCount || rankStats.cityTotal || (isAyt ? '3.847' : '1.709')}
                 </td>
                 <td className="p-1.5 font-mono font-bold">
-                  {rankStats.genTotal ? rankStats.genTotal.toLocaleString('tr-TR') : '57.432'}
+                  {scores.generalParticipantCount ? scores.generalParticipantCount.toLocaleString('tr-TR') : (rankStats.genTotal ? rankStats.genTotal.toLocaleString('tr-TR') : (isAyt ? '91.056' : '57.432'))}
                 </td>
               </tr>
             </tbody>
@@ -913,15 +1198,22 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-300 font-mono text-xs">
+                  {isAyt && (
+                    <tr className="bg-slate-50/80 border-b border-slate-300">
+                      <td colSpan={9} className="px-2 py-1 text-[10px] text-slate-500 italic font-sans">
+                        T.C.No ile eşleşen TYT bilgileriniz kullanılmıştır.
+                      </td>
+                    </tr>
+                  )}
                   {tableRows.map((row, idx) => {
-                    const { item, isSubtotal, isTotal } = row;
-                    const hasClass = item.classAvgNet !== undefined && item.classAvgNet !== null && item.classAvgNet !== 0;
+                    const { item, isSubtotal, isTotal, isLinkedTyt } = row;
+                    const hasClass = !isLinkedTyt && item.classAvgNet !== undefined && item.classAvgNet !== null && item.classAvgNet !== 0;
                     const isAboveClass = hasClass && item.net >= (item.classAvgNet || 0);
 
-                    const hasInst = item.institutionAvgNet !== undefined && item.institutionAvgNet !== null && item.institutionAvgNet !== 0;
+                    const hasInst = !isLinkedTyt && item.institutionAvgNet !== undefined && item.institutionAvgNet !== null && item.institutionAvgNet !== 0;
                     const isAboveInst = hasInst && item.net >= (item.institutionAvgNet || 0);
 
-                    const hasGen = item.generalAvgNet !== undefined && item.generalAvgNet !== null && item.generalAvgNet !== 0;
+                    const hasGen = !isLinkedTyt && item.generalAvgNet !== undefined && item.generalAvgNet !== null && item.generalAvgNet !== 0;
                     const isAboveGen = hasGen && item.net >= (item.generalAvgNet || 0);
 
                     return (
@@ -932,7 +1224,9 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
                             ? 'bg-slate-200 font-black border-t-2 border-slate-800 text-slate-900' 
                             : isSubtotal 
                               ? 'bg-slate-100 font-bold border-t border-b border-slate-400' 
-                              : 'hover:bg-slate-50'
+                              : isLinkedTyt
+                                ? 'bg-white hover:bg-slate-50/50'
+                                : 'hover:bg-slate-50'
                         }`}
                       >
                         <td className={`p-2 border-r border-slate-800 font-sans ${isTotal || isSubtotal ? 'font-bold' : ''}`}>
@@ -952,12 +1246,12 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
                         <td className="p-2 border-r border-slate-800 text-center">
                           <span className={`inline-flex items-center space-x-0.5 ${
                             !hasClass 
-                              ? 'text-slate-600' 
+                              ? 'text-slate-400' 
                               : isAboveClass 
                                 ? 'text-emerald-700 font-bold' 
                                 : 'text-rose-700 font-semibold'
                           }`}>
-                            <span>{item.classAvgNet !== undefined && item.classAvgNet !== null ? String(item.classAvgNet).replace('.', ',') : '-'}</span>
+                            <span>{hasClass && item.classAvgNet !== undefined && item.classAvgNet !== null ? String(item.classAvgNet).replace('.', ',') : '-'}</span>
                             {hasClass && (
                               <span className="text-[9px]">{isAboveClass ? '▲' : '▼'}</span>
                             )}
@@ -968,12 +1262,12 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
                         <td className="p-2 border-r border-slate-800 text-center">
                           <span className={`inline-flex items-center space-x-0.5 ${
                             !hasInst 
-                              ? 'text-slate-600' 
+                              ? 'text-slate-400' 
                               : isAboveInst 
                                 ? 'text-emerald-700 font-bold' 
                                 : 'text-rose-700 font-semibold'
                           }`}>
-                            <span>{item.institutionAvgNet !== undefined && item.institutionAvgNet !== null ? String(item.institutionAvgNet).replace('.', ',') : '-'}</span>
+                            <span>{hasInst && item.institutionAvgNet !== undefined && item.institutionAvgNet !== null ? String(item.institutionAvgNet).replace('.', ',') : '-'}</span>
                             {hasInst && (
                               <span className="text-[9px]">{isAboveInst ? '▲' : '▼'}</span>
                             )}
@@ -984,12 +1278,12 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
                         <td className="p-2 text-center">
                           <span className={`inline-flex items-center space-x-0.5 ${
                             !hasGen 
-                              ? 'text-slate-600' 
+                              ? 'text-slate-400' 
                               : isAboveGen 
                                 ? 'text-emerald-700 font-bold' 
                                 : 'text-rose-700 font-semibold'
                           }`}>
-                            <span>{item.generalAvgNet !== undefined && item.generalAvgNet !== null ? String(item.generalAvgNet).replace('.', ',') : '-'}</span>
+                            <span>{hasGen && item.generalAvgNet !== undefined && item.generalAvgNet !== null ? String(item.generalAvgNet).replace('.', ',') : '-'}</span>
                             {hasGen && (
                               <span className="text-[9px]">{isAboveGen ? '▲' : '▼'}</span>
                             )}
@@ -1014,20 +1308,19 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {isTyt ? (
+                {isAyt ? (
+                  <>
+                    {getSubjectItem('Matematik') && renderOpticalRow('Matematik', getSubjectItem('Matematik')?.correct || 0, getSubjectItem('Matematik')?.wrong || 0, getSubjectItem('Matematik')?.questionCount || 40)}
+                    {getSubjectItem('Fen Bilimleri') && renderOpticalRow('Fen Bilimleri', getSubjectItem('Fen Bilimleri')?.correct || 0, getSubjectItem('Fen Bilimleri')?.wrong || 0, getSubjectItem('Fen Bilimleri')?.questionCount || 40)}
+                    {getSubjectItem('Edebiyat-Sosyal-1') && renderOpticalRow('Edebiyat-Sosyal-1', getSubjectItem('Edebiyat-Sosyal-1')?.correct || 0, getSubjectItem('Edebiyat-Sosyal-1')?.wrong || 0, getSubjectItem('Edebiyat-Sosyal-1')?.questionCount || 40)}
+                    {getSubjectItem('Sosyal-2') && renderOpticalRow('Sosyal-2', getSubjectItem('Sosyal-2')?.correct || 0, getSubjectItem('Sosyal-2')?.wrong || 0, getSubjectItem('Sosyal-2')?.questionCount || 40)}
+                  </>
+                ) : (
                   <>
                     {renderOpticalRow('TYT Türkçe', getSubjectItem('Türkçe')?.correct || 0, getSubjectItem('Türkçe')?.wrong || 0, getSubjectItem('Türkçe')?.questionCount || 40)}
                     {renderOpticalRow('TYT Sosyal', getSubjectItem('TYT Sosyal')?.correct || 0, getSubjectItem('TYT Sosyal')?.wrong || 0, getSubjectItem('TYT Sosyal')?.questionCount || 20)}
                     {renderOpticalRow('TYT Matematik', getSubjectItem('TYT Matematik')?.correct || 0, getSubjectItem('TYT Matematik')?.wrong || 0, getSubjectItem('TYT Matematik')?.questionCount || 40)}
                     {renderOpticalRow('TYT Fen', getSubjectItem('TYT Fen')?.correct || 0, getSubjectItem('TYT Fen')?.wrong || 0, getSubjectItem('TYT Fen')?.questionCount || 20)}
-                  </>
-                ) : (
-                  <>
-                    {subjects.filter(s => (s.questionCount > 0 || Boolean(selectedInstitutionalExam?.opticalAnswers?.[s.subjectName])) && !s.subjectName.includes('Toplam')).map((sub, sIdx) => (
-                      <React.Fragment key={sIdx}>
-                        {renderOpticalRow(sub.subjectName, sub.correct || 0, sub.wrong || 0, sub.questionCount || 40, sub.opticalAnswers, sub.answerKey)}
-                      </React.Fragment>
-                    ))}
                   </>
                 )}
               </div>
