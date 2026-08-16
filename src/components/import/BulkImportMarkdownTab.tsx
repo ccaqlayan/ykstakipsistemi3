@@ -187,11 +187,11 @@ export const BulkImportMarkdownTab: React.FC<BulkImportMarkdownTabProps> = ({
     });
   };
 
-  // Save selected exams to system
+  // Save selected exams to system (supports saving unmatched exams as well)
   const handleSaveSelectedKarneler = () => {
-    const selectedRows = parsedRows.filter(r => r.isSelected && r.matchedStudentId);
+    const selectedRows = parsedRows.filter(r => r.isSelected);
     if (selectedRows.length === 0) {
-      alert('Lütfen kaydedilecek eşleşmiş en az bir öğrenci seçiniz.');
+      alert('Lütfen kaydedilecek en az bir öğrenci karnesi seçiniz.');
       return;
     }
 
@@ -201,7 +201,7 @@ export const BulkImportMarkdownTab: React.FC<BulkImportMarkdownTabProps> = ({
     }
 
     const createdExams: InstitutionalMockExam[] = selectedRows.map(row => {
-      const studentObj = studentUsers.find(u => u.id === row.matchedStudentId);
+      const studentObj = row.matchedStudentId ? studentUsers.find(u => u.id === row.matchedStudentId) : null;
       return {
         id: `inst-md-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
         examTitle: examTitle.trim(),
@@ -210,7 +210,7 @@ export const BulkImportMarkdownTab: React.FC<BulkImportMarkdownTabProps> = ({
         createdByName: currentUser.name,
         createdById: currentUser.id,
         createdAt: new Date().toISOString(),
-        studentId: row.matchedStudentId!,
+        studentId: row.matchedStudentId || '',
         studentName: studentObj?.name || row.fileStudentName,
         schoolNumber: row.fileSchoolNumber || studentObj?.schoolNumber,
         className: row.fileClassName || studentObj?.className,
@@ -268,17 +268,24 @@ export const BulkImportMarkdownTab: React.FC<BulkImportMarkdownTabProps> = ({
       };
     });
 
+    const matchedCount = createdExams.filter(e => Boolean(e.studentId)).length;
+    const unmatchedCount = createdExams.filter(e => !e.studentId).length;
+
     onSaveInstitutionalExams(createdExams);
 
     if (onAddAuditLog) {
       onAddAuditLog(
-        `Markdown (.md) dosyasından "${examTitle}" sınavına ait ${createdExams.length} adet öğrenci karnesi toplu olarak aktarıldı.`,
+        `Markdown (.md) dosyasından "${examTitle}" sınavına ait ${createdExams.length} adet öğrenci karnesi aktarıldı (${matchedCount} eşleşmiş, ${unmatchedCount} eşleşmemiş).`,
         'exam',
         'BULK_MD_EXAM_IMPORT'
       );
     }
 
-    alert(`${createdExams.length} adet öğrenci karnesi ve konu analizleri sisteme başarıyla kaydedildi!`);
+    alert(
+      `${createdExams.length} adet öğrenci karnesi ve konu analizi sisteme başarıyla kaydedildi!\n\n` +
+      `• ${matchedCount} adet karne kayıtlı öğrenci profilleriyle eşleştirildi.\n` +
+      (unmatchedCount > 0 ? `• ${unmatchedCount} adet karne eşleşmemiş olarak kaydedildi (Kurumsal Deneme Takip sayfasından "Hesap Yok" rozetine tıklayarak daha sonra öğrenciye atayabilirsiniz).` : '')
+    );
     setParsedRows([]);
     setSuccessMessage(null);
     if (onImportComplete) onImportComplete();
@@ -289,8 +296,10 @@ export const BulkImportMarkdownTab: React.FC<BulkImportMarkdownTabProps> = ({
     const total = parsedRows.length;
     const matched = parsedRows.filter(r => r.matchedStudentId).length;
     const unmatched = total - matched;
-    const selected = parsedRows.filter(r => r.isSelected && r.matchedStudentId).length;
-    return { total, matched, unmatched, selected };
+    const selected = parsedRows.filter(r => r.isSelected).length;
+    const selectedMatched = parsedRows.filter(r => r.isSelected && r.matchedStudentId).length;
+    const selectedUnmatched = parsedRows.filter(r => r.isSelected && !r.matchedStudentId).length;
+    return { total, matched, unmatched, selected, selectedMatched, selectedUnmatched };
   }, [parsedRows]);
 
   return (
@@ -489,6 +498,14 @@ export const BulkImportMarkdownTab: React.FC<BulkImportMarkdownTabProps> = ({
                 </button>
                 <button
                   type="button"
+                  onClick={() => setParsedRows(prev => prev.map(r => ({ ...r, isSelected: Boolean(r.matchedStudentId) })))}
+                  className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
+                  title="Yalnızca hesap eşleşmesi bulunan öğrencileri seçer"
+                >
+                  Sadece Eşleşenler
+                </button>
+                <button
+                  type="button"
                   onClick={() => handleSelectAll(false)}
                   className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
                 >
@@ -504,6 +521,11 @@ export const BulkImportMarkdownTab: React.FC<BulkImportMarkdownTabProps> = ({
               >
                 <Check className="w-4 h-4" />
                 <span>Seçili ({stats.selected}) Karneyi Kaydet</span>
+                {stats.selectedUnmatched > 0 && (
+                  <span className="text-[10px] bg-amber-500/30 text-amber-200 border border-amber-500/40 px-1.5 py-0.5 rounded-full font-bold">
+                    {stats.selectedUnmatched} Eşleşmemiş
+                  </span>
+                )}
               </button>
             </div>
           </div>
