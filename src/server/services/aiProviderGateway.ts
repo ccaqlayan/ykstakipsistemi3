@@ -217,15 +217,20 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
   // Vision models prioritized for multimodal requests, top-rated text models for text
   const candidateModels = hasImage
     ? [
+        'google/gemma-4-26b-a4b-it:free',
+        'openrouter/free',
+        'google/gemma-4-31b-it:free',
+        'dots-studio/dots-3-note-preview:free',
         'nvidia/nemotron-nano-12b-v2-vl:free',
         'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'
       ]
     : [
         'google/gemma-4-31b-it:free',
         'google/gemma-4-26b-a4b-it:free',
+        'openrouter/free',
+        'nvidia/nemotron-3.5-lightning:free',
         'nvidia/nemotron-3-ultra-550b-a55b:free',
         'nvidia/nemotron-3-super-120b-a12b:free',
-        'nvidia/nemotron-3.5-lightning:free',
         'openai/gpt-oss-20b:free',
         'z-ai/glm-5.2:free',
         'liquid/lfm-2.5-2.6b:free'
@@ -272,6 +277,7 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
           'HTTP-Referer': 'http://localhost:3000',
           'X-Title': 'YKS Takip Sistemi'
         },
+        signal: AbortSignal.timeout(25000), // 25sn model bazlı zaman aşımı (sıradaki ücretsiz modele hızlı failover)
         body: JSON.stringify(requestBody)
       });
 
@@ -410,8 +416,9 @@ export async function testProviderApiKey(
     if (provider === 'openrouter') {
       // Use specific active free models
       const testModels = [
-        'google/gemma-4-31b-it:free',
         'google/gemma-4-26b-a4b-it:free',
+        'openrouter/free',
+        'google/gemma-4-31b-it:free',
         'nvidia/nemotron-3.5-lightning:free',
         'openai/gpt-oss-20b:free'
       ];
@@ -427,6 +434,7 @@ export async function testProviderApiKey(
               'HTTP-Referer': 'http://localhost:3000',
               'X-Title': 'YKS Takip Sistemi'
             },
+            signal: AbortSignal.timeout(10000),
             body: JSON.stringify({
               model: testModel,
               messages: [{ role: 'user', content: 'Test. Respond with OK.' }],
