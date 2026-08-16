@@ -16,7 +16,8 @@ import {
   Zap,
   Eye,
   EyeOff,
-  FileText
+  FileText,
+  Crop
 } from 'lucide-react';
 import { BranchExam, TopicErrorItem, ErrorReason, GeneralMockExam, ResourceItem } from '../../types';
 import { ConfirmDeleteModal } from '../ConfirmDeleteModal';
@@ -57,6 +58,7 @@ interface BranchModalsProps {
   handleAIAnalyzeError: () => void;
   handleImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleRemoveImage: () => void;
+  handleReCrop?: () => void;
 
   branchExams: BranchExam[];
   resources: ResourceItem[];
@@ -182,6 +184,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
   handleAIAnalyzeError,
   handleImageSelect,
   handleRemoveImage,
+  handleReCrop,
   branchExams,
   resources,
   last3GeneralMocks,
@@ -641,12 +644,12 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                         </label>
 
                         {errorImageUrl ? (
-                          <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-950 p-2 flex items-center justify-between">
+                          <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-950 p-2.5 flex items-center justify-between gap-2">
                             <div className="flex items-center space-x-3 min-w-0">
                               <img src={errorImageUrl} alt="Soru Önizleme" className="w-12 h-12 object-cover rounded-lg border border-slate-800 shrink-0" />
                               <div className="min-w-0">
                                 <p className="text-xs font-bold text-emerald-400 flex items-center space-x-1">
-                                  <span>Yüklendi</span>
+                                  <span>Yüklendi / Kırpıldı</span>
                                 </p>
                                 {imageStats && (
                                   <p className="text-[10px] text-slate-400 font-mono">
@@ -655,13 +658,26 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                                 )}
                               </div>
                             </div>
-                            <button
-                              type="button"
-                              onClick={handleRemoveImage}
-                              className="p-1.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0"
-                            >
-                              Kaldır
-                            </button>
+                            <div className="flex items-center space-x-1.5 shrink-0">
+                              {handleReCrop && (
+                                <button
+                                  type="button"
+                                  onClick={handleReCrop}
+                                  className="px-2 py-1.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center space-x-1"
+                                  title="Görseli tekrar kırp ve ayarla"
+                                >
+                                  <Crop className="w-3.5 h-3.5" />
+                                  <span className="hidden sm:inline">Yeniden Kırp</span>
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={handleRemoveImage}
+                                className="px-2 py-1.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                              >
+                                Kaldır
+                              </button>
+                            </div>
                           </div>
                         ) : (
                           <div className="flex flex-col sm:flex-row items-center gap-2">

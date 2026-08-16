@@ -58,6 +58,7 @@ import { BranchAnalyticsTab } from './branch/BranchAnalyticsTab';
 import { BranchErrorsTab } from './branch/BranchErrorsTab';
 import { BranchListTab } from './branch/BranchListTab';
 import { BranchModals } from './branch/BranchModals';
+import { ImageCropperModal } from './common/ImageCropperModal';
 
 const ERROR_REASON_COLORS: Record<string, string> = {
   'bilgi_eksigi': '#ef4444',      // Red
@@ -507,6 +508,8 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   const [imageStats, setImageStats] = useState<{ originalKb: number; compressedKb: number } | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
+  const [selectedRawFile, setSelectedRawFile] = useState<File | null>(null);
+  const [showCropperModal, setShowCropperModal] = useState<boolean>(false);
 
   // Match status filter
   const [filterExamId, setFilterExamId] = useState<string | null>(null);
@@ -554,11 +557,35 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   const [supportAnalysisText, setSupportAnalysisText] = useState<string | null>(null);
   const [supportAnalysisError, setSupportAnalysisError] = useState<string | null>(null);
 
-  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    processImageFile(file);
+    setSelectedRawFile(file);
+    setShowCropperModal(true);
     e.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedFile: File, _previewDataUrl: string) => {
+    setShowCropperModal(false);
+    await processImageFile(croppedFile);
+  };
+
+  const handleUseOriginal = async (originalFile: File) => {
+    setShowCropperModal(false);
+    await processImageFile(originalFile);
+  };
+
+  const handleReCrop = () => {
+    if (selectedRawFile || errorImageUrl) {
+      setShowCropperModal(true);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setErrorImageUrl('');
+    setImageStats(null);
+    setImageError(null);
+    setSelectedRawFile(null);
   };
 
   const processImageFile = async (file: File) => {
@@ -597,6 +624,8 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     setIsCompressingImage(false);
     setImageStats(null);
     setImageError(null);
+    setSelectedRawFile(null);
+    setShowCropperModal(false);
     setShowAddErrorModal(true);
   };
 
@@ -631,6 +660,8 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     setIsCompressingImage(false);
     setImageStats(null);
     setImageError(null);
+    setSelectedRawFile(null);
+    setShowCropperModal(false);
     
     // Check if the loaded topic name is in the curriculum topics list for this subject
     const isCurriculum = (YKS_CURRICULUM_TOPICS[err.subject] || []).includes(err.topicName);
@@ -1729,16 +1760,6 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     handleAIAnalyzePriority();
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleImageFileChange(e);
-  };
-
-  const handleRemoveImage = () => {
-    setErrorImageUrl('');
-    setImageStats(null);
-    setImageError(null);
-  };
-
   const handleConfirmDelete = () => {
     if (!deletingItem) return;
     if (deletingItem.type === 'error') {
@@ -2243,8 +2264,9 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         imageError={imageError}
         handleCreateTopicError={handleCreateTopicError}
         handleAIAnalyzeError={handleAIAnalyzeError}
-        handleImageSelect={handleImageSelect}
+        handleImageSelect={handleImageFileChange}
         handleRemoveImage={handleRemoveImage}
+        handleReCrop={handleReCrop}
         branchExams={branchExams}
         resources={resources}
         last3GeneralMocks={last3GeneralMocks}
@@ -2322,6 +2344,16 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         setReturnToSupportItem={setReturnToSupportItem}
         openImagePreview={openImagePreview}
         topicErrors={topicErrors}
+      />
+
+      {/* ✂️ Soru Fotoğrafı Kırpma Modalı (Mobil ve Dokunmatik Uyumlu) */}
+      <ImageCropperModal
+        isOpen={showCropperModal}
+        imageFile={selectedRawFile}
+        imageUrl={!selectedRawFile && errorImageUrl ? errorImageUrl : undefined}
+        onClose={() => setShowCropperModal(false)}
+        onCropComplete={handleCropComplete}
+        onUseOriginal={selectedRawFile ? handleUseOriginal : undefined}
       />
 
     </div>

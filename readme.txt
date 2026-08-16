@@ -125,6 +125,7 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - src/components/AdminMessageManagement.tsx   : Yönetici toplu mesaj gönderme ve mesaj denetim paneli.
 - src/components/AuditLogsView.tsx             : Sistem İşlem Zaman Çizelgesi (Ayak İzi izleme alanı).
 - src/components/ConfirmDeleteModal.tsx        : Evrensel silme onay penceresi.
+- src/components/common/ImageCropperModal.tsx  : Mobil ve dokunmatik uyumlu, 90° döndürme destekli görsel kırpma (crop) modalı.
 - src/components/GoogleSheetsView.tsx          : Google Tabloları bağlantı ve veri senkronizasyonu.
 - src/components/LoginView.tsx                 : Kullanıcı giriş ve hesap oluşturma ekranı.
 - src/components/MaintenanceView.tsx           : Sistem bakım modu ekranı ve yönetici bypass giriş penceresi.
