@@ -30,28 +30,50 @@ export function normalizeTurkishText(str: string): string {
 
 /**
  * Strips out answer key sequences, TCPDF markers, and raw bar chart coordinates
- * to drastically save Gemini API tokens.
+ * to drastically save Gemini API tokens while preserving all exam tables & topic breakdowns.
  */
 export function cleanRawPdfPageText(pageText: string): string {
   if (!pageText) return '';
 
-  return pageText
-    // Remove TCPDF footer
-    .replace(/Powered by TCPDF[^\n]*/gi, '')
+  const lines = pageText.split('\n');
+  const filteredLines: string[] = [];
+
+  for (let line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Remove TCPDF watermark / footer
+    if (/Powered by TCPDF/i.test(trimmed)) continue;
+
     // Remove Cevap Anahtarı lines (e.g. Cevap Anahtarı A BBDCBDEEEB...)
-    .replace(/Cevap\s*Anahtarı[^\n]*/gi, '')
-    // Remove Soru No sequences (e.g. Soru No 12345678901234567890...)
-    .replace(/Soru\s*No[^\n]*/gi, '')
-    .replace(/12345678901234567890[0-9]*/g, '')
-    // Remove repetitive optik string sequences like "eeDCBA...", "dbBdeb...", "c***C***..."
-    .replace(/^[a-zA-Z\s*#]{15,}$/gm, '')
-    // Clean excessive blank lines
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+    if (/^Cevap\s*Anahtarı/i.test(trimmed)) continue;
+
+    // Remove Soru No sequences (e.g. Soru No 1234567890...)
+    if (/^Soru\s*No/i.test(trimmed)) continue;
+    if (/^12345678901234567890/i.test(trimmed)) continue;
+
+    // Remove raw student optical answer bubbling strings (e.g. "CDDeDEbE B dEA CdB ba D cCca CA EA", "CEBeEb BDBDEAaaADDbe...")
+    if (/^(Matematik|Fen Bilimleri|TYT Fen|TYT Matematik|TYT Sosyal|TYT Türkçe|Edebiyat-Sosyal-1|Sosyal-2)\s+[a-zA-Z\s*#]{12,}$/i.test(trimmed)) {
+      // It is an optical student bubbling line, strip out to save tokens
+      continue;
+    }
+
+    // Remove chart axis labels / numbers line (e.g. "100 80 60 40 20 0 MAT2 GEO FİZ KİM BİY Öğr. Sınıf Kurum İlçe İl Genel")
+    if (/^(100\s+80\s+60|0\s+20\s+40|MAT2\s+GEO|FİZ\s+KİM\s+BİY|TÜR\s+TAR1\s+COĞ1)/i.test(trimmed)) {
+      continue;
+    }
+    if (/^Öğr\.\s+Sınıf\s+Kurum/i.test(trimmed)) {
+      continue;
+    }
+
+    filteredLines.push(trimmed);
+  }
+
+  return filteredLines.join('\n');
 }
 
 /**
- * Extracts text from every page of a PDF file using pdfjs-dist
+ * Extracts structured line-by-line text from every page of a PDF file using pdfjs-dist
  */
 export async function extractTextFromPdfFile(
   file: File,
@@ -67,11 +89,50 @@ export async function extractTextFromPdfFile(
   for (let i = 1; i <= numPages; i++) {
     const page = await pdfDoc.getPage(i);
     const textContent = await page.getTextContent();
-    const pageStrings = textContent.items
-      .map((item: any) => (item.str !== undefined ? item.str : ''))
-      .join(' ');
+    const items = textContent.items as any[];
 
-    const cleanedText = cleanRawPdfPageText(pageStrings);
+    // Group items into visual lines based on vertical Y position
+    const lineMap = new Map<number, Array<{ x: number; str: string }>>();
+
+    items.forEach((item: any) => {
+      if (!item.str || typeof item.str !== 'string') return;
+      const rawY = item.transform ? item.transform[5] : 0;
+      const rawX = item.transform ? item.transform[4] : 0;
+      
+      // Bucket Y within 4px to align text in the same row
+      let matchedY: number | null = null;
+      for (const yKey of lineMap.keys()) {
+        if (Math.abs(yKey - rawY) <= 4) {
+          matchedY = yKey;
+          break;
+        }
+      }
+
+      if (matchedY !== null) {
+        lineMap.get(matchedY)!.push({ x: rawX, str: item.str });
+      } else {
+        lineMap.set(rawY, [{ x: rawX, str: item.str }]);
+      }
+    });
+
+    // Sort lines top to bottom (Y descending in PDF coordinates)
+    const sortedYKeys = Array.from(lineMap.keys()).sort((a, b) => b - a);
+    const rawLines: string[] = [];
+
+    sortedYKeys.forEach(yKey => {
+      const lineItems = lineMap.get(yKey)!;
+      // Sort left to right on the same line
+      lineItems.sort((a, b) => a.x - b.x);
+      const lineString = lineItems.map(it => it.str).join(' ').trim();
+      if (lineString) {
+        rawLines.push(lineString);
+      }
+    });
+
+    const fullPageText = rawLines.join('\n');
+    const cleanedText = cleanRawPdfPageText(fullPageText);
+    
+    // Always include page text if it has student header information
     if (cleanedText.length > 20) {
       pagesText.push({ pageIndex: i, text: cleanedText });
     }

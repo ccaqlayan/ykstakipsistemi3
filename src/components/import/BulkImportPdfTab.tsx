@@ -74,12 +74,27 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
 
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+  const isCancelledRef = React.useRef<boolean>(false);
+
+  const handleCancelProcess = () => {
+    isCancelledRef.current = true;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setIsProcessing(false);
+    setProcessStep('');
+    setErrorMessage('İşlem kullanıcı tarafından durduruldu.');
+  };
+
   // File change handler
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     setIsProcessing(true);
+    isCancelledRef.current = false;
+    abortControllerRef.current = new AbortController();
     setErrorMessage(null);
     setSuccessMessage(null);
     setParsedRows([]);
@@ -88,6 +103,7 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
       const allExtractedPages: Array<{ pageIndex: number; text: string; fileName: string }> = [];
 
       for (let fIdx = 0; fIdx < files.length; fIdx++) {
+        if (isCancelledRef.current) break;
         const file = files[fIdx];
         setProcessStep(`${file.name} dosyasından metinler ayıklanıyor (${fIdx + 1}/${files.length})...`);
         
@@ -100,6 +116,11 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
         });
       }
 
+      if (isCancelledRef.current) {
+        setIsProcessing(false);
+        return;
+      }
+
       if (allExtractedPages.length === 0) {
         throw new Error('PDF dosyalarında okunabilir metin katmanı bulunamadı.');
       }
@@ -107,47 +128,63 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
       setProcessStep(`Yapay Zeka (Gemini Flash-Lite) ile ${allExtractedPages.length} karne sayfası ayrıştırılıyor...`);
       setProcessProgress({ current: 0, total: allExtractedPages.length });
 
-      // Chunk pages in batches of 2 to optimize token usage and avoid payload limits
-      const BATCH_SIZE = 2;
+      // Process in batches of 1-2 to guarantee 100% complete topic & score extraction
+      const BATCH_SIZE = 1;
       const allReports: any[] = [];
       let detectedTitle = examTitle;
       let detectedType = examType;
 
       for (let i = 0; i < allExtractedPages.length; i += BATCH_SIZE) {
+        if (isCancelledRef.current) break;
         const chunk = allExtractedPages.slice(i, i + BATCH_SIZE);
-        setProcessStep(`Yapay Zeka analizi yapılıyor (${Math.min(i + BATCH_SIZE, allExtractedPages.length)}/${allExtractedPages.length} sayfa)...`);
+        setProcessStep(`Yapay Zeka analizi yapılıyor (Sayfa ${i + 1} - ${Math.min(i + BATCH_SIZE, allExtractedPages.length)} / ${allExtractedPages.length})...`);
+        setProcessProgress({ current: Math.min(i + BATCH_SIZE, allExtractedPages.length), total: allExtractedPages.length });
         
-        const response = await fetch('/api/gemini/parse-pdf-exam-reports', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            pagesText: chunk.map((c, idx) => ({ pageIndex: i + idx + 1, text: c.text }))
-          })
-        });
+        try {
+          const response = await fetch('/api/gemini/parse-pdf-exam-reports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: abortControllerRef.current?.signal,
+            body: JSON.stringify({
+              pagesText: chunk.map((c, idx) => ({ pageIndex: i + idx + 1, text: c.text }))
+            })
+          });
 
-        if (!response.ok) {
-          let errText = 'Yapay zeka analiz servisine bağlanılamadı.';
-          try {
-            const errData = await response.json();
-            if (errData && errData.error) errText = errData.error;
-          } catch {}
-          throw new Error(errText);
-        }
+          if (!response.ok) {
+            let errText = 'Yapay zeka analiz servisine bağlanılamadı.';
+            try {
+              const errData = await response.json();
+              if (errData && errData.error) errText = errData.error;
+            } catch {}
+            console.warn(`Sayfa ${i + 1} ayrıştırma uyarısı:`, errText);
+            continue;
+          }
 
-        const data = await response.json();
-        if (data.success && data.data) {
-          if (data.data.examTitle && !detectedTitle) {
-            detectedTitle = data.data.examTitle;
-            setExamTitle(data.data.examTitle);
+          const data = await response.json();
+          if (data.success && data.data) {
+            if (data.data.examTitle && !detectedTitle) {
+              detectedTitle = data.data.examTitle;
+              setExamTitle(data.data.examTitle);
+            }
+            if (data.data.examType) {
+              detectedType = data.data.examType === 'TYT' ? 'TYT' : 'AYT';
+              setExamType(detectedType);
+            }
+            if (Array.isArray(data.data.reports)) {
+              allReports.push(...data.data.reports);
+            }
           }
-          if (data.data.examType) {
-            detectedType = data.data.examType === 'TYT' ? 'TYT' : 'AYT';
-            setExamType(detectedType);
+        } catch (chunkErr: any) {
+          if (isCancelledRef.current || chunkErr.name === 'AbortError') {
+            break;
           }
-          if (Array.isArray(data.data.reports)) {
-            allReports.push(...data.data.reports);
-          }
+          console.warn(`Sayfa ${i + 1} ayrıştırma hatası:`, chunkErr);
         }
+      }
+
+      if (isCancelledRef.current) {
+        setIsProcessing(false);
+        return;
       }
 
       setProcessStep('Öğrenciler sistem veritabanı ile eşleştiriliyor...');
@@ -452,14 +489,26 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
         {/* Processing Spinner & Progress Bar */}
         {isProcessing && (
           <div className="bg-purple-950/30 border border-purple-500/30 rounded-2xl p-5 space-y-3 animate-fade-in">
-            <div className="flex items-center justify-between text-xs font-bold text-purple-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-bold text-purple-200">
               <div className="flex items-center space-x-2.5">
-                <RefreshCw className="w-4 h-4 text-purple-400 animate-spin" />
-                <span>{processStep}</span>
+                <RefreshCw className="w-4 h-4 text-purple-400 animate-spin shrink-0" />
+                <span className="truncate">{processStep}</span>
               </div>
-              {processProgress.total > 0 && (
-                <span>{processProgress.current} / {processProgress.total}</span>
-              )}
+              <div className="flex items-center gap-3 shrink-0">
+                {processProgress.total > 0 && (
+                  <span className="font-mono bg-purple-900/60 px-2.5 py-1 rounded-lg border border-purple-500/30">
+                    {processProgress.current} / {processProgress.total} Sayfa
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={handleCancelProcess}
+                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-rose-600/30 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>İşlemi İptal Et / Durdur</span>
+                </button>
+              </div>
             </div>
             <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
               <div 

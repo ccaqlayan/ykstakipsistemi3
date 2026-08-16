@@ -1606,25 +1606,52 @@ router.post('/parse-pdf-exam-reports', async (req, res) => {
     const targetModel = featureModelConfig['PDF_REPORT_PARSE'] || 'gemini-3.1-flash-lite';
 
     const prompt = `Sen Türkiye YKS (TYT ve AYT) sınav sonuç belgelerini (karne) ayrıştıran uzman bir veri analistisin.
-Sana verilen metinler, optik/yayın evlerinin (Ulti, Hız ve Renk, Özdebir, 3D, Limit, vb.) karne sayfalarından çıkarılmıştır.
+Sana verilen metinler, optik/yayın evlerinin (ÜçDörtBeş, Ulti, Hız ve Renk, Özdebir, 3D, Limit, vb.) karne sayfalarından çıkarılmıştır.
 
 GÖREVİN:
 Her sayfa için aşağıdaki bilgileri eksiksiz ve en yüksek doğrulukla JSON formatında çıkar:
-1. Sınav Başlığı (örn: "ULTİ YAYINLARI TÜRKİYE GENELİ AYT DENEME" veya "HIZ VE RENK TYT 1")
-2. Sınav Türü: "TYT" veya "AYT"
-3. Öğrenci Bilgileri: Ad Soyad ("studentName"), Numara ("schoolNumber"), Sınıf ("className", örn: "12-A", "12-B")
-4. Puanlar ve Sıralamalar (Varsa):
-   - TYT için: tytScore, tytClassRank, tytInstitutionRank, tytGeneralRank
-   - AYT için: sayScore, eaScore, sozScore ve bunların sınıf, kurum, genel sıralamaları (sayClassRank, sayInstitutionRank, sayGeneralRank, eaClassRank...)
-   - Katılımlar: classParticipantCount, institutionParticipantCount, generalParticipantCount
-5. Ders Net Tablosu ("subjects"):
-   - Ders Adı: "Türkçe", "Tarih-1", "Coğrafya-1", "Felsefe", "Din Kül. ve Ahl. Bil.", "TYT Sosyal", "Matematik-1", "Geometri", "TYT Matematik", "Fizik", "Kimya", "Biyoloji", "TYT Fen", "Matematik-2", "Edebiyat-Sosyal-1", "Sosyal-2", "Fen Bilimleri", "Toplam" vb.
-   - Soru (questionCount), Doğru (correct), Yanlış (wrong), Net (net), Başarı Yüzdesi (successRate: sayı), Sınıf Ort (classAvgNet), Kurum Ort (institutionAvgNet), Genel Ort (generalAvgNet)
-6. Derslere Göre Konu Analizleri ("topics"):
-   - İlgili dersin altındaki konular: "topicName", "questionCount" (S), "correct" (D), "wrong" (Y), "empty" (S - D - Y), "successRate" (B%)
+
+1. SINAV VE ÖĞRENCİ BİLGİLERİ:
+   - Sınav Başlığı ("examTitle"): Sayfanın en üstündeki yayın ve sınav adı (örn: "ÜÇDÖRTBEŞ AYT TÜRKİYE GENELİ BÜYÜK PROVA", "ULTİ YAYINLARI TÜRKİYE GENELİ AYT DENEME", "HIZ VE RENK TYT 1")
+   - Sınav Türü ("examType"): "TYT" veya "AYT"
+   - Öğrenci Bilgileri: Ad Soyad ("studentName"), Numara ("schoolNumber"), Sınıf ("className", örn: "12-A", "12-B", "12-C", "12-D", "12-E")
+
+2. PUANLAR, DERECELER VE KATILIM SAYILARI (ÇOK ÖNEMLİ):
+   Sayfanın üst kısmındaki 'Puan Türü | Puan | Genel Ortalama | Dereceler (Snf, Kurum, İlçe, İl, Genel)' tablosunu dikkatle oku:
+   - AYT için SÖZ, SAY, EA satırları:
+     * sayScore: SAY Puanı (ondalık virgülü noktaya çevir, örn: 303.088)
+     * sayClassRank: SAY 'Snf' derecesi (örn: 7)
+     * sayInstitutionRank: SAY 'Kurum' derecesi (örn: 17)
+     * sayGeneralRank: SAY 'Genel' derecesi (örn: 47174)
+     * eaScore: EA Puanı (örn: 249.258), eaClassRank (Snf), eaInstitutionRank (Kurum), eaGeneralRank (Genel)
+     * sozScore: SÖZ Puanı (örn: 203.183), sozClassRank (Snf), sozInstitutionRank (Kurum), sozGeneralRank (Genel)
+   - TYT için TYT satırı:
+     * tytScore: TYT Puanı (örn: 336.319)
+     * tytClassRank: TYT 'Snf' derecesi
+     * tytInstitutionRank: TYT 'Kurum' derecesi
+     * tytGeneralRank: TYT 'Genel' derecesi
+   - 'Katılımlar:' satırı (Dereceler tablosunun hemen altındaki satır):
+     * classParticipantCount: 'Snf' altındaki katılım sayısı (örn: 21)
+     * institutionParticipantCount: 'Kurum' altındaki katılım sayısı (örn: 83)
+     * generalParticipantCount: 'Genel' altındaki katılım sayısı (örn: 194065 veya 71520)
+
+3. DERS VE KONU ANALİZİ TABLOLARI ("subjects"):
+   Sol tablodaki tüm dersleri ("Türkçe", "Tarih-1", "Coğrafya-1", "Felsefe", "Din Kül. ve Ahl. Bil.", "TYT Sosyal", "Matematik-1", "Geometri", "TYT Matematik", "Fizik", "Kimya", "Biyoloji", "TYT Fen", "Matematik-2", "Edebiyat-Sosyal-1", "Sosyal-2", "Fen Bilimleri") 'subjects' dizisine ekle:
+   - subjectName: Ders adı
+   - questionCount (Soru sayısı), correct (Doğru), wrong (Yanlış), net (Net), successRate (Başarı %), classAvgNet (Sınıf Ort), institutionAvgNet (Kurum Ort), generalAvgNet (Genel Ort)
+   
+   KAZANIM ANALİZLERİ ("topics" - TÜM KONULARI EKSİKSİZ DOLDUR):
+   Sağ taraftaki 'DERSLERE GÖRE ANALİZ' başlığı altındaki her bir alt konuyu (Örn: Matematik-2, Geometri, Fizik, Kimya, Biyoloji, Türkçe, Edebiyat, Tarih, Coğrafya altındaki tüm satırları) ilgili dersin 'topics' dizisine ekle:
+   - topicName: Konu Adı (örn: "Aralık Kavramı ve Basit Eşitsizlikler", "Vektörler", "GAZLAR", "Sinir Sistemi")
+   - questionCount: S (Soru sayısı, tam sayı)
+   - correct: D (Doğru sayısı, tam sayı)
+   - wrong: Y (Yanlış sayısı, tam sayı)
+   - empty: Boş sayısı (questionCount - correct - wrong, tam sayı)
+   - successRate: B% (Başarı yüzdesi, tam sayı)
+   Her dersin altındaki konuları eksiksiz çıkar, hiçbir konuyu atlama!
 
 DİKKAT:
-- Cevap anahtarları ("Cevap Anahtarı A ...", optik dizilimler) ve sayfa altındaki grafik çizim koordinatlarını ASLA çıkarma veya ekleme.
+- Cevap anahtarları ("Cevap Anahtarı A ...", harf dizilimleri) ve çubuk grafik çizimlerini ASLA ekleme.
 - Yalnızca geçerli JSON formatı üret.
 
 SAYFA METİNLERİ:
