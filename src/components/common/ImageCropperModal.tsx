@@ -19,6 +19,9 @@ export interface ImageCropperModalProps {
   onClose: () => void;
   onCropComplete: (croppedFile: File, previewDataUrl: string) => void;
   onUseOriginal?: (originalFile: File) => void;
+  title?: string;
+  subtitle?: string;
+  initialAspectRatio?: number | null;
 }
 
 type HandleType = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'w' | 'e' | 'move' | null;
@@ -29,14 +32,17 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
   isOpen,
   onClose,
   onCropComplete,
-  onUseOriginal
+  onUseOriginal,
+  title = 'Görsel Alanını Kırp',
+  subtitle = 'İlgili alanı çerçeveyi parmağınızla veya farenizle sürükleyip seçin.',
+  initialAspectRatio = null
 }) => {
   const [imageSrc, setImageSrc] = useState<string>('');
   const [naturalWidth, setNaturalWidth] = useState<number>(0);
   const [naturalHeight, setNaturalHeight] = useState<number>(0);
   const [rotation, setRotation] = useState<number>(0); // 0, 90, 180, 270
   const [zoom, setZoom] = useState<number>(1);
-  const [aspectRatio, setAspectRatio] = useState<number | null>(null); // null = free
+  const [aspectRatio, setAspectRatio] = useState<number | null>(initialAspectRatio);
 
   // Crop box percentage values relative to displayed image container (0 to 100)
   const [cropBox, setCropBox] = useState<{ x: number; y: number; width: number; height: number }>({
@@ -66,8 +72,13 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
 
     setRotation(0);
     setZoom(1);
-    setAspectRatio(null);
-    setCropBox({ x: 10, y: 10, width: 80, height: 80 });
+    setAspectRatio(initialAspectRatio);
+    
+    if (initialAspectRatio === 1) {
+      setCropBox({ x: 15, y: 15, width: 70, height: 70 });
+    } else {
+      setCropBox({ x: 10, y: 10, width: 80, height: 80 });
+    }
 
     if (imageFile) {
       const reader = new FileReader();
@@ -79,7 +90,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     } else if (imageUrl) {
       setImageSrc(imageUrl);
     }
-  }, [isOpen, imageFile, imageUrl]);
+  }, [isOpen, imageFile, imageUrl, initialAspectRatio]);
 
   const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
@@ -327,13 +338,13 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
           </div>
           <div className="min-w-0">
             <h3 className="text-xs sm:text-sm font-black text-white truncate flex items-center space-x-1.5">
-              <span>Soru Alanını Kırp</span>
+              <span>{title}</span>
               <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-500/30">
                 Mobil Uyumlu
               </span>
             </h3>
             <p className="text-[10px] text-slate-400 truncate hidden sm:block">
-              Sorunun bulunduğu alanı çerçeveyi parmağınızla/farenizle sürükleyip seçin.
+              {subtitle}
             </p>
           </div>
         </div>

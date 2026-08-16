@@ -2,12 +2,13 @@ import React, { useState, useRef } from 'react';
 import { 
   X, User, GraduationCap, Target, Upload, Link, Trash2, Camera, Check, 
   Shield, Mail, Phone, Building2, Key, Eye, EyeOff, Lock, ChevronDown, 
-  ChevronUp, AlertCircle, CheckCircle2, Bell, BellOff
+  ChevronUp, AlertCircle, CheckCircle2, Bell, BellOff, Crop, Loader2
 } from 'lucide-react';
 import { UserAccount, StudentProfile, FieldType } from '../types';
 import { UNIVERSITIES } from '../data/universities';
 import { DEPARTMENTS } from '../data/departments';
 import { uploadProfileAvatar } from '../services/storageUpload';
+import { ImageCropperModal } from './common/ImageCropperModal';
 
 interface ProfileModalProps {
   currentUser: UserAccount;
@@ -91,6 +92,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   // Compression Info state
   const [compressionInfo, setCompressionInfo] = useState<{ originalKb: number; compressedKb: number } | null>(null);
 
+  // Avatar Cropper & Upload state
+  const [selectedRawFile, setSelectedRawFile] = useState<File | null>(null);
+  const [showCropperModal, setShowCropperModal] = useState<boolean>(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState<boolean>(false);
+
   // Avatar toggle state (hidden by default)
   const [showAvatarOptions, setShowAvatarOptions] = useState(false);
   const [urlInput, setUrlInput] = useState('');
@@ -133,25 +139,48 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     ? DEPARTMENTS.filter(d => toTurkishLowerCase(d).includes(toTurkishLowerCase(targetDepartment || ''))).slice(0, 8)
     : [];
 
-  // File upload handler with automatic client-side compression & Firebase Storage upload
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // File upload handler with interactive mobile cropper & compression
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-      alert('Seçtiğiniz görsel 10MB sınırını aşıyor. Lütfen daha küçük bir fotoğraf yükleyin.');
+    if (file.size > 15 * 1024 * 1024) {
+      alert('Seçtiğiniz görsel 15MB sınırını aşıyor. Lütfen daha küçük bir fotoğraf yükleyin.');
       return;
     }
 
+    setSelectedRawFile(file);
+    setShowCropperModal(true);
+    if (e.target) e.target.value = '';
+  };
+
+  const processAndUploadAvatar = async (fileToUpload: File) => {
+    setIsUploadingAvatar(true);
     try {
-      const uploadRes = await uploadProfileAvatar(file, currentUser.id);
+      const uploadRes = await uploadProfileAvatar(fileToUpload, currentUser.id);
       setAvatarUrl(uploadRes.url);
       setCompressionInfo({ originalKb: uploadRes.originalKb, compressedKb: uploadRes.compressedKb });
     } catch (err: any) {
       console.error('Profil fotoğrafı yükleme hatası:', err);
       alert(err.message || 'Profil fotoğrafı yüklenirken bir sorun oluştu.');
     } finally {
-      if (e.target) e.target.value = '';
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleCropComplete = async (croppedFile: File) => {
+    setShowCropperModal(false);
+    await processAndUploadAvatar(croppedFile);
+  };
+
+  const handleUseOriginal = async (originalFile: File) => {
+    setShowCropperModal(false);
+    await processAndUploadAvatar(originalFile);
+  };
+
+  const handleReCrop = () => {
+    if (selectedRawFile || avatarUrl) {
+      setShowCropperModal(true);
     }
   };
 
@@ -338,36 +367,61 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   <div className="flex items-center space-x-2">
                     <button
                       type="button"
+                      disabled={isUploadingAvatar}
                       onClick={() => fileInputRef.current?.click()}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-all flex items-center space-x-1.5 shadow-md"
+                      className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-xl transition-all flex items-center space-x-1.5 shadow-md cursor-pointer"
                     >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Cihazdan Yükle</span>
+                      {isUploadingAvatar ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                          <span>Yükleniyor...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Cihazdan Yükle</span>
+                        </>
+                      )}
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setShowUrlInput(!showUrlInput)}
-                      className="bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-xl transition-all flex items-center space-x-1.5 border border-white/10"
+                      className="bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-xl transition-all flex items-center space-x-1.5 border border-white/10 cursor-pointer"
                     >
                       <Link className="w-3.5 h-3.5" />
                       <span>URL ile Ekle</span>
                     </button>
                   </div>
 
-                  {avatarUrl && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAvatarUrl('');
-                        setCompressionInfo(null);
-                      }}
-                      className="text-[11px] text-rose-400 hover:text-rose-300 flex items-center space-x-1 font-semibold px-2 py-1 bg-rose-500/10 border border-rose-500/20 rounded-lg"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      <span>Fotoğrafı Kaldır</span>
-                    </button>
-                  )}
+                  <div className="flex items-center space-x-1.5">
+                    {avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={handleReCrop}
+                        className="text-[11px] text-indigo-300 hover:text-indigo-200 flex items-center space-x-1 font-semibold px-2 py-1 bg-indigo-500/15 border border-indigo-500/30 rounded-lg cursor-pointer transition-all"
+                        title="Fotoğrafı yeniden kırp ve ayarla"
+                      >
+                        <Crop className="w-3 h-3 text-indigo-400" />
+                        <span>Yeniden Kırp</span>
+                      </button>
+                    )}
+
+                    {avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAvatarUrl('');
+                          setCompressionInfo(null);
+                          setSelectedRawFile(null);
+                        }}
+                        className="text-[11px] text-rose-400 hover:text-rose-300 flex items-center space-x-1 font-semibold px-2 py-1 bg-rose-500/10 border border-rose-500/20 rounded-lg cursor-pointer transition-all"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Kaldır</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {compressionInfo && (
@@ -943,6 +997,19 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
         </form>
       </div>
+
+      {/* ✂️ Profil Fotoğrafı Kırpma Modalı */}
+      <ImageCropperModal
+        isOpen={showCropperModal}
+        imageFile={selectedRawFile}
+        imageUrl={!selectedRawFile && avatarUrl ? avatarUrl : undefined}
+        onClose={() => setShowCropperModal(false)}
+        onCropComplete={handleCropComplete}
+        onUseOriginal={selectedRawFile ? handleUseOriginal : undefined}
+        title="Profil Fotoğrafını Kırp"
+        subtitle="Yüz veya portre alanını parmağınızla/farenizle seçip kırpın."
+        initialAspectRatio={1}
+      />
     </div>
   );
 };
