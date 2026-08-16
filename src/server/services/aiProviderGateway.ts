@@ -65,8 +65,23 @@ async function callGemini(options: UnifiedAiRequestOptions): Promise<UnifiedAiRe
   const ai = new GoogleGenAI({ apiKey });
   const contents: any[] = [];
 
-  if (options.imagePart) {
-    contents.push(options.imagePart);
+  let imgPart = options.imagePart;
+  if (!imgPart && options.imageUrl) {
+    if (options.imageUrl.startsWith('data:image')) {
+      const match = options.imageUrl.match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+      if (match) {
+        imgPart = {
+          inlineData: {
+            mimeType: match[1],
+            data: match[2]
+          }
+        };
+      }
+    }
+  }
+
+  if (imgPart) {
+    contents.push(imgPart);
   }
   contents.push({ text: options.prompt });
 
@@ -115,10 +130,12 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
   const imgDataUrl = getImageDataUrl(options);
   const hasImage = Boolean(imgDataUrl);
 
-  // Select appropriate model: vision model if image present, ultra-fast 70B for text
-  const model = hasImage 
-    ? 'llama-3.2-11b-vision-preview'
-    : 'llama-3.3-70b-versatile';
+  // Groq decommissioned Llama 3.2 Vision models on their platform
+  if (hasImage) {
+    throw new Error('Groq Cloud şu anda görsel (Vision) modellerini desteklememektedir (Llama 3.2 Vision modelleri Groq tarafından kullanımdan kaldırılmıştır). Görsel analiz Google Gemini veya OpenRouter üzerinden işlenmektedir.');
+  }
+
+  const model = 'llama-3.3-70b-versatile';
 
   const messages: any[] = [];
 
@@ -126,17 +143,7 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
     messages.push({ role: 'system', content: options.systemInstruction });
   }
 
-  if (hasImage && imgDataUrl) {
-    messages.push({
-      role: 'user',
-      content: [
-        { type: 'text', text: options.prompt },
-        { type: 'image_url', image_url: { url: imgDataUrl } }
-      ]
-    });
-  } else {
-    messages.push({ role: 'user', content: options.prompt });
-  }
+  messages.push({ role: 'user', content: options.prompt });
 
   const requestBody: any = {
     model,
@@ -194,16 +201,17 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
     ? [
         'openrouter/free',
         'meta-llama/llama-3.2-11b-vision-instruct:free',
-        'google/gemini-3.5-flash-lite-exp:free',
-        'qwen/qwen-2.5-vl-72b-instruct:free'
+        'qwen/qwen-2.5-vl-72b-instruct:free',
+        'google/gemini-2.0-flash-exp:free',
+        'google/gemini-flash-1.5:free'
       ]
     : [
-        'openrouter/auto',
+        'openrouter/free',
         'meta-llama/llama-3.3-70b-instruct:free',
-        'google/gemini-3.5-flash-lite-exp:free',
+        'deepseek/deepseek-chat:free',
         'qwen/qwen-2.5-72b-instruct:free',
-        'microsoft/phi-4-reasoning-plus:free',
-        'mistralai/mistral-7b-instruct:free'
+        'google/gemini-2.0-flash-exp:free',
+        'microsoft/phi-4-reasoning-plus:free'
       ];
 
   const messages: any[] = [];

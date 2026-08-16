@@ -1002,9 +1002,8 @@ BİÇİMLENDİRME:
 
 router.post('/analyze-photo-question-full', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = getEffectiveGeminiApiKey();
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
+  if (!hasAnyAiApiKey()) {
+    return res.status(400).json({ error: 'Yapay zeka API anahtarı tanımlı değil. Lütfen Sistem Yönetimi > Yapay Zeka sayfasından en az bir API anahtarı giriniz.' });
   }
 
   const { imageUrl, solutionText, existingAnalysis, subject, topicName } = req.body;
@@ -1013,10 +1012,8 @@ router.post('/analyze-photo-question-full', async (req, res) => {
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
-
     const imagePart = imageUrl ? await resolveImagePart(imageUrl) : null;
-    if (!imagePart && !solutionText && !existingAnalysis) {
+    if (!imagePart && !solutionText && !existingAnalysis && !imageUrl) {
       return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
     }
 
@@ -1061,7 +1058,7 @@ Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'G
 YANITINI YALNIZCA aşağıdaki JSON formatında döndür. Kesinlikle JSON dışında açıklama veya Markdown kod bloğu ekleme:
 `;
 
-    console.log(`[PHOTO_ANALYSIS] Starting unified analysis for subject=${subject}, topic=${topicName}, hasImage=${!!imagePart}`);
+    console.log(`[PHOTO_ANALYSIS] Starting unified analysis for subject=${subject}, topic=${topicName}, hasImage=${!!imagePart || !!imageUrl}`);
     const targetModel = featureModelConfig['SOLVE_QUESTION'] || featureModelConfig['SIMILAR_QUESTION'] || 'gemini-3.5-flash-lite';
     
     const unifiedResult = await executeAiUnifiedRequest({
@@ -1075,7 +1072,6 @@ YANITINI YALNIZCA aşağıdaki JSON formatında döndür. Kesinlikle JSON dış�
     });
 
     const responseText = unifiedResult.text;
-    const modelUsed = `${unifiedResult.providerUsed}: ${unifiedResult.modelUsed}`;
     console.log(`[PHOTO_ANALYSIS] Raw response length=${responseText?.length}, provider=${unifiedResult.providerUsed}, model=${unifiedResult.modelUsed}`);
     
     let parsedData: any = {};
@@ -1107,15 +1103,11 @@ YANITINI YALNIZCA aşağıdaki JSON formatında döndür. Kesinlikle JSON dış�
         return '';
       };
 
-      const solution = extractField('solution');
-      const ansMatch = (responseText || '').match(/"correctAnswerLetter"\s*:\s*"([A-Ea-e])"/i);
-      const analysis = extractField('analysis');
-
       parsedData = {
-        solution: solution || responseText || 'Soru çözümü üretilemedi.',
-        correctAnswerLetter: ansMatch ? ansMatch[1].toUpperCase() : undefined,
-        similarQuestions: [],
-        analysis: analysis || ''
+        solution: extractField('solution'),
+        correctAnswerLetter: extractField('correctAnswerLetter'),
+        analysis: extractField('analysis'),
+        similarQuestions: []
       };
     }
 
@@ -1131,7 +1123,8 @@ YANITINI YALNIZCA aşağıdaki JSON formatında döndür. Kesinlikle JSON dış�
       featureKey: 'PHOTO_QUESTION_FULL_ANALYSIS',
       featureName: 'Fotoğraflı Soru Bütünleşik AI Analizi (Çözüm + 3 Benzer Soru + Karne)',
       category: 'QUESTION_ANALYSIS',
-      modelUsed,
+      provider: unifiedResult.providerUsed,
+      modelUsed: unifiedResult.modelUsed,
       promptTokens: unifiedResult.promptTokens || 2500,
       candidatesTokens: unifiedResult.candidatesTokens || Math.ceil((responseText || '').length / 4),
       promptText: `Fotoğraflı Soru Bütünleşik Analiz (${subject || ''} - ${topicName || ''})`,
