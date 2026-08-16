@@ -107,8 +107,8 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
       setProcessStep(`Yapay Zeka (Gemini Flash-Lite) ile ${allExtractedPages.length} karne sayfası ayrıştırılıyor...`);
       setProcessProgress({ current: 0, total: allExtractedPages.length });
 
-      // Chunk pages in batches of 5 to optimize token usage and avoid payload limits
-      const BATCH_SIZE = 5;
+      // Chunk pages in batches of 2 to optimize token usage and avoid payload limits
+      const BATCH_SIZE = 2;
       const allReports: any[] = [];
       let detectedTitle = examTitle;
       let detectedType = examType;

@@ -1692,11 +1692,44 @@ ${pagesText.map((p: any, idx: number) => `--- SAYFA ${p.pageIndex || (idx + 1)} 
     const { response, modelUsed } = await generateContentWithFallback(ai, {
       model: targetModel,
       contents: prompt,
-      config: { responseMimeType: 'application/json' }
+      config: { 
+        responseMimeType: 'application/json',
+        maxOutputTokens: 8192
+      }
     });
 
     const responseText = extractResponseText(response);
-    const parsedData = JSON.parse(responseText || '{}');
+    let parsedData: any = {};
+    try {
+      let clean = (responseText || '').trim();
+      if (clean.startsWith('```json')) clean = clean.replace(/^```json\s*/, '').replace(/```\s*$/, '');
+      else if (clean.startsWith('```')) clean = clean.replace(/^```\s*/, '').replace(/```\s*$/, '');
+      parsedData = JSON.parse(clean.trim() || '{}');
+    } catch (parseErr: any) {
+      console.warn('Initial JSON parse warning for PDF reports, attempting recovery...', parseErr);
+      try {
+        let repaired = (responseText || '').trim();
+        if (repaired.startsWith('```json')) repaired = repaired.replace(/^```json\s*/, '').replace(/```\s*$/, '');
+        else if (repaired.startsWith('```')) repaired = repaired.replace(/^```\s*/, '').replace(/```\s*$/, '');
+        repaired = repaired.trim();
+
+        // Close unclosed quote
+        const quoteCount = (repaired.match(/(?<!\\)"/g) || []).length;
+        if (quoteCount % 2 !== 0) repaired += '"';
+
+        const openBraces = (repaired.match(/\{/g) || []).length;
+        const closeBraces = (repaired.match(/\}/g) || []).length;
+        const openBrackets = (repaired.match(/\[/g) || []).length;
+        const closeBrackets = (repaired.match(/\]/g) || []).length;
+
+        for (let i = 0; i < (openBrackets - closeBrackets); i++) repaired += ']';
+        for (let i = 0; i < (openBraces - closeBraces); i++) repaired += '}';
+
+        parsedData = JSON.parse(repaired);
+      } catch (recoveryErr) {
+        throw new Error('Yapay zeka yanıtı geçerli JSON formatında tamamlanamadı.');
+      }
+    }
 
     const { userName, userRole, userId } = resolveUserInfo(req.body);
 
@@ -1706,7 +1739,7 @@ ${pagesText.map((p: any, idx: number) => `--- SAYFA ${p.pageIndex || (idx + 1)} 
       category: 'QUESTION_ANALYSIS',
       modelUsed,
       promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil((responseText || '').length / 4),
       promptText: prompt,
       responseText,
       userId,
