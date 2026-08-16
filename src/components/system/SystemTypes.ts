@@ -101,6 +101,11 @@ export interface ModelSettingsData {
   coachDataSettings?: CoachDataSettingsMap;
   hasApiKey?: boolean;
   maskedApiKey?: string;
+  hasGroqKey?: boolean;
+  maskedGroqKey?: string;
+  hasOpenRouterKey?: boolean;
+  maskedOpenRouterKey?: string;
+  aiProviderMode?: 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY';
 }
 
 export interface StorageFolderItem {

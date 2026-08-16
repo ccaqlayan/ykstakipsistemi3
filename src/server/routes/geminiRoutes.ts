@@ -25,9 +25,19 @@ import {
   getEffectiveGeminiApiKey,
   setCustomGeminiApiKey,
   customGeminiApiKey,
+  getEffectiveGroqApiKey,
+  setCustomGroqApiKey,
+  customGroqApiKey,
+  getEffectiveOpenRouterApiKey,
+  setCustomOpenRouterApiKey,
+  customOpenRouterApiKey,
+  getEffectiveProviderMode,
+  setAiProviderMode,
+  aiProviderMode,
   fetchLiveGoogleModels,
   mapToActualGeminiModel
 } from '../config';
+import { executeAiUnifiedRequest, testProviderApiKey } from '../services/aiProviderGateway';
 
 const router = Router();
 
@@ -1080,61 +1090,22 @@ Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'G
 YANITINI YALNIZCA aşağıdaki JSON formatında döndür. Kesinlikle JSON dışında açıklama veya Markdown kod bloğu ekleme:
 `;
 
-    console.log(`[PHOTO_ANALYSIS] Starting full analysis for subject=${subject}, topic=${topicName}, hasImage=${!!imagePart}`);
-    const contents = imagePart ? [imagePart, { text: textPrompt }] : [{ text: textPrompt }];
-
-    const targetModel = featureModelConfig['SOLVE_QUESTION'] || featureModelConfig['SIMILAR_QUESTION'] || 'gemini-3.1-flash-lite';
-    const { response, modelUsed } = await generateContentWithFallback(ai, {
-      model: targetModel,
-      contents,
-      config: {
-        maxOutputTokens: 8192,
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: 'OBJECT',
-          properties: {
-            solution: {
-              type: 'STRING',
-              description: 'Adım adım detaylı Türkçe soru çözümü ve pratik taktik.'
-            },
-            correctAnswerLetter: {
-              type: 'STRING',
-              description: 'Sorunun doğru cevap şıkkı (Yalnızca A, B, C, D veya E tek harfi).'
-            },
-            similarQuestions: {
-              type: 'ARRAY',
-              description: 'YKS müfredatına uygun 3 adet özgün benzer soru listesi.',
-              items: {
-                type: 'OBJECT',
-                properties: {
-                  question: {
-                    type: 'STRING',
-                    description: 'Benzer soru metni ve şıkları (A, B, C, D, E).'
-                  },
-                  solution: {
-                    type: 'STRING',
-                    description: 'Benzer sorunun adım adım detaylı Türkçe çözümü.'
-                  },
-                  correctAnswer: {
-                    type: 'STRING',
-                    description: 'Benzer sorunun doğru cevabı (örn. C seçeneğidir).'
-                  }
-                },
-                required: ['question', 'solution', 'correctAnswer']
-              }
-            },
-            analysis: {
-              type: 'STRING',
-              description: 'Detaylı soru karnesi ve çeldirici analizi Markdown tablosu.'
-            }
-          },
-          required: ['solution', 'similarQuestions', 'analysis']
-        }
-      }
+    console.log(`[PHOTO_ANALYSIS] Starting unified analysis for subject=${subject}, topic=${topicName}, hasImage=${!!imagePart}`);
+    const targetModel = featureModelConfig['SOLVE_QUESTION'] || featureModelConfig['SIMILAR_QUESTION'] || 'gemini-2.0-flash';
+    
+    const unifiedResult = await executeAiUnifiedRequest({
+      prompt: textPrompt,
+      imagePart: imagePart || undefined,
+      imageUrl: (imageUrl || '').startsWith('data:image') || (imageUrl || '').startsWith('http') ? imageUrl : undefined,
+      requireJson: true,
+      featureKey: 'PHOTO_QUESTION_FULL_ANALYSIS',
+      modelOverride: targetModel,
+      maxTokens: 8192
     });
 
-    const responseText = extractResponseText(response);
-    console.log(`[PHOTO_ANALYSIS] Raw response length=${responseText?.length}, model=${modelUsed}`);
+    const responseText = unifiedResult.text;
+    const modelUsed = `${unifiedResult.providerUsed}: ${unifiedResult.modelUsed}`;
+    console.log(`[PHOTO_ANALYSIS] Raw response length=${responseText?.length}, provider=${unifiedResult.providerUsed}, model=${unifiedResult.modelUsed}`);
     
     let parsedData: any = {};
     try {
@@ -1190,8 +1161,8 @@ YANITINI YALNIZCA aşağıdaki JSON formatında döndür. Kesinlikle JSON dış�
       featureName: 'Fotoğraflı Soru Bütünleşik AI Analizi (Çözüm + 3 Benzer Soru + Karne)',
       category: 'QUESTION_ANALYSIS',
       modelUsed,
-      promptTokens: response.usageMetadata?.promptTokenCount || 2500,
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil((responseText || '').length / 4),
+      promptTokens: unifiedResult.promptTokens || 2500,
+      candidatesTokens: unifiedResult.candidatesTokens || Math.ceil((responseText || '').length / 4),
       promptText: `Fotoğraflı Soru Bütünleşik Analiz (${subject || ''} - ${topicName || ''})`,
       responseText,
       userId,
@@ -1316,9 +1287,10 @@ router.post('/clear-usage-logs', async (req, res) => {
 
 router.get('/model-settings', async (req, res) => {
   const currentKey = getEffectiveGeminiApiKey();
-  const maskedApiKey = currentKey 
-    ? (currentKey.length > 10 ? `${currentKey.slice(0, 6)}...${currentKey.slice(-4)}` : '***') 
-    : '';
+  const groqKey = getEffectiveGroqApiKey();
+  const openRouterKey = getEffectiveOpenRouterApiKey();
+  
+  const mask = (k: string) => k ? (k.length > 10 ? `${k.slice(0, 6)}...${k.slice(-4)}` : '***') : '';
 
   const liveModels = await fetchLiveGoogleModels();
 
@@ -1329,8 +1301,13 @@ router.get('/model-settings', async (req, res) => {
     config: featureModelConfig,
     anomalyLimitTRY,
     coachDataSettings,
+    aiProviderMode: getEffectiveProviderMode(),
     hasApiKey: Boolean(currentKey),
-    maskedApiKey,
+    maskedApiKey: mask(currentKey),
+    hasGroqKey: Boolean(groqKey),
+    maskedGroqKey: mask(groqKey),
+    hasOpenRouterKey: Boolean(openRouterKey),
+    maskedOpenRouterKey: mask(openRouterKey),
     availableModels: liveModels,
     features: [
       { key: 'AI_COACH_STUDENT', name: 'Öğrenci Bireysel Yapay Zeka Koç Tavsiyesi', category: 'Yapay Zeka Koçluğu', description: 'Öğrencinin haftalık çalışma tavsiyelerini ve net analizlerini hazırlar.' },
@@ -1351,46 +1328,49 @@ router.post('/refresh-models', async (req, res) => {
   res.json({ success: true, models });
 });
 
+router.post('/test-provider-key', async (req, res) => {
+  const { provider, apiKey } = req.body;
+  if (!provider || !['gemini', 'groq', 'openrouter'].includes(provider)) {
+    return res.status(400).json({ success: false, message: 'Geçersiz sağlayıcı belirtildi.' });
+  }
+
+  const effectiveKey = apiKey || (
+    provider === 'gemini' ? getEffectiveGeminiApiKey() :
+    provider === 'groq' ? getEffectiveGroqApiKey() :
+    getEffectiveOpenRouterApiKey()
+  );
+
+  const result = await testProviderApiKey(provider, effectiveKey);
+  res.json(result);
+});
+
 router.post('/model-settings', async (req, res) => {
-  const { config, aiFeaturesEnabled: newEnabledState, savePromptLogs: newSavePromptLogs, anomalyLimitTRY: newAnomalyLimit, coachDataSettings: newCoachDataSettings, geminiApiKey: newApiKey } = req.body;
+  const { 
+    config, 
+    aiFeaturesEnabled: newEnabledState, 
+    savePromptLogs: newSavePromptLogs, 
+    anomalyLimitTRY: newAnomalyLimit, 
+    coachDataSettings: newCoachDataSettings, 
+    geminiApiKey: newApiKey,
+    groqApiKey: newGroqKey,
+    openRouterApiKey: newOpenRouterKey,
+    aiProviderMode: newProviderMode
+  } = req.body;
   
-  if (typeof newApiKey === 'string' && newApiKey.trim()) {
-    const trimmedKey = newApiKey.trim();
-    // Validate the API key with Google AI Studio before saving
-    try {
-      const testAi = new GoogleGenAI({ apiKey: trimmedKey });
-      await testAi.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: 'test',
-        config: { maxOutputTokens: 2 }
-      });
-    } catch (testErr: any) {
-      const errMsg = testErr?.message || String(testErr || '');
-      if (testErr?.status === 401 || errMsg.includes('401') || errMsg.includes('UNAUTHENTICATED') || errMsg.includes('ACCESS_TOKEN_TYPE_UNSUPPORTED') || errMsg.includes('invalid authentication credentials')) {
-        return res.status(400).json({
-          success: false,
-          error: 'Girilen API anahtarı Google tarafından doğrulanamadı (401). Lütfen Google AI Studio (aistudio.google.com/apikey) üzerinden aldığınız "AIzaSy..." formatındaki geçerli anahtarınızı girdiğinizden emin olun.'
-        });
-      }
-    }
+  if (typeof newApiKey === 'string') {
+    setCustomGeminiApiKey(newApiKey.trim());
+  }
 
-    setCustomGeminiApiKey(trimmedKey);
+  if (typeof newGroqKey === 'string') {
+    setCustomGroqApiKey(newGroqKey.trim());
+  }
 
-    // Also update .env file if it exists so server restarts retain the key
-    try {
-      const envPath = path.join(process.cwd(), '.env');
-      if (fs.existsSync(envPath)) {
-        let envContent = fs.readFileSync(envPath, 'utf8');
-        if (envContent.includes('GEMINI_API_KEY=')) {
-          envContent = envContent.replace(/GEMINI_API_KEY=[^\r\n]*/, `GEMINI_API_KEY=${trimmedKey}`);
-        } else {
-          envContent += `\nGEMINI_API_KEY=${trimmedKey}\n`;
-        }
-        fs.writeFileSync(envPath, envContent, 'utf8');
-      }
-    } catch (envErr) {
-      console.warn('Could not sync GEMINI_API_KEY to .env file:', envErr);
-    }
+  if (typeof newOpenRouterKey === 'string') {
+    setCustomOpenRouterApiKey(newOpenRouterKey.trim());
+  }
+
+  if (newProviderMode && ['AUTO_FALLBACK', 'GEMINI_ONLY', 'GROQ_ONLY', 'OPENROUTER_ONLY'].includes(newProviderMode)) {
+    setAiProviderMode(newProviderMode);
   }
 
   if (typeof newEnabledState === 'boolean') {
@@ -1420,14 +1400,17 @@ router.post('/model-settings', async (req, res) => {
       featureModelConfig,
       anomalyLimitTRY,
       coachDataSettings,
-      ...(customGeminiApiKey ? { geminiApiKey: customGeminiApiKey } : {})
+      aiProviderMode: getEffectiveProviderMode(),
+      ...(customGeminiApiKey ? { geminiApiKey: customGeminiApiKey } : {}),
+      ...(customGroqApiKey ? { groqApiKey: customGroqApiKey } : {}),
+      ...(customOpenRouterApiKey ? { openRouterApiKey: customOpenRouterApiKey } : {})
     }).catch(err => console.error('Failed to save settings to Firestore:', err));
   }
 
   const currentKey = getEffectiveGeminiApiKey();
-  const maskedApiKey = currentKey 
-    ? (currentKey.length > 10 ? `${currentKey.slice(0, 6)}...${currentKey.slice(-4)}` : '***') 
-    : '';
+  const groqKey = getEffectiveGroqApiKey();
+  const openRouterKey = getEffectiveOpenRouterApiKey();
+  const mask = (k: string) => k ? (k.length > 10 ? `${k.slice(0, 6)}...${k.slice(-4)}` : '***') : '';
 
   return res.json({ 
     success: true, 
@@ -1436,10 +1419,15 @@ router.post('/model-settings', async (req, res) => {
     config: featureModelConfig, 
     anomalyLimitTRY,
     coachDataSettings,
+    aiProviderMode: getEffectiveProviderMode(),
     hasApiKey: Boolean(currentKey),
-    maskedApiKey,
+    maskedApiKey: mask(currentKey),
+    hasGroqKey: Boolean(groqKey),
+    maskedGroqKey: mask(groqKey),
+    hasOpenRouterKey: Boolean(openRouterKey),
+    maskedOpenRouterKey: mask(openRouterKey),
     message: aiFeaturesEnabled 
-      ? 'Yapay zeka ayarları ve API anahtarı başarıyla güncellendi ve doğrulandı.'
+      ? 'Yapay zeka çoklu sağlayıcı ayarları ve API anahtarları başarıyla güncellendi.'
       : 'Tüm yapay zeka servisleri rehber öğretmen / yönetici kararıyla KAPATILDI.'
   });
 });

@@ -26,6 +26,26 @@ export function getEffectiveGeminiApiKey(): string {
   return (customGeminiApiKey || process.env.GEMINI_API_KEY || '').trim(); 
 }
 
+// Global dynamic Groq API key
+export let customGroqApiKey: string = '';
+export function setCustomGroqApiKey(val: string) { customGroqApiKey = val; }
+export function getEffectiveGroqApiKey(): string { 
+  return (customGroqApiKey || process.env.GROQ_API_KEY || '').trim(); 
+}
+
+// Global dynamic OpenRouter API key
+export let customOpenRouterApiKey: string = '';
+export function setCustomOpenRouterApiKey(val: string) { customOpenRouterApiKey = val; }
+export function getEffectiveOpenRouterApiKey(): string { 
+  return (customOpenRouterApiKey || process.env.OPENROUTER_API_KEY || '').trim(); 
+}
+
+// Global AI Provider Failover Mode
+export type AiProviderMode = 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY';
+export let aiProviderMode: AiProviderMode = 'AUTO_FALLBACK';
+export function setAiProviderMode(val: AiProviderMode) { aiProviderMode = val; }
+export function getEffectiveProviderMode(): AiProviderMode { return aiProviderMode; }
+
 // Global master switch to turn all AI features ON or OFF for the school
 export let aiFeaturesEnabled: boolean = true;
 export function setAiFeaturesEnabled(val: boolean) { aiFeaturesEnabled = val; }
@@ -105,6 +125,15 @@ export async function initFirebaseAndLogs() {
           if (typeof sData.geminiApiKey === 'string' && sData.geminiApiKey.trim()) {
             customGeminiApiKey = sData.geminiApiKey.trim();
           }
+          if (typeof sData.groqApiKey === 'string' && sData.groqApiKey.trim()) {
+            customGroqApiKey = sData.groqApiKey.trim();
+          }
+          if (typeof sData.openRouterApiKey === 'string' && sData.openRouterApiKey.trim()) {
+            customOpenRouterApiKey = sData.openRouterApiKey.trim();
+          }
+          if (sData.aiProviderMode && ['AUTO_FALLBACK', 'GEMINI_ONLY', 'GROQ_ONLY', 'OPENROUTER_ONLY'].includes(sData.aiProviderMode)) {
+            aiProviderMode = sData.aiProviderMode;
+          }
           if (typeof sData.aiFeaturesEnabled === 'boolean') {
             aiFeaturesEnabled = sData.aiFeaturesEnabled;
           }
@@ -124,7 +153,7 @@ export async function initFirebaseAndLogs() {
           if (sData.coachDataSettings && typeof sData.coachDataSettings === 'object') {
             coachDataSettings = { ...coachDataSettings, ...sData.coachDataSettings };
           }
-          console.log('Loaded gemini settings from Firestore.');
+          console.log('Loaded multi-provider AI settings from Firestore.');
         }
       } catch (err) {
         console.warn('Failed to load gemini settings from Firestore (could be quota exceeded):', err);

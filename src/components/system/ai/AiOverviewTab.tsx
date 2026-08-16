@@ -157,20 +157,24 @@ export const AiOverviewTab: React.FC<AiOverviewTabProps> = ({
           className="bg-slate-900/90 border border-fuchsia-500/30 rounded-2xl p-5 shadow-xl hover:border-fuchsia-500/60 transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Aktif Model Konfigürasyonu</span>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Aktif Sağlayıcı & Modeller</span>
             <div className="p-2 bg-fuchsia-500/20 text-fuchsia-400 rounded-xl border border-fuchsia-500/30 group-hover:scale-110 transition-transform">
               <Sparkles className="w-5 h-5" />
             </div>
           </div>
           <div className="mt-2.5 space-y-1 text-xs">
             <div className="flex items-center justify-between">
-              <span className="text-slate-300 font-medium">YKS Koçluğu:</span>
-              <span className="font-bold text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded border border-indigo-500/30 font-mono text-[11px]">
-                {modelSettings?.config?.['AI_COACH_STUDENT'] || 'gemini-2.0-flash'}
-              </span>
+              <span className="text-slate-300 font-medium">Sağlayıcı Hattı:</span>
+              <div className="flex items-center gap-1 font-mono text-[10px]">
+                <span className={`px-1.5 py-0.5 rounded border ${modelSettings?.hasApiKey ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30 font-bold' : 'bg-slate-800 text-slate-500 border-slate-700'}`}>Gemini</span>
+                <span className="text-slate-500">➔</span>
+                <span className={`px-1.5 py-0.5 rounded border ${modelSettings?.hasGroqKey ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 font-bold' : 'bg-slate-800 text-slate-500 border-slate-700'}`}>Groq</span>
+                <span className="text-slate-500">➔</span>
+                <span className={`px-1.5 py-0.5 rounded border ${modelSettings?.hasOpenRouterKey ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30 font-bold' : 'bg-slate-800 text-slate-500 border-slate-700'}`}>OR</span>
+              </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-slate-300 font-medium">Hata Defteri:</span>
+              <span className="text-slate-300 font-medium">Varsayılan Model:</span>
               <span className="font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30 font-mono text-[11px]">
                 {modelSettings?.config?.['SOLVE_QUESTION'] || 'gemini-2.0-flash'}
               </span>
@@ -178,7 +182,7 @@ export const AiOverviewTab: React.FC<AiOverviewTabProps> = ({
           </div>
           <div className="mt-3 pt-2 border-t border-white/10 text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-            <span>Dinamik Ayarlanabilir Altyapı</span>
+            <span>Otomatik Failover Koruması Aktif</span>
           </div>
         </div>
       </div>
