@@ -1621,8 +1621,15 @@ Her sayfa için aşağıdaki bilgileri eksiksiz ve en yüksek doğrulukla JSON f
    - successRate: B% (Başarı yüzdesi, tam sayı)
    Her dersin altındaki konuları eksiksiz çıkar, hiçbir konuyu atlama!
 
+4. CEVAP VE OPTİK KAĞIT ŞERİDİ BİLGİLERİ ("opticalAnswers" & "answerKeys"):
+   Sayfada yer alan öğrenci cevap dizilimlerini ve cevap anahtarlarını çıkar:
+   - "opticalAnswers": Öğrencinin optik şeridindeki harf dizilimi (örn: "ADCcdACEEd aaEAddBdBEaBcdeEBCdBCBDBDCCC").
+     * Büyük harfler (A, B, C, D, E): DOĞRU cevaplanan sorular
+     * Küçük harfler (a, b, c, d, e): YANLIŞ cevaplanan sorular
+     * Boşluklar (' '): BOŞ bırakılan sorular
+   - "answerKeys": Sınavın doğru cevap anahtarı harf dizilimi (örn: "ADCCDACEEDAADD...").
+
 DİKKAT:
-- Cevap anahtarları ("Cevap Anahtarı A ...", harf dizilimleri) ve çubuk grafik çizimlerini ASLA ekleme.
 - Yalnızca geçerli JSON formatı üret.
 
 SAYFA METİNLERİ:
@@ -1638,6 +1645,22 @@ ${pagesText.map((p: any, idx: number) => `--- SAYFA ${p.pageIndex || (idx + 1)} 
       "studentName": "string",
       "schoolNumber": "string",
       "className": "string",
+      "opticalAnswers": {
+        "TYT Türkçe": "string",
+        "TYT Sosyal": "string",
+        "TYT Matematik": "string",
+        "TYT Fen": "string",
+        "Matematik": "string",
+        "Fen Bilimleri": "string",
+        "Edebiyat-Sosyal-1": "string",
+        "Sosyal-2": "string"
+      },
+      "answerKeys": {
+        "TYT Türkçe": "string",
+        "TYT Sosyal": "string",
+        "TYT Matematik": "string",
+        "TYT Fen": "string"
+      },
       "scores": {
         "tytScore": number,
         "sayScore": number,
@@ -1670,6 +1693,8 @@ ${pagesText.map((p: any, idx: number) => `--- SAYFA ${p.pageIndex || (idx + 1)} 
           "classAvgNet": number,
           "institutionAvgNet": number,
           "generalAvgNet": number,
+          "opticalAnswers": "string",
+          "answerKey": "string",
           "topics": [
             {
               "topicName": "string",

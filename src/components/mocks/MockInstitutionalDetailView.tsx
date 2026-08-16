@@ -211,15 +211,15 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
   const getSubjectItem = (name: string, subKeys: string[] = []): InstitutionalSubjectDetail | null => {
     const searchKeys = [name];
     if (isTyt) {
-      if (name === 'Türkçe') searchKeys.push('TYT Türkçe');
-      if (name === 'TYT Türkçe') searchKeys.push('Türkçe');
-      if (name === 'TYT Sosyal') searchKeys.push('Sosyal', 'Sosyal Bilimler');
-      if (name === 'TYT Matematik') searchKeys.push('Matematik');
-      if (name === 'TYT Fen') searchKeys.push('Fen', 'Fen Bilimleri');
+      if (name === 'Türkçe' || name === 'TYT Türkçe') searchKeys.push('Türkçe', 'TYT Türkçe');
+      if (name === 'TYT Sosyal' || name === 'Sosyal') searchKeys.push('TYT Sosyal', 'Sosyal', 'Sosyal Bilimler', 'TYT Sosyal Bilimler');
+      if (name === 'TYT Matematik' || name === 'Matematik') searchKeys.push('TYT Matematik', 'Matematik', 'Temel Matematik', 'Matematik-1');
+      if (name === 'TYT Fen' || name === 'Fen') searchKeys.push('TYT Fen', 'Fen', 'Fen Bilimleri', 'TYT Fen Bilimleri');
     } else {
-      if (name === 'Matematik') searchKeys.push('AYT Matematik');
-      if (name === 'Fen Bilimleri') searchKeys.push('Fen', 'AYT Fen');
-      if (name === 'Edebiyat') searchKeys.push('Türk Dili ve Edebiyatı');
+      if (name === 'Matematik' || name === 'AYT Matematik') searchKeys.push('Matematik', 'AYT Matematik', 'Matematik-2');
+      if (name === 'Fen Bilimleri' || name === 'AYT Fen') searchKeys.push('Fen Bilimleri', 'Fen', 'AYT Fen', 'AYT Fen Bilimleri');
+      if (name === 'Edebiyat' || name === 'Edebiyat-Sosyal-1') searchKeys.push('Türk Dili ve Edebiyatı', 'Edebiyat', 'Edebiyat-Sosyal-1', 'TDE-Sos-1');
+      if (name === 'Sosyal-2') searchKeys.push('Sosyal-2', 'Sosyal Bilimler-2', 'AYT Sosyal-2');
     }
 
     const exact = subjects.find(s => searchKeys.some(k => normalizeText(s.subjectName) === normalizeText(k)));
@@ -237,6 +237,10 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
         const institutionAvgNet = Math.round(matching.reduce((sum, s) => sum + (s.institutionAvgNet || 0), 0) * 100) / 100;
         const generalAvgNet = Math.round(matching.reduce((sum, s) => sum + (s.generalAvgNet || 0), 0) * 100) / 100;
         
+        // Aggregate optical answers if present in subkeys
+        const opticalAnswers = matching.map(s => s.opticalAnswers || '').join('').trim() || undefined;
+        const answerKey = matching.map(s => s.answerKey || '').join('').trim() || undefined;
+
         return {
           subjectName: name,
           questionCount,
@@ -247,6 +251,8 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
           classAvgNet,
           institutionAvgNet,
           generalAvgNet,
+          opticalAnswers,
+          answerKey,
           topics: matching.flatMap(s => s.topics || [])
         };
       }
@@ -621,19 +627,72 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
   const renderOpticalRow = (title: string, correct: number, wrong: number, count: number, optAnswers?: string, ansKey?: string) => {
     // Look up optical answers and answer keys if not passed directly
     const subjectItem = getSubjectItem(title) || getSubjectItem(title.replace('TYT ', ''));
-    const opticalStr = optAnswers || 
+    let opticalStr = optAnswers || 
       selectedInstitutionalExam?.opticalAnswers?.[title] || 
       selectedInstitutionalExam?.opticalAnswers?.[title.replace('TYT ', '')] || 
       selectedInstitutionalExam?.opticalAnswers?.[`TYT ${title}`] || 
+      selectedInstitutionalExam?.opticalAnswers?.[`AYT ${title}`] || 
+      (selectedInstitutionalExam?.opticalAnswers && Object.entries(selectedInstitutionalExam.opticalAnswers).find(([k]) => normalizeText(k) === normalizeText(title))?.[1]) ||
       subjectItem?.opticalAnswers || '';
-    const keyStr = ansKey || 
+
+    let keyStr = ansKey || 
       selectedInstitutionalExam?.answerKeys?.[title] || 
       selectedInstitutionalExam?.answerKeys?.[title.replace('TYT ', '')] || 
       selectedInstitutionalExam?.answerKeys?.[`TYT ${title}`] || 
+      selectedInstitutionalExam?.answerKeys?.[`AYT ${title}`] || 
+      (selectedInstitutionalExam?.answerKeys && Object.entries(selectedInstitutionalExam.answerKeys).find(([k]) => normalizeText(k) === normalizeText(title))?.[1]) ||
       subjectItem?.answerKey || '';
 
+    // If title is an AYT aggregate (e.g. Matematik or Fen Bilimleri) and opticalStr is missing,
+    // concatenate sub-subject optical strings:
+    if (!opticalStr && isAyt) {
+      if (title === 'Matematik' || title === 'AYT Matematik') {
+        const mat2Opt = selectedInstitutionalExam?.opticalAnswers?.['Matematik-2'] || getSubjectItem('Matematik-2')?.opticalAnswers || '';
+        const geoOpt = selectedInstitutionalExam?.opticalAnswers?.['Geometri'] || getSubjectItem('Geometri')?.opticalAnswers || '';
+        if (mat2Opt || geoOpt) {
+          opticalStr = (mat2Opt + geoOpt).trim();
+        }
+      } else if (title === 'Fen Bilimleri' || title === 'AYT Fen') {
+        const fizOpt = selectedInstitutionalExam?.opticalAnswers?.['Fizik'] || getSubjectItem('Fizik')?.opticalAnswers || '';
+        const kimOpt = selectedInstitutionalExam?.opticalAnswers?.['Kimya'] || getSubjectItem('Kimya')?.opticalAnswers || '';
+        const biyOpt = selectedInstitutionalExam?.opticalAnswers?.['Biyoloji'] || getSubjectItem('Biyoloji')?.opticalAnswers || '';
+        if (fizOpt || kimOpt || biyOpt) {
+          opticalStr = (fizOpt + kimOpt + biyOpt).trim();
+        }
+      } else if (title === 'Edebiyat-Sosyal-1') {
+        const edbOpt = selectedInstitutionalExam?.opticalAnswers?.['Edebiyat'] || selectedInstitutionalExam?.opticalAnswers?.['Türk Dili ve Edebiyatı'] || getSubjectItem('Edebiyat')?.opticalAnswers || '';
+        const tarOpt = selectedInstitutionalExam?.opticalAnswers?.['Tarih-2'] || selectedInstitutionalExam?.opticalAnswers?.['Tarih-1'] || getSubjectItem('Tarih-2')?.opticalAnswers || '';
+        const cogOpt = selectedInstitutionalExam?.opticalAnswers?.['Coğrafya-2'] || selectedInstitutionalExam?.opticalAnswers?.['Coğrafya-1'] || getSubjectItem('Coğrafya-2')?.opticalAnswers || '';
+        if (edbOpt || tarOpt || cogOpt) {
+          opticalStr = (edbOpt + tarOpt + cogOpt).trim();
+        }
+      }
+    }
+
+    // Normalize space-separated tokens if string is artificially spaced (e.g. "A D C c d" instead of "ADCcd")
+    let cleanOpticalSeq = opticalStr;
+    const isArtificiallySpaced = /^([A-Ea-e*#?._-]\s+){4,}/.test(opticalStr) && !/[A-Ea-e]{3,}/.test(opticalStr);
+    if (isArtificiallySpaced) {
+      const tokens: string[] = [];
+      let i = 0;
+      while (i < opticalStr.length) {
+        const ch = opticalStr[i];
+        if (/[A-Ea-e*#?._-]/.test(ch)) {
+          tokens.push(ch);
+          i++;
+          if (opticalStr[i] === ' ') i++;
+        } else if (ch === ' ') {
+          tokens.push(' ');
+          i++;
+        } else {
+          i++;
+        }
+      }
+      cleanOpticalSeq = tokens.join('');
+    }
+
     // If authentic optical sequence is available:
-    if (opticalStr && opticalStr.trim().length > 0) {
+    if (cleanOpticalSeq && cleanOpticalSeq.trim().length > 0) {
       const bubbles: Array<{
         questionNo: number;
         type: 'correct' | 'wrong' | 'empty';
@@ -643,7 +702,7 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
       }> = [];
 
       for (let idx = 0; idx < count; idx++) {
-        const rawCh = opticalStr[idx] || ' ';
+        const rawCh = cleanOpticalSeq[idx] || ' ';
         const correctChar = keyStr[idx] || '';
 
         let type: 'correct' | 'wrong' | 'empty' = 'empty';
@@ -658,6 +717,10 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
           type = 'wrong';
           char = rawCh.toUpperCase();
           label = `${idx + 1}. Soru: Yanlış (Verilen: ${rawCh.toUpperCase()}${correctChar ? `, Doğru: ${correctChar}` : ''})`;
+        } else if (rawCh === '*' || rawCh === '#') {
+          type = 'correct';
+          char = '*';
+          label = `${idx + 1}. Soru: İptal / Doğru Kabul Edildi`;
         }
 
         bubbles.push({
@@ -1368,17 +1431,21 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                 {isAyt ? (
                   <>
-                    {getSubjectItem('Matematik') && renderOpticalRow('Matematik', getSubjectItem('Matematik')?.correct || 0, getSubjectItem('Matematik')?.wrong || 0, getSubjectItem('Matematik')?.questionCount || 40)}
-                    {getSubjectItem('Fen Bilimleri') && renderOpticalRow('Fen Bilimleri', getSubjectItem('Fen Bilimleri')?.correct || 0, getSubjectItem('Fen Bilimleri')?.wrong || 0, getSubjectItem('Fen Bilimleri')?.questionCount || 40)}
-                    {getSubjectItem('Edebiyat-Sosyal-1') && renderOpticalRow('Edebiyat-Sosyal-1', getSubjectItem('Edebiyat-Sosyal-1')?.correct || 0, getSubjectItem('Edebiyat-Sosyal-1')?.wrong || 0, getSubjectItem('Edebiyat-Sosyal-1')?.questionCount || 40)}
-                    {getSubjectItem('Sosyal-2') && renderOpticalRow('Sosyal-2', getSubjectItem('Sosyal-2')?.correct || 0, getSubjectItem('Sosyal-2')?.wrong || 0, getSubjectItem('Sosyal-2')?.questionCount || 40)}
+                    {(getSubjectItem('Matematik', ['Matematik-2', 'Matematik', 'Geometri']) || subjects.some(s => ['Matematik', 'Matematik-2', 'Geometri'].includes(s.subjectName))) && 
+                      renderOpticalRow('Matematik', getSubjectItem('Matematik', ['Matematik-2', 'Matematik', 'Geometri'])?.correct || 0, getSubjectItem('Matematik', ['Matematik-2', 'Matematik', 'Geometri'])?.wrong || 0, getSubjectItem('Matematik', ['Matematik-2', 'Matematik', 'Geometri'])?.questionCount || 40)}
+                    {(getSubjectItem('Fen Bilimleri', ['Fizik', 'Kimya', 'Biyoloji', 'Fen Bilimleri']) || subjects.some(s => ['Fen Bilimleri', 'Fizik', 'Kimya', 'Biyoloji'].includes(s.subjectName))) && 
+                      renderOpticalRow('Fen Bilimleri', getSubjectItem('Fen Bilimleri', ['Fizik', 'Kimya', 'Biyoloji', 'Fen Bilimleri'])?.correct || 0, getSubjectItem('Fen Bilimleri', ['Fizik', 'Kimya', 'Biyoloji', 'Fen Bilimleri'])?.wrong || 0, getSubjectItem('Fen Bilimleri', ['Fizik', 'Kimya', 'Biyoloji', 'Fen Bilimleri'])?.questionCount || 40)}
+                    {(getSubjectItem('Edebiyat-Sosyal-1', ['Türk Dili ve Edebiyatı', 'Edebiyat', 'Tarih-2', 'Coğrafya-2', 'Edebiyat-Sosyal-1']) || subjects.some(s => ['Türk Dili ve Edebiyatı', 'Edebiyat', 'Tarih-2', 'Coğrafya-2', 'Edebiyat-Sosyal-1'].includes(s.subjectName))) && 
+                      renderOpticalRow('Edebiyat-Sosyal-1', getSubjectItem('Edebiyat-Sosyal-1', ['Türk Dili ve Edebiyatı', 'Edebiyat', 'Tarih-2', 'Coğrafya-2', 'Edebiyat-Sosyal-1'])?.correct || 0, getSubjectItem('Edebiyat-Sosyal-1', ['Türk Dili ve Edebiyatı', 'Edebiyat', 'Tarih-2', 'Coğrafya-2', 'Edebiyat-Sosyal-1'])?.wrong || 0, getSubjectItem('Edebiyat-Sosyal-1', ['Türk Dili ve Edebiyatı', 'Edebiyat', 'Tarih-2', 'Coğrafya-2', 'Edebiyat-Sosyal-1'])?.questionCount || 40)}
+                    {(getSubjectItem('Sosyal-2', ['Sosyal-2', 'Felsefe Grubu', 'Din Kültürü']) || subjects.some(s => ['Sosyal-2', 'Felsefe Grubu', 'Din Kültürü'].includes(s.subjectName))) && 
+                      renderOpticalRow('Sosyal-2', getSubjectItem('Sosyal-2', ['Sosyal-2', 'Felsefe Grubu', 'Din Kültürü'])?.correct || 0, getSubjectItem('Sosyal-2', ['Sosyal-2', 'Felsefe Grubu', 'Din Kültürü'])?.wrong || 0, getSubjectItem('Sosyal-2', ['Sosyal-2', 'Felsefe Grubu', 'Din Kültürü'])?.questionCount || 40)}
                   </>
                 ) : (
                   <>
                     {renderOpticalRow('TYT Türkçe', getSubjectItem('Türkçe')?.correct || 0, getSubjectItem('Türkçe')?.wrong || 0, getSubjectItem('Türkçe')?.questionCount || 40)}
-                    {renderOpticalRow('TYT Sosyal', getSubjectItem('TYT Sosyal')?.correct || 0, getSubjectItem('TYT Sosyal')?.wrong || 0, getSubjectItem('TYT Sosyal')?.questionCount || 20)}
-                    {renderOpticalRow('TYT Matematik', getSubjectItem('TYT Matematik')?.correct || 0, getSubjectItem('TYT Matematik')?.wrong || 0, getSubjectItem('TYT Matematik')?.questionCount || 40)}
-                    {renderOpticalRow('TYT Fen', getSubjectItem('TYT Fen')?.correct || 0, getSubjectItem('TYT Fen')?.wrong || 0, getSubjectItem('TYT Fen')?.questionCount || 20)}
+                    {renderOpticalRow('TYT Sosyal', (getSubjectItem('TYT Sosyal', ['Tarih-1', 'Tarih', 'Coğrafya-1', 'Coğrafya', 'Felsefe', 'Din Kül. ve Ahl. Bil.', 'Din Kültürü']) || getSubjectItem('TYT Sosyal'))?.correct || 0, (getSubjectItem('TYT Sosyal', ['Tarih-1', 'Tarih', 'Coğrafya-1', 'Coğrafya', 'Felsefe', 'Din Kül. ve Ahl. Bil.', 'Din Kültürü']) || getSubjectItem('TYT Sosyal'))?.wrong || 0, (getSubjectItem('TYT Sosyal', ['Tarih-1', 'Tarih', 'Coğrafya-1', 'Coğrafya', 'Felsefe', 'Din Kül. ve Ahl. Bil.', 'Din Kültürü']) || getSubjectItem('TYT Sosyal'))?.questionCount || 20)}
+                    {renderOpticalRow('TYT Matematik', (getSubjectItem('TYT Matematik', ['Matematik-1', 'Geometri']) || getSubjectItem('TYT Matematik'))?.correct || 0, (getSubjectItem('TYT Matematik', ['Matematik-1', 'Geometri']) || getSubjectItem('TYT Matematik'))?.wrong || 0, (getSubjectItem('TYT Matematik', ['Matematik-1', 'Geometri']) || getSubjectItem('TYT Matematik'))?.questionCount || 40)}
+                    {renderOpticalRow('TYT Fen', (getSubjectItem('TYT Fen', ['Fizik', 'Kimya', 'Biyoloji']) || getSubjectItem('TYT Fen'))?.correct || 0, (getSubjectItem('TYT Fen', ['Fizik', 'Kimya', 'Biyoloji']) || getSubjectItem('TYT Fen'))?.wrong || 0, (getSubjectItem('TYT Fen', ['Fizik', 'Kimya', 'Biyoloji']) || getSubjectItem('TYT Fen'))?.questionCount || 20)}
                   </>
                 )}
               </div>

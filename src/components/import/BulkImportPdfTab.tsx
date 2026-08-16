@@ -102,7 +102,7 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
     setParsedRows([]);
 
     try {
-      const allExtractedPages: Array<{ pageIndex: number; text: string; fileName: string }> = [];
+      const allExtractedPages: Array<{ pageIndex: number; text: string; fileName: string; opticalAnswers?: Record<string, string>; answerKeys?: Record<string, string> }> = [];
 
       for (let fIdx = 0; fIdx < files.length; fIdx++) {
         if (isCancelledRef.current) break;
@@ -192,11 +192,34 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
       setProcessStep('Öğrenciler sistem veritabanı ile eşleştiriliyor...');
 
       // Transform raw reports into ParsedStudentRow items
-      const rows: ParsedStudentRow[] = allReports.map((rep: any) => {
+      const rows: ParsedStudentRow[] = allReports.map((rep: any, repIdx: number) => {
         const studentName = (rep.studentName || '').trim();
         const schoolNumber = (rep.schoolNumber || '').trim();
         const className = getMappedClassName(rep.className || '');
         const scores = rep.scores || {};
+
+        const pageOptical = allExtractedPages[repIdx]?.opticalAnswers || {};
+        const pageKeys = allExtractedPages[repIdx]?.answerKeys || {};
+        const aiOptical = rep.opticalAnswers || {};
+        const aiKeys = rep.answerKeys || {};
+
+        const mergedOpticalAnswers: Record<string, string> = { ...pageOptical, ...aiOptical };
+        const mergedAnswerKeys: Record<string, string> = { ...pageKeys, ...aiKeys };
+
+        // Also merge onto each subject in subjects array
+        const rawSubjects: InstitutionalSubjectDetail[] = Array.isArray(rep.subjects) ? rep.subjects : [];
+        const subjects: InstitutionalSubjectDetail[] = rawSubjects.map((s: any) => {
+          const sName = s.subjectName || '';
+          const sOpt = s.opticalAnswers || mergedOpticalAnswers[sName] || mergedOpticalAnswers[sName.replace('TYT ', '')] || mergedOpticalAnswers[`TYT ${sName}`];
+          const sKey = s.answerKey || mergedAnswerKeys[sName] || mergedAnswerKeys[sName.replace('TYT ', '')] || mergedAnswerKeys[`TYT ${sName}`];
+          if (sOpt) mergedOpticalAnswers[sName] = sOpt;
+          if (sKey) mergedAnswerKeys[sName] = sKey;
+          return {
+            ...s,
+            ...(sOpt ? { opticalAnswers: sOpt } : {}),
+            ...(sKey ? { answerKey: sKey } : {})
+          };
+        });
 
         const matchResult = matchStudentToSystem(studentName, schoolNumber, className, studentUsers, studentsData);
 
@@ -228,7 +251,9 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
           classParticipantCount: scores.classParticipantCount || 0,
           institutionParticipantCount: scores.institutionParticipantCount || 0,
           generalParticipantCount: scores.generalParticipantCount || 0,
-          subjects: Array.isArray(rep.subjects) ? rep.subjects : []
+          opticalAnswers: mergedOpticalAnswers,
+          answerKeys: mergedAnswerKeys,
+          subjects: subjects
         };
       });
 
@@ -365,6 +390,8 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
           institutionParticipantCount: row.institutionParticipantCount,
           generalParticipantCount: row.generalParticipantCount,
         },
+        opticalAnswers: row.opticalAnswers,
+        answerKeys: row.answerKeys,
         subjects: row.subjects
       };
     });
@@ -929,6 +956,8 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
                   cityParticipantCount: selectedDetailRow.cityParticipantCount,
                   generalParticipantCount: selectedDetailRow.generalParticipantCount
                 },
+                opticalAnswers: selectedDetailRow.opticalAnswers,
+                answerKeys: selectedDetailRow.answerKeys,
                 subjects: selectedDetailRow.subjects
               }}
               setSelectedInstitutionalExam={() => setSelectedDetailRow(null)}

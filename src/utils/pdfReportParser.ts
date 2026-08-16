@@ -29,8 +29,125 @@ export function normalizeTurkishText(str: string): string {
 }
 
 /**
- * Strips out answer key sequences, TCPDF markers, and raw bar chart coordinates
- * to drastically save Gemini API tokens while preserving all exam tables & topic breakdowns.
+ * Extracts student optical answer bubbling sequences and answer keys from raw PDF text.
+ * Handles strings like "ADCcdACEEd aaEAddBdBEaBcdeEBCdBCBDBDCCC", where:
+ * - Uppercase letters (A-E) = Correct answers
+ * - Lowercase letters (a-e) = Wrong answers
+ * - Spaces = Blank/empty questions
+ */
+export function extractOpticalDataFromPdfText(pageText: string): {
+  opticalAnswers: Record<string, string>;
+  answerKeys: Record<string, string>;
+} {
+  const opticalAnswers: Record<string, string> = {};
+  const answerKeys: Record<string, string> = {};
+
+  if (!pageText) return { opticalAnswers, answerKeys };
+
+  const lines = pageText.split('\n');
+
+  const subjectMatchers: Array<{
+    keys: string[];
+    namePattern: RegExp;
+  }> = [
+    {
+      keys: ['Türkçe', 'TYT Türkçe'],
+      namePattern: /(?:^|\b)(?:TYT\s*)?Türkçe\b/i
+    },
+    {
+      keys: ['TYT Sosyal', 'Sosyal'],
+      namePattern: /(?:^|\b)(?:TYT\s*)?Sosyal(?:\s*Bilimler)?(?:\s*-?\s*1)?\b/i
+    },
+    {
+      keys: ['TYT Matematik', 'Matematik', 'Matematik-1', 'Matematik-2'],
+      namePattern: /(?:^|\b)(?:TYT\s*|AYT\s*)?Matematik(?:-?[12])?\b/i
+    },
+    {
+      keys: ['TYT Fen', 'Fen', 'Fen Bilimleri'],
+      namePattern: /(?:^|\b)(?:TYT\s*|AYT\s*)?Fen(?:\s*Bilimleri)?\b/i
+    },
+    {
+      keys: ['Edebiyat-Sosyal-1', 'Türk Dili ve Edebiyatı', 'Edebiyat'],
+      namePattern: /(?:^|\b)(?:Edebiyat-Sosyal(?:-1)?|Türk Dili ve Edebiyatı|Edebiyat)\b/i
+    },
+    {
+      keys: ['Sosyal-2'],
+      namePattern: /(?:^|\b)Sosyal-2\b/i
+    },
+    {
+      keys: ['Fizik', 'TYT Fizik'],
+      namePattern: /(?:^|\b)(?:TYT\s*)?Fizik\b/i
+    },
+    {
+      keys: ['Kimya', 'TYT Kimya'],
+      namePattern: /(?:^|\b)(?:TYT\s*)?Kimya\b/i
+    },
+    {
+      keys: ['Biyoloji', 'TYT Biyoloji'],
+      namePattern: /(?:^|\b)(?:TYT\s*)?Biyoloji\b/i
+    }
+  ];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    // 1. Standalone Cevap Anahtarı line
+    if (/Cevap\s*Anahtarı/i.test(line)) {
+      const keyMatch = line.match(/Cevap\s*Anahtarı\s*(?:[A-Z]\s*)?([A-E\s]{8,})/i);
+      if (keyMatch) {
+        const rawKey = keyMatch[1].trim();
+        for (const matcher of subjectMatchers) {
+          if (matcher.namePattern.test(line)) {
+            matcher.keys.forEach(k => { answerKeys[k] = rawKey; });
+          }
+        }
+      }
+    }
+
+    // 2. Optical student answer lines
+    for (const matcher of subjectMatchers) {
+      if (matcher.namePattern.test(line)) {
+        // Strip out the subject name itself
+        let lineAfterSubject = line.replace(matcher.namePattern, '').trim();
+
+        // If line contains Cevap Anahtarı, extract answer key too
+        if (/Cevap\s*Anahtarı/i.test(lineAfterSubject)) {
+          const parts = lineAfterSubject.split(/Cevap\s*Anahtarı/i);
+          lineAfterSubject = (parts[0] || '').trim();
+          const keyCandidateMatch = (parts[1] || '').match(/(?:[A-Z]\s*)?([A-E\s]{6,})/i);
+          if (keyCandidateMatch) {
+            const rawKey = keyCandidateMatch[1].trim();
+            matcher.keys.forEach(k => { answerKeys[k] = rawKey; });
+          }
+        }
+
+        // Look for optical answer sequence in remaining string or next line
+        const optMatch = lineAfterSubject.match(/[A-Ea-e\s*#?._-]{6,}/);
+        if (optMatch && /[A-Ea-e]/.test(optMatch[0])) {
+          const rawCandidate = optMatch[0];
+          // Ensure it is primarily letters and spaces (not numbers/words)
+          if (/^[A-Ea-e\s*#?._-]+$/.test(rawCandidate.trim())) {
+            matcher.keys.forEach(k => { opticalAnswers[k] = rawCandidate; });
+          }
+        } else if (lines[i + 1]) {
+          const nextLine = lines[i + 1].trim();
+          if (/^[A-Ea-e\s*#?._-]{6,}$/.test(nextLine) && /[A-Ea-e]/.test(nextLine) && !/Cevap|Soru|Analiz|Konu|Puan|Snf|Kurum|Net|Doğru|Yanlış/i.test(nextLine)) {
+            matcher.keys.forEach(k => {
+              if (!opticalAnswers[k]) opticalAnswers[k] = nextLine;
+            });
+          }
+        }
+      }
+    }
+  }
+
+  return { opticalAnswers, answerKeys };
+}
+
+/**
+ * Strips out TCPDF markers and raw bar chart coordinates
+ * while preserving exam tables, student optical answer lines, and topic breakdowns.
  */
 export function cleanRawPdfPageText(pageText: string): string {
   if (!pageText) return '';
@@ -45,20 +162,7 @@ export function cleanRawPdfPageText(pageText: string): string {
     // Remove TCPDF watermark / footer
     if (/Powered by TCPDF/i.test(trimmed)) continue;
 
-    // Remove Cevap Anahtarı lines (e.g. Cevap Anahtarı A BBDCBDEEEB...)
-    if (/^Cevap\s*Anahtarı/i.test(trimmed)) continue;
-
-    // Remove Soru No sequences (e.g. Soru No 1234567890...)
-    if (/^Soru\s*No/i.test(trimmed)) continue;
-    if (/^12345678901234567890/i.test(trimmed)) continue;
-
-    // Remove raw student optical answer bubbling strings (e.g. "CDDeDEbE B dEA CdB ba D cCca CA EA", "CEBeEb BDBDEAaaADDbe...")
-    if (/^(Matematik|Fen Bilimleri|TYT Fen|TYT Matematik|TYT Sosyal|TYT Türkçe|Edebiyat-Sosyal-1|Sosyal-2)\s+[a-zA-Z\s*#]{12,}$/i.test(trimmed)) {
-      // It is an optical student bubbling line, strip out to save tokens
-      continue;
-    }
-
-    // Remove chart axis labels / numbers line (e.g. "100 80 60 40 20 0 MAT2 GEO FİZ KİM BİY Öğr. Sınıf Kurum İlçe İl Genel")
+    // Remove raw numeric chart axis labels / coordinates
     if (/^(100\s+80\s+60|0\s+20\s+40|MAT2\s+GEO|FİZ\s+KİM\s+BİY|TÜR\s+TAR1\s+COĞ1)/i.test(trimmed)) {
       continue;
     }
@@ -73,18 +177,18 @@ export function cleanRawPdfPageText(pageText: string): string {
 }
 
 /**
- * Extracts structured line-by-line text from every page of a PDF file using pdfjs-dist
+ * Extracts structured line-by-line text and optical answer sequences from every page of a PDF file using pdfjs-dist
  */
 export async function extractTextFromPdfFile(
   file: File,
   onProgress?: (current: number, total: number) => void
-): Promise<Array<{ pageIndex: number; text: string }>> {
+): Promise<Array<{ pageIndex: number; text: string; opticalAnswers?: Record<string, string>; answerKeys?: Record<string, string> }>> {
   const arrayBuffer = await file.arrayBuffer();
   const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
   const pdfDoc = await loadingTask.promise;
   const numPages = pdfDoc.numPages;
 
-  const pagesText: Array<{ pageIndex: number; text: string }> = [];
+  const pagesText: Array<{ pageIndex: number; text: string; opticalAnswers?: Record<string, string>; answerKeys?: Record<string, string> }> = [];
 
   for (let i = 1; i <= numPages; i++) {
     const page = await pdfDoc.getPage(i);
@@ -130,11 +234,12 @@ export async function extractTextFromPdfFile(
     });
 
     const fullPageText = rawLines.join('\n');
+    const { opticalAnswers, answerKeys } = extractOpticalDataFromPdfText(fullPageText);
     const cleanedText = cleanRawPdfPageText(fullPageText);
     
     // Always include page text if it has student header information
     if (cleanedText.length > 20) {
-      pagesText.push({ pageIndex: i, text: cleanedText });
+      pagesText.push({ pageIndex: i, text: cleanedText, opticalAnswers, answerKeys });
     }
 
     if (onProgress) {
