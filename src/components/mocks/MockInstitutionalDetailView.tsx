@@ -187,7 +187,14 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
 
   // Helper to find or calculate structured subject rows
   const getSubjectItem = (name: string, subKeys: string[] = []): InstitutionalSubjectDetail | null => {
-    const exact = subjects.find(s => normalizeText(s.subjectName) === normalizeText(name));
+    const searchKeys = [name];
+    if (name === 'Türkçe') searchKeys.push('TYT Türkçe');
+    if (name === 'TYT Türkçe') searchKeys.push('Türkçe');
+    if (name === 'TYT Sosyal') searchKeys.push('Sosyal', 'Sosyal Bilimler');
+    if (name === 'TYT Matematik') searchKeys.push('Matematik');
+    if (name === 'TYT Fen') searchKeys.push('Fen', 'Fen Bilimleri');
+
+    const exact = subjects.find(s => searchKeys.some(k => normalizeText(s.subjectName) === normalizeText(k)));
     if (exact) return exact;
 
     if (subKeys.length > 0) {
@@ -228,7 +235,7 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
 
   if (isTyt) {
     // 1. Türkçe
-    const turkce = getSubjectItem('Türkçe');
+    const turkce = getSubjectItem('Türkçe') || getSubjectItem('TYT Türkçe');
     if (turkce) tableRows.push({ item: turkce });
 
     // 2. Sosyal alt dersleri
@@ -278,12 +285,12 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
 
     // 5. Toplam
     const subtotalItems = [turkce, tytSosyal, tytMat, tytFen].filter(Boolean) as InstitutionalSubjectDetail[];
-    const totalRow = getSubjectItem('Toplam:') || {
+    const totalRow = getSubjectItem('Toplam:') || getSubjectItem('Toplam') || {
       subjectName: 'Toplam:',
       questionCount: subtotalItems.reduce((acc, s) => acc + (s.questionCount || 0), 0) || 120,
       correct: subtotalItems.reduce((acc, s) => acc + (s.correct || 0), 0),
       wrong: subtotalItems.reduce((acc, s) => acc + (s.wrong || 0), 0),
-      net: Math.round(subtotalItems.reduce((acc, s) => acc + (s.net || 0), 0) * 100) / 100,
+      net: selectedInstitutionalExam.totalNet || Math.round(subtotalItems.reduce((acc, s) => acc + (s.net || 0), 0) * 100) / 100,
       successRate: Math.round((subtotalItems.reduce((acc, s) => acc + (s.net || 0), 0) / 120) * 100),
       classAvgNet: Math.round(subtotalItems.reduce((acc, s) => acc + (s.classAvgNet || 0), 0) * 100) / 100,
       institutionAvgNet: Math.round(subtotalItems.reduce((acc, s) => acc + (s.institutionAvgNet || 0), 0) * 100) / 100,
@@ -333,9 +340,17 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
   // Helper for generating illustrative or authentic optical answer bubbled indicators
   const renderOpticalRow = (title: string, correct: number, wrong: number, count: number, optAnswers?: string, ansKey?: string) => {
     // Look up optical answers and answer keys if not passed directly
-    const subjectItem = getSubjectItem(title);
-    const opticalStr = optAnswers || selectedInstitutionalExam?.opticalAnswers?.[title] || subjectItem?.opticalAnswers || '';
-    const keyStr = ansKey || selectedInstitutionalExam?.answerKeys?.[title] || subjectItem?.answerKey || '';
+    const subjectItem = getSubjectItem(title) || getSubjectItem(title.replace('TYT ', ''));
+    const opticalStr = optAnswers || 
+      selectedInstitutionalExam?.opticalAnswers?.[title] || 
+      selectedInstitutionalExam?.opticalAnswers?.[title.replace('TYT ', '')] || 
+      selectedInstitutionalExam?.opticalAnswers?.[`TYT ${title}`] || 
+      subjectItem?.opticalAnswers || '';
+    const keyStr = ansKey || 
+      selectedInstitutionalExam?.answerKeys?.[title] || 
+      selectedInstitutionalExam?.answerKeys?.[title.replace('TYT ', '')] || 
+      selectedInstitutionalExam?.answerKeys?.[`TYT ${title}`] || 
+      subjectItem?.answerKey || '';
 
     // If authentic optical sequence is available:
     if (opticalStr && opticalStr.trim().length > 0) {

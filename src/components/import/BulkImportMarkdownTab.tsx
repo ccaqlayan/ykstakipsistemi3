@@ -247,6 +247,7 @@ export const BulkImportMarkdownTab: React.FC<BulkImportMarkdownTabProps> = ({
           institutionParticipantCount: row.institutionParticipantCount,
           generalParticipantCount: row.generalParticipantCount,
         },
+        totalNet: row.totalNet,
         opticalAnswers: row.opticalAnswers,
         answerKeys: row.answerKeys,
         subjects: row.subjects
@@ -518,7 +519,14 @@ export const BulkImportMarkdownTab: React.FC<BulkImportMarkdownTabProps> = ({
                 ) : (
                   paginatedRows.map((row) => {
                     const originalIndex = parsedRows.indexOf(row);
-                    const totalNet = row.subjects.reduce((sum, s) => sum + (s.net || 0), 0).toFixed(2);
+                    const totalNet = row.totalNet !== undefined 
+                      ? row.totalNet.toFixed(2) 
+                      : (
+                          (row.subjects.find(s => s.subjectName === 'Türkçe' || s.subjectName === 'TYT Türkçe')?.net || 0) +
+                          (row.subjects.find(s => s.subjectName === 'TYT Sosyal')?.net || 0) +
+                          (row.subjects.find(s => s.subjectName === 'TYT Matematik')?.net || 0) +
+                          (row.subjects.find(s => s.subjectName === 'TYT Fen')?.net || 0)
+                        ).toFixed(2);
                     const isMatched = Boolean(row.matchedStudentId);
 
                     return (
@@ -775,6 +783,7 @@ export const BulkImportMarkdownTab: React.FC<BulkImportMarkdownTabProps> = ({
                   institutionParticipantCount: selectedDetailRow.institutionParticipantCount,
                   generalParticipantCount: selectedDetailRow.generalParticipantCount
                 },
+                totalNet: selectedDetailRow.totalNet,
                 opticalAnswers: selectedDetailRow.opticalAnswers,
                 answerKeys: selectedDetailRow.answerKeys,
                 subjects: selectedDetailRow.subjects

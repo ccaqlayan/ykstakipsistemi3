@@ -302,6 +302,7 @@ export interface InstitutionalMockExam {
   studentName: string;
   schoolNumber?: string;
   className?: string;
+  totalNet?: number;
   opticalAnswers?: Record<string, string>; // { "TYT Türkçe": "ADCcd...", "TYT Sosyal": "bC ba...", ... }
   answerKeys?: Record<string, string>; // { "TYT Türkçe": "ADCAA...", ... }
   scores: {
@@ -643,6 +644,7 @@ export interface ParsedStudentRow {
   classParticipantCount?: number;
   institutionParticipantCount?: number;
   generalParticipantCount?: number;
+  totalNet?: number;
   opticalAnswers?: Record<string, string>;
   answerKeys?: Record<string, string>;
   subjects: InstitutionalSubjectDetail[];
