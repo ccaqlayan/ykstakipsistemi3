@@ -36,6 +36,20 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
     topicName: string;
   } | null>(null);
 
+  const [activeBubble, setActiveBubble] = useState<{
+    key: string;
+    label: string;
+    type: 'correct' | 'wrong' | 'empty';
+    char: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!activeBubble) return;
+    const handleGlobalClick = () => setActiveBubble(null);
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, [activeBubble]);
+
   useEffect(() => {
     if (selectedInstitutionalExam) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -404,7 +418,7 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
 
         let type: 'correct' | 'wrong' | 'empty' = 'empty';
         let char = '-';
-        let label = `${idx + 1}. Soru: Boş${correctChar ? ` (Doğru: ${correctChar})` : ''}`;
+        let label = `${idx + 1}. Soru: Boş${correctChar ? ` (Doğru Cevap: ${correctChar})` : ''}`;
 
         if (rawCh >= 'A' && rawCh <= 'Z') {
           type = 'correct';
@@ -438,21 +452,59 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
             </span>
           </div>
           <div className="flex flex-wrap gap-0.5">
-            {bubbles.map((b) => (
-              <div
-                key={b.questionNo}
-                className={`w-3.5 h-3.5 rounded-[3px] text-[7.5px] font-extrabold flex items-center justify-center font-mono cursor-pointer transition-transform hover:scale-125 select-none ${
-                  b.type === 'correct'
-                    ? 'bg-emerald-600 text-white shadow-xs shadow-emerald-700/30'
-                    : b.type === 'wrong'
-                      ? 'bg-rose-600 text-white shadow-xs shadow-rose-700/30'
-                      : 'bg-slate-200 text-slate-400 border border-slate-300/50'
-                }`}
-                title={b.label}
-              >
-                {b.char}
-              </div>
-            ))}
+            {bubbles.map((b) => {
+              const bubbleKey = `${title}-${b.questionNo}`;
+              const isActive = activeBubble?.key === bubbleKey;
+
+              return (
+                <div
+                  key={b.questionNo}
+                  className="relative inline-block"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveBubble(prev => prev?.key === bubbleKey ? null : {
+                      key: bubbleKey,
+                      label: b.label,
+                      type: b.type,
+                      char: b.char
+                    });
+                  }}
+                >
+                  <div
+                    className={`w-3.5 h-3.5 rounded-[3px] text-[7.5px] font-extrabold flex items-center justify-center font-mono cursor-pointer transition-transform hover:scale-125 select-none ${
+                      isActive ? 'ring-2 ring-cyan-500 scale-125 z-20' : ''
+                    } ${
+                      b.type === 'correct'
+                        ? 'bg-emerald-600 text-white shadow-xs shadow-emerald-700/30'
+                        : b.type === 'wrong'
+                          ? 'bg-rose-600 text-white shadow-xs shadow-rose-700/30'
+                          : 'bg-slate-200 text-slate-400 border border-slate-300/50'
+                    }`}
+                    title={b.label}
+                  >
+                    {b.char}
+                  </div>
+
+                  {/* Mini Info Balloon Tooltip (Mobile & Click) */}
+                  {isActive && (
+                    <div 
+                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 whitespace-nowrap bg-slate-950 text-white text-[10px] font-sans font-bold px-2.5 py-1 rounded-lg shadow-2xl border border-white/20 flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-150 pointer-events-auto"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveBubble(null);
+                      }}
+                    >
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${
+                        b.type === 'correct' ? 'bg-emerald-400' : b.type === 'wrong' ? 'bg-rose-400' : 'bg-slate-400'
+                      }`} />
+                      <span>{b.label}</span>
+                      {/* Downward triangle arrow pointer */}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-950" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       );
@@ -473,21 +525,59 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
           <span className="font-mono text-[8px] text-slate-500">{correct}D • {wrong}Y • {empty}B</span>
         </div>
         <div className="flex flex-wrap gap-0.5">
-          {items.map((type, idx) => (
-            <div
-              key={idx}
-              className={`w-3 h-3 rounded-[2px] text-[7px] font-bold flex items-center justify-center font-mono ${
-                type === 'correct'
-                  ? 'bg-emerald-600 text-white'
-                  : type === 'wrong'
-                    ? 'bg-rose-600 text-white'
-                    : 'bg-slate-200 text-slate-400'
-              }`}
-              title={`${idx + 1}. Soru: ${type === 'correct' ? 'Doğru' : type === 'wrong' ? 'Yanlış' : 'Boş'}`}
-            >
-              {idx + 1}
-            </div>
-          ))}
+          {items.map((type, idx) => {
+            const fallbackKey = `${title}-fallback-${idx + 1}`;
+            const isActive = activeBubble?.key === fallbackKey;
+            const label = `${idx + 1}. Soru: ${type === 'correct' ? 'Doğru' : type === 'wrong' ? 'Yanlış' : 'Boş'}`;
+
+            return (
+              <div
+                key={idx}
+                className="relative inline-block"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveBubble(prev => prev?.key === fallbackKey ? null : {
+                    key: fallbackKey,
+                    label,
+                    type,
+                    char: String(idx + 1)
+                  });
+                }}
+              >
+                <div
+                  className={`w-3.5 h-3.5 rounded-[3px] text-[7.5px] font-extrabold flex items-center justify-center font-mono cursor-pointer transition-transform hover:scale-125 select-none ${
+                    isActive ? 'ring-2 ring-cyan-500 scale-125 z-20' : ''
+                  } ${
+                    type === 'correct'
+                      ? 'bg-emerald-600 text-white shadow-xs shadow-emerald-700/30'
+                      : type === 'wrong'
+                        ? 'bg-rose-600 text-white shadow-xs shadow-rose-700/30'
+                        : 'bg-slate-200 text-slate-400 border border-slate-300/50'
+                  }`}
+                  title={label}
+                >
+                  {idx + 1}
+                </div>
+
+                {/* Mobile Popover */}
+                {isActive && (
+                  <div 
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 whitespace-nowrap bg-slate-950 text-white text-[10px] font-sans font-bold px-2.5 py-1 rounded-lg shadow-2xl border border-white/20 flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-150 pointer-events-auto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveBubble(null);
+                    }}
+                  >
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${
+                      type === 'correct' ? 'bg-emerald-400' : type === 'wrong' ? 'bg-rose-400' : 'bg-slate-400'
+                    }`} />
+                    <span>{label}</span>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-slate-950" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     );
