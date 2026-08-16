@@ -397,23 +397,30 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
       if (sos2Sub && sos2Sub.questionCount > 0) tableRows.push({ item: sos2Sub, isSubtotal: true });
     }
 
-    // ─── 3. AYT TOPLAM ROW ───
-    const rawTotal = getSubjectItem('Toplam:') || getSubjectItem('Toplam') || {
-      subjectName: 'AYT Toplam',
-      questionCount: 286,
-      correct: 151,
-      wrong: 34,
-      net: selectedInstitutionalExam.totalNet || 142.50,
-      successRate: 50,
-      classAvgNet: 114.42,
-      institutionAvgNet: 100.25,
-      generalAvgNet: 93.22,
-      topics: []
-    };
+    // ─── 3. AYT TOPLAM ROW (Only AYT subjects, excluding TYT) ───
+    const aytBranches = [matAyt, fenAyt, edbSos1, sos2].filter((s): s is InstitutionalSubjectDetail => Boolean(s && ((s.questionCount || 0) > 0 || (s.net || 0) > 0)));
+
+    const aytQCount = aytBranches.reduce((sum, s) => sum + (s.questionCount || 0), 0) || 80;
+    const aytCorr = aytBranches.reduce((sum, s) => sum + (s.correct || 0), 0);
+    const aytWrg = aytBranches.reduce((sum, s) => sum + (s.wrong || 0), 0);
+    const aytNet = Math.round(aytBranches.reduce((sum, s) => sum + (s.net || 0), 0) * 100) / 100;
+    const aytClassAvg = Math.round(aytBranches.reduce((sum, s) => sum + (s.classAvgNet || 0), 0) * 100) / 100;
+    const aytInstAvg = Math.round(aytBranches.reduce((sum, s) => sum + (s.institutionAvgNet || 0), 0) * 100) / 100;
+    const aytGenAvg = Math.round(aytBranches.reduce((sum, s) => sum + (s.generalAvgNet || 0), 0) * 100) / 100;
+    const aytSuccessRate = aytQCount > 0 ? Math.round((Math.max(0, aytNet) / aytQCount) * 100) : 0;
+
     tableRows.push({
       item: {
-        ...rawTotal,
-        subjectName: 'AYT Toplam'
+        subjectName: 'AYT Toplam',
+        questionCount: aytQCount,
+        correct: aytCorr,
+        wrong: aytWrg,
+        net: aytNet,
+        successRate: aytSuccessRate,
+        classAvgNet: aytClassAvg,
+        institutionAvgNet: aytInstAvg,
+        generalAvgNet: aytGenAvg,
+        topics: []
       },
       isTotal: true
     });
