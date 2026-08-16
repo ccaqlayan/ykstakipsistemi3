@@ -364,7 +364,21 @@ export function parseMarkdownExamReport(
     let match: RegExpExecArray | null;
     while ((match = singleLineRegex.exec(chunk)) !== null) {
       let sName = match[1].replace(':', '').trim();
-      if (sName === 'Din Kültürü') sName = 'Din Kül. ve Ahl. Bil.';
+      const qCount = match[2] ? parseInt(match[2], 10) : 0;
+      const hasAvgs = Boolean(match[7] && match[8]);
+
+      if (detectedExamType === 'AYT') {
+        if (sName === 'Fizik' && (qCount === 7 || !hasAvgs)) sName = 'TYT Fizik';
+        else if (sName === 'Kimya' && (qCount === 7 || !hasAvgs)) sName = 'TYT Kimya';
+        else if (sName === 'Biyoloji' && (qCount === 6 || !hasAvgs)) sName = 'TYT Biyoloji';
+        else if (sName === 'Geometri' && (qCount === 10 || !hasAvgs)) sName = 'TYT Geometri';
+        else if (sName === 'Din Kültürü' || sName === 'Din Kül. ve Ahl. Bil.') {
+          sName = hasAvgs ? 'Din Kültürü' : 'Din Kül. ve Ahl. Bil.';
+        }
+      } else {
+        if (sName === 'Din Kültürü') sName = 'Din Kül. ve Ahl. Bil.';
+      }
+
       const subj = getSubject(sName);
       subj.correct = parseInt(match[3], 10) || 0;
       subj.wrong = parseInt(match[4], 10) || 0;
@@ -373,7 +387,7 @@ export function parseMarkdownExamReport(
       if (match[7]) subj.classAvgNet = cleanNum(match[7]);
       if (match[8]) subj.institutionAvgNet = cleanNum(match[8]);
       if (match[9]) subj.generalAvgNet = cleanNum(match[9]);
-      subj.questionCount = match[2] ? parseInt(match[2], 10) : (subj.correct + subj.wrong);
+      subj.questionCount = qCount || (subj.correct + subj.wrong);
     }
 
     // 2. Average Signature Matching for vertical / interlaced OCR chunks

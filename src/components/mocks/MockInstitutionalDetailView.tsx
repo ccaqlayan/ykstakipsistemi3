@@ -262,43 +262,43 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
   if (isAyt) {
     // ─── 1. LINKED TYT ROWS ───
     const tytSubjectList = [
-      'Türkçe',
-      'Tarih-1',
-      'Coğrafya-1',
-      'Felsefe',
-      'Din Kül. ve Ahl. Bil.',
-      'TYT Sosyal',
-      'Matematik-1',
-      'Geometri',
-      'TYT Matematik',
-      'Fizik',
-      'Kimya',
-      'Biyoloji',
-      'TYT Fen'
+      { name: 'Türkçe', keys: ['Türkçe', 'TYT Türkçe'] },
+      { name: 'Tarih-1', keys: ['Tarih-1', 'Tarih'] },
+      { name: 'Coğrafya-1', keys: ['Coğrafya-1', 'Coğrafya'] },
+      { name: 'Felsefe', keys: ['Felsefe'] },
+      { name: 'Din Kül. ve Ahl. Bil.', keys: ['Din Kül. ve Ahl. Bil.', 'Din Kültürü'] },
+      { name: 'TYT Sosyal', keys: ['TYT Sosyal', 'Sosyal'], isSubtotal: true },
+      { name: 'Matematik-1', keys: ['Matematik-1'] },
+      { name: 'Geometri', keys: ['TYT Geometri', 'Geometri'] },
+      { name: 'TYT Matematik', keys: ['TYT Matematik'], isSubtotal: true },
+      { name: 'Fizik', keys: ['TYT Fizik', 'Fizik'] },
+      { name: 'Kimya', keys: ['TYT Kimya', 'Kimya'] },
+      { name: 'Biyoloji', keys: ['TYT Biyoloji', 'Biyoloji'] },
+      { name: 'TYT Fen', keys: ['TYT Fen'], isSubtotal: true }
     ];
 
-    const hasLinkedTyt = subjects.some(s => ['Türkçe', 'TYT Sosyal', 'Matematik-1', 'TYT Matematik', 'TYT Fen'].includes(s.subjectName));
+    const hasLinkedTyt = subjects.some(s => ['Türkçe', 'TYT Sosyal', 'Matematik-1', 'TYT Matematik', 'TYT Fen', 'TYT Fizik', 'TYT Kimya', 'TYT Biyoloji'].includes(s.subjectName));
 
     if (hasLinkedTyt) {
-      tytSubjectList.forEach(sName => {
+      tytSubjectList.forEach(conf => {
         const item = subjects.find(s => {
-          if (sName === 'Geometri') return s.subjectName === 'Geometri' && s.questionCount === 10;
-          if (sName === 'Fizik') return s.subjectName === 'Fizik' && s.questionCount === 7;
-          if (sName === 'Kimya') return s.subjectName === 'Kimya' && s.questionCount === 7;
-          if (sName === 'Biyoloji') return s.subjectName === 'Biyoloji' && s.questionCount === 6;
-          return normalizeText(s.subjectName) === normalizeText(sName);
+          if (conf.name === 'Geometri') return s.subjectName === 'TYT Geometri' || (s.subjectName === 'Geometri' && s.questionCount === 10);
+          if (conf.name === 'Fizik') return s.subjectName === 'TYT Fizik' || (s.subjectName === 'Fizik' && s.questionCount === 7);
+          if (conf.name === 'Kimya') return s.subjectName === 'TYT Kimya' || (s.subjectName === 'Kimya' && s.questionCount === 7);
+          if (conf.name === 'Biyoloji') return s.subjectName === 'TYT Biyoloji' || (s.subjectName === 'Biyoloji' && s.questionCount === 6);
+          return conf.keys.some(k => normalizeText(s.subjectName) === normalizeText(k));
         });
 
         if (item && item.questionCount > 0) {
-          const isSub = ['TYT Sosyal', 'TYT Matematik', 'TYT Fen'].includes(item.subjectName);
           tableRows.push({
             item: {
               ...item,
+              subjectName: conf.name,
               classAvgNet: undefined,
               institutionAvgNet: undefined,
               generalAvgNet: undefined
             },
-            isSubtotal: isSub,
+            isSubtotal: conf.isSubtotal,
             isLinkedTyt: true
           });
         }
@@ -308,54 +308,64 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
     // ─── 2. AYT MAIN ROWS ───
     // Matematik-2
     const mat2 = getSubjectItem('Matematik-2');
-    if (mat2) tableRows.push({ item: mat2 });
+    if (mat2 && mat2.questionCount > 0) tableRows.push({ item: mat2 });
 
     // Geometri (AYT)
-    const geoAyt = subjects.find(s => s.subjectName === 'Geometri' && s.questionCount !== 10) || getSubjectItem('Geometri');
-    if (geoAyt && !tableRows.some(r => r.item === geoAyt)) tableRows.push({ item: geoAyt });
+    const geoAyt = subjects.find(s => s.subjectName === 'Geometri' && s.questionCount !== 10);
+    if (geoAyt && geoAyt.questionCount > 0) tableRows.push({ item: geoAyt });
 
     // Matematik (AYT Toplam: 40)
-    const matAyt = getSubjectItem('Matematik', ['Matematik-2', 'Geometri']);
-    if (matAyt) tableRows.push({ item: matAyt, isSubtotal: true });
+    const matAyt = subjects.find(s => s.subjectName === 'Matematik' && s.questionCount === 40) || getSubjectItem('Matematik', ['Matematik-2', 'Geometri']);
+    if (matAyt && matAyt.questionCount > 0) tableRows.push({ item: matAyt, isSubtotal: true });
 
     // Fizik (AYT 14)
-    const fizAyt = subjects.find(s => s.subjectName === 'Fizik' && s.questionCount === 14) || (getSubjectItem('Fizik')?.questionCount !== 7 ? getSubjectItem('Fizik') : null);
-    if (fizAyt) tableRows.push({ item: fizAyt });
+    const fizAyt = subjects.find(s => s.subjectName === 'Fizik' && s.questionCount !== 7);
+    if (fizAyt && fizAyt.questionCount > 0) tableRows.push({ item: fizAyt });
 
     // Kimya (AYT 13)
-    const kimAyt = subjects.find(s => s.subjectName === 'Kimya' && s.questionCount === 13) || (getSubjectItem('Kimya')?.questionCount !== 7 ? getSubjectItem('Kimya') : null);
-    if (kimAyt) tableRows.push({ item: kimAyt });
+    const kimAyt = subjects.find(s => s.subjectName === 'Kimya' && s.questionCount !== 7);
+    if (kimAyt && kimAyt.questionCount > 0) tableRows.push({ item: kimAyt });
 
     // Biyoloji (AYT 13)
-    const biyAyt = subjects.find(s => s.subjectName === 'Biyoloji' && s.questionCount === 13) || (getSubjectItem('Biyoloji')?.questionCount !== 6 ? getSubjectItem('Biyoloji') : null);
-    if (biyAyt) tableRows.push({ item: biyAyt });
+    const biyAyt = subjects.find(s => s.subjectName === 'Biyoloji' && s.questionCount !== 6);
+    if (biyAyt && biyAyt.questionCount > 0) tableRows.push({ item: biyAyt });
 
     // Fen Bilimleri (AYT Toplam: 40)
-    const fenAyt = getSubjectItem('Fen Bilimleri', ['Fizik', 'Kimya', 'Biyoloji']);
-    if (fenAyt) tableRows.push({ item: fenAyt, isSubtotal: true });
+    const fenAyt = subjects.find(s => s.subjectName === 'Fen Bilimleri' && s.questionCount === 40) || getSubjectItem('Fen Bilimleri', ['Fizik', 'Kimya', 'Biyoloji']);
+    if (fenAyt && fenAyt.questionCount > 0) tableRows.push({ item: fenAyt, isSubtotal: true });
 
-    // Edebiyat-Sosyal-1 (if present)
-    const edb = getSubjectItem('Türk Dili ve Edebiyatı') || getSubjectItem('Edebiyat');
-    if (edb) tableRows.push({ item: edb });
+    // Edebiyat-Sosyal-1 (Only for EA / SÖZ students who took AYT Edebiyat/Tarih-2/Coğrafya-2)
+    const edb = subjects.find(s => ['Türk Dili ve Edebiyatı', 'Edebiyat'].includes(s.subjectName));
+    if (edb && edb.questionCount > 0) tableRows.push({ item: edb });
 
-    const tar2 = getSubjectItem('Tarih-2');
-    if (tar2) tableRows.push({ item: tar2 });
+    const tar2 = subjects.find(s => s.subjectName === 'Tarih-2');
+    if (tar2 && tar2.questionCount > 0) tableRows.push({ item: tar2 });
 
-    const cog2 = getSubjectItem('Coğrafya-2');
-    if (cog2) tableRows.push({ item: cog2 });
+    const cog2 = subjects.find(s => s.subjectName === 'Coğrafya-2');
+    if (cog2 && cog2.questionCount > 0) tableRows.push({ item: cog2 });
 
-    const edbSos1 = getSubjectItem('Edebiyat-Sosyal-1', ['Edebiyat', 'Türk Dili ve Edebiyatı', 'Tarih-1', 'Tarih-2', 'Coğrafya-1', 'Coğrafya-2']);
-    if (edbSos1) tableRows.push({ item: edbSos1, isSubtotal: true });
+    const edbSos1 = subjects.find(s => s.subjectName === 'Edebiyat-Sosyal-1');
+    if (edbSos1 && edbSos1.questionCount > 0) {
+      tableRows.push({ item: edbSos1, isSubtotal: true });
+    } else if (edb || tar2 || cog2) {
+      const edbSub = getSubjectItem('Edebiyat-Sosyal-1', ['Edebiyat', 'Türk Dili ve Edebiyatı', 'Tarih-2', 'Coğrafya-2']);
+      if (edbSub && edbSub.questionCount > 0) tableRows.push({ item: edbSub, isSubtotal: true });
+    }
 
-    // Sosyal-2 (if present)
-    const felGrubu = getSubjectItem('Felsefe Grubu');
-    if (felGrubu) tableRows.push({ item: felGrubu });
+    // Sosyal-2 (Only for SÖZ students who took Felsefe Grubu / AYT Din Kültürü)
+    const felGrubu = subjects.find(s => s.subjectName === 'Felsefe Grubu');
+    if (felGrubu && felGrubu.questionCount > 0) tableRows.push({ item: felGrubu });
 
-    const dinAyt = getSubjectItem('Din Kültürü') || getSubjectItem('Din Kül. ve Ahl. Bil.');
-    if (dinAyt && !tableRows.some(r => r.item === dinAyt)) tableRows.push({ item: dinAyt });
+    const dinAyt = subjects.find(s => s.subjectName === 'Din Kültürü');
+    if (dinAyt && dinAyt.questionCount > 0) tableRows.push({ item: dinAyt });
 
-    const sos2 = getSubjectItem('Sosyal-2', ['Tarih-2', 'Coğrafya-2', 'Felsefe Grubu', 'Din Kültürü']);
-    if (sos2) tableRows.push({ item: sos2, isSubtotal: true });
+    const sos2 = subjects.find(s => s.subjectName === 'Sosyal-2');
+    if (sos2 && sos2.questionCount > 0) {
+      tableRows.push({ item: sos2, isSubtotal: true });
+    } else if (felGrubu || dinAyt) {
+      const sos2Sub = getSubjectItem('Sosyal-2', ['Tarih-2', 'Coğrafya-2', 'Felsefe Grubu', 'Din Kültürü']);
+      if (sos2Sub && sos2Sub.questionCount > 0) tableRows.push({ item: sos2Sub, isSubtotal: true });
+    }
 
     // ─── 3. TOPLAM ROW ───
     const totalRow = getSubjectItem('Toplam:') || getSubjectItem('Toplam') || {
