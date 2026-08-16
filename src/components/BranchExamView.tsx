@@ -526,11 +526,10 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   const [showRepetitionSettingsModal, setShowRepetitionSettingsModal] = useState<boolean>(false);
   const [showAlertModal, setShowAlertModal] = useState<boolean>(false);
 
-  // Match status filter
   const [filterExamId, setFilterExamId] = useState<string | null>(null);
   const [filterRevised, setFilterRevised] = useState<'UNREVISED' | 'REVISED' | 'ALL'>('UNREVISED');
   const [filterSubject, setFilterSubject] = useState<string>('ALL');
-  const [sortOption, setSortOption] = useState<string>('priority_desc');
+  const [sortOption, setSortOption] = useState<string>('NEWEST');
   const [filterMatchStatus, setFilterMatchStatus] = useState<string>('ALL');
 
   // Topic tips state
@@ -1902,22 +1901,36 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     if (opt === 'PRIORITY_DESC') {
       const valA = typeof a.priority === 'number' ? a.priority : parseInt(a.priority as string, 10) || 3;
       const valB = typeof b.priority === 'number' ? b.priority : parseInt(b.priority as string, 10) || 3;
-      return valB - valA;
+      if (valB !== valA) return valB - valA;
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      const dateCmp = dateB.localeCompare(dateA);
+      if (dateCmp !== 0) return dateCmp;
+      return (b.id || '').localeCompare(a.id || '');
     }
     if (opt === 'PRIORITY_ASC') {
       const valA = typeof a.priority === 'number' ? a.priority : parseInt(a.priority as string, 10) || 3;
       const valB = typeof b.priority === 'number' ? b.priority : parseInt(b.priority as string, 10) || 3;
-      return valA - valB;
+      if (valA !== valB) return valA - valB;
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      const dateCmp = dateB.localeCompare(dateA);
+      if (dateCmp !== 0) return dateCmp;
+      return (b.id || '').localeCompare(a.id || '');
     }
     if (opt === 'NEWEST' || opt === 'DATE_DESC') {
       const dateA = a.date || '';
       const dateB = b.date || '';
-      return dateB.localeCompare(dateA);
+      const dateCmp = dateB.localeCompare(dateA);
+      if (dateCmp !== 0) return dateCmp;
+      return (b.id || '').localeCompare(a.id || '');
     }
     if (opt === 'OLDEST' || opt === 'DATE_ASC') {
       const dateA = a.date || '';
       const dateB = b.date || '';
-      return dateA.localeCompare(dateB);
+      const dateCmp = dateA.localeCompare(dateB);
+      if (dateCmp !== 0) return dateCmp;
+      return (a.id || '').localeCompare(b.id || '');
     }
     return 0;
   });
