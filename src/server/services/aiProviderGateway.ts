@@ -188,10 +188,20 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
   const imgDataUrl = getImageDataUrl(options);
   const hasImage = Boolean(imgDataUrl);
 
-  // Free models on OpenRouter
-  const model = hasImage
-    ? 'meta-llama/llama-3.2-11b-vision-instruct:free'
-    : 'deepseek/deepseek-r1:free';
+  // Active verified free models on OpenRouter
+  const candidateModels = hasImage
+    ? [
+        'meta-llama/llama-3.2-11b-vision-instruct:free',
+        'google/gemini-2.0-flash-exp:free',
+        'qwen/qwen-2.5-vl-72b-instruct:free'
+      ]
+    : [
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'deepseek/deepseek-chat:free',
+        'deepseek/deepseek-r1-distill-llama-70b:free',
+        'qwen/qwen-2.5-72b-instruct:free',
+        'google/gemini-2.0-flash-exp:free'
+      ];
 
   const messages: any[] = [];
 
@@ -211,40 +221,51 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
     messages.push({ role: 'user', content: options.prompt });
   }
 
-  const requestBody: any = {
-    model,
-    messages,
-    max_tokens: options.maxTokens || 4096,
-    temperature: options.temperature ?? 0.3
-  };
+  let lastError: any = null;
 
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'http://localhost:3000',
-      'X-Title': 'YKS Takip Sistemi'
-    },
-    body: JSON.stringify(requestBody)
-  });
+  for (const model of candidateModels) {
+    try {
+      const requestBody: any = {
+        model,
+        messages,
+        max_tokens: options.maxTokens || 4096,
+        temperature: options.temperature ?? 0.3
+      };
 
-  if (!res.ok) {
-    const errBody = await res.text();
-    throw new Error(`OpenRouter API Hatası (${res.status}): ${errBody.substring(0, 300)}`);
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'http://localhost:3000',
+          'X-Title': 'YKS Takip Sistemi'
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(`OpenRouter API Hatası (${res.status}): ${errBody.substring(0, 300)}`);
+      }
+
+      const data = await res.json();
+      const text = data?.choices?.[0]?.message?.content || '';
+      const usage = data?.usage || {};
+
+      return {
+        text: text.trim(),
+        providerUsed: 'OPENROUTER',
+        modelUsed: model,
+        promptTokens: usage.prompt_tokens || 0,
+        candidatesTokens: usage.completion_tokens || 0
+      };
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[AI_GATEWAY] OpenRouter model ${model} failed: ${err.message}. Trying next free model...`);
+    }
   }
 
-  const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content || '';
-  const usage = data?.usage || {};
-
-  return {
-    text: text.trim(),
-    providerUsed: 'OPENROUTER',
-    modelUsed: model,
-    promptTokens: usage.prompt_tokens || 0,
-    candidatesTokens: usage.completion_tokens || 0
-  };
+  throw lastError || new Error('OpenRouter tüm ücretsiz modelleri denenirken hata oluştu.');
 }
 
 /**
@@ -348,25 +369,43 @@ export async function testProviderApiKey(
     }
 
     if (provider === 'openrouter') {
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${trimmed}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'http://localhost:3000',
-          'X-Title': 'YKS Takip Sistemi'
-        },
-        body: JSON.stringify({
-          model: 'deepseek/deepseek-r1:free',
-          messages: [{ role: 'user', content: 'Test ping. Respond with OK.' }],
-          max_tokens: 10
-        })
-      });
-      if (!res.ok) {
-        const body = await res.text();
-        return { success: false, message: `OpenRouter Doğrulama Hatası (${res.status}): ${body.substring(0, 200)}` };
+      const testModels = [
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'deepseek/deepseek-chat:free',
+        'deepseek/deepseek-r1-distill-llama-70b:free',
+        'google/gemini-2.0-flash-exp:free',
+        'qwen/qwen-2.5-72b-instruct:free'
+      ];
+
+      let lastTestErr: string = '';
+      for (const testModel of testModels) {
+        try {
+          const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${trimmed}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': 'http://localhost:3000',
+              'X-Title': 'YKS Takip Sistemi'
+            },
+            body: JSON.stringify({
+              model: testModel,
+              messages: [{ role: 'user', content: 'Test ping. Respond with OK.' }],
+              max_tokens: 10
+            })
+          });
+          if (res.ok) {
+            return { success: true, message: `OpenRouter bağlantısı başarılı! [${testModel}]`, modelUsed: testModel };
+          } else {
+            const body = await res.text();
+            lastTestErr = `(${res.status}): ${body.substring(0, 180)}`;
+          }
+        } catch (mErr: any) {
+          lastTestErr = mErr.message || String(mErr);
+        }
       }
-      return { success: true, message: 'OpenRouter bağlantısı başarılı!', modelUsed: 'deepseek/deepseek-r1:free' };
+
+      return { success: false, message: `OpenRouter Doğrulama Hatası: ${lastTestErr}` };
     }
 
     return { success: false, message: 'Bilinmeyen sağlayıcı.' };
