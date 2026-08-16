@@ -32,6 +32,7 @@ interface AICoachViewProps {
   onSaveClassAdvice?: (className: string, advice: ClassAICoachAdvice) => void;
   onDeleteClassAdvice?: (className: string, idOrTimestamp: string) => void;
   currentUser?: UserAccount;
+  previewStudentUser?: UserAccount | null;
   allUsers?: UserAccount[];
   classes?: ClassDefinition[];
   studentsData?: Record<string, YKSDataState>;
@@ -53,13 +54,14 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
   onSaveClassAdvice,
   onDeleteClassAdvice,
   currentUser,
+  previewStudentUser,
   allUsers = [],
   classes = [],
   studentsData = {},
   onAddAuditLog
 }) => {
-  const isTeacher = currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor' || currentUser?.role === 'teacher' || currentUser?.role === 'admin';
-  const isSchoolCounselor = currentUser?.role === 'school_counselor' || currentUser?.role === 'admin';
+  const isTeacher = !previewStudentUser && (currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor' || currentUser?.role === 'teacher' || currentUser?.role === 'admin');
+  const isSchoolCounselor = !previewStudentUser && (currentUser?.role === 'school_counselor' || currentUser?.role === 'admin');
 
   // Available classes for teacher selection
   const availableClassNames = isSchoolCounselor
@@ -162,6 +164,11 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
   }, [classTotalPages, classCurrentPage]);
 
   const handleConfirmDelete = () => {
+    if (previewStudentUser) {
+      setErrorMsg('Öğrenci önizleme modunda yapay zeka analiz raporları silinemez (Salt Okunur).');
+      setAdviceToDelete(null);
+      return;
+    }
     if (adviceToDelete && onDeleteAdvice) {
       const key = adviceToDelete.id || adviceToDelete.timestamp;
       onDeleteAdvice(key);
@@ -187,6 +194,10 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
   };
 
   const handleFetchAdvice = async () => {
+    if (previewStudentUser) {
+      setErrorMsg('Öğrenci önizleme modunda yeni Yapay Zeka Koçluk Analiz Raporu oluşturulamaz (Salt Okunur).');
+      return;
+    }
     if (!isTeacher && hasGeneratedToday) {
       setErrorMsg('Öğrenci hesabında günde yalnızca 1 adet Yapay Zeka Koçluk Analiz Raporu oluşturabilirsiniz. Bugün için analiz hakkınızı kullandınız. Yeni rapor için lütfen yarın tekrar deneyin.');
       return;

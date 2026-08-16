@@ -305,6 +305,7 @@ const formatAnalysisTable = (text: string) => {
 
 interface BranchExamViewProps {
   currentUser?: UserAccount;
+  previewStudentUser?: UserAccount | null;
   mode?: 'errors' | 'branches';
   branchExams: BranchExam[];
   topicErrors: TopicErrorItem[];
@@ -382,6 +383,7 @@ const CustomChartTooltip = ({ active, payload, label }: any) => {
 
 export const BranchExamView: React.FC<BranchExamViewProps> = ({
   currentUser,
+  previewStudentUser,
   mode,
   branchExams,
   topicErrors,
@@ -643,6 +645,11 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     setSupportFeedbackError(null);
     setSupportFeedbackText(null);
 
+    if (previewStudentUser) {
+      setSupportFeedbackError('Öğrenci önizleme modunda yapay zeka koçluk tavsiyesi üretilemez (Salt Okunur).');
+      return;
+    }
+
     if (item.aiFeedback) {
       setSupportFeedbackText(item.aiFeedback);
       return;
@@ -706,6 +713,11 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     setActiveSupportTab('analysis');
     setSupportAnalysisError(null);
     setSupportAnalysisText(null);
+
+    if (previewStudentUser) {
+      setSupportAnalysisError('Öğrenci önizleme modunda yapay zeka detaylı analizi üretilemez (Salt Okunur).');
+      return;
+    }
 
     if (item.aiAnalysis) {
       setSupportAnalysisText(item.aiAnalysis);
@@ -1274,6 +1286,10 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
 
   const handleAIAnalyzePriority = async () => {
     if (!topicName.trim()) return;
+    if (previewStudentUser) {
+      setAiFeedback('Öğrenci önizleme modunda yapay zeka öncelik analizi yapılamaz (Salt Okunur).');
+      return;
+    }
     setIsAnalyzing(true);
     setAiFeedback('');
     setAiSuccess(false);
@@ -1439,6 +1455,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   };
 
   const handleToggleErrorRevision = (id: string) => {
+    if (previewStudentUser) return;
     const err = topicErrors.find(e => e.id === id);
     if (err) {
       onUpdateTopicError({ ...err, revised: !err.revised });
@@ -1495,6 +1512,13 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       (targetTab === 'similar' && !!existingSimilar);
 
     if (hasTargetData && !force) {
+      return;
+    }
+
+    if (previewStudentUser) {
+      if (targetTab === 'solution') setSolveError('Öğrenci önizleme modunda yapay zeka çözümü üretilemez (Salt Okunur).');
+      else if (targetTab === 'similar') setSimilarError('Öğrenci önizleme modunda benzer soru üretilemez (Salt Okunur).');
+      else setReportError('Öğrenci önizleme modunda soru karnesi üretilemez (Salt Okunur).');
       return;
     }
 
@@ -2167,6 +2191,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
           ERROR_REASON_COLORS={ERROR_REASON_COLORS}
           hideHeroHeader={mode !== 'errors'}
           onUpdateTopicError={onUpdateTopicError}
+          previewStudentUser={previewStudentUser}
         />
       )}
 

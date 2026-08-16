@@ -21,7 +21,7 @@ import {
   Info,
   Filter
 } from 'lucide-react';
-import { TopicErrorItem, BranchExam, ResourceItem, GeneralMockExam } from '../../types';
+import { TopicErrorItem, BranchExam, ResourceItem, GeneralMockExam, UserAccount } from '../../types';
 
 interface BranchErrorsTabProps {
   topicErrors: TopicErrorItem[];
@@ -53,6 +53,7 @@ interface BranchErrorsTabProps {
   ERROR_REASON_COLORS: Record<string, string>;
   hideHeroHeader?: boolean;
   onUpdateTopicError?: (err: TopicErrorItem) => void;
+  previewStudentUser?: UserAccount | null;
 }
 
 export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
@@ -85,6 +86,7 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   ERROR_REASON_COLORS,
   hideHeroHeader = false,
   onUpdateTopicError,
+  previewStudentUser,
 }) => {
   const [activeAiErrorItem, setActiveAiErrorItem] = useState<TopicErrorItem | null>(null);
   const [isAnalyzingActiveError, setIsAnalyzingActiveError] = useState(false);
@@ -176,6 +178,10 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   };
 
   const handleRunAiAnalysis = async (errItem: TopicErrorItem) => {
+    if (previewStudentUser) {
+      setAnalysisErrorMsg('Öğrenci önizleme modunda yapay zeka hata analizi çalıştırılamaz (Salt Okunur).');
+      return;
+    }
     setIsAnalyzingActiveError(true);
     setAnalysisErrorMsg(null);
     try {

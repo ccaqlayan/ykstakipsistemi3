@@ -402,6 +402,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
       {activeTab === 'errors' && (
         <BranchExamView
           currentUser={currentUser || undefined}
+          previewStudentUser={previewStudentUser}
           mode="errors"
           branchExams={currentStudentData.branchExams}
           topicErrors={currentStudentData.topicErrors}
@@ -423,6 +424,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
       {activeTab === 'branches' && (
         <BranchExamView
           currentUser={currentUser || undefined}
+          previewStudentUser={previewStudentUser}
           mode="branches"
           branchExams={currentStudentData.branchExams}
           topicErrors={currentStudentData.topicErrors}
@@ -470,6 +472,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           onSaveClassAdvice={handleSaveClassAICoachAdvice}
           onDeleteClassAdvice={handleDeleteClassAICoachAdvice}
           currentUser={currentUser}
+          previewStudentUser={previewStudentUser}
           allUsers={globalState.users}
           classes={globalState.classes}
           studentsData={globalState.studentsData}
