@@ -32,15 +32,15 @@ export function setAiFeaturesEnabled(val: boolean) { aiFeaturesEnabled = val; }
 
 // Global configurable model mapping for each AI feature
 export let featureModelConfig: Record<string, string> = {
-  AI_COACH_STUDENT: 'gemini-3.1-flash-lite',
-  AI_COACH_CLASS: 'gemini-3.1-flash-lite',
-  SOLVE_QUESTION: 'gemini-3.1-flash-lite',
-  QUESTION_ANALYSIS: 'gemini-3.1-flash-lite',
-  SIMILAR_QUESTION: 'gemini-3.1-flash-lite',
-  ERROR_PRIORITY: 'gemini-3.1-flash-lite',
-  TOPIC_TIPS: 'gemini-3.1-flash-lite',
-  YOUTUBE_PLANNER: 'gemini-3.1-flash-lite',
-  PDF_REPORT_PARSE: 'gemini-3.1-flash-lite'
+  AI_COACH_STUDENT: 'gemini-2.0-flash',
+  AI_COACH_CLASS: 'gemini-2.0-flash',
+  SOLVE_QUESTION: 'gemini-2.0-flash',
+  QUESTION_ANALYSIS: 'gemini-2.0-flash',
+  SIMILAR_QUESTION: 'gemini-2.0-flash',
+  ERROR_PRIORITY: 'gemini-2.0-flash',
+  TOPIC_TIPS: 'gemini-2.0-flash',
+  YOUTUBE_PLANNER: 'gemini-2.0-flash',
+  PDF_REPORT_PARSE: 'gemini-2.0-flash'
 };
 export function setFeatureModelConfig(cfg: Record<string, string>) { featureModelConfig = cfg; }
 
@@ -294,15 +294,10 @@ export async function fetchLiveGoogleModels(apiKey?: string): Promise<{ id: stri
   }
 
   const fallbackStaticList = [
-    { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash-Lite (Süper Hızlı & Ekonomik)', badge: 'Önerilen (Varsayılan)' },
-    { id: 'gemini-3.1-flash', name: 'Gemini 3.1 Flash (Yüksek Performans)', badge: 'Flash' },
-    { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro (En Derin Düşünme & Karmaşık Sorular)', badge: 'Gelişmiş' },
-    { id: 'gemini-3.0-flash', name: 'Gemini 3.0 Flash', badge: 'Flash' },
-    { id: 'gemini-3.0-pro', name: 'Gemini 3.0 Pro', badge: 'Gelişmiş' },
-    { id: 'gemini-3-flash', name: 'Gemini 3 Flash', badge: 'Flash' },
-    { id: 'gemini-3-pro', name: 'Gemini 3 Pro', badge: 'Gelişmiş' },
-    { id: 'gemini-flash-latest', name: 'Gemini Flash Latest (En Güncel Flash)', badge: 'Otomatik' },
-    { id: 'gemini-pro-latest', name: 'Gemini Pro Latest (En Güncel Pro)', badge: 'Otomatik' }
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Hızlı & Yüksek Başarım)', badge: 'Önerilen (Varsayılan)' },
+    { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash-Lite (Ekonomik)', badge: 'Ekonomik' },
+    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Kararlı Flash)', badge: 'Flash' },
+    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Derin Akıl Yürütme)', badge: 'Gelişmiş' }
   ];
 
   if (!key) {
@@ -320,6 +315,7 @@ export async function fetchLiveGoogleModels(apiKey?: string): Promise<{ id: stri
             const name = (m.name?.replace('models/', '') || '').toLowerCase();
             const isContentGen = Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent');
             return isContentGen && 
+              name.startsWith('gemini-') &&
               !name.includes('embedding') && 
               !name.includes('aqa') && 
               !name.includes('image') && 
@@ -355,7 +351,13 @@ export async function fetchLiveGoogleModels(apiKey?: string): Promise<{ id: stri
 
 export function mapToActualGeminiModel(modelId: string): string {
   const m = (modelId || '').trim();
-  if (!m) return 'gemini-3.1-flash-lite';
+  if (!m) return 'gemini-2.0-flash';
+  // Map deprecated / invalid models to active Gemini models
+  if (m === 'gemini-2.5-flash' || m === 'gemini-2.5-pro' || m.startsWith('gemma') || m.includes('3.') || m.includes('3-')) {
+    if (m.includes('lite')) return 'gemini-2.0-flash-lite';
+    if (m.includes('pro')) return 'gemini-1.5-pro';
+    return 'gemini-2.0-flash';
+  }
   return m;
 }
 
@@ -367,7 +369,7 @@ export async function generateContentWithFallback(
     config?: any;
   }
 ) {
-  const requestedModel = options.model || 'gemini-3.1-flash-lite';
+  const requestedModel = options.model || 'gemini-2.0-flash';
   const primaryApiModel = mapToActualGeminiModel(requestedModel);
 
   // Discover active models dynamically from live Google API
@@ -385,8 +387,8 @@ export async function generateContentWithFallback(
     }
   }
 
-  // Add static resilient 3.x fallbacks if not already present
-  const staticFallbacks = ['gemini-3.1-flash-lite', 'gemini-3.1-flash', 'gemini-3.1-pro', 'gemini-3.0-flash', 'gemini-3-flash', 'gemini-flash-latest'];
+  // Add static resilient fallbacks if not already present
+  const staticFallbacks = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-pro'];
   for (const sf of staticFallbacks) {
     if (!fallbackList.some(f => f.apiModel === sf)) {
       fallbackList.push({ requested: sf, apiModel: sf });

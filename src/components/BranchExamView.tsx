@@ -1598,10 +1598,14 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     setReportError(null);
     setSimilarError(null);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+
     try {
-      let response = await fetch('/api/gemini/analyze-photo-question-full', {
+      const response = await fetch('/api/gemini/analyze-photo-question-full', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           imageUrl: errorItem.imageUrl,
           subject: errorItem.subject,
@@ -1609,21 +1613,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
           solutionText: existingSol || existingAnalysis || undefined
         })
       });
-
-      // 1-time automatic retry for transient network / dev-server proxy delays
-      if (!response.ok && response.status !== 403) {
-        await new Promise(r => setTimeout(r, 1000));
-        response = await fetch('/api/gemini/analyze-photo-question-full', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            imageUrl: errorItem.imageUrl,
-            subject: errorItem.subject,
-            topicName: errorItem.topicName,
-            solutionText: existingSol || existingAnalysis || undefined
-          })
-        });
-      }
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         let errText = 'Yapay zeka yanıt üretemedi, lütfen yeniden deneyin.';
@@ -1685,9 +1675,13 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       }
     } catch (err: any) {
       console.error(err);
-      setSolveError(err.message || 'Çözüm oluşturulamadı.');
-      setReportError(err.message || 'Soru karnesi oluşturulamadı.');
-      setSimilarError(err.message || 'Benzer soru oluşturulamadı.');
+      const isAbort = err.name === 'AbortError' || String(err).includes('aborted');
+      const msg = isAbort 
+        ? 'İşlem zaman aşımına uğradı (60sn). Lütfen tekrar deneyin.'
+        : (err.message || 'Çözüm oluşturulamadı.');
+      setSolveError(msg);
+      setReportError(msg);
+      setSimilarError(msg);
     } finally {
       setSolveLoading(false);
       setReportLoading(false);

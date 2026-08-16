@@ -1138,39 +1138,48 @@ YANITINI YALNIZCA aşağıdaki JSON formatında döndür. Kesinlikle JSON dış�
     let parsedData: any = {};
     try {
       let cleanJson = (responseText || '').trim();
-      // Strip markdown code blocks if present
       const codeBlockMatch = cleanJson.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
       if (codeBlockMatch) {
         cleanJson = codeBlockMatch[1].trim();
-        console.log('[PHOTO_ANALYSIS] Stripped code block wrapper from response.');
       }
-      // Strip leading/trailing non-JSON chars
       const firstBrace = cleanJson.indexOf('{');
       const lastBrace = cleanJson.lastIndexOf('}');
-      if (firstBrace > 0 || lastBrace < cleanJson.length - 1) {
+      if (firstBrace >= 0 && lastBrace > firstBrace) {
         cleanJson = cleanJson.slice(firstBrace, lastBrace + 1);
-        console.log('[PHOTO_ANALYSIS] Trimmed to JSON object boundaries.');
       }
       parsedData = JSON.parse(cleanJson);
-      console.log(`[PHOTO_ANALYSIS] Parse OK: solution=${!!parsedData.solution}, similarQuestions=${Array.isArray(parsedData.similarQuestions) ? parsedData.similarQuestions.length : 'N/A'}, analysis=${!!parsedData.analysis}`);
     } catch (parseErr) {
-      console.error('[PHOTO_ANALYSIS] Failed to parse JSON:', (responseText || '').substring(0, 500));
-      // Fallback: treat raw text as solution only
+      console.warn('[PHOTO_ANALYSIS] JSON parse failed, falling back to field extraction:', (responseText || '').substring(0, 200));
+      
+      const extractField = (fieldName: string): string => {
+        const regex = new RegExp(`"${fieldName}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, 's');
+        const match = (responseText || '').match(regex);
+        if (match) {
+          try {
+            return JSON.parse(`"${match[1]}"`);
+          } catch {
+            return match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+          }
+        }
+        return '';
+      };
+
+      const solution = extractField('solution');
+      const ansMatch = (responseText || '').match(/"correctAnswerLetter"\s*:\s*"([A-Ea-e])"/i);
+      const analysis = extractField('analysis');
+
       parsedData = {
-        solution: responseText || 'Soru çözümü üretilemedi.',
-        similarQuestions: [
-          { question: 'Benzer soru üretilemedi.', solution: '', correctAnswer: '' }
-        ],
-        analysis: 'Soru karnesi oluşturulamadı.'
+        solution: solution || responseText || 'Soru çözümü üretilemedi.',
+        correctAnswerLetter: ansMatch ? ansMatch[1].toUpperCase() : undefined,
+        similarQuestions: [],
+        analysis: analysis || ''
       };
     }
 
-    // Normalize: ensure similarQuestions is always an array
     let simQs: any[] = [];
     if (Array.isArray(parsedData.similarQuestions)) {
       simQs = parsedData.similarQuestions;
     } else if (parsedData.similarQuestion && typeof parsedData.similarQuestion === 'object') {
-      // Handle old singular field name from legacy model responses
       simQs = [parsedData.similarQuestion];
     }
 
