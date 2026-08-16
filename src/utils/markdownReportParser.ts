@@ -494,6 +494,16 @@ export function parseMarkdownExamReport(
       s.questionCount = 20;
     }
 
+    // Ensure all subjects' correct/wrong counts match their net mathematically
+    subjectsMap.forEach(s => {
+      if (s.net > 0 && s.subjectName !== 'Toplam') {
+        const expectedCorr = Math.round(s.net + (s.wrong / 4));
+        if (s.correct === 0 || Math.abs(s.correct - (s.wrong / 4) - s.net) > 0.05) {
+          s.correct = expectedCorr;
+        }
+      }
+    });
+
     // Calculate True Total Net
     let totalNet = toplamObj?.net || 0;
     if (totalNet === 0) {
@@ -582,14 +592,19 @@ export function parseMarkdownExamReport(
         continue;
       }
 
+      if (/^##\s*DERSLERE\s*GÖRE\s*ANALİZ|^##|DERSLERE\s*GÖRE\s*ANALİZ/i.test(line)) {
+        inSoruNoSection = false;
+        continue;
+      }
+
       if (inSoruNoSection) {
         // Türkçe optical line
         if (/TYT\s*Türkçe/i.test(line)) {
           let ansCandidate = line.replace(/.*TYT\s*Türkçe\s*/i, '').trim();
-          if (!ansCandidate && lines[i + 1] && !/Cevap\s*Anahtarı/i.test(lines[i + 1])) {
+          if (!ansCandidate && lines[i + 1] && !/Cevap\s*Anahtarı|##/i.test(lines[i + 1])) {
             ansCandidate = lines[i + 1].trim();
           }
-          if (ansCandidate && !/Cevap\s*Anahtarı/i.test(ansCandidate)) {
+          if (ansCandidate && !/Cevap\s*Anahtarı/i.test(ansCandidate) && /^[A-Za-z\s]{8,}$/.test(ansCandidate) && !/Türkçe|Sosyal|Matematik|Fen|ANALİZ/i.test(ansCandidate)) {
             opticalAnswersMap['Türkçe'] = ansCandidate;
             opticalAnswersMap['TYT Türkçe'] = ansCandidate;
           }
@@ -610,10 +625,12 @@ export function parseMarkdownExamReport(
           if (/^TYT\s*Sosyal$/i.test(line) && lines[i + 1]) {
             textToParse = lines[i + 1];
           }
-          const m = textToParse.match(/^([a-zA-Z\s]+?)\s*Cevap\s*Anahtarı\s*(?:[A-Z]\s*)?([A-Z]+)/i);
+          const m = textToParse.match(/^([a-zA-Z\s]{8,}?)\s*Cevap\s*Anahtarı\s*(?:[A-Z]\s*)?([A-Z]+)/i);
           if (m) {
             opticalAnswersMap['TYT Sosyal'] = m[1].trim();
+            opticalAnswersMap['Sosyal'] = m[1].trim();
             answerKeysMap['TYT Sosyal'] = m[2].trim();
+            answerKeysMap['Sosyal'] = m[2].trim();
           }
         }
 
@@ -623,10 +640,12 @@ export function parseMarkdownExamReport(
           if (/^TYT\s*Matematik$/i.test(line) && lines[i + 1]) {
             textToParse = lines[i + 1];
           }
-          const m = textToParse.match(/^([a-zA-Z\s]+?)\s*Cevap\s*Anahtarı\s*(?:[A-Z]\s*)?([A-Z]+)/i);
+          const m = textToParse.match(/^([a-zA-Z\s]{8,}?)\s*Cevap\s*Anahtarı\s*(?:[A-Z]\s*)?([A-Z]+)/i);
           if (m) {
             opticalAnswersMap['TYT Matematik'] = m[1].trim();
+            opticalAnswersMap['Matematik'] = m[1].trim();
             answerKeysMap['TYT Matematik'] = m[2].trim();
+            answerKeysMap['Matematik'] = m[2].trim();
           }
         }
 
@@ -636,10 +655,12 @@ export function parseMarkdownExamReport(
           if (/^TYT\s*Fen$/i.test(line) && lines[i + 1]) {
             textToParse = lines[i + 1];
           }
-          const m = textToParse.match(/^([a-zA-Z\s]+?)\s*Cevap\s*Anahtarı\s*(?:[A-Z]\s*)?([A-Z]+)/i);
+          const m = textToParse.match(/^([a-zA-Z\s]{8,}?)\s*Cevap\s*Anahtarı\s*(?:[A-Z]\s*)?([A-Z]+)/i);
           if (m) {
             opticalAnswersMap['TYT Fen'] = m[1].trim();
+            opticalAnswersMap['Fen'] = m[1].trim();
             answerKeysMap['TYT Fen'] = m[2].trim();
+            answerKeysMap['Fen'] = m[2].trim();
           }
         }
       }
