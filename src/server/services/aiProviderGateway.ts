@@ -188,19 +188,22 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
   const imgDataUrl = getImageDataUrl(options);
   const hasImage = Boolean(imgDataUrl);
 
-  // Active verified free models on OpenRouter
+  // Use openrouter/free auto-router as primary (auto-picks best available free model)
+  // then fall back to specific free models if the auto-router fails
   const candidateModels = hasImage
     ? [
+        'openrouter/auto',
         'meta-llama/llama-3.2-11b-vision-instruct:free',
         'google/gemini-2.0-flash-exp:free',
         'qwen/qwen-2.5-vl-72b-instruct:free'
       ]
     : [
+        'openrouter/auto',
         'meta-llama/llama-3.3-70b-instruct:free',
-        'deepseek/deepseek-chat:free',
-        'deepseek/deepseek-r1-distill-llama-70b:free',
+        'google/gemini-2.0-flash-exp:free',
         'qwen/qwen-2.5-72b-instruct:free',
-        'google/gemini-2.0-flash-exp:free'
+        'microsoft/phi-4-reasoning-plus:free',
+        'mistralai/mistral-7b-instruct:free'
       ];
 
   const messages: any[] = [];
@@ -251,11 +254,12 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
       const data = await res.json();
       const text = data?.choices?.[0]?.message?.content || '';
       const usage = data?.usage || {};
+      const resolvedModel = data?.model || model;
 
       return {
         text: text.trim(),
         providerUsed: 'OPENROUTER',
-        modelUsed: model,
+        modelUsed: resolvedModel,
         promptTokens: usage.prompt_tokens || 0,
         candidatesTokens: usage.completion_tokens || 0
       };
@@ -369,12 +373,14 @@ export async function testProviderApiKey(
     }
 
     if (provider === 'openrouter') {
+      // Use openrouter/auto as primary, then specific free models as fallback
       const testModels = [
+        'openrouter/auto',
         'meta-llama/llama-3.3-70b-instruct:free',
-        'deepseek/deepseek-chat:free',
-        'deepseek/deepseek-r1-distill-llama-70b:free',
         'google/gemini-2.0-flash-exp:free',
-        'qwen/qwen-2.5-72b-instruct:free'
+        'qwen/qwen-2.5-72b-instruct:free',
+        'microsoft/phi-4-reasoning-plus:free',
+        'mistralai/mistral-7b-instruct:free'
       ];
 
       let lastTestErr: string = '';
@@ -390,12 +396,14 @@ export async function testProviderApiKey(
             },
             body: JSON.stringify({
               model: testModel,
-              messages: [{ role: 'user', content: 'Test ping. Respond with OK.' }],
-              max_tokens: 10
+              messages: [{ role: 'user', content: 'Test. Respond with OK.' }],
+              max_tokens: 5
             })
           });
           if (res.ok) {
-            return { success: true, message: `OpenRouter bağlantısı başarılı! [${testModel}]`, modelUsed: testModel };
+            const data = await res.json();
+            const resolvedModel = data?.model || testModel;
+            return { success: true, message: `OpenRouter bağlantısı başarılı! [${resolvedModel}]`, modelUsed: resolvedModel };
           } else {
             const body = await res.text();
             lastTestErr = `(${res.status}): ${body.substring(0, 180)}`;
