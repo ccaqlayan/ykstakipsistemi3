@@ -301,6 +301,13 @@ export interface InstitutionalMockExam {
   schoolNumber?: string;
   className?: string;
   scores: {
+    tytScore?: number;
+    tytClassRank?: number;
+    tytClassTotal?: number;
+    tytInstitutionRank?: number;
+    tytInstitutionTotal?: number;
+    tytGeneralRank?: number;
+    tytGeneralTotal?: number;
     sayScore?: number;
     eaScore?: number;
     sozScore?: number;
@@ -601,6 +608,13 @@ export interface ParsedStudentRow {
   matchScore: number;
   matchReason: string;
   isSelected: boolean;
+  tytScore?: number;
+  tytClassRank?: number;
+  tytClassTotal?: number;
+  tytInstitutionRank?: number;
+  tytInstitutionTotal?: number;
+  tytGeneralRank?: number;
+  tytGeneralTotal?: number;
   sayScore: number;
   eaScore: number;
   sozScore: number;
@@ -622,6 +636,9 @@ export interface ParsedStudentRow {
   sozInstitutionTotal?: number;
   sozGeneralRank: number;
   sozGeneralTotal?: number;
+  classParticipantCount?: number;
+  institutionParticipantCount?: number;
+  generalParticipantCount?: number;
   subjects: InstitutionalSubjectDetail[];
 }
 

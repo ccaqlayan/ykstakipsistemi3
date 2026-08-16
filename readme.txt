@@ -100,6 +100,7 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - Main Orchestrator : src/components/BulkExamImportView.tsx
 - Modüller (src/components/import/) :
   * BulkImportCsvTab.tsx          : Excel/CSV dosyası yükleme ve sütun eşleme alanı
+  * BulkImportPdfTab.tsx          : Yapay Zeka destekli PDF sınav sonuç belgesi ve karne ayrıştırma alanı
   * BulkImportHistoryTab.tsx      : Geçmiş toplu aktarım kayıtları
   * BulkImportModals.tsx          : Manuel öğrenci eşleştirme ve toplu giriş modalları
 
@@ -189,4 +190,5 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - soundUtils.ts        : Bildirim ve sayaç ses efektleri.
 - statusUtils.ts       : Ders çalışma ve onay durum göstergeleri.
 - universityLogoStore.ts: Üniversite logoları veritabanı ve önbellek deposu.
+- pdfReportParser.ts    : PDF sınav sonuç belgelerinden metin ayıklama ve öğrenci eşleştirici.
 ================================================================================

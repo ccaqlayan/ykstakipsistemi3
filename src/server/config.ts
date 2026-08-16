@@ -39,7 +39,8 @@ export let featureModelConfig: Record<string, string> = {
   SIMILAR_QUESTION: 'gemini-3.1-flash-lite',
   ERROR_PRIORITY: 'gemini-3.1-flash-lite',
   TOPIC_TIPS: 'gemini-3.1-flash-lite',
-  YOUTUBE_PLANNER: 'gemini-3.1-flash-lite'
+  YOUTUBE_PLANNER: 'gemini-3.1-flash-lite',
+  PDF_REPORT_PARSE: 'gemini-3.1-flash-lite'
 };
 export function setFeatureModelConfig(cfg: Record<string, string>) { featureModelConfig = cfg; }
 

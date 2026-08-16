@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { UserAccount, InstitutionalMockExam, InstitutionalSubjectDetail, YKSDataState } from '../types';
 import { BulkImportCsvTab } from './import/BulkImportCsvTab';
+import { BulkImportPdfTab } from './import/BulkImportPdfTab';
 
 interface BulkExamImportViewProps {
   currentUser: UserAccount | null;
@@ -60,6 +61,7 @@ export const BulkExamImportView: React.FC<BulkExamImportViewProps> = ({
   onAddAuditLog,
   onToggleMenu
 }) => {
+  const [activeTab, setActiveTab] = useState<'excel' | 'pdf'>('excel');
   // Persistent class mappings state (e.g. "12-A" -> "12-A SAY")
   const [classMappings, setClassMappings] = useState<Record<string, string>>(() => {
     try {
@@ -203,24 +205,69 @@ export const BulkExamImportView: React.FC<BulkExamImportViewProps> = ({
             <h1 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
               <span>Toplu Liste Girişi</span>
             </h1>
-            <p className="text-xs text-slate-400">Toplu Excel/PDF karne yükleme</p>
+            <p className="text-xs text-slate-400">Toplu Excel/CSV veya Yapay Zekalı PDF karne yükleme</p>
           </div>
+        </div>
+
+        {/* Sekme Seçici Butonlar */}
+        <div className="flex items-center bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 shadow-lg">
+          <button
+            type="button"
+            onClick={() => setActiveTab('excel')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              activeTab === 'excel'
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Excel / CSV ile İçe Aktar</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('pdf')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              activeTab === 'pdf'
+                ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-purple-300 animate-pulse" />
+            <span>PDF ile İçe Aktar (Yapay Zeka)</span>
+          </button>
         </div>
       </div>
 
-      <BulkImportCsvTab
-        currentUser={currentUser!}
-        studentUsers={studentUsers}
-        availableClasses={availableClasses}
-        studentsData={studentsData}
-        examsToUse={examsToUse}
-        onSaveInstitutionalExams={onSaveInstitutionalExams}
-        onDeleteInstitutionalExam={onDeleteInstitutionalExam}
-        onAddAuditLog={onAddAuditLog}
-        getMappedClassName={getMappedClassName}
-        findBestClassMatch={findBestClassMatch}
-        onImportComplete={() => {}}
-      />
+      {activeTab === 'excel' ? (
+        <BulkImportCsvTab
+          currentUser={currentUser!}
+          studentUsers={studentUsers}
+          availableClasses={availableClasses}
+          studentsData={studentsData}
+          examsToUse={examsToUse}
+          onSaveInstitutionalExams={onSaveInstitutionalExams}
+          onDeleteInstitutionalExam={onDeleteInstitutionalExam}
+          onAddAuditLog={onAddAuditLog}
+          getMappedClassName={getMappedClassName}
+          findBestClassMatch={findBestClassMatch}
+          onImportComplete={() => {}}
+        />
+      ) : (
+        <BulkImportPdfTab
+          currentUser={currentUser!}
+          studentUsers={studentUsers}
+          availableClasses={availableClasses}
+          studentsData={studentsData}
+          examsToUse={examsToUse}
+          onSaveInstitutionalExams={onSaveInstitutionalExams}
+          onDeleteInstitutionalExam={onDeleteInstitutionalExam}
+          onAddAuditLog={onAddAuditLog}
+          getMappedClassName={getMappedClassName}
+          findBestClassMatch={findBestClassMatch}
+          onImportComplete={() => {}}
+        />
+      )}
     </div>
   );
 };

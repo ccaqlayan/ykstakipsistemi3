@@ -1324,7 +1324,8 @@ router.get('/model-settings', async (req, res) => {
       { key: 'SIMILAR_QUESTION', name: 'Benzer Soru Üretimi', category: 'Soru Analiz Engine', description: 'Çözülen soruya ve konusuna uygun özgün benzer YKS sorusu üretir.' },
       { key: 'ERROR_PRIORITY', name: 'Öncelikli Hata Konuları Analizi', category: 'Soru Analiz Engine', description: 'ÖSYM çıkmış soru ağırlığı ve hata nedenine göre yıldızlı öncelik belirler.' },
       { key: 'TOPIC_TIPS', name: 'Konu İpuçları & Yaygın Hatalar', category: 'Soru Analiz Engine', description: 'Ders ve konu bazlı pratik çözüm taktikleri ve yaygın tuzaklar dokümanı sunar.' },
-      { key: 'YOUTUBE_PLANNER', name: 'YouTube Kampı & Ders Planlayıcı', category: 'Ders Planlama', description: 'YouTube oynatma listelerini akıllı çalışma müfredatına dönüştürür.' }
+      { key: 'YOUTUBE_PLANNER', name: 'YouTube Kampı & Ders Planlayıcı', category: 'Ders Planlama', description: 'YouTube oynatma listelerini akıllı çalışma müfredatına dönüştürür.' },
+      { key: 'PDF_REPORT_PARSE', name: 'PDF Sonuç Belgesi & Karne Ayrıştırma', category: 'Toplu Veri & İçe Aktarma', description: 'Toplu PDF sınav sonuç belgelerini en düşük token ile analiz edip öğrenci karnelerine ve konu analizlerine dönüştürür.' }
     ]
   });
 });
@@ -1581,6 +1582,146 @@ Yanıtın YALNIZCA geçerli bir JSON objesi olmalıdır:
   } catch (err: any) {
     console.error('Gemini study planner error:', err);
     res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay zeka görev önerisi üretilemedi.') });
+  }
+});
+
+// PDF Exam Reports Parser Endpoint (Token-Optimized Batch Extraction)
+router.post('/parse-pdf-exam-reports', async (req, res) => {
+  if (!isAiEnabledOrRespond(res)) return;
+
+  const { pagesText } = req.body;
+  if (!Array.isArray(pagesText) || pagesText.length === 0) {
+    return res.status(400).json({ error: 'Ayrıştırılacak sayfa metinleri bulunamadı.' });
+  }
+
+  const effectiveApiKey = getEffectiveGeminiApiKey();
+  if (!effectiveApiKey) {
+    return res.status(400).json({
+      error: 'Google Gemini API Anahtarı eksik. Lütfen Sistem Yönetimi > Yapay Zeka sayfasından anahtarınızı giriniz.'
+    });
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: effectiveApiKey });
+    const targetModel = featureModelConfig['PDF_REPORT_PARSE'] || 'gemini-3.1-flash-lite';
+
+    const prompt = `Sen Türkiye YKS (TYT ve AYT) sınav sonuç belgelerini (karne) ayrıştıran uzman bir veri analistisin.
+Sana verilen metinler, optik/yayın evlerinin (Ulti, Hız ve Renk, Özdebir, 3D, Limit, vb.) karne sayfalarından çıkarılmıştır.
+
+GÖREVİN:
+Her sayfa için aşağıdaki bilgileri eksiksiz ve en yüksek doğrulukla JSON formatında çıkar:
+1. Sınav Başlığı (örn: "ULTİ YAYINLARI TÜRKİYE GENELİ AYT DENEME" veya "HIZ VE RENK TYT 1")
+2. Sınav Türü: "TYT" veya "AYT"
+3. Öğrenci Bilgileri: Ad Soyad ("studentName"), Numara ("schoolNumber"), Sınıf ("className", örn: "12-A", "12-B")
+4. Puanlar ve Sıralamalar (Varsa):
+   - TYT için: tytScore, tytClassRank, tytInstitutionRank, tytGeneralRank
+   - AYT için: sayScore, eaScore, sozScore ve bunların sınıf, kurum, genel sıralamaları (sayClassRank, sayInstitutionRank, sayGeneralRank, eaClassRank...)
+   - Katılımlar: classParticipantCount, institutionParticipantCount, generalParticipantCount
+5. Ders Net Tablosu ("subjects"):
+   - Ders Adı: "Türkçe", "Tarih-1", "Coğrafya-1", "Felsefe", "Din Kül. ve Ahl. Bil.", "TYT Sosyal", "Matematik-1", "Geometri", "TYT Matematik", "Fizik", "Kimya", "Biyoloji", "TYT Fen", "Matematik-2", "Edebiyat-Sosyal-1", "Sosyal-2", "Fen Bilimleri", "Toplam" vb.
+   - Soru (questionCount), Doğru (correct), Yanlış (wrong), Net (net), Başarı Yüzdesi (successRate: sayı), Sınıf Ort (classAvgNet), Kurum Ort (institutionAvgNet), Genel Ort (generalAvgNet)
+6. Derslere Göre Konu Analizleri ("topics"):
+   - İlgili dersin altındaki konular: "topicName", "questionCount" (S), "correct" (D), "wrong" (Y), "empty" (S - D - Y), "successRate" (B%)
+
+DİKKAT:
+- Cevap anahtarları ("Cevap Anahtarı A ...", optik dizilimler) ve sayfa altındaki grafik çizim koordinatlarını ASLA çıkarma veya ekleme.
+- Yalnızca geçerli JSON formatı üret.
+
+SAYFA METİNLERİ:
+${pagesText.map((p: any, idx: number) => `--- SAYFA ${p.pageIndex || (idx + 1)} ---\n${p.text}`).join('\n\n')}
+
+İstenen JSON Yapısı:
+{
+  "examTitle": "string",
+  "examType": "TYT" | "AYT",
+  "reports": [
+    {
+      "pageIndex": number,
+      "studentName": "string",
+      "schoolNumber": "string",
+      "className": "string",
+      "scores": {
+        "tytScore": number,
+        "sayScore": number,
+        "eaScore": number,
+        "sozScore": number,
+        "sayClassRank": number,
+        "sayInstitutionRank": number,
+        "sayGeneralRank": number,
+        "eaClassRank": number,
+        "eaInstitutionRank": number,
+        "eaGeneralRank": number,
+        "sozClassRank": number,
+        "sozInstitutionRank": number,
+        "sozGeneralRank": number,
+        "tytClassRank": number,
+        "tytInstitutionRank": number,
+        "tytGeneralRank": number,
+        "classParticipantCount": number,
+        "institutionParticipantCount": number,
+        "generalParticipantCount": number
+      },
+      "subjects": [
+        {
+          "subjectName": "string",
+          "questionCount": number,
+          "correct": number,
+          "wrong": number,
+          "net": number,
+          "successRate": number,
+          "classAvgNet": number,
+          "institutionAvgNet": number,
+          "generalAvgNet": number,
+          "topics": [
+            {
+              "topicName": "string",
+              "questionCount": number,
+              "correct": number,
+              "wrong": number,
+              "empty": number,
+              "successRate": number
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+`;
+
+    const { response, modelUsed } = await generateContentWithFallback(ai, {
+      model: targetModel,
+      contents: prompt,
+      config: { responseMimeType: 'application/json' }
+    });
+
+    const responseText = extractResponseText(response);
+    const parsedData = JSON.parse(responseText || '{}');
+
+    const { userName, userRole, userId } = resolveUserInfo(req.body);
+
+    const usageRecord = recordApiUsage({
+      featureKey: 'PDF_REPORT_PARSE',
+      featureName: 'PDF Sınav Sonuç Belgesi Ayrıştırma',
+      category: 'QUESTION_ANALYSIS',
+      modelUsed,
+      promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
+      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      promptText: prompt,
+      responseText,
+      userId,
+      userName,
+      userRole
+    });
+
+    res.json({
+      success: true,
+      data: parsedData,
+      aiUsage: usageRecord
+    });
+  } catch (err: any) {
+    console.error('PDF report parse error:', err);
+    res.status(500).json({ error: formatGeminiErrorMessage(err, 'PDF sınav sonuç belgesi ayrıştırılırken hata oluştu.') });
   }
 });
 

@@ -1,7 +1,7 @@
 {
   "name": "react-example",
   "private": true,
-  "version": "1.8.14",
+  "version": "1.8.15",
   "type": "module",
   "scripts": {
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
@@ -27,6 +27,7 @@
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "nodemailer": "^9.0.3",
+    "pdfjs-dist": "^6.2.108",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-is": "^19.2.8",
