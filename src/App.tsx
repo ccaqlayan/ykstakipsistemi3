@@ -5,8 +5,9 @@ import { LoginView } from './components/LoginView';
 import { MaintenanceView } from './components/MaintenanceView';
 import { ProfileModal } from './components/ProfileModal';
 import { MandatoryPasswordChangeModal } from './components/MandatoryPasswordChangeModal';
+import { StudentPreviewBanner } from './components/StudentPreviewBanner';
 
-import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, InstitutionalMockExam, FieldType, DailyStudyTimeLog } from './types';
+import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, InstitutionalMockExam, FieldType, DailyStudyTimeLog, StudyPlanItem } from './types';
 import { deleteStorageFile } from './services/storageUpload';
 import { loadGlobalState, saveGlobalState, exportDataAsJSON, resetToDefaultData } from './services/storage';
 import { isMessageUnreadForUser } from './utils/statusUtils';
@@ -196,6 +197,26 @@ export default function App() {
     const isTeacherRole = currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor' || currentUser?.role === 'teacher' || currentUser?.role === 'admin';
     return isTeacherRole ? 'teacher_summary' : 'dashboard';
   });
+  const [previewStudentUser, setPreviewStudentUser] = useState<UserAccount | null>(null);
+  const [previousTeacherTab, setPreviousTeacherTab] = useState<TabType | null>(null);
+
+  const handleStartStudentPreview = (student: UserAccount) => {
+    setPreviousTeacherTab(activeTab);
+    setPreviewStudentUser(student);
+    setActiveTab('dashboard');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleExitStudentPreview = () => {
+    setPreviewStudentUser(null);
+    if (previousTeacherTab) {
+      setActiveTab(previousTeacherTab);
+    } else {
+      setActiveTab('teacher_students');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const [resourceTrackerTab, setResourceTrackerTab] = useState<'resources' | 'topics'>('resources');
   const [resourceTrackerDers, setResourceTrackerDers] = useState<string>('all');
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -505,7 +526,7 @@ export default function App() {
     targetUserName?: string,
     metadata?: Record<string, any>
   ) => {
-    if (!currentUser) return;
+    if (!currentUser || previewStudentUser) return;
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -604,11 +625,19 @@ export default function App() {
 
 
 
-  const currentStudentData: YKSDataState = (currentUser && globalState.studentsData[currentUser.id]) || (currentUser ? createEmptyStudentData(currentUser.name, currentUser.className) : INITIAL_STATE);
+  const activeViewingUser = previewStudentUser || currentUser;
+  const currentStudentData: YKSDataState = (activeViewingUser && globalState.studentsData[activeViewingUser.id]) || (activeViewingUser ? createEmptyStudentData(activeViewingUser.name, activeViewingUser.className) : INITIAL_STATE);
   const unresolvedErrorCount = currentStudentData.topicErrors.filter((e) => !e.revised).length;
 
   const updateCurrentStudentData = (updater: (prev: YKSDataState) => YKSDataState) => {
     if (!currentUser) return;
+    if (previewStudentUser) {
+      setLastToast({
+        id: 'toast-' + Date.now(),
+        message: 'Öğrenci önizleme modunda değişiklik, ekleme veya silme yapılamaz (Salt Okunur).'
+      });
+      return;
+    }
     setGlobalState((prev) => {
       const existingData = prev.studentsData[currentUser.id] || createEmptyStudentData(currentUser.name, currentUser.className);
       const updatedData = updater(existingData);
@@ -626,7 +655,7 @@ export default function App() {
   // 1. Motivation Event Listener (for action toasts across the app)
   useEffect(() => {
     const handleTriggerMotivation = (e: any) => {
-      if (!currentUser || currentUser.role !== 'student') return;
+      if (!currentUser || currentUser.role !== 'student' || previewStudentUser) return;
       const event: MotivationEvent = e.detail;
       if (!event) return;
       
@@ -647,7 +676,7 @@ export default function App() {
 
   // 2. Daily Streak Greeting (Shown once per day when logging in with an active streak)
   useEffect(() => {
-    if (!currentUser || currentUser.role !== 'student') return;
+    if (!currentUser || currentUser.role !== 'student' || previewStudentUser) return;
     const lastGreeting = localStorage.getItem('yks_last_streak_greet');
     const todayStr = new Date().toISOString().split('T')[0];
     if (lastGreeting !== todayStr) {
@@ -662,11 +691,11 @@ export default function App() {
         return () => clearTimeout(timer);
       }
     }
-  }, [currentUser?.id, currentStudentData.dailyStudyLogs, currentStudentData.questionLogs, currentStudentData.studyPlans]);
+  }, [currentUser?.id, currentStudentData.dailyStudyLogs, currentStudentData.questionLogs, currentStudentData.studyPlans, previewStudentUser]);
 
   // 3. Automated Badge Evaluation & Celebration Trigger
   useEffect(() => {
-    if (!currentUser || currentUser.role !== 'student') return;
+    if (!currentUser || currentUser.role !== 'student' || previewStudentUser) return;
 
     const { newBadges, allEarnedBadges, stats } = evaluateBadges(currentStudentData);
     if (newBadges.length > 0) {
@@ -968,6 +997,7 @@ export default function App() {
     localStorage.removeItem('yks_remember_me');
     sessionStorage.removeItem('yks_session_active');
     localStorage.removeItem('yks_last_active_time');
+    setPreviewStudentUser(null);
   };
 
   const handleUpdateStudentProfileByTeacher = (studentId: string, updatedProfile: StudentProfile) => {
@@ -1231,14 +1261,14 @@ export default function App() {
 
     const prevPlans = globalState.studentsData[studentId]?.studyPlans || [];
 
-    const newItems = tpl.items.map((item: any, idx: number) => ({
+    const newItems: StudyPlanItem[] = tpl.items.map((item: any, idx: number) => ({
       id: `plan-${Date.now()}-${idx}`,
       day: item.day,
       subject: item.subject,
       topic: item.topic,
       plannedMinutes: item.plannedMinutes,
       completedMinutes: 0,
-      status: 'pending',
+      status: 'pending' as const,
       notes: item.notes
     }));
 
@@ -1768,6 +1798,13 @@ export default function App() {
   };
 
   const handleUpdateProfile = (updatedUser: UserAccount, updatedStudentProfile?: StudentProfile) => {
+    if (previewStudentUser) {
+      setLastToast({
+        id: 'toast-' + Date.now(),
+        message: 'Öğrenci önizleme modunda profil bilgileri düzenlenemez.'
+      });
+      return;
+    }
     const prevUser = currentUser;
     const prevStudentProfile = currentStudentData?.profile;
 
@@ -2586,6 +2623,13 @@ export default function App() {
 
   const handleSendMessage = (receiverId: string, content: string, attachmentUrl?: string, replyTo?: DirectMessage['replyTo']) => {
     if (!currentUser) return;
+    if (previewStudentUser) {
+      setLastToast({
+        id: 'toast-' + Date.now(),
+        message: 'Öğrenci önizleme modunda mesaj gönderilemez.'
+      });
+      return;
+    }
     
     const now = new Date();
     const year = now.getFullYear();
@@ -2926,14 +2970,23 @@ export default function App() {
       <div className="fixed top-1/3 -left-40 w-64 h-64 sm:w-96 sm:h-96 bg-fuchsia-500/15 rounded-full blur-[90px] sm:blur-[140px] pointer-events-none z-0" />
       <div className="fixed -bottom-40 right-1/4 w-72 h-72 sm:w-[30rem] sm:h-[30rem] bg-indigo-600/15 rounded-full blur-[100px] sm:blur-[150px] pointer-events-none z-0" />
 
+      {/* Student View (Impersonation / Read-only Preview) Top Banner */}
+      {previewStudentUser && (
+        <StudentPreviewBanner
+          student={previewStudentUser}
+          onExitPreview={handleExitStudentPreview}
+        />
+      )}
+
       {/* Top Navbar */}
       {!isZenMode && (
         <Navbar
           currentUser={currentUser}
+          previewStudentUser={previewStudentUser}
           profile={currentStudentData.profile}
           sheetsStatus={currentStudentData.sheetsStatus}
           onOpenProfile={() => setShowProfileModal(true)}
-          onOpenSheetsModal={() => setActiveTab('sheets')}
+          onOpenSheetsModal={() => {}}
           onExportJSON={() => exportDataAsJSON(globalState)}
           onResetData={() => {
             if (confirm('Tüm verileri varsayılan fabrika ayarlarına sıfırlamak istediğinize emin misiniz?')) {
@@ -2977,6 +3030,7 @@ export default function App() {
         {!isZenMode && (
           <Sidebar
             currentUser={currentUser}
+            previewStudentUser={previewStudentUser}
             activeTab={activeTab}
             onSelectTab={handleTabChange}
             unresolvedErrorCount={unresolvedErrorCount}
@@ -2995,6 +3049,8 @@ export default function App() {
           <AppTabRouter
             activeTab={activeTab}
             currentUser={currentUser}
+            previewStudentUser={previewStudentUser}
+            onPreviewStudent={handleStartStudentPreview}
             globalState={globalState}
             currentStudentData={currentStudentData}
             resourceTrackerTab={resourceTrackerTab}

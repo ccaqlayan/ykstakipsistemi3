@@ -209,6 +209,7 @@ interface TeacherStudentInspectViewProps {
   onApplyTemplateToStudent?: (studentId: string, templateId: string, mode: 'overwrite' | 'merge') => void;
   onUpdateStudentStudyPlans?: (studentId: string, plans: any[]) => void;
   onUpdateStudentTopicErrors?: (studentId: string, updatedErrors: TopicErrorItem[], actionDescription?: string) => void;
+  onPreviewStudent?: (student: UserAccount) => void;
 }
 
 export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps> = ({
@@ -232,7 +233,8 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
   programTemplates = [],
   onApplyTemplateToStudent,
   onUpdateStudentStudyPlans,
-  onUpdateStudentTopicErrors
+  onUpdateStudentTopicErrors,
+  onPreviewStudent
 }) => {
   const [activeTab, setActiveTab] = useState<InspectTabType>(initialTab || 'performance');
 
@@ -323,9 +325,9 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
   const topicErrors = stData.topicErrors || [];
   const resources = stData.resourceTrackers || stData.resources || [];
   const routinesList = stData.routines || [];
-  const pomodoros = stData.pomodoroHistory || [];
+  const pomodoros = (stData as any).pomodoroHistory || [];
   const youtubeList = stData.youtubeVideos || (stData as any).youtubePlaylists || [];
-  const topicsState = stData.topics || {};
+  const topicsState = (stData as any).topics || {};
 
   // Badges & Motivation engine calculation
   const { allEarnedBadges, stats: motivationStats, totalXp } = evaluateBadges(stData as any);
@@ -569,6 +571,16 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
           </button>
 
           <div className="flex items-center space-x-3 flex-wrap">
+            {onPreviewStudent && (
+              <button
+                onClick={() => onPreviewStudent(selectedStudentUser)}
+                className="bg-gradient-to-r from-purple-600 via-indigo-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-bold text-xs px-4 py-2.5 rounded-2xl transition-all border border-indigo-400/40 flex items-center space-x-2 shadow-lg shadow-indigo-600/30 cursor-pointer active:scale-95"
+                title="Öğrencinin gördüğü ekranları birebir salt okunur önizleyin"
+              >
+                <Eye className="w-4 h-4 text-indigo-200" />
+                <span>Öğrenci Gözünden Gör</span>
+              </button>
+            )}
             {teacher.role === 'teacher' && teacher.subject && (
               <span className="bg-gradient-to-r from-amber-500/20 to-purple-500/20 border border-amber-500/40 text-amber-300 font-bold text-xs px-3 py-1.5 rounded-xl shadow-sm flex items-center space-x-1.5">
                 <span>⭐ Branşınız ({teacher.subject}) Verileri Önceliklidir</span>
@@ -3075,7 +3087,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                 </button>
                 <div className="flex items-center space-x-2">
                   <span className="text-xs font-bold text-slate-300 bg-white/5 px-3 py-1.5 rounded-xl border border-white/10">
-                    Sınav: <strong className="text-white">{selectedInstitutionalExam.examTitle || selectedInstitutionalExam.title}</strong>
+                    Sınav: <strong className="text-white">{selectedInstitutionalExam.examTitle || (selectedInstitutionalExam as any).title}</strong>
                   </span>
                 </div>
               </div>
@@ -3189,7 +3201,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                   if (generalMockSearch.trim()) {
                     const q = generalMockSearch.toLowerCase();
                     const matchTitle = (m.title || '').toLowerCase().includes(q);
-                    const matchPublisher = (m.publisher || '').toLowerCase().includes(q);
+                    const matchPublisher = ((m as any).publisher || '').toLowerCase().includes(q);
                     if (!matchTitle && !matchPublisher) return false;
                   }
                   if (generalMockTypeFilter === 'TYT' && !(m.tyt?.totalNet && m.tyt.totalNet > 0)) return false;
@@ -3483,9 +3495,9 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                                   <h4 className="text-sm font-bold text-white leading-tight">
                                     {mock.title}
                                   </h4>
-                                  {mock.publisher && (
+                                  {(mock as any).publisher && (
                                     <span className="text-[11px] text-slate-400 font-medium">
-                                      {mock.publisher}
+                                      {(mock as any).publisher}
                                     </span>
                                   )}
                                 </div>
@@ -3517,24 +3529,24 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                               {mock.tyt && (
                                 <div className="flex items-center gap-1.5 flex-wrap pt-1 text-[10px] font-mono border-t border-white/5">
                                   <span className="text-slate-500 font-sans">TYT Detay:</span>
-                                  {mock.tyt.turkishNet !== undefined && (
+                                  {(mock.tyt as any).turkishNet !== undefined && (
                                     <span className="bg-pink-500/15 text-pink-300 px-1.5 py-0.5 rounded border border-pink-500/20">
-                                      TR: {mock.tyt.turkishNet}
+                                      TR: {(mock.tyt as any).turkishNet}
                                     </span>
                                   )}
-                                  {mock.tyt.mathNet !== undefined && (
+                                  {(mock.tyt as any).mathNet !== undefined && (
                                     <span className="bg-indigo-500/15 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-500/20">
-                                      MAT: {mock.tyt.mathNet}
+                                      MAT: {(mock.tyt as any).mathNet}
                                     </span>
                                   )}
-                                  {mock.tyt.scienceNet !== undefined && (
+                                  {(mock.tyt as any).scienceNet !== undefined && (
                                     <span className="bg-emerald-500/15 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                                      FEN: {mock.tyt.scienceNet}
+                                      FEN: {(mock.tyt as any).scienceNet}
                                     </span>
                                   )}
-                                  {mock.tyt.socialNet !== undefined && (
+                                  {(mock.tyt as any).socialNet !== undefined && (
                                     <span className="bg-amber-500/15 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/20">
-                                      SOS: {mock.tyt.socialNet}
+                                      SOS: {(mock.tyt as any).socialNet}
                                     </span>
                                   )}
                                 </div>
@@ -3567,7 +3579,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                                 <tr key={mock.id} className="hover:bg-white/5 transition-colors">
                                   <td className="py-3 px-4">
                                     <div className="font-bold text-white font-sans text-xs">{mock.title}</div>
-                                    <div className="text-[10px] text-slate-400 font-sans">{mock.publisher || 'Bireysel Deneme'}</div>
+                                    <div className="text-[10px] text-slate-400 font-sans">{(mock as any).publisher || 'Bireysel Deneme'}</div>
                                   </td>
                                   <td className="py-3 px-4 text-slate-400 text-[11px] whitespace-nowrap">{mock.date}</td>
                                   <td className="py-3 px-4 text-center">
@@ -3595,7 +3607,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                                     )}
                                   </td>
                                   <td className="py-3 px-4 text-right text-amber-300 font-bold">
-                                    {mock.score ? `${mock.score.toFixed(1)} P` : '-'}
+                                    {(mock as any).score ? `${(mock as any).score.toFixed(1)} P` : '-'}
                                   </td>
                                 </tr>
                               );
@@ -3975,10 +3987,10 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                                       <Calendar className="w-3 h-3 text-slate-500" />
                                       <span>{ex.date}</span>
                                     </span>
-                                    {ex.duration ? (
+                                    {(ex as any).duration ? (
                                       <span className="flex items-center space-x-1 text-purple-400 font-mono">
                                         <Clock className="w-3 h-3" />
-                                        <span>{ex.duration} dk</span>
+                                        <span>{(ex as any).duration} dk</span>
                                       </span>
                                     ) : null}
                                   </div>
@@ -4003,7 +4015,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                               </thead>
                               <tbody className="divide-y divide-white/5 font-mono">
                                 {paginatedBranchExams.map(ex => {
-                                  const isMyBranch = teacherSubj && (ex.subject || '').toLowerCase().includes(teacherSubj);
+                                  const isMyBranch = teacher.subject && (ex.subject || '').toLowerCase().includes(teacher.subject.toLowerCase());
                                   const totalQ = (ex.correct || 0) + (ex.wrong || 0) + (ex.empty || 0);
                                   const acc = totalQ > 0 ? Math.round(((ex.correct || 0) / totalQ) * 100) : 0;
                                   return (
@@ -4137,7 +4149,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                     classTotal: undefined as number | undefined,
                     generalRank: undefined as number | undefined,
                     generalTotal: undefined as number | undefined,
-                    subjects: [] as InstitutionalSubjectDetail[]
+                    subjects: [] as any[]
                   };
 
                   const subjects = exam.subjects || [];
@@ -4151,7 +4163,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
                     totalNet += net;
                     totalCorrect += (s.correct || 0);
                     totalWrong += (s.wrong || 0);
-                    totalQuestions += (s.questionCount || (s.correct + s.wrong + (s.empty || 0)));
+                    totalQuestions += (s.questionCount || (s.correct + s.wrong + ((s as any).empty || 0)));
                   });
 
                   const totalEmpty = Math.max(0, totalQuestions - (totalCorrect + totalWrong));
@@ -5066,7 +5078,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
 
       {/* TAB 8: YOUTUBE TRACKER */}
       {activeTab === 'youtube' && (() => {
-        const ytSubjects: string[] = ['all', ...Array.from(new Set(youtubeList.map((y: any) => String(y.subject || '')).filter(Boolean)))];
+        const ytSubjects: string[] = ['all', ...Array.from(new Set<string>(youtubeList.map((y: any) => String(y.subject || '')).filter(Boolean)))];
 
         // Filter items
         const filteredYoutubeList = youtubeList.filter(item => {

@@ -177,7 +177,7 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-              {(targetField === 'DİL' || targetField === 'DIL'
+              {(targetField === 'DİL' || (targetField as string) === 'DIL'
                 ? [
                     { id: 'DIL' as MockExamType, label: 'DİL (YDT)', sub: '80 Soru', color: 'sky' },
                     { id: 'TYT' as MockExamType, label: 'TYT', sub: '120 Soru', color: 'indigo' },
@@ -394,10 +394,10 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
                         className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500"
                       />
                     </div>
-                    <div className={targetField === 'EA' || targetField === 'SÖZ' || targetField === 'SOZ' ? 'ring-1 ring-emerald-500/30 rounded-xl p-1.5 bg-emerald-500/5' : ''}>
+                    <div className={targetField === 'EA' || targetField === 'SÖZ' || (targetField as string) === 'SOZ' ? 'ring-1 ring-emerald-500/30 rounded-xl p-1.5 bg-emerald-500/5' : ''}>
                       <label className="block text-[11px] font-semibold text-slate-300 mb-1">
                         Edeb-Sos1 (40 Soru)
-                        {(targetField === 'EA' || targetField === 'SÖZ' || targetField === 'SOZ') && <span className="text-[9px] text-emerald-400 ml-1 font-bold">★ {targetField}</span>}
+                        {(targetField === 'EA' || targetField === 'SÖZ' || (targetField as string) === 'SOZ') && <span className="text-[9px] text-emerald-400 ml-1 font-bold">★ {targetField}</span>}
                       </label>
                       <input
                         type="text"
@@ -408,10 +408,10 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
                         className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500"
                       />
                     </div>
-                    <div className={targetField === 'SÖZ' || targetField === 'SOZ' ? 'ring-1 ring-emerald-500/30 rounded-xl p-1.5 bg-emerald-500/5' : ''}>
+                    <div className={targetField === 'SÖZ' || (targetField as string) === 'SOZ' ? 'ring-1 ring-emerald-500/30 rounded-xl p-1.5 bg-emerald-500/5' : ''}>
                       <label className="block text-[11px] font-semibold text-slate-300 mb-1">
                         AYT Sos2 (40 Soru)
-                        {(targetField === 'SÖZ' || targetField === 'SOZ') && <span className="text-[9px] text-emerald-400 ml-1 font-bold">★ SÖZ</span>}
+                        {(targetField === 'SÖZ' || (targetField as string) === 'SOZ') && <span className="text-[9px] text-emerald-400 ml-1 font-bold">★ SÖZ</span>}
                       </label>
                       <input
                         type="text"

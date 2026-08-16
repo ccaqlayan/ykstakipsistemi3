@@ -303,7 +303,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [addExamType, setAddExamType] = useState<MockExamType>(() => {
-    return (profile?.targetField === 'DİL' || profile?.targetField === 'DIL') ? 'DIL' : 'TYT';
+    return (profile?.targetField === 'DİL' || (profile?.targetField as string) === 'DIL') ? 'DIL' : 'TYT';
   });
   const [addEntryMode, setAddEntryMode] = useState<'quick' | 'detailed'>('quick');
   const [addInputMethod, setAddInputMethod] = useState<'net' | 'dyb'>('dyb');
@@ -333,7 +333,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
 
   // Sync addExamType when targetField changes if user hasn't typed
   useEffect(() => {
-    if (profile?.targetField === 'DİL' || profile?.targetField === 'DIL') {
+    if (profile?.targetField === 'DİL' || (profile?.targetField as string) === 'DIL') {
       setAddExamType('DIL');
     }
   }, [profile?.targetField]);
@@ -341,7 +341,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   const resetAddForm = () => {
     setTitle('');
     setDate(new Date().toISOString().split('T')[0]);
-    setAddExamType((profile?.targetField === 'DİL' || profile?.targetField === 'DIL') ? 'DIL' : 'TYT');
+    setAddExamType((profile?.targetField === 'DİL' || (profile?.targetField as string) === 'DIL') ? 'DIL' : 'TYT');
     setAddEntryMode('quick');
     setAddInputMethod('dyb');
     setTytTurkce('');
@@ -732,10 +732,10 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
     let ydtObj: { net: number; correct?: number; wrong?: number; empty?: number; language?: string } | undefined = undefined;
     if (addExamType === 'DIL' || addExamType === 'TYT_DIL') {
       if (addEntryMode === 'detailed') {
-        const dVal = addYdtDyb.d !== '' ? parseNetVal(addYdtDyb.d) : undefined;
-        const yVal = addYdtDyb.y !== '' ? parseNetVal(addYdtDyb.y) : undefined;
-        const bVal = addYdtDyb.b !== '' ? parseNetVal(addYdtDyb.b) : undefined;
-        const netVal = addYdtDyb.net !== '' ? parseNetVal(addYdtDyb.net) : Number(((dVal || 0) - (yVal || 0) / 4).toFixed(2));
+        const dVal = ydtDyb.d !== '' ? parseNetVal(ydtDyb.d) : undefined;
+        const yVal = ydtDyb.y !== '' ? parseNetVal(ydtDyb.y) : undefined;
+        const bVal = ydtDyb.b !== '' ? parseNetVal(ydtDyb.b) : undefined;
+        const netVal = ydtDyb.net !== '' ? parseNetVal(ydtDyb.net) : Number(((dVal || 0) - (yVal || 0) / 4).toFixed(2));
         ydtObj = {
           net: netVal,
           correct: dVal,
@@ -1325,7 +1325,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
             mockCountFilter={mockCountFilter}
             setMockCountFilter={setMockCountFilter}
             activeChartTab={activeChartTab}
-            setActiveChartTab={setActiveChartTab}
+            setActiveChartTab={setActiveChartTab as any}
             setShowCustomizeModal={setShowCustomizeModal}
             visibleCharts={visibleCharts}
             pinnedSubjects={pinnedSubjects}
@@ -1478,7 +1478,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
         addAytDyb={addAytDyb}
         setAddAytDyb={setAddAytDyb}
         updateSubSubjectDybItem={updateSubSubjectDybItem}
-        estimatedRank={estimatedRank}
+        estimatedRank={String(estimatedRank)}
         setEstimatedRank={setEstimatedRank}
         notes={notes}
         setNotes={setNotes}
@@ -1530,7 +1530,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
         editAytDyb={editAytDyb}
         setEditAytDyb={setEditAytDyb}
         updateSubSubjectDybItem={updateSubSubjectDybItem}
-        editEstimatedRank={editEstimatedRank}
+        editEstimatedRank={String(editEstimatedRank)}
         setEditEstimatedRank={setEditEstimatedRank}
         editNotes={editNotes}
         setEditNotes={setEditNotes}
@@ -1574,7 +1574,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
         pinnedSubjects={pinnedSubjects}
         togglePinnedSubject={togglePinnedSubject}
         setPinnedSubjects={setPinnedSubjects}
-        setActiveChartTab={setActiveChartTab}
+        setActiveChartTab={setActiveChartTab as any}
         detailedSubSubjectsMeta={DETAILED_SUB_SUBJECTS_META}
       />
 

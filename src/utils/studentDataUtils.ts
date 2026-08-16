@@ -28,15 +28,11 @@ export function resolveStudentData(
   const isZeynep = studentId === 'student-2' || email === 'zeynep@okul.edu.tr' || name.toLowerCase().includes('zeynep');
   const isMehmet = studentId === 'student-3' || email === 'mehmet@okul.edu.tr' || name.toLowerCase().includes('mehmet');
 
-  const baseDefaults: YKSDataState = isAhmet
-    ? INITIAL_STATE
-    : isBurak
-    ? INITIAL_STUDENT_4_STATE
-    : isZeynep
-    ? INITIAL_STUDENT_2_STATE
-    : isMehmet
-    ? INITIAL_STUDENT_3_STATE
-    : (INITIAL_GLOBAL_STATE.studentsData?.[studentId] || {
+  const baseDefaults: any = (isAhmet ? INITIAL_STATE : undefined)
+    || (isBurak ? INITIAL_STUDENT_4_STATE : undefined)
+    || (isZeynep ? INITIAL_STUDENT_2_STATE : undefined)
+    || (isMehmet ? INITIAL_STUDENT_3_STATE : undefined)
+    || ({
         profile: {
           name: name || 'Öğrenci',
           className: className || '12-A SAY',
@@ -64,7 +60,7 @@ export function resolveStudentData(
         pomodoroHistory: []
       });
 
-  const rawData = (studentsData && studentsData[studentId])
+  const rawData: any = (studentsData && studentsData[studentId])
     || (isAhmet ? INITIAL_STATE : undefined)
     || (isBurak ? INITIAL_STUDENT_4_STATE : undefined)
     || (isZeynep ? INITIAL_STUDENT_2_STATE : undefined)

@@ -17,6 +17,7 @@ import { YildizLisesiLogo } from './YildizLisesiLogo';
 
 interface NavbarProps {
   currentUser: UserAccount | null;
+  previewStudentUser?: UserAccount | null;
   profile: StudentProfile;
   sheetsStatus: GoogleSheetsStatus;
   onOpenProfile: () => void;
@@ -36,6 +37,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
+  previewStudentUser = null,
   profile,
   sheetsStatus,
   onOpenProfile,
@@ -52,8 +54,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleTheme,
   alwaysShowMenuButton = false
 }) => {
-  const isTeacher = currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor' || currentUser?.role === 'teacher';
-  const isSchoolCounselor = currentUser?.role === 'school_counselor';
+  const isPreviewMode = !!previewStudentUser;
+  const effectiveUser = previewStudentUser || currentUser;
+  const isTeacher = !isPreviewMode && (currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor' || currentUser?.role === 'teacher' || currentUser?.role === 'admin');
+  const isSchoolCounselor = !isPreviewMode && currentUser?.role === 'school_counselor';
 
   const [currentSchoolName, setCurrentSchoolName] = React.useState<string>(
     () => localStorage.getItem('school_name') || 'Yıldız Anadolu Lisesi'
@@ -100,21 +104,25 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {currentSchoolName}
                 </span>
                 <span className={`text-[10px] sm:text-xs px-2 sm:px-2.5 py-0.5 rounded-full border font-bold uppercase tracking-wider hidden xs:inline-block ${
-                  isSchoolCounselor
+                  isPreviewMode
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
+                    : isSchoolCounselor
                     ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
                     : isTeacher 
                     ? 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/40' 
                     : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
                 }`}>
-                  {isSchoolCounselor 
+                  {isPreviewMode
+                    ? `ÖNİZLEME (${effectiveUser?.className || '12-A'})`
+                    : isSchoolCounselor 
                     ? 'OKUL REHBERİ' 
                     : isTeacher 
                     ? 'SINIF REHBERİ' 
-                    : `${currentUser?.className || '12-A'}`}
+                    : `${effectiveUser?.className || '12-A'}`}
                 </span>
               </div>
               <p className="text-xs text-slate-400 hidden sm:block">
-                YKS Koçluk, Soru & Sınıf Takip Platformu
+                {isPreviewMode ? 'Öğrenci Gözünden Canlı Önizleme (Salt Okunur)' : 'YKS Koçluk, Soru & Sınıf Takip Platformu'}
               </p>
             </div>
           </div>
@@ -123,7 +131,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center space-x-2.5">
             
             {/* Geri Al (Undo) Button */}
-            {canUndo && onUndo && (
+            {canUndo && onUndo && !isPreviewMode && (
               <button
                 onClick={onUndo}
                 id="navbar-undo-btn"
@@ -143,27 +151,29 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Profile Pill */}
             {!isTeacher ? (
               <button
-                onClick={onOpenProfile}
+                onClick={!isPreviewMode ? onOpenProfile : undefined}
                 id="student-profile-btn"
-                title="Profil ve Hedefleri Düzenle"
-                className="flex items-center space-x-2.5 bg-white/10 hover:bg-white/15 backdrop-blur-md border border-white/15 px-3 py-1.5 rounded-2xl transition-all shadow-md group"
+                title={isPreviewMode ? 'Öğrenci Önizleme Modu' : 'Profil ve Hedefleri Düzenle'}
+                className={`flex items-center space-x-2.5 backdrop-blur-md border px-3 py-1.5 rounded-2xl transition-all shadow-md group ${
+                  isPreviewMode ? 'bg-amber-500/10 border-amber-500/30 cursor-default' : 'bg-white/10 hover:bg-white/15 border-white/15'
+                }`}
               >
-                {currentUser?.avatarUrl ? (
+                {effectiveUser?.avatarUrl ? (
                   <img 
-                    src={currentUser.avatarUrl} 
-                    alt={currentUser.name} 
+                    src={effectiveUser.avatarUrl} 
+                    alt={effectiveUser.name} 
                     className="w-7 h-7 rounded-full object-cover border border-indigo-400/50 shadow-sm shrink-0" 
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                   />
                 ) : null}
-                {(!currentUser?.avatarUrl) && (
+                {(!effectiveUser?.avatarUrl) && (
                   <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-500 to-fuchsia-500 text-white flex items-center justify-center font-bold text-xs uppercase shadow-sm shrink-0">
-                    {currentUser?.name ? currentUser.name.charAt(0) : 'Ö'}
+                    {effectiveUser?.name ? effectiveUser.name.charAt(0) : 'Ö'}
                   </div>
                 )}
                 <div className="text-left hidden sm:block">
                   <div className="text-xs font-semibold text-slate-200 leading-tight group-hover:text-indigo-300 transition-colors">
-                    {currentUser?.name || profile.name}
+                    {effectiveUser?.name || profile.name}
                   </div>
                   <div className="text-[10px] text-indigo-300 font-mono font-medium">
                     {profile.targetField} • Hedef #{profile.targetRank}

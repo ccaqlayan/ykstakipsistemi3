@@ -57,10 +57,12 @@ interface TeacherStudentsTabProps {
   setTypedConfirmName: (name: string) => void;
   OfflineStatusDisplay: React.FC<{ user: UserAccount; className?: string }>;
   onUnlockUserAccount?: (userId: string) => void;
+  onPreviewStudent?: (student: UserAccount) => void;
 }
 
 export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
   onUnlockUserAccount,
+  onPreviewStudent,
   totalStudentsCount,
   avgTYTNet,
   avgAYTNet,
@@ -418,15 +420,26 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
                     </div>
                   </div>
 
-                  {/* Bottom Action Bar: Single prominent "Öğrenciyi İncele & Detay" button */}
+                  {/* Bottom Action Bar: Single prominent "Öğrenciyi İncele & Detay" and "Öğrenci Gözü" buttons */}
                   <div className="flex items-center space-x-2 pt-3 border-t border-white/10 mt-3" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => handleOpenInspectStudent(student, 'performance')}
-                      className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-bold transition-all border border-indigo-400/40 flex items-center justify-center space-x-2 shadow-lg shadow-indigo-600/30 cursor-pointer"
+                      className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white rounded-xl text-xs font-bold transition-all border border-indigo-400/40 flex items-center justify-center space-x-1.5 shadow-lg shadow-indigo-600/30 cursor-pointer"
                     >
                       <Eye className="w-4 h-4 text-indigo-200" />
-                      <span>Öğrenciyi İncele & Detay</span>
+                      <span>Öğrenciyi İncele</span>
                     </button>
+
+                    {onPreviewStudent && (
+                      <button
+                        onClick={() => onPreviewStudent(student)}
+                        className="py-2.5 px-3 bg-purple-600/25 hover:bg-purple-600/40 text-purple-200 hover:text-white rounded-xl text-xs font-bold transition-all border border-purple-400/30 flex items-center justify-center space-x-1.5 shadow-md cursor-pointer shrink-0"
+                        title="Öğrenci Gözünden Gör (Önizleme Modu)"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-purple-300 animate-pulse" />
+                        <span className="hidden sm:inline">Öğrenci Gözü</span>
+                      </button>
+                    )}
 
                     {onUnlockUserAccount && (student.isLocked || (student.lockoutUntil && new Date(student.lockoutUntil).getTime() > Date.now())) && (
                       <button

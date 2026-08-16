@@ -1,4 +1,5 @@
 import React from 'react';
+import { Lock } from 'lucide-react';
 import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, ClassDefinition, InstitutionalMockExam, FieldType, ClassAICoachAdvice, DailyStudyTimeLog } from '../../types';
 import { AuditLogsView } from '../AuditLogsView';
 import { SystemManagementView } from '../SystemManagementView';
@@ -24,6 +25,8 @@ import { UndoItem } from './AppTypes';
 interface AppTabRouterProps {
   activeTab: string;
   currentUser: UserAccount;
+  previewStudentUser?: UserAccount | null;
+  onPreviewStudent?: (student: UserAccount) => void;
   globalState: AppGlobalState;
   currentStudentData: YKSDataState;
   resourceTrackerTab: 'resources' | 'topics';
@@ -113,6 +116,8 @@ interface AppTabRouterProps {
 export const AppTabRouter: React.FC<AppTabRouterProps> = ({
   activeTab,
   currentUser,
+  previewStudentUser = null,
+  onPreviewStudent,
   globalState,
   currentStudentData,
   resourceTrackerTab,
@@ -292,6 +297,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           onRejectStudent={handleRejectStudent}
           onUpdateStudentSubjectNotes={handleUpdateStudentSubjectNotesByTeacher}
           onUnlockUserAccount={handleUnlockUserAccount}
+          onPreviewStudent={onPreviewStudent}
         />
       )}
 
@@ -299,7 +305,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
       {activeTab === 'dashboard' && (
         <DashboardView
           state={currentStudentData}
-          currentUser={currentUser}
+          currentUser={previewStudentUser || currentUser}
           onNavigateTab={setActiveTab}
           onOpenProfile={() => setShowProfileModal(true)}
           onUpdateRoutines={handleUpdateRoutines}
@@ -488,17 +494,35 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
       )}
 
       {activeTab === 'messages' && (
-        <MessagesView
-          currentUser={currentUser}
-          allUsers={globalState.users}
-          classes={globalState.classes}
-          messages={globalState.messages || []}
-          studentsData={globalState.studentsData}
-          onSendMessage={handleSendMessage}
-          onEditMessage={handleEditMessage}
-          onDeleteMessage={handleDeleteMessage}
-          onMarkAsRead={handleMarkAsRead}
-        />
+        previewStudentUser ? (
+          <div className="bg-slate-900/90 border border-amber-500/30 rounded-3xl p-8 text-center space-y-4 max-w-xl mx-auto my-12 shadow-2xl backdrop-blur-xl animate-fadeIn">
+            <div className="w-16 h-16 bg-amber-500/20 text-amber-400 rounded-3xl flex items-center justify-center mx-auto border border-amber-500/30 shadow-inner">
+              <Lock className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-extrabold text-white">Özel Mesajlaşma Gizlidir</h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Öğrenci gözünden önizleme modunda öğrencinin özel mesajları ve kişisel sohbet geçmişi gizlilik ve KVKK ilkeleri gereğince görüntülenemez.
+            </p>
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-600/30 border border-indigo-400/40 cursor-pointer"
+            >
+              Öğrenci Genel Özetine Dön
+            </button>
+          </div>
+        ) : (
+          <MessagesView
+            currentUser={currentUser}
+            allUsers={globalState.users}
+            classes={globalState.classes}
+            messages={globalState.messages || []}
+            studentsData={globalState.studentsData}
+            onSendMessage={handleSendMessage}
+            onEditMessage={handleEditMessage}
+            onDeleteMessage={handleDeleteMessage}
+            onMarkAsRead={handleMarkAsRead}
+          />
+        )
       )}
     </>
   );

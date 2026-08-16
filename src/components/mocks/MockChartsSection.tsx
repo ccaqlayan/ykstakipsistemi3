@@ -118,7 +118,7 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
   toggleActiveSubSubject,
   profile
 }) => {
-  const isDilStudent = profile?.targetField === 'DİL' || profile?.targetField === 'DIL';
+  const isDilStudent = profile?.targetField === 'DİL' || (profile?.targetField as string) === 'DIL';
   const [showTytLine, setShowTytLine] = useState<boolean>(true);
   const [showAytLine, setShowAytLine] = useState<boolean>(true);
   const [showDilLine, setShowDilLine] = useState<boolean>(isDilStudent);

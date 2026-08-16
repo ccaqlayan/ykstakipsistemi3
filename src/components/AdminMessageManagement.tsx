@@ -121,7 +121,8 @@ export const AdminMessageManagement: React.FC<AdminMessageManagementProps> = ({
     try {
       const tempId = 'broadcast-img-' + Date.now();
       const uploadedUrl = await uploadMessageAttachment(file, tempId);
-      setBroadcastAttachmentUrl(uploadedUrl);
+      const finalUrl = typeof uploadedUrl === 'string' ? uploadedUrl : (uploadedUrl as any)?.url || '';
+      setBroadcastAttachmentUrl(finalUrl);
       showNotification('Görsel eki eklendi.');
     } catch (err: any) {
       console.error('Failed to upload image:', err);

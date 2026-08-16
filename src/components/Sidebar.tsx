@@ -64,6 +64,7 @@ interface TabItem {
 
 interface SidebarProps {
   currentUser: UserAccount | null;
+  previewStudentUser?: UserAccount | null;
   activeTab: TabType;
   onSelectTab: (tab: TabType) => void;
   unresolvedErrorCount: number;
@@ -78,6 +79,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentUser,
+  previewStudentUser = null,
   activeTab,
   onSelectTab,
   unresolvedErrorCount,
@@ -89,9 +91,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onAddToHomeScreen,
   isHideDesktopSidebar = false
 }) => {
-  const isTeacher = currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor' || currentUser?.role === 'teacher' || currentUser?.role === 'admin';
-  const isSchoolCounselor = currentUser?.role === 'school_counselor' || currentUser?.role === 'admin';
-  const isAdmin = currentUser?.role === 'admin';
+  const isPreviewMode = !!previewStudentUser;
+  const effectiveUser = previewStudentUser || currentUser;
+  const isTeacher = !isPreviewMode && (currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor' || currentUser?.role === 'teacher' || currentUser?.role === 'admin');
+  const isSchoolCounselor = !isPreviewMode && (currentUser?.role === 'school_counselor' || currentUser?.role === 'admin');
+  const isAdmin = !isPreviewMode && currentUser?.role === 'admin';
 
   const studentTabs: TabItem[] = [
     { id: 'dashboard', label: 'Genel Özet', icon: LayoutDashboard },
@@ -150,49 +154,74 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex flex-col space-y-1.5 overflow-y-auto scrollbar-none py-1 flex-1">
         
         {/* Role Badge inside Sidebar Header with Message Icon */}
-        <div className="flex items-center justify-between p-3 mb-2 bg-white/5 rounded-2xl border border-white/10">
+        <div className={`flex items-center justify-between p-3 mb-2 rounded-2xl border ${
+          isPreviewMode 
+            ? 'bg-amber-500/10 border-amber-500/30' 
+            : 'bg-white/5 border-white/10'
+        }`}>
           <div className="flex items-center space-x-3 overflow-hidden">
-            {currentUser?.avatarUrl ? (
+            {effectiveUser?.avatarUrl ? (
               <img
-                src={currentUser.avatarUrl}
-                alt={currentUser.name}
+                src={effectiveUser.avatarUrl}
+                alt={effectiveUser.name}
                 className="w-10 h-10 rounded-full object-cover shrink-0 border-2 border-indigo-500/50 shadow-md"
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
               />
             ) : null}
-            {(!currentUser?.avatarUrl) && (
+            {(!effectiveUser?.avatarUrl) && (
               <div className="w-10 h-10 rounded-full bg-indigo-600/30 border border-indigo-400/40 text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
-                {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+                {effectiveUser?.name ? effectiveUser.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
               </div>
             )}
             <div className="overflow-hidden">
-              <div className="text-xs sm:text-sm font-bold text-white truncate">{currentUser?.name || 'Kullanıcı'}</div>
+              <div className="text-xs sm:text-sm font-bold text-white truncate">{effectiveUser?.name || 'Kullanıcı'}</div>
               <div className={`text-[10px] font-bold uppercase tracking-wider truncate ${
-                isSchoolCounselor ? 'text-purple-300' : isTeacher ? 'text-fuchsia-300' : 'text-indigo-300'
+                isPreviewMode
+                  ? 'text-amber-300'
+                  : isSchoolCounselor
+                  ? 'text-purple-300'
+                  : isTeacher
+                  ? 'text-fuchsia-300'
+                  : 'text-indigo-300'
               }`}>
-                {isSchoolCounselor ? 'OKUL REHBER ÖĞRET.' : isTeacher ? 'SINIF REHBER ÖĞRET.' : `ÖĞRENCİ (${currentUser?.className || '12-A SAY'})`}
+                {isPreviewMode
+                  ? `ÖĞRENCİ ÖNİZLEME (${effectiveUser?.className || '12-A'})`
+                  : isSchoolCounselor
+                  ? 'OKUL REHBER ÖĞRET.'
+                  : isTeacher
+                  ? 'SINIF REHBER ÖĞRET.'
+                  : `ÖĞRENCİ (${effectiveUser?.className || '12-A SAY'})`}
               </div>
             </div>
           </div>
 
-          {/* Message Icon button */}
-          <button
-            onClick={() => handleSelectTab('messages')}
-            id="sidebar-messages-icon-btn"
-            title="Mesajlar"
-            className={`relative p-2.5 rounded-xl border transition-all shrink-0 ml-1.5 ${
-              activeTab === 'messages'
-                ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-500/30'
-                : 'bg-indigo-500/10 text-indigo-200 hover:text-white hover:bg-indigo-500/20 border-indigo-500/20 backdrop-blur-md'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            {unreadMessageCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white font-black text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-slate-900 shadow-md animate-pulse">
-                {unreadMessageCount}
-              </span>
-            )}
-          </button>
+          {/* Message Icon button - Hidden or locked in preview mode */}
+          {!isPreviewMode ? (
+            <button
+              onClick={() => handleSelectTab('messages')}
+              id="sidebar-messages-icon-btn"
+              title="Mesajlar"
+              className={`relative p-2.5 rounded-xl border transition-all shrink-0 ml-1.5 ${
+                activeTab === 'messages'
+                  ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-500/30'
+                  : 'bg-indigo-500/10 text-indigo-200 hover:text-white hover:bg-indigo-500/20 border-indigo-500/20 backdrop-blur-md'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              {unreadMessageCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white font-black text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-slate-900 shadow-md animate-pulse">
+                  {unreadMessageCount}
+                </span>
+              )}
+            </button>
+          ) : (
+            <div
+              className="p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-300/60 shrink-0 ml-1.5 cursor-not-allowed"
+              title="Önizleme modunda özel mesajlar gizlidir"
+            >
+              <MessageSquare className="w-4 h-4 opacity-50" />
+            </div>
+          )}
         </div>
 
         {tabs.map((t) => {

@@ -279,7 +279,7 @@ export const DashboardScheduleWidget: React.FC<DashboardScheduleWidgetProps> = (
                                     plan.taskType?.toLowerCase().includes('video') || 
                                     plan.topic?.toLowerCase().includes('video') ||
                                     plan.notes?.toLowerCase().includes('video') ||
-                                    !!plan.videoUrl;
+                                    !!(plan as any).videoUrl;
 
                 return (
                   <div 
@@ -421,7 +421,7 @@ export const DashboardScheduleWidget: React.FC<DashboardScheduleWidgetProps> = (
                                             p.taskType?.toLowerCase().includes('video') || 
                                             p.topic?.toLowerCase().includes('video') ||
                                             p.notes?.toLowerCase().includes('video') ||
-                                            !!p.videoUrl;
+                                            !!(p as any).videoUrl;
                         return (
                           <div 
                             key={p.id}

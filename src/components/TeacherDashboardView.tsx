@@ -73,7 +73,8 @@ import {
   StudyProgramTemplate, 
   DayOfWeek,
   FieldType,
-  AuditLogItem
+  AuditLogItem,
+  TopicErrorItem
 } from '../types';
 import { YKS_SUBJECTS, YKS_CURRICULUM_TOPICS, DEFAULT_TASK_TYPES, DEFAULT_AVATAR } from '../data/initialData';
 import { isUserOnline, getUserLastSeenText, getExactLastSeenText, isStudentActive } from '../utils/statusUtils';
@@ -124,6 +125,7 @@ interface TeacherDashboardViewProps {
   onRejectStudent?: (studentId: string) => void;
   onUpdateStudentSubjectNotes?: (studentId: string, subjectName: string, notes: { studentNote?: string; teacherNote?: string }) => void;
   onUnlockUserAccount?: (userId: string) => void;
+  onPreviewStudent?: (student: UserAccount) => void;
 }
 
 const DAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
@@ -172,7 +174,8 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   onApproveStudent,
   onRejectStudent,
   onUpdateStudentSubjectNotes,
-  onUnlockUserAccount
+  onUnlockUserAccount,
+  onPreviewStudent
 }) => {
   // Check role
   const isAdmin = teacher.role === 'admin';
@@ -759,6 +762,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           onApplyTemplateToStudent={onApplyTemplateToStudent}
           onUpdateStudentStudyPlans={onUpdateStudentStudyPlans}
           onUpdateStudentTopicErrors={onUpdateStudentTopicErrors}
+          onPreviewStudent={onPreviewStudent}
         />
 
         {/* MODAL: SAVE STUDENT PROGRAM AS TEMPLATE */}
@@ -1135,6 +1139,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           setTypedConfirmName={setTypedConfirmName}
           OfflineStatusDisplay={OfflineStatusDisplay}
           onUnlockUserAccount={onUnlockUserAccount}
+          onPreviewStudent={onPreviewStudent}
         />
       )}
 

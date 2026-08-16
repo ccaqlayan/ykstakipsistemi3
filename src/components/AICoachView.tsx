@@ -270,13 +270,13 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
           if (stData.topicErrors) {
             const activeErrors = stData.topicErrors.filter(e => !e.revised);
             activeErrors.forEach(errItem => {
-              const key = `${errItem.subject} - ${errItem.topicName || errItem.topic}`;
+              const key = `${errItem.subject} - ${errItem.topicName || (errItem as any).topic || ''}`;
               strugglingTopicsMap[key] = (strugglingTopicsMap[key] || 0) + 1;
             });
 
             if (activeErrors.length > 0) {
               const firstErr = activeErrors[0];
-              weakTopic = `${firstErr.subject}: ${firstErr.topicName || firstErr.topic}`;
+              weakTopic = `${firstErr.subject}: ${firstErr.topicName || (firstErr as any).topic || ''}`;
             }
           }
         }

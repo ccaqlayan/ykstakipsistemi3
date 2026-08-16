@@ -39,8 +39,8 @@ interface BranchModalsProps {
   setSelectedExamRef: (ref: string) => void;
   errorReason: ErrorReason;
   setErrorReason: (reason: ErrorReason) => void;
-  priority: number;
-  setPriority: (pri: number) => void;
+  priority: number | string;
+  setPriority: (pri: any) => void;
   solutionNotes: string;
   setSolutionNotes: (notes: string) => void;
   isAnalyzing: boolean;
@@ -77,14 +77,14 @@ interface BranchModalsProps {
   setExamSubject: (sub: string) => void;
   publisher: string;
   setPublisher: (pub: string) => void;
-  correct: string;
-  setCorrect: (val: string) => void;
-  wrong: string;
-  setWrong: (val: string) => void;
-  empty: string;
-  setEmpty: (val: string) => void;
-  durationMinutes: string;
-  setDurationMinutes: (val: string) => void;
+  correct: string | number;
+  setCorrect: (val: any) => void;
+  wrong: string | number;
+  setWrong: (val: any) => void;
+  empty: string | number;
+  setEmpty: (val: any) => void;
+  durationMinutes: string | number;
+  setDurationMinutes: (val: any) => void;
   examNotes: string;
   setExamNotes: (notes: string) => void;
   isAnalyzed: boolean;
@@ -101,7 +101,7 @@ interface BranchModalsProps {
   activeTipTopic: { subject: string; topicName: string } | null;
   setActiveTipTopic: (topic: { subject: string; topicName: string } | null) => void;
   tipLoading: boolean;
-  topicTipData: { summary: string; mistakes: Array<{ mistake: string; correction: string }>; tips: string[] } | null;
+  topicTipData: { summary?: string; mistakes: Array<{ mistake: string; correction: string }>; tips: string[] } | null;
   tipError: string | null;
   handleFetchTopicTips: (subject: string, topicName: string) => void;
 
@@ -131,8 +131,8 @@ interface BranchModalsProps {
   // AI Support Center
   activeSupportItem: any;
   setActiveSupportItem: (item: any) => void;
-  activeSupportTab: 'feedback' | 'analysis';
-  setActiveSupportTab: (tab: 'feedback' | 'analysis') => void;
+  activeSupportTab: 'feedback' | 'analysis' | 'menu';
+  setActiveSupportTab: (tab: any) => void;
   supportFeedbackLoading: boolean;
   supportFeedbackError: string | null;
   supportFeedbackText: string | null;

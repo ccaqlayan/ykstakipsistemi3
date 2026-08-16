@@ -167,7 +167,7 @@ export const MockEditModal: React.FC<MockEditModalProps> = ({
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
-              {(targetField === 'DİL' || targetField === 'DIL'
+              {(targetField === 'DİL' || (targetField as string) === 'DIL'
                 ? [
                     { id: 'DIL' as MockExamType, label: 'DİL (YDT)', sub: '80 Soru', color: 'sky' },
                     { id: 'TYT' as MockExamType, label: 'TYT', sub: '120 Soru', color: 'indigo' },

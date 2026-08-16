@@ -184,6 +184,7 @@ export interface BranchExam {
   empty: number;
   net: number;
   durationMinutes?: number;
+  duration?: number;
   notes?: string;
   isAnalyzed?: boolean;
 }

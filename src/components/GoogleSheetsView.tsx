@@ -124,7 +124,7 @@ export const GoogleSheetsView: React.FC<GoogleSheetsViewProps> = ({
   const handleResetData = () => {
     if (confirm('Tüm veriler varsayılan örnek verilere sıfırlanacak. Emin misiniz?')) {
       const reset = resetToDefaultData();
-      onReloadState(reset);
+      onReloadState(reset as any);
       setMessage({ type: 'success', text: 'Veriler varsayılan duruma sıfırlandı.' });
     }
   };

@@ -117,7 +117,8 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
     }
 
     // 4. DİL: If YDT net entered (>0) OR student profile is DİL
-    if (ydtNet > 0 || examType === 'DIL' || examType === 'TYT_DIL' || (isDilProfile && (examType === 'DIL' || examType === 'TYT_DIL' || ydtNet > 0))) {
+    const rawExamType = examType as string;
+    if (ydtNet > 0 || rawExamType === 'DIL' || rawExamType === 'TYT_DIL' || (isDilProfile && (rawExamType === 'DIL' || rawExamType === 'TYT_DIL' || ydtNet > 0))) {
       autoShowDil = true;
     }
 

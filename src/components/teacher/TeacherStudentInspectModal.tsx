@@ -50,7 +50,8 @@ import {
   RotateCcw,
   CalendarDays,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -85,7 +86,9 @@ import {
   ClassDefinition, 
   DayOfWeek,
   InstitutionalMockExam,
-  StudyProgramTemplate
+  StudyProgramTemplate,
+  BranchExam,
+  GeneralMockExam
 } from '../../types';
 import { AuditLogsView } from '../AuditLogsView';
 import { MockInstitutionalDetailView } from '../mocks/MockInstitutionalDetailView';
@@ -180,6 +183,7 @@ interface TeacherStudentInspectModalProps {
   programTemplates?: StudyProgramTemplate[];
   onApplyTemplateToStudent?: (studentId: string, templateId: string, mode: 'overwrite' | 'merge') => void;
   onUpdateStudentStudyPlans?: (studentId: string, plans: any[]) => void;
+  onPreviewStudent?: (student: UserAccount) => void;
 }
 
 export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProps> = ({
@@ -203,7 +207,8 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
   OfflineStatusDisplay,
   programTemplates = [],
   onApplyTemplateToStudent,
-  onUpdateStudentStudyPlans
+  onUpdateStudentStudyPlans,
+  onPreviewStudent
 }) => {
   if (!selectedStudentUser) return null;
   const stData = resolveStudentData(selectedStudentUser, studentsData);
@@ -214,6 +219,8 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
   const currentMonday = React.useMemo(() => getMonday(new Date()), []);
   const [selectedMondayDate, setSelectedMondayDate] = React.useState<Date>(currentMonday);
   const [weekSlideDirection, setWeekSlideDirection] = React.useState<'next' | 'prev'>('next');
+  const [branchSubjectFilter, setBranchSubjectFilter] = React.useState<string>('all');
+  const [branchSearch, setBranchSearch] = React.useState<string>('');
 
   const [plannerDayFilter, setPlannerDayFilter] = React.useState<string>('all');
   const [plannerStatusFilter, setPlannerStatusFilter] = React.useState<'all' | 'completed' | 'pending'>('all');
@@ -318,13 +325,28 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
             </div>
           </div>
 
-          <button 
-            onClick={() => setSelectedStudentUser(null)}
-            className="text-slate-400 hover:text-white p-2 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors shrink-0"
-            title="Kapat (Dışarıya da tıklayabilirsiniz)"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center space-x-2 shrink-0">
+            {onPreviewStudent && (
+              <button
+                onClick={() => {
+                  setSelectedStudentUser(null);
+                  onPreviewStudent(selectedStudentUser);
+                }}
+                className="bg-gradient-to-r from-purple-600 via-indigo-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 text-white font-bold text-xs px-3.5 py-2 rounded-2xl transition-all border border-indigo-400/40 flex items-center space-x-1.5 shadow-lg shadow-indigo-600/30 cursor-pointer active:scale-95"
+                title="Öğrencinin gördüğü ekranları salt okunur önizle"
+              >
+                <Eye className="w-4 h-4 text-indigo-200" />
+                <span>Öğrenci Gözünden Gör</span>
+              </button>
+            )}
+            <button 
+              onClick={() => setSelectedStudentUser(null)}
+              className="text-slate-400 hover:text-white p-2 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors shrink-0 cursor-pointer"
+              title="Kapat (Dışarıya da tıklayabilirsiniz)"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Sub-tabs in Inspect Modal */}
@@ -2283,7 +2305,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                     <span>← Deneme Listesine Dön</span>
                   </button>
                   <span className="text-xs font-bold text-slate-300">
-                    Sınav: <strong className="text-white">{selectedInstitutionalExam.examTitle || selectedInstitutionalExam.title}</strong>
+                    Sınav: <strong className="text-white">{selectedInstitutionalExam.examTitle || (selectedInstitutionalExam as any).title}</strong>
                   </span>
                 </div>
 
@@ -2395,13 +2417,17 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                     if (generalMockSearch.trim()) {
                       const q = generalMockSearch.toLowerCase();
                       const matchTitle = (m.title || '').toLowerCase().includes(q);
-                      const matchPublisher = (m.publisher || '').toLowerCase().includes(q);
+                      const matchPublisher = ((m as any).publisher || '').toLowerCase().includes(q);
                       if (!matchTitle && !matchPublisher) return false;
                     }
                     if (generalMockTypeFilter === 'TYT' && !(m.tyt?.totalNet && m.tyt.totalNet > 0)) return false;
                     if (generalMockTypeFilter === 'AYT' && !(m.ayt?.totalNet && m.ayt.totalNet > 0)) return false;
                     return true;
                   }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+                  const totalGeneralPages = Math.ceil(filteredGeneralMocks.length / generalMockPageSize) || 1;
+                  const currentGenPage = Math.min(generalMockPage, totalGeneralPages);
+                  const paginatedGeneralMocks = filteredGeneralMocks.slice((currentGenPage - 1) * generalMockPageSize, currentGenPage * generalMockPageSize);
 
                   return (
                     <div className="space-y-4">
@@ -2538,15 +2564,8 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                         </div>
                       )}
 
-                      {(() => {
-                        const totalGeneralPages = Math.ceil(filteredGeneralMocks.length / generalMockPageSize) || 1;
-                        const currentGenPage = Math.min(generalMockPage, totalGeneralPages);
-                        const paginatedGeneralMocks = filteredGeneralMocks.slice((currentGenPage - 1) * generalMockPageSize, currentGenPage * generalMockPageSize);
-
-                        return (
-                          <div className="space-y-4">
-                            {/* Toolbar */}
-                            <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                      {/* Toolbar */}
+                      <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                               <div className="relative flex-1">
                                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                 <input
@@ -2639,7 +2658,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                                       <div>
                                         <div className="flex items-center gap-1.5">
                                           <span className="text-[10px] font-bold text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded">
-                                            {exam.publisher || 'Bireysel'}
+                                            {(exam as any).publisher || 'Bireysel'}
                                           </span>
                                           {exam.estimatedRank ? (
                                             <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-mono">
@@ -2663,8 +2682,8 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
 
                                     <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-white/5 font-mono">
                                       <span>{exam.date}</span>
-                                      {exam.score ? (
-                                        <span className="text-amber-300 font-bold">{exam.score.toFixed(1)} Puan</span>
+                                      {(exam as any).score ? (
+                                        <span className="text-amber-300 font-bold">{(exam as any).score.toFixed(1)} Puan</span>
                                       ) : null}
                                     </div>
                                   </div>
@@ -2694,7 +2713,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                                         <tr key={mock.id} className="hover:bg-white/5 transition-colors">
                                           <td className="py-2.5 px-3">
                                             <div className="font-bold text-white font-sans text-xs">{mock.title}</div>
-                                            <div className="text-[10px] text-slate-400 font-sans">{mock.publisher || 'Bireysel'}</div>
+                                            <div className="text-[10px] text-slate-400 font-sans">{(mock as any).publisher || 'Bireysel'}</div>
                                           </td>
                                           <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">{mock.date}</td>
                                           <td className="py-2.5 px-3 text-center font-bold text-indigo-300">
@@ -2710,7 +2729,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                                             {mock.estimatedRank ? `#${mock.estimatedRank.toLocaleString('tr-TR')}` : '-'}
                                           </td>
                                           <td className="py-2.5 px-3 text-right text-amber-300 font-bold">
-                                            {mock.score ? `${mock.score.toFixed(1)} P` : '-'}
+                                            {(mock as any).score ? `${(mock as any).score.toFixed(1)} P` : '-'}
                                           </td>
                                         </tr>
                                       );
@@ -2799,8 +2818,9 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                 {/* ------------------------------------------------------------- */}
                 {mockSubTab === 'branch' && (() => {
                   const branchExams: BranchExam[] = (stData?.branchExams as BranchExam[]) || [];
-                  const teacherBranchNorm = normalizeBranchForSubject(teacherBranch);
-                  const isBranchMatch = (sub: string) => teacherBranchNorm ? isSubjectMatchingBranch(sub, teacherBranchNorm) : false;
+                  const teacherBranch = teacher?.subject || '';
+                  const teacherBranchNorm = teacherBranch.toLowerCase();
+                  const isBranchMatch = (sub: string) => teacherBranchNorm ? (sub || '').toLowerCase().includes(teacherBranchNorm) : false;
 
                   const totalBranchCount = branchExams.length;
                   const branchWithNets = branchExams.map(b => b.net || 0);
@@ -3185,7 +3205,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                       classTotal: undefined as number | undefined,
                       generalRank: undefined as number | undefined,
                       generalTotal: undefined as number | undefined,
-                      subjects: [] as InstitutionalSubjectDetail[]
+                      subjects: [] as any[]
                     };
 
                     const subjects = exam.subjects || [];
@@ -3199,7 +3219,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                       totalNet += net;
                       totalCorrect += (s.correct || 0);
                       totalWrong += (s.wrong || 0);
-                      totalQuestions += (s.questionCount || (s.correct + s.wrong + (s.empty || 0)));
+                      totalQuestions += (s.questionCount || (s.correct + s.wrong + ((s as any).empty || 0)));
                     });
 
                     const totalEmpty = Math.max(0, totalQuestions - (totalCorrect + totalWrong));
@@ -3320,97 +3340,12 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                     return true;
                   });
 
+                  const INST_PER_PAGE = 6;
+                  const totalInstPages = Math.ceil(filteredInstMocks.length / INST_PER_PAGE) || 1;
+                  const currentInstPage = Math.min(institutionalMockPage, totalInstPages);
+                  const paginatedInstMocks = filteredInstMocks.slice((currentInstPage - 1) * INST_PER_PAGE, currentInstPage * INST_PER_PAGE);
+
                   return (
-                    <div className="space-y-4">
-                      {/* KPI Cards */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-400">Toplam Karne</span>
-                            <School className="w-4 h-4 text-emerald-400" />
-                          </div>
-                          <div className="mt-2 flex items-baseline gap-1.5">
-                            <span className="text-xl font-black text-white">{totalInstCount}</span>
-                            <span className="text-xs text-slate-400">karne</span>
-                          </div>
-                        </div>
-
-                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-400">Son Deneme Neti</span>
-                            <Target className="w-4 h-4 text-sky-400" />
-                          </div>
-                          <div className="mt-2 flex items-baseline gap-1.5">
-                            <span className="text-xl font-black text-sky-400">{latestStats ? `${latestStats.totalNet}` : '0'}</span>
-                            <span className="text-xs text-slate-400 font-bold">Net</span>
-                          </div>
-                        </div>
-
-                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-400">En İyi Okul Sırası</span>
-                            <Trophy className="w-4 h-4 text-amber-400" />
-                          </div>
-                          <div className="mt-2 flex items-baseline gap-1.5">
-                            <span className="text-xl font-black text-amber-400">
-                              {bestSchoolItem?.stats.schoolRank ? `#${bestSchoolItem.stats.schoolRank}` : '-'}
-                            </span>
-                            {bestSchoolItem?.stats.schoolTotal && (
-                              <span className="text-xs text-slate-400 font-bold">/ {bestSchoolItem.stats.schoolTotal}</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-3.5 flex flex-col justify-between">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-semibold text-slate-400">En İyi Genel Sıra</span>
-                            <Award className="w-4 h-4 text-purple-400" />
-                          </div>
-                          <div className="mt-2 flex items-baseline gap-1.5">
-                            <span className="text-xl font-black text-purple-400">
-                              {bestGeneralItem?.stats.generalRank ? `#${bestGeneralItem.stats.generalRank.toLocaleString('tr-TR')}` : '-'}
-                            </span>
-                            {bestGeneralItem?.stats.generalTotal && (
-                              <span className="text-xs text-slate-400 font-bold">/ {bestGeneralItem.stats.generalTotal.toLocaleString('tr-TR')}</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Chart */}
-                      {institutionalMocks.length > 0 && (
-                        <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-4 space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                              <h4 className="text-xs font-bold text-white">Kurumsal Deneme Net Gelişim Trendi</h4>
-                            </div>
-                            <span className="text-[10px] text-emerald-400 font-mono">Resmi Karneler</span>
-                          </div>
-
-                          <div className="h-40 w-full pt-1">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <LineChart data={instTrendData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                                <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={9} tickLine={false} />
-                                <YAxis stroke="#94a3b8" fontSize={9} tickLine={false} />
-                                <Tooltip
-                                  contentStyle={{ backgroundColor: '#090d16', borderColor: '#ffffff20', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
-                                  formatter={(val: any) => [`${val} Net`, 'Toplam Net']}
-                                />
-                                <Line type="monotone" dataKey="totalNet" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981' }} />
-                              </LineChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-                      )}
-
-                      const INST_PER_PAGE = 6;
-                      const totalInstPages = Math.ceil(filteredInstMocks.length / INST_PER_PAGE) || 1;
-                      const currentInstPage = Math.min(institutionalMockPage, totalInstPages);
-                      const paginatedInstMocks = filteredInstMocks.slice((currentInstPage - 1) * INST_PER_PAGE, currentInstPage * INST_PER_PAGE);
-
-                      return (
                         <div className="space-y-4">
                           {/* KPI Cards */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -3495,12 +3430,6 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
                             </div>
                           )}
 
-                      const totalInstPages = Math.ceil(filteredInstMocks.length / institutionalMockPageSize) || 1;
-                      const currentInstPage = Math.min(institutionalMockPage, totalInstPages);
-                      const paginatedInstMocks = filteredInstMocks.slice((currentInstPage - 1) * institutionalMockPageSize, currentInstPage * institutionalMockPageSize);
-
-                      return (
-                        <div className="space-y-4">
                           {/* Toolbar */}
                           <div className="bg-slate-950/80 border border-white/10 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                             <div className="relative flex-1">
@@ -3840,7 +3769,8 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
           <div className="space-y-6">
             {(() => {
               const youtubeVideos = stData?.youtubeVideos || (stData as any)?.youtubePlaylists || [];
-              const ytSubjects: string[] = ['all', ...Array.from(new Set(youtubeVideos.map((y: any) => String(y.subject || '')).filter(Boolean)))];
+              const ytSubjects: string[] = ['all', ...Array.from(new Set<string>(youtubeVideos.map((y: any) => String(y.subject || '')).filter(Boolean)))];
+              const teacherSubj = (teacher?.subject || '').toLowerCase();
 
               let totalYoutubeVideosOverall = 0;
               let totalYoutubeWatchedOverall = 0;
