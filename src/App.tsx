@@ -436,7 +436,7 @@ export default function App() {
 
   // Undo & Audit Logging State
   const [undoStack, setUndoStack] = useState<UndoItem[]>([]);
-  const [lastToast, setLastToast] = useState<{ id: string; message: string; undoFn?: () => void } | null>(null);
+  const [lastToast, setLastToast] = useState<{ id: string; message: string; type?: 'success' | 'warning' | 'error' | 'info'; title?: string; undoFn?: () => void } | null>(null);
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
   const [isQuotaExceeded, setIsQuotaExceeded] = useState<boolean>(false);
 
@@ -634,7 +634,9 @@ export default function App() {
     if (previewStudentUser) {
       setLastToast({
         id: 'toast-' + Date.now(),
-        message: 'Öğrenci önizleme modunda değişiklik, ekleme veya silme yapılamaz (Salt Okunur).'
+        type: 'error',
+        title: 'ÖĞRENCİ ÖNİZLEME MODU (SALT OKUNUR)',
+        message: 'Önizleme modunda değişiklik, ekleme veya silme yapılamaz.'
       });
       return;
     }
@@ -1801,6 +1803,8 @@ export default function App() {
     if (previewStudentUser) {
       setLastToast({
         id: 'toast-' + Date.now(),
+        type: 'error',
+        title: 'YETKİSİZ İŞLEM',
         message: 'Öğrenci önizleme modunda profil bilgileri düzenlenemez.'
       });
       return;
@@ -2626,6 +2630,8 @@ export default function App() {
     if (previewStudentUser) {
       setLastToast({
         id: 'toast-' + Date.now(),
+        type: 'error',
+        title: 'GİZLİLİK KORUMASI',
         message: 'Öğrenci önizleme modunda mesaj gönderilemez.'
       });
       return;

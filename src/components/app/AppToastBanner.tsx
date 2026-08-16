@@ -1,13 +1,13 @@
 import React from 'react';
-import { RotateCcw, CheckCircle2, X, Maximize, Minimize } from 'lucide-react';
+import { RotateCcw, CheckCircle2, X, Maximize, Minimize, AlertTriangle, ShieldAlert, Info } from 'lucide-react';
 import { YildizLisesiLogo } from '../YildizLisesiLogo';
 
 interface AppToastBannerProps {
   isZenMode: boolean;
   isQuotaExceeded: boolean;
   setIsQuotaExceeded: (val: boolean) => void;
-  lastToast: { id: string; message: string; undoFn?: () => void } | null;
-  setLastToast: (val: { id: string; message: string; undoFn?: () => void } | null) => void;
+  lastToast: { id: string; message: string; type?: 'success' | 'warning' | 'error' | 'info'; title?: string; undoFn?: () => void } | null;
+  setLastToast: (val: { id: string; message: string; type?: 'success' | 'warning' | 'error' | 'info'; title?: string; undoFn?: () => void } | null) => void;
   activeTab: string;
   isFullscreen: boolean;
   isVirtualFullscreen: boolean;
@@ -34,19 +34,17 @@ export const AppToastBanner: React.FC<AppToastBannerProps> = ({
   return (
     <>
       {/* Firebase Quota Warning Banner */}
-      {!isZenMode && isQuotaExceeded && (
-        <div className="w-full max-w-7xl mx-auto px-4 pt-4 relative z-20 animate-fade-in">
-          <div className="bg-amber-950/60 border border-amber-500/40 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl backdrop-blur-md">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
+      {isQuotaExceeded && (
+        <div className="bg-gradient-to-r from-amber-950/90 via-slate-900/90 to-amber-950/90 border-b border-amber-500/30 px-4 py-3 text-amber-200 text-sm shadow-xl backdrop-blur-md relative z-50 animate-fade-in">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+            <div className="flex items-center space-x-3 text-center md:text-left">
+              <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/40">
+                <span className="text-lg">⚠️</span>
               </div>
-              <div className="space-y-1">
-                <h4 className="text-sm font-bold text-amber-200">
-                  Bulut Veri Tabanı Kotası Doldu (Sorunsuz Oturum Devam Ediyor)
-                </h4>
+              <div>
+                <p className="font-bold text-amber-200 text-xs sm:text-sm">
+                  Bulut Veri Tabanı Günlük Kotası Doldu (Kesintisiz Çevrim Dışı Mod Devrede)
+                </p>
                 <p className="text-xs text-amber-300/90 leading-relaxed max-w-3xl">
                   Yüksek kullanım sebebiyle ücretsiz Google Firebase bulut veri tabanı günlük yazma sınırına ulaşıldı. 
                   Yaptığınız değişiklikler tarayıcınızın <strong>Yerel Depolama (localStorage)</strong> hafızasında güvenle saklanacak, 
@@ -57,7 +55,7 @@ export const AppToastBanner: React.FC<AppToastBannerProps> = ({
             </div>
             <button
               onClick={() => setIsQuotaExceeded(false)}
-              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 transition-all cursor-pointer self-end md:self-auto shrink-0"
+              className="px-4 py-2 rounded-lg text-xs font-bold bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 transition-all cursor-pointer whitespace-nowrap"
             >
               Anladım, Kapat
             </button>
@@ -65,40 +63,63 @@ export const AppToastBanner: React.FC<AppToastBannerProps> = ({
         </div>
       )}
 
-      {/* Floating Undo Toast Notification */}
-      {lastToast && (
-        <div className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-6 sm:bottom-6 z-50 animate-bounce-short max-w-sm sm:max-w-md ml-auto">
-          <div className="bg-slate-900/95 border border-purple-500/40 text-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl shadow-2xl backdrop-blur-xl flex items-center space-x-2 sm:space-x-3.5">
-            <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className="text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider leading-tight">İşlem Gerçekleşti</div>
-              <p className="text-[11px] sm:text-xs font-semibold text-slate-100 truncate">{lastToast.message}</p>
-            </div>
+      {/* Floating Undo / Alert Toast Notification */}
+      {lastToast && (() => {
+        const isError = lastToast.type === 'error';
+        const isWarning = lastToast.type === 'warning';
+        const isInfo = lastToast.type === 'info';
+        
+        const defaultTitle = isError ? 'İŞLEM ENGELLENDİ' : isWarning ? 'DİKKAT / UYARI' : isInfo ? 'BİLGİ' : 'İŞLEM GERÇEKLEŞTİ';
+        const titleText = lastToast.title || defaultTitle;
 
-            {lastToast.undoFn && (
+        const borderClass = isError ? 'border-rose-500/50 shadow-rose-500/20' : isWarning ? 'border-amber-500/50 shadow-amber-500/20' : isInfo ? 'border-sky-500/50 shadow-sky-500/20' : 'border-purple-500/40 shadow-purple-500/20';
+        const iconBgClass = isError ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : isWarning ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : isInfo ? 'bg-sky-500/20 text-sky-300 border-sky-500/30' : 'bg-purple-500/20 text-purple-300 border-purple-500/30';
+        const titleColorClass = isError ? 'text-rose-400' : isWarning ? 'text-amber-400' : isInfo ? 'text-sky-400' : 'text-slate-400';
+
+        return (
+          <div className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-6 sm:bottom-6 z-50 animate-bounce-short max-w-sm sm:max-w-md ml-auto">
+            <div className={`bg-slate-900/95 border ${borderClass} text-white p-2.5 sm:p-4 rounded-xl sm:rounded-2xl shadow-2xl backdrop-blur-xl flex items-center space-x-2 sm:space-x-3.5`}>
+              <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl ${iconBgClass} flex items-center justify-center shrink-0`}>
+                {isError ? (
+                  <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 text-rose-400" />
+                ) : isWarning ? (
+                  <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
+                ) : isInfo ? (
+                  <Info className="w-4 h-4 sm:w-5 sm:h-5 text-sky-400" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />
+                )}
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <div className={`text-[9px] sm:text-[11px] font-bold ${titleColorClass} uppercase tracking-wider leading-tight`}>
+                  {titleText}
+                </div>
+                <p className="text-[11px] sm:text-xs font-semibold text-slate-100 truncate">{lastToast.message}</p>
+              </div>
+
+              {lastToast.undoFn && (
+                <button
+                  onClick={() => {
+                    if (lastToast.undoFn) lastToast.undoFn();
+                  }}
+                  className="bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs flex items-center space-x-1 shadow-md shrink-0 cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span>Geri Al</span>
+                </button>
+              )}
+
               <button
-                onClick={() => {
-                  if (lastToast.undoFn) lastToast.undoFn();
-                }}
-                className="bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-bold px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs flex items-center space-x-1 shadow-md shrink-0 cursor-pointer"
+                onClick={() => setLastToast(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 shrink-0 cursor-pointer"
               >
-                <RotateCcw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>Geri Al</span>
+                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
-            )}
-
-            <button
-              onClick={() => setLastToast(null)}
-              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 shrink-0 cursor-pointer"
-            >
-              <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Floating Fullscreen Action Button */}
       {activeTab !== 'pomodoro' && !isZenMode && (
