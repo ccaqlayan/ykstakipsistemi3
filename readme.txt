@@ -101,6 +101,7 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - Modüller (src/components/import/) :
   * BulkImportCsvTab.tsx          : Excel/CSV dosyası yükleme ve sütun eşleme alanı
   * BulkImportPdfTab.tsx          : Yapay Zeka destekli PDF sınav sonuç belgesi ve karne ayrıştırma alanı
+  * BulkImportMarkdownTab.tsx     : Yapay zekasız, tarayıcıda anında çalışan Markdown (.md) sınav sonuç belgesi ayrıştırma alanı
   * BulkImportHistoryTab.tsx      : Geçmiş toplu aktarım kayıtları
   * BulkImportModals.tsx          : Manuel öğrenci eşleştirme ve toplu giriş modalları
 
@@ -191,4 +192,5 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - statusUtils.ts       : Ders çalışma ve onay durum göstergeleri.
 - universityLogoStore.ts: Üniversite logoları veritabanı ve önbellek deposu.
 - pdfReportParser.ts    : PDF sınav sonuç belgelerinden metin ayıklama ve öğrenci eşleştirici.
+- markdownReportParser.ts: Markdown (.md) sınav sonuç belgelerinden tarayıcıda doğrudan sonuç ve konu ayıklayıcı.
 ================================================================================

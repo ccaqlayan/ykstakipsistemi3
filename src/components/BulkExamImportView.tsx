@@ -29,11 +29,13 @@ import {
   Sliders,
   Plus,
   Settings,
-  Menu
+  Menu,
+  FileCode
 } from 'lucide-react';
 import { UserAccount, InstitutionalMockExam, InstitutionalSubjectDetail, YKSDataState } from '../types';
 import { BulkImportCsvTab } from './import/BulkImportCsvTab';
 import { BulkImportPdfTab } from './import/BulkImportPdfTab';
+import { BulkImportMarkdownTab } from './import/BulkImportMarkdownTab';
 
 interface BulkExamImportViewProps {
   currentUser: UserAccount | null;
@@ -61,7 +63,7 @@ export const BulkExamImportView: React.FC<BulkExamImportViewProps> = ({
   onAddAuditLog,
   onToggleMenu
 }) => {
-  const [activeTab, setActiveTab] = useState<'excel' | 'pdf'>('excel');
+  const [activeTab, setActiveTab] = useState<'excel' | 'pdf' | 'markdown'>('excel');
   // Persistent class mappings state (e.g. "12-A" -> "12-A SAY")
   const [classMappings, setClassMappings] = useState<Record<string, string>>(() => {
     try {
@@ -227,7 +229,7 @@ export const BulkExamImportView: React.FC<BulkExamImportViewProps> = ({
         </div>
 
         {/* Sekme Seçici Butonlar */}
-        <div className="flex items-center bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 shadow-lg">
+        <div className="flex flex-wrap items-center bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 shadow-lg gap-1">
           <button
             type="button"
             onClick={() => setActiveTab('excel')}
@@ -253,10 +255,23 @@ export const BulkExamImportView: React.FC<BulkExamImportViewProps> = ({
             <Sparkles className="w-4 h-4 text-purple-300 animate-pulse" />
             <span>PDF ile İçe Aktar (Yapay Zeka)</span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('markdown')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              activeTab === 'markdown'
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <FileCode className="w-4 h-4 text-cyan-300" />
+            <span>Markdown (.MD) ile İçe Aktar</span>
+          </button>
         </div>
       </div>
 
-      {activeTab === 'excel' ? (
+      {activeTab === 'excel' && (
         <BulkImportCsvTab
           currentUser={currentUser!}
           studentUsers={studentUsers}
@@ -270,8 +285,26 @@ export const BulkExamImportView: React.FC<BulkExamImportViewProps> = ({
           findBestClassMatch={findBestClassMatch}
           onImportComplete={() => {}}
         />
-      ) : (
+      )}
+
+      {activeTab === 'pdf' && (
         <BulkImportPdfTab
+          currentUser={currentUser!}
+          studentUsers={studentUsers}
+          availableClasses={availableClasses}
+          studentsData={studentsData}
+          examsToUse={examsToUse}
+          onSaveInstitutionalExams={onSaveInstitutionalExams}
+          onDeleteInstitutionalExam={onDeleteInstitutionalExam}
+          onAddAuditLog={onAddAuditLog}
+          getMappedClassName={getMappedClassName}
+          findBestClassMatch={findBestClassMatch}
+          onImportComplete={() => {}}
+        />
+      )}
+
+      {activeTab === 'markdown' && (
+        <BulkImportMarkdownTab
           currentUser={currentUser!}
           studentUsers={studentUsers}
           availableClasses={availableClasses}
