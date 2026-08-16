@@ -152,6 +152,14 @@ export type ErrorReason =
   | 'iki_sik_arasinda' 
   | 'soru_kokunu_yanlis_okuma';
 
+export interface RepetitionLog {
+  date: string; // ISO string veya YYYY-MM-DD
+  selectedOption: 'A' | 'B' | 'C' | 'D' | 'E' | string;
+  isCorrect: boolean;
+  stage: number; // 1, 2, 3...
+  notes?: string;
+}
+
 export interface TopicErrorItem {
   id: string;
   date: string;
@@ -167,10 +175,19 @@ export interface TopicErrorItem {
   aiAnalysis?: string;
   aiSolution?: string;
   aiSolutionCorrectAnswer?: string;
+  correctOption?: 'A' | 'B' | 'C' | 'D' | 'E' | string;
   similarQuestionsList?: Array<{ question: string; solution: string; correctAnswer: string }>;
   imageUrl?: string;
   examId?: string;
   examTypeRef?: 'book' | 'branch' | 'general';
+  
+  // 🔁 Aralıklı Tekrar (Spaced Repetition) Alanları
+  repetitionStage?: number; // 0 = Henüz tekrarlanmadı, 1 = 1. Tekrar yapıldı, 2 = 2. Tekrar yapıldı, 3 = Tamamlandı (Pekiştirildi)
+  nextReviewDate?: string; // YYYY-MM-DD
+  lastReviewDate?: string; // YYYY-MM-DD
+  lastReviewResult?: 'CORRECT' | 'WRONG';
+  repetitionHistory?: RepetitionLog[];
+  customIntervals?: number[];
 }
 
 export interface BranchExam {

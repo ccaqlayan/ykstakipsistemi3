@@ -92,9 +92,12 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - Main Orchestrator : src/components/BranchExamView.tsx
 - Modüller (src/components/branch/) :
   * BranchListTab.tsx             : Branş deneme listesi ve yeni giriş alanı
-  * BranchErrorsTab.tsx           : Branş denemelerindeki yanlış konu analizleri
+  * BranchErrorsTab.tsx           : Branş denemelerindeki yanlış konu analizleri ve aralıklı tekrar banner'ı
   * BranchAnalyticsTab.tsx        : Branş deneme net grafik ve istatistikleri
-  * BranchModals.tsx              : Branş denemesi ekleme/düzenleme pencereleri
+  * BranchModals.tsx              : Branş denemesi ekleme/düzenleme ve doğru şık seçim pencereleri
+  * SpacedRepetitionModal.tsx     : Aralıklı Tekrar (Spaced Repetition) kör/ipuçsuz soru çözme ve şık işaretleme modalı
+  * RepetitionSettingsModal.tsx   : Aralıklı Tekrar gün aralıkları ve aşama özelleştirme modalı
+  * RepetitionAlertModal.tsx      : Girişte tekrar zamanı gelen soruları bildiren hatırlatma penceresi
 
 [3.7. Toplu Kurumsal Deneme İçe Aktarma (Bulk Import)]
 - Main Orchestrator : src/components/BulkExamImportView.tsx
@@ -175,6 +178,7 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - sheetsService.ts   : Google Sheets API istemci istekleri.
 - storage.ts         : LocalStorage yerel önbellek ve yükleme yardımcıları.
 - storageUpload.ts   : Mesaj ve avatar fotoğraflarını sunucuya/Firebase Storage'a yükleyen servis.
+- spacedRepetition.ts: Aralıklı Tekrar Sistemi (SRS) tarih hesaplayıcı, aralık yönetimi ve motivasyon motoru.
 
 [Veri Setleri (src/data/)]
 - books.ts           : Önerilen kaynak kitap kataloğu ve zorluk dereceleri.

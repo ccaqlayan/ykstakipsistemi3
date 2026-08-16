@@ -54,6 +54,8 @@ interface BranchModalsProps {
   isCompressingImage: boolean;
   imageStats: { originalKb: number; compressedKb: number } | null;
   imageError: string | null;
+  correctOption?: string;
+  setCorrectOption?: (opt: string) => void;
   handleCreateTopicError: (e: React.FormEvent) => void;
   handleAIAnalyzeError: () => void;
   handleImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -180,6 +182,8 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
   isCompressingImage,
   imageStats,
   imageError,
+  correctOption = '',
+  setCorrectOption,
   handleCreateTopicError,
   handleAIAnalyzeError,
   handleImageSelect,
@@ -704,6 +708,57 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                           </div>
                         )}
                         {imageError && <p className="text-[10px] text-rose-400 font-medium mt-1">{imageError}</p>}
+                      </div>
+
+                      {/* 🎯 Doğru Cevap Şıkkı Seçimi (Aralıklı Tekrar İçin) */}
+                      <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-2.5 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-bold text-slate-300 flex items-center space-x-1.5">
+                            <span>🎯 Doğru Cevap Şıkkı:</span>
+                            <span className="text-[10px] text-slate-500 font-normal">(Aralıklı Tekrar için)</span>
+                          </label>
+                          {correctOption ? (
+                            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 flex items-center space-x-1">
+                              <span>Doğru: {correctOption} Şıkkı</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-500 italic">
+                              Seçilmedi (AI çözümünde otomatik atanır)
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-6 gap-1.5">
+                          {['A', 'B', 'C', 'D', 'E'].map((opt) => {
+                            const isSelected = (correctOption || '').toUpperCase() === opt;
+                            return (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => setCorrectOption && setCorrectOption(isSelected ? '' : opt)}
+                                className={`py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer border ${
+                                  isSelected
+                                    ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-600/30 scale-105 ring-2 ring-emerald-500/40'
+                                    : 'bg-slate-800/80 text-slate-300 border-slate-700/80 hover:bg-slate-700 hover:text-white'
+                                }`}
+                              >
+                                {opt}
+                              </button>
+                            );
+                          })}
+                          <button
+                            type="button"
+                            onClick={() => setCorrectOption && setCorrectOption('')}
+                            className={`py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
+                              !correctOption
+                                ? 'bg-slate-800 text-slate-400 border-slate-700'
+                                : 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20'
+                            }`}
+                            title="Şık seçimini sıfırla / Şıksız soru"
+                          >
+                            Temizle
+                          </button>
+                        </div>
                       </div>
 
                       <div className="space-y-2">

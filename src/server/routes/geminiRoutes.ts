@@ -1045,8 +1045,9 @@ Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'G
 1. ÇÖZÜM REHBERİ (solution alanı için):
 - Görseldeki soruyu adım adım son derece anlaşılır Türkçe ile çöz.
 - ASLA "Merhaba" veya selamlama cümleleri kullanma, doğrudan Konu Özeti ile başla.
-- Metin içinde paragraflar, adımlar (Adım 1:, Adım 2: vb.), Konu Özeti, Doğru Cevap: ve Pratik Taktik: bölümleri arasında KESİNLİKLE yeni satır (\\n\\n) kullan. ASLA tüm çözümü tek parça düz metin olarak yazma.
+- Metin içinde paragraflar, adımlar (Adım 1:, Adım 2: vb.), Konu Özeti, Doğru Cevap: ve Pratik Taktik: bölümleri arasında KESİNLİKLE yeni satır (\n\n) kullan. ASLA tüm çözümü tek parça düz metin olarak yazma.
 - KESİNLİKLE LaTeX ($...$) kullanma, düz metin ve klavye karakterleri kullan.
+- correctAnswerLetter alanına sorunun doğru cevap şıkkını (SADECE tek büyük harf: A, B, C, D veya E) yaz.
 
 2. BENZER SORULAR (similarQuestions alanı için - 3 adet):
 - Görseldeki soruya benzer tarzda, Türkiye YKS (TYT/AYT) müfredatına %100 uygun, birbirinden farklı 3 adet özgün soru üret.
@@ -1094,6 +1095,10 @@ YANITINI YALNIZCA aşağıdaki JSON formatında döndür. Kesinlikle JSON dış�
             solution: {
               type: 'STRING',
               description: 'Adım adım detaylı Türkçe soru çözümü ve pratik taktik.'
+            },
+            correctAnswerLetter: {
+              type: 'STRING',
+              description: 'Sorunun doğru cevap şıkkı (Yalnızca A, B, C, D veya E tek harfi).'
             },
             similarQuestions: {
               type: 'ARRAY',
@@ -1187,6 +1192,7 @@ YANITINI YALNIZCA aşağıdaki JSON formatında döndür. Kesinlikle JSON dış�
     res.json({
       success: true,
       solution: parsedData.solution || null,
+      correctAnswerLetter: parsedData.correctAnswerLetter || null,
       similarQuestions: simQs,
       analysis: parsedData.analysis || null,
       aiUsage: usageRecord

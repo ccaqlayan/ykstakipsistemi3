@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Target, 
   Plus, 
@@ -59,6 +59,14 @@ import { BranchErrorsTab } from './branch/BranchErrorsTab';
 import { BranchListTab } from './branch/BranchListTab';
 import { BranchModals } from './branch/BranchModals';
 import { ImageCropperModal } from './common/ImageCropperModal';
+import { SpacedRepetitionModal } from './branch/SpacedRepetitionModal';
+import { RepetitionSettingsModal } from './branch/RepetitionSettingsModal';
+import { RepetitionAlertModal } from './branch/RepetitionAlertModal';
+import { 
+  getDueRepetitionQuestions, 
+  calculateNextReviewDate, 
+  getUserRepetitionIntervals 
+} from '../services/spacedRepetition';
 
 const ERROR_REASON_COLORS: Record<string, string> = {
   'bilgi_eksigi': '#ef4444',      // Red
@@ -511,6 +519,13 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   const [selectedRawFile, setSelectedRawFile] = useState<File | null>(null);
   const [showCropperModal, setShowCropperModal] = useState<boolean>(false);
 
+  // 🔁 Spaced Repetition (Aralıklı Tekrar) & Correct Option State
+  const [correctOption, setCorrectOption] = useState<string>('');
+  const [showRepetitionModal, setShowRepetitionModal] = useState<boolean>(false);
+  const [repetitionSessionQuestions, setRepetitionSessionQuestions] = useState<TopicErrorItem[]>([]);
+  const [showRepetitionSettingsModal, setShowRepetitionSettingsModal] = useState<boolean>(false);
+  const [showAlertModal, setShowAlertModal] = useState<boolean>(false);
+
   // Match status filter
   const [filterExamId, setFilterExamId] = useState<string | null>(null);
   const [filterRevised, setFilterRevised] = useState<'UNREVISED' | 'REVISED' | 'ALL'>('UNREVISED');
@@ -556,6 +571,16 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   const [supportAnalysisLoading, setSupportAnalysisLoading] = useState<boolean>(false);
   const [supportAnalysisText, setSupportAnalysisText] = useState<string | null>(null);
   const [supportAnalysisError, setSupportAnalysisError] = useState<string | null>(null);
+
+  // Oturum açıldığında veya sayfa yüklendiğinde tekrar zamanı gelen sorular için tek seferlik hatırlatıcı
+  useEffect(() => {
+    const due = getDueRepetitionQuestions(topicErrors);
+    const hasDismissed = sessionStorage.getItem('repetition_alert_dismissed_session');
+    if (due.length > 0 && !hasDismissed && !previewStudentUser) {
+      setShowAlertModal(true);
+      sessionStorage.setItem('repetition_alert_dismissed_session', 'true');
+    }
+  }, [topicErrors, previewStudentUser]);
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -626,6 +651,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     setImageError(null);
     setSelectedRawFile(null);
     setShowCropperModal(false);
+    setCorrectOption('');
     setShowAddErrorModal(true);
   };
 
@@ -640,6 +666,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       setSelectedExamRef('other');
     }
     setErrorReason(err.errorReason);
+    setCorrectOption(err.correctOption || err.aiSolutionCorrectAnswer || '');
     
     // Map legacy priority text to stars
     const initialPriority = err.priority === 'high' 
@@ -1435,6 +1462,8 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       inferredExamType = examType;
     }
 
+    const todayStr = new Date().toISOString().split('T')[0];
+
     if (editingError) {
       onUpdateTopicError({
         ...editingError,
@@ -1447,13 +1476,14 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         errorReason,
         priority,
         solutionNotes,
+        correctOption: correctOption.toUpperCase().trim() || editingError.correctOption || undefined,
         aiFeedback: aiFeedback || editingError.aiFeedback,
         imageUrl: errorImageUrl
       });
       setEditingError(null);
     } else {
       onAddTopicError({
-        date: new Date().toISOString().split('T')[0],
+        date: todayStr,
         subject: errorSubject,
         examType: inferredExamType,
         topicName,
@@ -1464,6 +1494,9 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         priority,
         revised: false,
         solutionNotes,
+        correctOption: correctOption.toUpperCase().trim() || undefined,
+        repetitionStage: 0,
+        nextReviewDate: calculateNextReviewDate(todayStr, 0, getUserRepetitionIntervals()),
         aiFeedback,
         imageUrl: errorImageUrl
       });
@@ -1472,6 +1505,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     setTopicName('');
     setSolutionNotes('');
     setErrorImageUrl('');
+    setCorrectOption('');
     setImageStats(null);
     setImageError(null);
     setShowAddErrorModal(false);
@@ -1617,11 +1651,17 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
           setSimilarQuestionsList(existingSimilar);
         }
 
+        const autoCorrectOption = data.correctAnswerLetter || data.correctAnswer || matchingError.correctOption;
+        if (autoCorrectOption) {
+          setCorrectOption(autoCorrectOption);
+        }
+
         const updatedError = {
           ...matchingError,
           ...(sol ? { aiSolution: sol } : {}),
           ...(rep ? { aiAnalysis: rep } : {}),
-          ...(simList.length > 0 ? { similarQuestionsList: simList } : {})
+          ...(simList.length > 0 ? { similarQuestionsList: simList } : {}),
+          ...(autoCorrectOption ? { correctOption: autoCorrectOption } : {})
         };
         onUpdateTopicError(updatedError);
 
@@ -2213,6 +2253,14 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
           hideHeroHeader={mode !== 'errors'}
           onUpdateTopicError={onUpdateTopicError}
           previewStudentUser={previewStudentUser}
+          onStartRepetitionSession={(questions) => {
+            const list = (questions && questions.length > 0) 
+              ? questions 
+              : getDueRepetitionQuestions(topicErrors);
+            setRepetitionSessionQuestions(list.length > 0 ? list : topicErrors.filter(e => !!e.imageUrl));
+            setShowRepetitionModal(true);
+          }}
+          onOpenRepetitionSettings={() => setShowRepetitionSettingsModal(true)}
         />
       )}
 
@@ -2262,6 +2310,8 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         isCompressingImage={isCompressingImage}
         imageStats={imageStats}
         imageError={imageError}
+        correctOption={correctOption}
+        setCorrectOption={setCorrectOption}
         handleCreateTopicError={handleCreateTopicError}
         handleAIAnalyzeError={handleAIAnalyzeError}
         handleImageSelect={handleImageFileChange}
@@ -2354,6 +2404,34 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         onClose={() => setShowCropperModal(false)}
         onCropComplete={handleCropComplete}
         onUseOriginal={selectedRawFile ? handleUseOriginal : undefined}
+      />
+
+      {/* 🧠 Aralıklı Tekrar Kör Modalı (Spaced Repetition) */}
+      <SpacedRepetitionModal
+        isOpen={showRepetitionModal}
+        onClose={() => setShowRepetitionModal(false)}
+        dueQuestions={repetitionSessionQuestions}
+        onUpdateTopicError={onUpdateTopicError}
+        onOpenSolutionModal={(err) => handleOpenSolveModal(err)}
+        onOpenSimilarModal={(err) => handleOpenSimilarModal(err)}
+      />
+
+      {/* ⚙️ Aralıklı Tekrar Ayarları Modalı */}
+      <RepetitionSettingsModal
+        isOpen={showRepetitionSettingsModal}
+        onClose={() => setShowRepetitionSettingsModal(false)}
+      />
+
+      {/* 🔔 Giriş / Sayfa Açılış Tekrar Hatırlatma Modalı */}
+      <RepetitionAlertModal
+        isOpen={showAlertModal}
+        onClose={() => setShowAlertModal(false)}
+        dueQuestions={getDueRepetitionQuestions(topicErrors)}
+        onStartRepetition={() => {
+          const due = getDueRepetitionQuestions(topicErrors);
+          setRepetitionSessionQuestions(due.length > 0 ? due : topicErrors.filter(e => !!e.imageUrl));
+          setShowRepetitionModal(true);
+        }}
       />
 
     </div>

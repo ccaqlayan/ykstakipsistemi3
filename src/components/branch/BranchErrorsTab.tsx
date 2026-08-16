@@ -19,9 +19,12 @@ import {
   Zap,
   Target,
   Info,
-  Filter
+  Filter,
+  Clock,
+  Play
 } from 'lucide-react';
 import { TopicErrorItem, BranchExam, ResourceItem, GeneralMockExam, UserAccount } from '../../types';
+import { getDueRepetitionQuestions, isQuestionDue, getUserRepetitionIntervals } from '../../services/spacedRepetition';
 
 interface BranchErrorsTabProps {
   topicErrors: TopicErrorItem[];
@@ -54,6 +57,8 @@ interface BranchErrorsTabProps {
   hideHeroHeader?: boolean;
   onUpdateTopicError?: (err: TopicErrorItem) => void;
   previewStudentUser?: UserAccount | null;
+  onStartRepetitionSession?: (questions?: TopicErrorItem[]) => void;
+  onOpenRepetitionSettings?: () => void;
 }
 
 export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
@@ -87,6 +92,8 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   hideHeroHeader = false,
   onUpdateTopicError,
   previewStudentUser,
+  onStartRepetitionSession,
+  onOpenRepetitionSettings,
 }) => {
   const [activeAiErrorItem, setActiveAiErrorItem] = useState<TopicErrorItem | null>(null);
   const [isAnalyzingActiveError, setIsAnalyzingActiveError] = useState(false);
@@ -276,6 +283,64 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
           </div>
         </div>
       )}
+
+      {/* 🔁 ARALIKLI TEKRAR BİLDİRİM BANNER'I */}
+      {(() => {
+        const dueQuestions = getDueRepetitionQuestions(topicErrors);
+        return (
+          <div className="bg-gradient-to-r from-purple-950/70 via-indigo-950/60 to-slate-900/90 border border-purple-500/40 p-4 sm:p-5 rounded-3xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden backdrop-blur-md">
+            <div className="flex items-center space-x-3.5 min-w-0">
+              <div className="w-11 h-11 rounded-2xl bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center justify-center shrink-0 shadow-inner">
+                <Brain className="w-6 h-6 text-purple-400" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center space-x-2">
+                  <h4 className="text-xs sm:text-sm font-black text-white truncate">
+                    {dueQuestions.length > 0
+                      ? `🔁 ${dueQuestions.length} Adet Sorunun Aralıklı Tekrar Zamanı Geldi!`
+                      : '🧠 Aralıklı Tekrar Sistemi (Hafıza Güçlendirici)'}
+                  </h4>
+                  <span className="text-[10px] bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30 font-bold shrink-0">
+                    Kör Tekrar
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  {dueQuestions.length > 0 
+                    ? 'Soruları ipuçsuz ve çözümsüz olarak kendi hafızanla çöz, bilgiyi kalıcı hale getir.'
+                    : 'Hata defterine eklediğin sorular 1, 3 ve 7 gün aralıklarla hafızanı tazelemek için karşına gelir.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 w-full sm:w-auto justify-end shrink-0">
+              {onOpenRepetitionSettings && (
+                <button
+                  type="button"
+                  onClick={onOpenRepetitionSettings}
+                  className="p-2.5 bg-slate-800/90 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl border border-slate-700 transition-all cursor-pointer shadow-sm flex items-center space-x-1 text-xs font-bold"
+                  title="Aralıklı Tekrar Ayarlarını Düzenle"
+                >
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  <span className="hidden md:inline">Tekrar Ayarları</span>
+                </button>
+              )}
+
+              {onStartRepetitionSession && (
+                <button
+                  type="button"
+                  onClick={() => onStartRepetitionSession(dueQuestions.length > 0 ? dueQuestions : topicErrors.filter(e => !!e.imageUrl))}
+                  className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-black rounded-xl shadow-lg shadow-purple-600/30 flex items-center space-x-1.5 transition-all cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-purple-200" />
+                  <span>
+                    {dueQuestions.length > 0 ? `Tekrarı Başlat (${dueQuestions.length})` : 'Tekrar Seansı Başlat'}
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── 4 KPI SUMMARY METRIC CARDS ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -584,6 +649,41 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                         {reasonLabel}
                       </span>
                       {item.priority !== undefined && renderPriorityBar(item.priority)}
+                      
+                      {/* Doğru Şık Rozeti */}
+                      {item.correctOption && (
+                        <span className="text-[10px] px-2 py-0.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 rounded-lg font-bold flex items-center space-x-1">
+                          <span>🎯 Doğru Şık: {item.correctOption}</span>
+                        </span>
+                      )}
+
+                      {/* Aralıklı Tekrar Durum Rozeti */}
+                      {(() => {
+                        const intervals = getUserRepetitionIntervals();
+                        const isDue = isQuestionDue(item, intervals);
+                        const stage = item.repetitionStage ?? 0;
+                        if (isDue) {
+                          return (
+                            <span className="text-[10px] px-2 py-0.5 bg-purple-500/25 text-purple-300 border border-purple-500/50 rounded-lg font-bold flex items-center space-x-1 animate-pulse">
+                              <Clock className="w-3 h-3 text-purple-400" />
+                              <span>⏳ {stage + 1}. Tekrar Zamanı Geldi</span>
+                            </span>
+                          );
+                        } else if (stage >= intervals.length) {
+                          return (
+                            <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-lg font-bold flex items-center space-x-1">
+                              <span>🌟 Pekiştirildi ({stage}/{intervals.length})</span>
+                            </span>
+                          );
+                        } else if (stage > 0) {
+                          return (
+                            <span className="text-[10px] px-2 py-0.5 bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 rounded-lg font-bold flex items-center space-x-1">
+                              <span>🔁 {stage}. Tekrar Yapıldı {item.lastReviewResult === 'CORRECT' ? '(✅)' : '(❌)'}</span>
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                     <h3 className="text-base font-extrabold text-white leading-snug tracking-tight">
                       {item.topicName}
@@ -689,6 +789,18 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                           <FileText className="w-3.5 h-3.5 text-amber-400" />
                           <span>{item.aiAnalysis ? 'Soru Karnesi' : 'Soru Karnesi Oluştur'}</span>
                         </button>
+
+                        {onStartRepetitionSession && (
+                          <button
+                            type="button"
+                            onClick={() => onStartRepetitionSession([item])}
+                            className="px-3 py-1.5 bg-gradient-to-r from-purple-600/80 to-indigo-600/80 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm"
+                            title="Bu soruyu kör tekrar moduyla çöz"
+                          >
+                            <Play className="w-3 h-3 text-purple-200" />
+                            <span>Kör Tekrar Et</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
