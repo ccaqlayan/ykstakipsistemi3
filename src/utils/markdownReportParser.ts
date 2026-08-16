@@ -718,16 +718,16 @@ export function parseMarkdownExamReport(
           if (m) {
             opticalAnswersMap['TYT Matematik'] = m[1].trim();
             opticalAnswersMap['Matematik'] = m[1].trim();
-            opticalAnswersMap['Matematik-2'] = m[1].trim();
+            if (detectedExamType === 'AYT') opticalAnswersMap['Matematik-2'] = m[1].trim();
             answerKeysMap['TYT Matematik'] = m[2].trim();
             answerKeysMap['Matematik'] = m[2].trim();
-            answerKeysMap['Matematik-2'] = m[2].trim();
+            if (detectedExamType === 'AYT') answerKeysMap['Matematik-2'] = m[2].trim();
           } else {
             let ansCandidate = line.replace(/.*(?:TYT\s*)?Matematik\s*/i, '').trim();
             if (ansCandidate && /^[A-Za-z\s]{8,}$/.test(ansCandidate)) {
               opticalAnswersMap['TYT Matematik'] = ansCandidate;
               opticalAnswersMap['Matematik'] = ansCandidate;
-              opticalAnswersMap['Matematik-2'] = ansCandidate;
+              if (detectedExamType === 'AYT') opticalAnswersMap['Matematik-2'] = ansCandidate;
             }
           }
         }
@@ -742,16 +742,16 @@ export function parseMarkdownExamReport(
           if (m) {
             opticalAnswersMap['TYT Fen'] = m[1].trim();
             opticalAnswersMap['Fen'] = m[1].trim();
-            opticalAnswersMap['Fen Bilimleri'] = m[1].trim();
+            if (detectedExamType === 'AYT') opticalAnswersMap['Fen Bilimleri'] = m[1].trim();
             answerKeysMap['TYT Fen'] = m[2].trim();
             answerKeysMap['Fen'] = m[2].trim();
-            answerKeysMap['Fen Bilimleri'] = m[2].trim();
+            if (detectedExamType === 'AYT') answerKeysMap['Fen Bilimleri'] = m[2].trim();
           } else {
             let ansCandidate = line.replace(/.*(?:TYT\s*)?Fen(?:\s*Bilimleri)?\s*/i, '').trim();
             if (ansCandidate && /^[A-Za-z\s]{8,}$/.test(ansCandidate)) {
               opticalAnswersMap['TYT Fen'] = ansCandidate;
               opticalAnswersMap['Fen'] = ansCandidate;
-              opticalAnswersMap['Fen Bilimleri'] = ansCandidate;
+              if (detectedExamType === 'AYT') opticalAnswersMap['Fen Bilimleri'] = ansCandidate;
             }
           }
         }
@@ -760,10 +760,12 @@ export function parseMarkdownExamReport(
 
     // Attach optical answers and answer keys to matching subjects
     Object.entries(opticalAnswersMap).forEach(([subjName, optAns]) => {
-      const subj = getSubject(subjName);
-      subj.opticalAnswers = optAns;
-      if (answerKeysMap[subjName]) {
-        subj.answerKey = answerKeysMap[subjName];
+      if (subjectsMap.has(subjName)) {
+        const subj = subjectsMap.get(subjName)!;
+        subj.opticalAnswers = optAns;
+        if (answerKeysMap[subjName]) {
+          subj.answerKey = answerKeysMap[subjName];
+        }
       }
     });
 

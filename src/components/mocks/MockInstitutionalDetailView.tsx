@@ -166,11 +166,14 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
 
   const { scores, subjects = [] } = selectedInstitutionalExam;
   const examTypeStr = (selectedInstitutionalExam.examType || '').toUpperCase();
-  const isAyt = examTypeStr.includes('AYT') || 
-    scores.sayScore !== undefined || 
-    scores.eaScore !== undefined || 
-    scores.sozScore !== undefined ||
-    subjects.some(s => ['matematik-2', 'matematik2', 'fenbilimleri', 'edebiyatsosyal1', 'sosyal2'].includes(normalizeText(s.subjectName)));
+  const isAyt = examTypeStr === 'AYT' || (
+    examTypeStr !== 'TYT' && (
+      Boolean(scores.sayScore && scores.sayScore > 0) || 
+      Boolean(scores.eaScore && scores.eaScore > 0) || 
+      Boolean(scores.sozScore && scores.sozScore > 0) ||
+      subjects.some(s => (s.questionCount || 0) > 0 && ['matematik-2', 'matematik2', 'fenbilimleri', 'edebiyatsosyal1', 'sosyal2'].includes(normalizeText(s.subjectName)))
+    )
+  );
   const isTyt = !isAyt;
 
   // Calculate estimated District and City ranks/totals if not explicitly provided
