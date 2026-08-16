@@ -154,6 +154,9 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
 
   if (options.requireJson) {
     requestBody.response_format = { type: 'json_object' };
+    if (!options.prompt.toLowerCase().includes('json')) {
+      messages.unshift({ role: 'system', content: 'Respond with valid JSON.' });
+    }
   }
 
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -211,7 +214,7 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
   const imgDataUrl = getImageDataUrl(options);
   const hasImage = Boolean(imgDataUrl);
 
-  // Vision models prioritized for multimodal requests
+  // Vision models prioritized for multimodal requests, top-rated text models for text
   const candidateModels = hasImage
     ? [
         'openrouter/free',
@@ -224,8 +227,8 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
         'openrouter/free',
         'meta-llama/llama-3.3-70b-instruct:free',
         'deepseek/deepseek-chat:free',
-        'qwen/qwen-2.5-72b-instruct:free',
         'google/gemini-2.0-flash-exp:free',
+        'qwen/qwen-2.5-72b-instruct:free',
         'microsoft/phi-4-reasoning-plus:free'
       ];
 
@@ -233,6 +236,10 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
 
   if (options.systemInstruction) {
     messages.push({ role: 'system', content: options.systemInstruction });
+  }
+
+  if (options.requireJson) {
+    messages.push({ role: 'system', content: 'You must respond strictly with valid JSON format. Do not include introductory text or commentary.' });
   }
 
   if (hasImage && imgDataUrl) {
@@ -402,14 +409,13 @@ export async function testProviderApiKey(
     }
 
     if (provider === 'openrouter') {
-      // Use openrouter/auto as primary, then specific free models as fallback
+      // Use openrouter/free as primary, then specific active free models as fallback
       const testModels = [
         'openrouter/free',
         'meta-llama/llama-3.3-70b-instruct:free',
-        'google/gemini-3.5-flash-lite-exp:free',
+        'google/gemini-2.0-flash-exp:free',
         'qwen/qwen-2.5-72b-instruct:free',
-        'microsoft/phi-4-reasoning-plus:free',
-        'mistralai/mistral-7b-instruct:free'
+        'microsoft/phi-4-reasoning-plus:free'
       ];
 
       let lastTestErr: string = '';
