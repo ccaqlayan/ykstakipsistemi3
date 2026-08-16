@@ -47,6 +47,18 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [showKeyText, setShowKeyText] = useState(false);
 
+  const verifiedModels = [
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (En Hızlı & Görsel Zeka)', badge: 'Önerilen (Varsayılan)' },
+    { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash-Lite (Ekonomik & Hızlı)', badge: 'Ekonomik' },
+    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Kararlı Flash)', badge: 'Flash' },
+    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Derin Akıl Yürütme & Zor Sorular)', badge: 'Gelişmiş' }
+  ];
+
+  const displayModels = (modelSettings?.availableModels && modelSettings.availableModels.length > 0)
+    ? modelSettings.availableModels.filter(m => verifiedModels.some(v => v.id === m.id))
+    : verifiedModels;
+  const activeModelsList = displayModels.length > 0 ? displayModels : verifiedModels;
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* GOOGLE GEMINI API KEY YÖNETİM ALANI */}
@@ -243,33 +255,48 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
               <div className="space-y-1">
                 <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
                   <Zap className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
-                  <span>Hızlı Toplu Model Değiştirme (Google AI Studio Canlı Modeller)</span>
+                  <span>Hızlı Toplu Model Seçimi</span>
                 </h5>
                 <p className="text-[10px] text-slate-400">
-                  Tüm yapay zeka sistem özelliklerinin aktif modelini tek tıkla aynı anda değiştirebilirsiniz.
+                  Tüm yapay zeka modüllerini tek tıkla aynı kararlı Google Gemini modeline ayarlayın.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                {modelSettings?.availableModels.map((m) => (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => handleSetAllModels(m.id)}
-                    className="px-2.5 py-1.5 rounded-lg text-xs font-bold border border-slate-700 bg-slate-800 hover:bg-slate-750 hover:text-white text-slate-300 transition-all cursor-pointer shadow-sm active:scale-95 flex items-center gap-1"
-                    title={`Tüm modelleri ${m.name} olarak ayarla`}
-                  >
-                    <span>Hepsini</span>
-                    <span className="text-indigo-400 font-extrabold">{m.id.replace('gemini-', '')}</span>
-                    <span>Yap</span>
-                  </button>
-                ))}
+                {activeModelsList.map((m) => {
+                  const isFlash20 = m.id === 'gemini-2.0-flash';
+                  const isLite = m.id === 'gemini-2.0-flash-lite';
+                  const isPro = m.id === 'gemini-1.5-pro';
+
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => handleSetAllModels(m.id)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shadow-sm active:scale-95 flex items-center gap-1.5 ${
+                        isFlash20
+                          ? 'bg-indigo-600/30 hover:bg-indigo-600/50 border-indigo-500/50 text-indigo-200'
+                          : isLite
+                          ? 'bg-emerald-600/20 hover:bg-emerald-600/40 border-emerald-500/40 text-emerald-200'
+                          : isPro
+                          ? 'bg-purple-600/20 hover:bg-purple-600/40 border-purple-500/40 text-purple-200'
+                          : 'bg-slate-800 hover:bg-slate-750 border-slate-700 text-slate-300 hover:text-white'
+                      }`}
+                      title={`Tüm modülleri ${m.name} yap`}
+                    >
+                      {isFlash20 && <Zap className="w-3.5 h-3.5 text-indigo-400" />}
+                      <span>Hepsini</span>
+                      <span className="font-extrabold underline decoration-indigo-400/50">{m.id.replace('gemini-', '')}</span>
+                      <span>Yap</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             <div className="bg-slate-950/60 border border-slate-800 rounded-2xl overflow-hidden">
               <div className="divide-y divide-slate-800">
                 {modelSettings?.features.map((feature) => {
-                  const currentModelId = modelSettings.config[feature.key] || 'gemini-3.1-flash-lite';
+                  const currentModelId = modelSettings.config[feature.key] || 'gemini-2.0-flash';
                   return (
                     <div
                       key={feature.key}
@@ -297,9 +324,9 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                           value={currentModelId}
                           onChange={(e) => handleModelChange(feature.key, e.target.value)}
                           disabled={savingModels}
-                          className="bg-slate-900 text-white font-medium text-xs px-3 py-1.5 rounded-xl border border-indigo-500/40 focus:outline-none focus:border-indigo-400 transition-all cursor-pointer w-full md:w-[240px]"
+                          className="bg-slate-900 text-white font-medium text-xs px-3 py-1.5 rounded-xl border border-indigo-500/40 focus:outline-none focus:border-indigo-400 transition-all cursor-pointer w-full md:w-[260px]"
                         >
-                          {modelSettings.availableModels.map((m) => (
+                          {activeModelsList.map((m) => (
                             <option key={m.id} value={m.id}>
                               {m.name} [{m.badge}]
                             </option>

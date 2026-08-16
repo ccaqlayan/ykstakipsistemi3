@@ -283,70 +283,13 @@ export async function clearApiUsageLogs(olderThanDays = 30) {
   return { deletedCount: logsToDelete.length };
 }
 
-let cachedGoogleModels: { id: string; name: string; badge: string }[] | null = null;
-let lastModelFetchTime = 0;
-
-export async function fetchLiveGoogleModels(apiKey?: string): Promise<{ id: string; name: string; badge: string }[]> {
-  const key = (apiKey || getEffectiveGeminiApiKey()).trim();
-  const now = Date.now();
-  if (cachedGoogleModels && (now - lastModelFetchTime < 15 * 60 * 1000) && cachedGoogleModels.length > 0) {
-    return cachedGoogleModels;
-  }
-
-  const fallbackStaticList = [
-    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Hızlı & Yüksek Başarım)', badge: 'Önerilen (Varsayılan)' },
-    { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash-Lite (Ekonomik)', badge: 'Ekonomik' },
+export async function fetchLiveGoogleModels(): Promise<{ id: string; name: string; badge: string }[]> {
+  return [
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (En Hızlı & Görsel Çözüm)', badge: 'Önerilen (Varsayılan)' },
+    { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash-Lite (Ekonomik & Hafif)', badge: 'Ekonomik' },
     { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Kararlı Flash)', badge: 'Flash' },
-    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Derin Akıl Yürütme)', badge: 'Gelişmiş' }
+    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Derin Akıl Yürütme & Zor Sorular)', badge: 'Gelişmiş' }
   ];
-
-  if (!key) {
-    return fallbackStaticList;
-  }
-
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`;
-    const resp = await fetch(url);
-    if (resp.ok) {
-      const data = await resp.json();
-      if (data.models && Array.isArray(data.models)) {
-        const filtered = data.models
-          .filter((m: any) => {
-            const name = (m.name?.replace('models/', '') || '').toLowerCase();
-            const isContentGen = Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent');
-            return isContentGen && 
-              name.startsWith('gemini-') &&
-              !name.includes('embedding') && 
-              !name.includes('aqa') && 
-              !name.includes('image') && 
-              !name.includes('vision') && 
-              !name.includes('tts') && 
-              !name.includes('eap') && 
-              !name.includes('imagen') && 
-              !name.includes('robotics');
-          })
-          .map((m: any) => {
-            const id = m.name?.replace('models/', '') || '';
-            const name = m.displayName ? `${m.displayName} (${id})` : id;
-            let badge = 'Standart';
-            if (id.includes('flash-lite') || id.includes('lite')) badge = 'Ekonomik';
-            else if (id.includes('flash')) badge = 'Önerilen';
-            else if (id.includes('pro')) badge = 'Gelişmiş';
-            return { id, name, badge };
-          });
-
-        if (filtered.length > 0) {
-          cachedGoogleModels = filtered;
-          lastModelFetchTime = now;
-          return filtered;
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Error discovering live Google Gemini models:', err);
-  }
-
-  return cachedGoogleModels || fallbackStaticList;
 }
 
 export function mapToActualGeminiModel(modelId: string): string {

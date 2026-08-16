@@ -166,13 +166,13 @@ export const AiOverviewTab: React.FC<AiOverviewTabProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-slate-300 font-medium">YKS Koçluğu:</span>
               <span className="font-bold text-indigo-300 bg-indigo-500/20 px-2 py-0.5 rounded border border-indigo-500/30 font-mono text-[11px]">
-                {modelSettings?.config?.['AI_COACH_STUDENT'] || 'gemini-3.1-flash-lite'}
+                {modelSettings?.config?.['AI_COACH_STUDENT'] || 'gemini-2.0-flash'}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-300 font-medium">Hata Defteri:</span>
               <span className="font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30 font-mono text-[11px]">
-                {modelSettings?.config?.['SOLVE_QUESTION'] || 'gemini-3.1-flash-lite'}
+                {modelSettings?.config?.['SOLVE_QUESTION'] || 'gemini-2.0-flash'}
               </span>
             </div>
           </div>

@@ -25,7 +25,8 @@ import {
   getEffectiveGeminiApiKey,
   setCustomGeminiApiKey,
   customGeminiApiKey,
-  fetchLiveGoogleModels
+  fetchLiveGoogleModels,
+  mapToActualGeminiModel
 } from '../config';
 
 const router = Router();
@@ -1407,7 +1408,7 @@ router.post('/model-settings', async (req, res) => {
   if (config && typeof config === 'object') {
     const sanitized: Record<string, string> = {};
     for (const [k, v] of Object.entries(config)) {
-      sanitized[k] = (v === 'gemini-2.5-flash-lite' || v === 'gemini-3.5-flash-lite' || v === 'gemini-3.1-flash-lite' || v === 'gemini-1.5-flash') ? 'gemini-2.5-flash' : String(v);
+      sanitized[k] = mapToActualGeminiModel(String(v));
     }
     setFeatureModelConfig({ ...featureModelConfig, ...sanitized });
   }
