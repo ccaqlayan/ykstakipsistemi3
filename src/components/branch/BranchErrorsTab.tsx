@@ -650,13 +650,6 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                         {reasonLabel}
                       </span>
                       {item.priority !== undefined && renderPriorityBar(item.priority)}
-                      
-                      {/* Doğru Şık Rozeti */}
-                      {item.correctOption && (
-                        <span className="text-[10px] px-2 py-0.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 rounded-lg font-bold flex items-center space-x-1">
-                          <span>🎯 Doğru Şık: {item.correctOption}</span>
-                        </span>
-                      )}
 
                       {/* Aralıklı Tekrar Durum Rozeti (Yalnızca Fotoğraflı Sorularda) */}
                       {item.imageUrl && (() => {
