@@ -76,10 +76,10 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   const [isSavingMode, setIsSavingMode] = useState(false);
 
   const verifiedModels = [
-    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (En Hızlı & Görsel Zeka)', badge: 'Önerilen (Varsayılan)' },
-    { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash-Lite (Ekonomik & Hızlı)', badge: 'Ekonomik' },
-    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Kararlı Flash)', badge: 'Flash' },
-    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Derin Akıl Yürütme & Zor Sorular)', badge: 'Gelişmiş' }
+    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite (En Ekonomik & Hızlı)', badge: 'Önerilen (Varsayılan)' },
+    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Dengeli Hız & Kalite)', badge: 'Dengeli' },
+    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash (En Gelişmiş Akıl Yürütme)', badge: 'Gelişmiş' },
+    { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro (Derin Strateji & Planlama)', badge: 'Pro' }
   ];
 
   const displayModels = (modelSettings?.availableModels && modelSettings.availableModels.length > 0)
@@ -756,35 +756,35 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                 <button
                   type="button"
-                  onClick={() => handleSetAllModels('gemini-2.0-flash')}
+                  onClick={() => handleSetAllModels('gemini-3.5-flash-lite')}
                   className="px-3 py-2 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-200 border border-indigo-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <Zap className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>⚡ Hepsini 2.0 Flash Yap</span>
+                  <span>⚡ Hepsini 3.5 Flash-Lite Yap</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSetAllModels('gemini-2.0-flash-lite')}
+                  onClick={() => handleSetAllModels('gemini-3.6-flash')}
                   className="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-200 border border-emerald-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>🚀 Hepsini 2.0 Flash-Lite Yap</span>
+                  <span>🚀 Hepsini 3.6 Flash Yap</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSetAllModels('gemini-1.5-flash')}
+                  onClick={() => handleSetAllModels('gemini-3.7-flash')}
                   className="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/40 text-amber-200 border border-amber-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
-                  <span>🎯 Hepsini 1.5 Flash Yap</span>
+                  <span>🎯 Hepsini 3.7 Flash Yap</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleSetAllModels('gemini-1.5-pro')}
+                  onClick={() => handleSetAllModels('gemini-3.1-pro')}
                   className="px-3 py-2 bg-purple-600/20 hover:bg-purple-600/40 text-purple-200 border border-purple-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <Brain className="w-3.5 h-3.5 text-purple-400" />
-                  <span>🧠 Hepsini 1.5 Pro Yap</span>
+                  <span>🧠 Hepsini 3.1 Pro Yap</span>
                 </button>
               </div>
             </div>
@@ -792,7 +792,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             {/* Feature Selectors Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {modelSettings?.features.map((feat) => {
-                const currentModelId = modelSettings.config?.[feat.key] || 'gemini-2.0-flash';
+                const currentModelId = modelSettings.config?.[feat.key] || 'gemini-3.5-flash-lite';
                 return (
                   <div 
                     key={feat.key} 

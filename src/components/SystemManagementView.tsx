@@ -61,7 +61,7 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
       const promptTokens = Number(meta.promptTokens || 0);
       const candidatesTokens = Number(meta.candidatesTokens || 0);
       const totalTokens = promptTokens + candidatesTokens;
-      const modelUsed = safeString(meta.modelUsed || 'gemini-2.0-flash');
+      const modelUsed = safeString(meta.modelUsed || 'gemini-3.5-flash-lite');
       const estimatedCostUSD = Number(meta.estimatedCostUSD || 0);
       const estimatedCostTRY = Number(meta.estimatedCostTRY || 0);
       

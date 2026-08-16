@@ -176,7 +176,7 @@ export const AiOverviewTab: React.FC<AiOverviewTabProps> = ({
             <div className="flex items-center justify-between">
               <span className="text-slate-300 font-medium">Varsayılan Model:</span>
               <span className="font-bold text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30 font-mono text-[11px]">
-                {modelSettings?.config?.['SOLVE_QUESTION'] || 'gemini-2.0-flash'}
+                {modelSettings?.config?.['SOLVE_QUESTION'] || 'gemini-3.5-flash-lite'}
               </span>
             </div>
           </div>

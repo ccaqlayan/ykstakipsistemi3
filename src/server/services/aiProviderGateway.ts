@@ -70,7 +70,7 @@ async function callGemini(options: UnifiedAiRequestOptions): Promise<UnifiedAiRe
   }
   contents.push({ text: options.prompt });
 
-  const targetModel = mapToActualGeminiModel(options.modelOverride || 'gemini-2.0-flash');
+  const targetModel = mapToActualGeminiModel(options.modelOverride || 'gemini-3.5-flash-lite');
   
   const config: any = {
     maxOutputTokens: options.maxTokens || 4096,
@@ -192,15 +192,15 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
   // then fall back to specific free models if the auto-router fails
   const candidateModels = hasImage
     ? [
-        'openrouter/auto',
+        'openrouter/free',
         'meta-llama/llama-3.2-11b-vision-instruct:free',
-        'google/gemini-2.0-flash-exp:free',
+        'google/gemini-3.5-flash-lite-exp:free',
         'qwen/qwen-2.5-vl-72b-instruct:free'
       ]
     : [
         'openrouter/auto',
         'meta-llama/llama-3.3-70b-instruct:free',
-        'google/gemini-2.0-flash-exp:free',
+        'google/gemini-3.5-flash-lite-exp:free',
         'qwen/qwen-2.5-72b-instruct:free',
         'microsoft/phi-4-reasoning-plus:free',
         'mistralai/mistral-7b-instruct:free'
@@ -345,11 +345,11 @@ export async function testProviderApiKey(
     if (provider === 'gemini') {
       const ai = new GoogleGenAI({ apiKey: trimmed });
       const res = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: 'gemini-3.5-flash-lite',
         contents: 'Merhaba, bu bir test mesajıdır. Tek kelimeyle "Bağlantı Başarılı" yanıtını ver.'
       });
       const text = res?.text || '';
-      return { success: true, message: 'Google Gemini bağlantısı başarılı!', modelUsed: 'gemini-2.0-flash' };
+      return { success: true, message: 'Google Gemini bağlantısı başarılı!', modelUsed: 'gemini-3.5-flash-lite' };
     }
 
     if (provider === 'groq') {
@@ -375,9 +375,9 @@ export async function testProviderApiKey(
     if (provider === 'openrouter') {
       // Use openrouter/auto as primary, then specific free models as fallback
       const testModels = [
-        'openrouter/auto',
+        'openrouter/free',
         'meta-llama/llama-3.3-70b-instruct:free',
-        'google/gemini-2.0-flash-exp:free',
+        'google/gemini-3.5-flash-lite-exp:free',
         'qwen/qwen-2.5-72b-instruct:free',
         'microsoft/phi-4-reasoning-plus:free',
         'mistralai/mistral-7b-instruct:free'

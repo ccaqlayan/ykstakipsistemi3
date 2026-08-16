@@ -52,15 +52,15 @@ export function setAiFeaturesEnabled(val: boolean) { aiFeaturesEnabled = val; }
 
 // Global configurable model mapping for each AI feature
 export let featureModelConfig: Record<string, string> = {
-  AI_COACH_STUDENT: 'gemini-2.0-flash',
-  AI_COACH_CLASS: 'gemini-2.0-flash',
-  SOLVE_QUESTION: 'gemini-2.0-flash',
-  QUESTION_ANALYSIS: 'gemini-2.0-flash',
-  SIMILAR_QUESTION: 'gemini-2.0-flash',
-  ERROR_PRIORITY: 'gemini-2.0-flash',
-  TOPIC_TIPS: 'gemini-2.0-flash',
-  YOUTUBE_PLANNER: 'gemini-2.0-flash',
-  PDF_REPORT_PARSE: 'gemini-2.0-flash'
+  AI_COACH_STUDENT: 'gemini-3.5-flash-lite',
+  AI_COACH_CLASS: 'gemini-3.5-flash-lite',
+  SOLVE_QUESTION: 'gemini-3.5-flash-lite',
+  QUESTION_ANALYSIS: 'gemini-3.5-flash-lite',
+  SIMILAR_QUESTION: 'gemini-3.5-flash-lite',
+  ERROR_PRIORITY: 'gemini-3.5-flash-lite',
+  TOPIC_TIPS: 'gemini-3.5-flash-lite',
+  YOUTUBE_PLANNER: 'gemini-3.5-flash-lite',
+  PDF_REPORT_PARSE: 'gemini-3.5-flash-lite'
 };
 export function setFeatureModelConfig(cfg: Record<string, string>) { featureModelConfig = cfg; }
 
@@ -314,22 +314,28 @@ export async function clearApiUsageLogs(olderThanDays = 30) {
 
 export async function fetchLiveGoogleModels(): Promise<{ id: string; name: string; badge: string }[]> {
   return [
-    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (En Hızlı & Görsel Çözüm)', badge: 'Önerilen (Varsayılan)' },
-    { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash-Lite (Ekonomik & Hafif)', badge: 'Ekonomik' },
-    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Kararlı Flash)', badge: 'Flash' },
-    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Derin Akıl Yürütme & Zor Sorular)', badge: 'Gelişmiş' }
+    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite (En Ekonomik & Hızlı)', badge: 'Önerilen (Varsayılan)' },
+    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Dengeli Hız & Kalite)', badge: 'Dengeli' },
+    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash (En Gelişmiş Akıl Yürütme)', badge: 'Gelişmiş' },
+    { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro (Derin Strateji & Planlama)', badge: 'Pro' }
   ];
 }
 
 export function mapToActualGeminiModel(modelId: string): string {
   const m = (modelId || '').trim();
-  if (!m) return 'gemini-2.0-flash';
-  // Map deprecated / invalid models to active Gemini models
-  if (m === 'gemini-2.5-flash' || m === 'gemini-2.5-pro' || m.startsWith('gemma') || m.includes('3.') || m.includes('3-')) {
-    if (m.includes('lite')) return 'gemini-2.0-flash-lite';
-    if (m.includes('pro')) return 'gemini-1.5-pro';
-    return 'gemini-2.0-flash';
-  }
+  if (!m) return 'gemini-3.5-flash-lite';
+  // Map deprecated models to current active Gemini 3.x models
+  const deprecatedMap: Record<string, string> = {
+    'gemini-2.0-flash': 'gemini-3.5-flash-lite',
+    'gemini-2.0-flash-lite': 'gemini-3.5-flash-lite',
+    'gemini-2.5-flash': 'gemini-3.6-flash',
+    'gemini-2.5-pro': 'gemini-3.1-pro',
+    'gemini-1.5-flash': 'gemini-3.5-flash-lite',
+    'gemini-1.5-pro': 'gemini-3.1-pro',
+    'gemini-flash-lite-latest': 'gemini-3.5-flash-lite'
+  };
+  if (deprecatedMap[m]) return deprecatedMap[m];
+  if (m.startsWith('gemma')) return 'gemini-3.5-flash-lite';
   return m;
 }
 
@@ -341,7 +347,7 @@ export async function generateContentWithFallback(
     config?: any;
   }
 ) {
-  const requestedModel = options.model || 'gemini-2.0-flash';
+  const requestedModel = options.model || 'gemini-3.5-flash-lite';
   const primaryApiModel = mapToActualGeminiModel(requestedModel);
 
   // Discover active models dynamically from live Google API
@@ -360,7 +366,7 @@ export async function generateContentWithFallback(
   }
 
   // Add static resilient fallbacks if not already present
-  const staticFallbacks = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-pro'];
+  const staticFallbacks = ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-pro'];
   for (const sf of staticFallbacks) {
     if (!fallbackList.some(f => f.apiModel === sf)) {
       fallbackList.push({ requested: sf, apiModel: sf });
