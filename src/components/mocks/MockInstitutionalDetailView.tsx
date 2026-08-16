@@ -332,10 +332,46 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
     });
   }, [subjects]);
 
-  // Topic list for right column
-  const allTopicGroups = useMemo(() => {
-    return subjects.filter(s => s.topics && s.topics.length > 0);
-  }, [subjects]);
+  // Topic list structured hierarchically by section & sub-subject
+  const topicSections = useMemo(() => {
+    if (!isTyt) {
+      return [
+        {
+          sectionName: '',
+          groups: subjects.filter(s => s.topics && s.topics.length > 0)
+        }
+      ];
+    }
+
+    const sections = [
+      {
+        sectionName: '',
+        subKeys: ['Türkçe', 'TYT Türkçe']
+      },
+      {
+        sectionName: 'TYT Sosyal',
+        subKeys: ['Tarih-1', 'Tarih', 'Coğrafya-1', 'Coğrafya', 'Felsefe', 'Din Kül. ve Ahl. Bil.', 'Din Kültürü', 'Felsefe (Seçmeli)']
+      },
+      {
+        sectionName: 'TYT Matematik',
+        subKeys: ['Matematik-1', 'Matematik', 'Geometri']
+      },
+      {
+        sectionName: 'TYT Fen',
+        subKeys: ['Fizik', 'Kimya', 'Biyoloji']
+      }
+    ];
+
+    return sections.map(sec => {
+      const groups = sec.subKeys
+        .map(k => subjects.find(s => normalizeText(s.subjectName) === normalizeText(k)))
+        .filter((s): s is InstitutionalSubjectDetail => Boolean(s && s.topics && s.topics.length > 0));
+      return {
+        sectionName: sec.sectionName,
+        groups
+      };
+    }).filter(sec => sec.groups.length > 0);
+  }, [subjects, isTyt]);
 
   // Helper for generating illustrative or authentic optical answer bubbled indicators
   const renderOpticalRow = (title: string, correct: number, wrong: number, count: number, optAnswers?: string, ansKey?: string) => {
@@ -902,52 +938,66 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
               DERSLERE GÖRE ANALİZ
             </div>
 
-            {allTopicGroups.length === 0 ? (
+            {topicSections.length === 0 ? (
               <div className="py-12 text-center text-slate-400 text-xs italic">
                 Bu karne için kazanım konu analizi bulunamadı.
               </div>
             ) : (
               <div className="space-y-3 max-h-[850px] overflow-y-auto pr-1 scrollbar-thin text-[10px]">
-                {allTopicGroups.map((grp, gIdx) => (
-                  <div key={gIdx} className="space-y-1">
-                    <div className="font-black text-slate-800 uppercase text-[11px] border-b border-slate-300 pb-0.5 flex items-center justify-between">
-                      <span>{grp.subjectName}</span>
-                      <div className="flex space-x-3 text-[9px] font-mono text-slate-500 font-bold">
-                        <span className="w-3 text-center">S</span>
-                        <span className="w-3 text-center">D</span>
-                        <span className="w-3 text-center">Y</span>
-                        <span className="w-7 text-right">B%</span>
+                {topicSections.map((sec, secIdx) => (
+                  <div key={secIdx} className="space-y-2">
+                    {/* Main Section Header Banner (e.g. TYT Sosyal, TYT Matematik, TYT Fen) */}
+                    {sec.sectionName && (
+                      <div className="font-black text-slate-900 text-xs uppercase tracking-wide border-t-2 border-slate-900 pt-1.5 pb-0.5">
+                        {sec.sectionName}
                       </div>
-                    </div>
+                    )}
 
-                    <div className="divide-y divide-slate-100">
-                      {grp.topics.map((t, tIdx) => (
-                        <div 
-                          key={tIdx} 
-                          className="py-1 flex items-start justify-between gap-1.5 hover:bg-indigo-50/50 rounded px-1 cursor-pointer transition-colors group"
-                          onClick={() => setSelectedTopicHistory({ subjectName: grp.subjectName, topicName: t.topicName })}
-                          title="Bu kazanımın geçmiş deneme performansını görmek için tıklayın"
-                        >
-                          <span className="text-slate-700 leading-tight group-hover:text-indigo-600 font-medium">
-                            {t.topicName}
-                          </span>
-                          <div className="flex items-center space-x-3 font-mono font-bold shrink-0 text-slate-800">
-                            <span className="w-3 text-center text-slate-500">{t.questionCount || (t.correct + t.wrong + t.empty)}</span>
-                            <span className="w-3 text-center text-emerald-700">{t.correct}</span>
-                            <span className="w-3 text-center text-rose-700">{t.wrong}</span>
-                            <span className={`w-7 text-right ${
-                              t.successRate >= 70 
-                                ? 'text-emerald-700 font-black' 
-                                : t.successRate >= 40 
-                                  ? 'text-indigo-700' 
-                                  : 'text-rose-700 font-black'
-                            }`}>
-                              {t.successRate}
-                            </span>
+                    {/* Sub-subjects (e.g. Tarih-1, Coğrafya-1, Felsefe, Din Kül. ve Ahl. Bil., Felsefe (Seçmeli)) */}
+                    {sec.groups.map((grp, gIdx) => (
+                      <div key={gIdx} className="space-y-0.5">
+                        <div className="font-bold text-slate-900 uppercase text-[11px] border-b border-slate-900 pb-0.5 flex items-center justify-between">
+                          <span>{grp.subjectName}</span>
+                          <div className="flex space-x-3 text-[9px] font-mono text-slate-700 font-bold">
+                            <span className="w-3 text-center">S</span>
+                            <span className="w-3 text-center">D</span>
+                            <span className="w-3 text-center">Y</span>
+                            <span className="w-7 text-right">B%</span>
                           </div>
                         </div>
-                      ))}
-                    </div>
+
+                        <div className="divide-y divide-slate-200 border-b border-slate-100">
+                          {grp.topics.map((t, tIdx) => (
+                            <div 
+                              key={tIdx} 
+                              className={`py-0.5 px-1 flex items-start justify-between gap-1 hover:bg-indigo-50/70 cursor-pointer transition-colors group ${
+                                tIdx % 2 === 0 ? 'bg-slate-100/80' : 'bg-white'
+                              }`}
+                              onClick={() => setSelectedTopicHistory({ subjectName: grp.subjectName, topicName: t.topicName })}
+                              title="Bu kazanımın geçmiş deneme performansını görmek için tıklayın"
+                            >
+                              <span className="text-slate-800 leading-tight group-hover:text-indigo-600 font-medium">
+                                {t.topicName}
+                              </span>
+                              <div className="flex items-center space-x-3 font-mono font-bold shrink-0 text-slate-900">
+                                <span className="w-3 text-center text-slate-600">{t.questionCount || (t.correct + t.wrong + t.empty)}</span>
+                                <span className="w-3 text-center text-emerald-700">{t.correct}</span>
+                                <span className="w-3 text-center text-rose-700">{t.wrong}</span>
+                                <span className={`w-7 text-right ${
+                                  t.successRate >= 70 
+                                    ? 'text-emerald-700 font-black' 
+                                    : t.successRate >= 40 
+                                      ? 'text-indigo-700' 
+                                      : 'text-rose-700 font-black'
+                                }`}>
+                                  {t.successRate}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>

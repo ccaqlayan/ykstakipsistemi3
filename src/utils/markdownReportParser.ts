@@ -521,20 +521,32 @@ export function parseMarkdownExamReport(
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      if (/TYT Türkçe|Türkçe/i.test(line) && /ANALİZ|S D Y B%|TYT/i.test(line)) currentTopicSubject = 'Türkçe';
-      else if (/Tarih-1|Tarih/i.test(line) && /S D Y B%/i.test(line)) currentTopicSubject = 'Tarih-1';
-      else if (/Coğrafya-1|Coğrafya/i.test(line) && /S D Y B%/i.test(line)) currentTopicSubject = 'Coğrafya-1';
-      else if (/Felsefe \(Seçmeli\)/i.test(line) && /S D Y B%/i.test(line)) currentTopicSubject = 'Felsefe (Seçmeli)';
-      else if (/Felsefe/i.test(line) && /S D Y B%/i.test(line)) currentTopicSubject = 'Felsefe';
-      else if (/Din Kül/i.test(line) && /S D Y B%/i.test(line)) currentTopicSubject = 'Din Kül. ve Ahl. Bil.';
-      else if (/Matematik-1|TYT Matematik|Matematik/i.test(line) && /ANALİZ|S D Y B%/i.test(line)) currentTopicSubject = 'Matematik-1';
-      else if (/Geometri/i.test(line) && /S D Y B%/i.test(line)) currentTopicSubject = 'Geometri';
-      else if (/Fizik/i.test(line) && /S D Y B%/i.test(line)) currentTopicSubject = 'Fizik';
-      else if (/Kimya/i.test(line) && /S D Y B%/i.test(line)) currentTopicSubject = 'Kimya';
-      else if (/Biyoloji/i.test(line) && /S D Y B%/i.test(line)) currentTopicSubject = 'Biyoloji';
+      if (/^TYT\s*Türkçe$|^Türkçe$/i.test(line) || (/Türkçe/i.test(line) && /ANALİZ|S D Y B%|TYT/i.test(line))) {
+        currentTopicSubject = 'Türkçe';
+      } else if (/^Tarih-1$|^Tarih$/i.test(line) || (/Tarih/i.test(line) && /S D Y B%/i.test(line))) {
+        currentTopicSubject = 'Tarih-1';
+      } else if (/^Coğrafya-1$|^Coğrafya$/i.test(line) || (/Coğrafya/i.test(line) && /S D Y B%/i.test(line))) {
+        currentTopicSubject = 'Coğrafya-1';
+      } else if (/^Felsefe\s*\(Seçmeli\)$/i.test(line) || (/Felsefe\s*\(Seçmeli\)/i.test(line) && /S D Y B%/i.test(line))) {
+        currentTopicSubject = 'Felsefe (Seçmeli)';
+      } else if (/^Felsefe$/i.test(line) || (/Felsefe/i.test(line) && /S D Y B%/i.test(line))) {
+        currentTopicSubject = 'Felsefe';
+      } else if (/^Din\s*Kül/i.test(line) || (/Din\s*Kül/i.test(line) && /S D Y B%/i.test(line))) {
+        currentTopicSubject = 'Din Kül. ve Ahl. Bil.';
+      } else if (/^Matematik-1$|^Matematik$/i.test(line) || (/Matematik/i.test(line) && /ANALİZ|S D Y B%/i.test(line))) {
+        currentTopicSubject = 'Matematik-1';
+      } else if (/^Geometri$/i.test(line) || (/Geometri/i.test(line) && /S D Y B%/i.test(line))) {
+        currentTopicSubject = 'Geometri';
+      } else if (/^Fizik$/i.test(line) || (/Fizik/i.test(line) && /S D Y B%/i.test(line))) {
+        currentTopicSubject = 'Fizik';
+      } else if (/^Kimya$/i.test(line) || (/Kimya/i.test(line) && /S D Y B%/i.test(line))) {
+        currentTopicSubject = 'Kimya';
+      } else if (/^Biyoloji$/i.test(line) || (/Biyoloji/i.test(line) && /S D Y B%/i.test(line))) {
+        currentTopicSubject = 'Biyoloji';
+      }
 
-      // 1. Single line: Topic Name 1 1 0 100
-      const tmSingle = line.match(/^([A-ZÇĞİÖŞÜa-zçğıöşü0-9\s.,'’()–\/-]+?)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)$/);
+      // 1. Single line: Topic Name 1 1 0 100 or Topic Name.1 1 0 100
+      const tmSingle = line.match(/^([A-ZÇĞİÖŞÜa-zçğıöşü0-9\s.,'’()–\/-]+?)(?:\s+|(?<=[^\d\s]))(\d+)\s+(\d+)\s+(\d+)\s+(\d+)$/);
       if (tmSingle) {
         const topicName = tmSingle[1].trim();
         if (!/Soru|Doğru|Yanlış|Başarı|Ortalama|Cevap|Puan|Katılımlar|S D Y B%/i.test(topicName)) {
