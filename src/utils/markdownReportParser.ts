@@ -143,16 +143,20 @@ export function parseMarkdownExamReport(
 
   const text = rawText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-  // Detect overall exam title from first heading
+  // Detect overall exam title from headings (skipping generic headers)
   let detectedExamTitle = '';
-  const firstH2Match = text.match(/##\s*([^\n#]+)/i);
-  if (firstH2Match && !/SONUÇ\s*BELGESİ/i.test(firstH2Match[1])) {
-    detectedExamTitle = firstH2Match[1].trim();
+  const allH2Matches = [...text.matchAll(/##\s*([^\n#]+)/gi)];
+  for (const h of allH2Matches) {
+    const candidate = h[1].trim();
+    if (!/SONUÇ\s*BELGESİ|DERSLERE\s*GÖRE\s*ANALİZ/i.test(candidate)) {
+      detectedExamTitle = candidate;
+      break;
+    }
   }
 
   // Detect overall exam type
   let detectedExamType: 'TYT' | 'AYT' | 'Ara Sınıf' = 'TYT';
-  if (/AYT|Alan Yeterlilik|Edebiyat-Sosyal|Matematik-2/i.test(text) && !/TYT|Temel Yeterlilik/i.test(detectedExamTitle)) {
+  if (/AYT|Alan Yeterlilik|Edebiyat-Sosyal|Matematik-2|SAY\s+\d{3}|EA\s+\d{3}/i.test(text) && !/TYT\s*\d|Temel Yeterlilik/i.test(detectedExamTitle)) {
     detectedExamType = 'AYT';
   } else if (/KDS|Ara Sınıf|9\.|10\.|11\./i.test(detectedExamTitle)) {
     detectedExamType = 'Ara Sınıf';
@@ -346,8 +350,8 @@ export function parseMarkdownExamReport(
       return subjectsMap.get(key)!;
     };
 
-    // 1. Single-Line Table format extraction
-    const singleLineRegex = /(Türkçe|Tarih-1|Coğrafya-1|Felsefe|Din Kül\. ve Ahl\. Bil\.|Din Kültürü|Felsefe \(Seçmeli\)|TYT Sosyal|Matematik-1|Geometri|TYT Matematik|Fizik|Kimya|Biyoloji|TYT Fen|Toplam:?)\s+(\d+)?\s*(\d+)\s+(\d+)\s+([\d,.-]+)\s+(\d+)\s+([\d,.-]+)\s+([\d,.-]+)\s+([\d,.-]+)/gi;
+    // 1. Single-Line Table format extraction (supports both 8-column and 5-column formats)
+    const singleLineRegex = /(Edebiyat-Sosyal-1|Türk Dili ve Edebiyatı|Edebiyat|Tarih-2|Coğrafya-2|Sosyal-2|Matematik-2|Matematik|Geometri|Fen Bilimleri|Fizik|Kimya|Biyoloji|Türkçe|Tarih-1|Coğrafya-1|Felsefe|Din Kül\. ve Ahl\. Bil\.|Din Kültürü|Felsefe \(Seçmeli\)|TYT Sosyal|Matematik-1|TYT Matematik|TYT Fen|Toplam:?)\s+(\d+)?\s*(\d+)\s+(\d+)\s+([\d,.-]+)\s+(\d+)(?:\s+([\d,.-]+)\s+([\d,.-]+)\s+([\d,.-]+))?/gi;
     let match: RegExpExecArray | null;
     while ((match = singleLineRegex.exec(chunk)) !== null) {
       let sName = match[1].replace(':', '').trim();
@@ -357,9 +361,9 @@ export function parseMarkdownExamReport(
       subj.wrong = parseInt(match[4], 10) || 0;
       subj.net = cleanNum(match[5]);
       subj.successRate = parseInt(match[6], 10) || 0;
-      subj.classAvgNet = cleanNum(match[7]);
-      subj.institutionAvgNet = cleanNum(match[8]);
-      subj.generalAvgNet = cleanNum(match[9]);
+      if (match[7]) subj.classAvgNet = cleanNum(match[7]);
+      if (match[8]) subj.institutionAvgNet = cleanNum(match[8]);
+      if (match[9]) subj.generalAvgNet = cleanNum(match[9]);
       subj.questionCount = match[2] ? parseInt(match[2], 10) : (subj.correct + subj.wrong);
     }
 
@@ -454,44 +458,50 @@ export function parseMarkdownExamReport(
       }
     });
 
-    // Ensure sub-totals are computed if missing
+    // Ensure sub-totals are computed if missing (for TYT exams)
     const turkceObj = subjectsMap.get('Türkçe');
     const tytSosObj = subjectsMap.get('TYT Sosyal');
     const tytMatObj = subjectsMap.get('TYT Matematik');
     const tytFenObj = subjectsMap.get('TYT Fen');
+    const mat2Obj = subjectsMap.get('Matematik-2') || subjectsMap.get('Matematik');
+    const fenAytObj = subjectsMap.get('Fen Bilimleri');
+    const edebObj = subjectsMap.get('Edebiyat-Sosyal-1') || subjectsMap.get('Edebiyat');
+    const sos2Obj = subjectsMap.get('Sosyal-2');
     const toplamObj = subjectsMap.get('Toplam');
 
-    if (!tytSosObj || tytSosObj.net === 0) {
-      const tar = subjectsMap.get('Tarih-1')?.net || 0;
-      const cog = subjectsMap.get('Coğrafya-1')?.net || 0;
-      const fel = subjectsMap.get('Felsefe')?.net || 0;
-      const din = subjectsMap.get('Din Kül. ve Ahl. Bil.')?.net || 0;
-      const s = getSubject('TYT Sosyal', 20);
-      s.net = cleanNum((tar + cog + fel + din).toFixed(2));
-      s.correct = (subjectsMap.get('Tarih-1')?.correct || 0) + (subjectsMap.get('Coğrafya-1')?.correct || 0) + (subjectsMap.get('Felsefe')?.correct || 0) + (subjectsMap.get('Din Kül. ve Ahl. Bil.')?.correct || 0);
-      s.wrong = (subjectsMap.get('Tarih-1')?.wrong || 0) + (subjectsMap.get('Coğrafya-1')?.wrong || 0) + (subjectsMap.get('Felsefe')?.wrong || 0) + (subjectsMap.get('Din Kül. ve Ahl. Bil.')?.wrong || 0);
-      s.questionCount = 20;
-    }
+    if (detectedExamType === 'TYT') {
+      if (!tytSosObj || tytSosObj.net === 0) {
+        const tar = subjectsMap.get('Tarih-1')?.net || 0;
+        const cog = subjectsMap.get('Coğrafya-1')?.net || 0;
+        const fel = subjectsMap.get('Felsefe')?.net || 0;
+        const din = subjectsMap.get('Din Kül. ve Ahl. Bil.')?.net || 0;
+        const s = getSubject('TYT Sosyal', 20);
+        s.net = cleanNum((tar + cog + fel + din).toFixed(2));
+        s.correct = (subjectsMap.get('Tarih-1')?.correct || 0) + (subjectsMap.get('Coğrafya-1')?.correct || 0) + (subjectsMap.get('Felsefe')?.correct || 0) + (subjectsMap.get('Din Kül. ve Ahl. Bil.')?.correct || 0);
+        s.wrong = (subjectsMap.get('Tarih-1')?.wrong || 0) + (subjectsMap.get('Coğrafya-1')?.wrong || 0) + (subjectsMap.get('Felsefe')?.wrong || 0) + (subjectsMap.get('Din Kül. ve Ahl. Bil.')?.wrong || 0);
+        s.questionCount = 20;
+      }
 
-    if (!tytMatObj || tytMatObj.net === 0) {
-      const m1 = subjectsMap.get('Matematik-1')?.net || 0;
-      const geo = subjectsMap.get('Geometri')?.net || 0;
-      const s = getSubject('TYT Matematik', 40);
-      s.net = cleanNum((m1 + geo).toFixed(2));
-      s.correct = (subjectsMap.get('Matematik-1')?.correct || 0) + (subjectsMap.get('Geometri')?.correct || 0);
-      s.wrong = (subjectsMap.get('Matematik-1')?.wrong || 0) + (subjectsMap.get('Geometri')?.wrong || 0);
-      s.questionCount = 40;
-    }
+      if (!tytMatObj || tytMatObj.net === 0) {
+        const m1 = subjectsMap.get('Matematik-1')?.net || 0;
+        const geo = subjectsMap.get('Geometri')?.net || 0;
+        const s = getSubject('TYT Matematik', 40);
+        s.net = cleanNum((m1 + geo).toFixed(2));
+        s.correct = (subjectsMap.get('Matematik-1')?.correct || 0) + (subjectsMap.get('Geometri')?.correct || 0);
+        s.wrong = (subjectsMap.get('Matematik-1')?.wrong || 0) + (subjectsMap.get('Geometri')?.wrong || 0);
+        s.questionCount = 40;
+      }
 
-    if (!tytFenObj || tytFenObj.net === 0) {
-      const fiz = subjectsMap.get('Fizik')?.net || 0;
-      const kim = subjectsMap.get('Kimya')?.net || 0;
-      const biy = subjectsMap.get('Biyoloji')?.net || 0;
-      const s = getSubject('TYT Fen', 20);
-      s.net = cleanNum((fiz + kim + biy).toFixed(2));
-      s.correct = (subjectsMap.get('Fizik')?.correct || 0) + (subjectsMap.get('Kimya')?.correct || 0) + (subjectsMap.get('Biyoloji')?.correct || 0);
-      s.wrong = (subjectsMap.get('Fizik')?.wrong || 0) + (subjectsMap.get('Kimya')?.wrong || 0) + (subjectsMap.get('Biyoloji')?.wrong || 0);
-      s.questionCount = 20;
+      if (!tytFenObj || tytFenObj.net === 0) {
+        const fiz = subjectsMap.get('Fizik')?.net || 0;
+        const kim = subjectsMap.get('Kimya')?.net || 0;
+        const biy = subjectsMap.get('Biyoloji')?.net || 0;
+        const s = getSubject('TYT Fen', 20);
+        s.net = cleanNum((fiz + kim + biy).toFixed(2));
+        s.correct = (subjectsMap.get('Fizik')?.correct || 0) + (subjectsMap.get('Kimya')?.correct || 0) + (subjectsMap.get('Biyoloji')?.correct || 0);
+        s.wrong = (subjectsMap.get('Fizik')?.wrong || 0) + (subjectsMap.get('Kimya')?.wrong || 0) + (subjectsMap.get('Biyoloji')?.wrong || 0);
+        s.questionCount = 20;
+      }
     }
 
     // Ensure all subjects' correct/wrong counts match their net mathematically
@@ -507,16 +517,25 @@ export function parseMarkdownExamReport(
     // Calculate True Total Net
     let totalNet = toplamObj?.net || 0;
     if (totalNet === 0) {
-      totalNet = Number((
-        (turkceObj?.net || 0) +
-        (tytSosObj?.net || 0) +
-        (tytMatObj?.net || 0) +
-        (tytFenObj?.net || 0)
-      ).toFixed(2));
+      if (detectedExamType === 'AYT') {
+        totalNet = Number((
+          (mat2Obj?.net || 0) +
+          (fenAytObj?.net || 0) +
+          (edebObj?.net || 0) +
+          (sos2Obj?.net || 0)
+        ).toFixed(2));
+      } else {
+        totalNet = Number((
+          (turkceObj?.net || 0) +
+          (tytSosObj?.net || 0) +
+          (tytMatObj?.net || 0) +
+          (tytFenObj?.net || 0)
+        ).toFixed(2));
+      }
     }
 
     // Extract individual topic lines (both single-line and two-line formats)
-    let currentTopicSubject = 'Türkçe';
+    let currentTopicSubject = detectedExamType === 'AYT' ? 'Matematik-2' : 'Türkçe';
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -533,7 +552,9 @@ export function parseMarkdownExamReport(
         currentTopicSubject = 'Felsefe';
       } else if (/^Din\s*Kül/i.test(line) || (/Din\s*Kül/i.test(line) && /S D Y B%/i.test(line))) {
         currentTopicSubject = 'Din Kül. ve Ahl. Bil.';
-      } else if (/^Matematik-1$|^Matematik$/i.test(line) || (/Matematik/i.test(line) && /ANALİZ|S D Y B%/i.test(line))) {
+      } else if (/^Matematik-2$|^Matematik$/i.test(line) && detectedExamType === 'AYT') {
+        currentTopicSubject = 'Matematik-2';
+      } else if (/^Matematik-1$|^Matematik$/i.test(line)) {
         currentTopicSubject = 'Matematik-1';
       } else if (/^Geometri$/i.test(line) || (/Geometri/i.test(line) && /S D Y B%/i.test(line))) {
         currentTopicSubject = 'Geometri';
@@ -543,6 +564,12 @@ export function parseMarkdownExamReport(
         currentTopicSubject = 'Kimya';
       } else if (/^Biyoloji$/i.test(line) || (/Biyoloji/i.test(line) && /S D Y B%/i.test(line))) {
         currentTopicSubject = 'Biyoloji';
+      } else if (/^Edebiyat$|^Türk Dili ve Edebiyatı$/i.test(line)) {
+        currentTopicSubject = 'Edebiyat';
+      } else if (/^Tarih-2$/i.test(line)) {
+        currentTopicSubject = 'Tarih-2';
+      } else if (/^Coğrafya-2$/i.test(line)) {
+        currentTopicSubject = 'Coğrafya-2';
       }
 
       // 1. Single line: Topic Name 1 1 0 100 or Topic Name.1 1 0 100
@@ -568,7 +595,7 @@ export function parseMarkdownExamReport(
       } else if (lines[i + 1] && /^\d+\s+\d+\s+\d+\s+\d+$/.test(lines[i + 1])) {
         // 2. Two lines: Line i is Topic Name, Line i+1 is numbers "1 1 0 100"
         const topicName = line.trim();
-        if (topicName.length >= 3 && !/Soru|Doğru|Yanlış|Başarı|Ortalama|Cevap|Puan|Katılımlar|S D Y B%|##|TYT|Numara|Sınıf|Genel|Dereceler|Ortalama|Ders|Net|Katılımlar/i.test(topicName)) {
+        if (topicName.length >= 3 && !/Soru|Doğru|Yanlış|Başarı|Ortalama|Cevap|Puan|Katılımlar|S D Y B%|##|TYT|AYT|Numara|Sınıf|Genel|Dereceler|Ortalama|Ders|Net|Katılımlar/i.test(topicName)) {
           const numParts = lines[i + 1].trim().split(/\s+/);
           if (numParts.length === 4) {
             const qCount = parseInt(numParts[0], 10) || 0;
@@ -611,8 +638,8 @@ export function parseMarkdownExamReport(
 
       if (inSoruNoSection) {
         // Türkçe optical line
-        if (/TYT\s*Türkçe/i.test(line)) {
-          let ansCandidate = line.replace(/.*TYT\s*Türkçe\s*/i, '').trim();
+        if (/TYT\s*Türkçe|Türkçe/i.test(line) && !/Sosyal|Matematik|Fen/i.test(line)) {
+          let ansCandidate = line.replace(/.*(?:TYT\s*)?Türkçe\s*/i, '').trim();
           if (!ansCandidate && lines[i + 1] && !/Cevap\s*Anahtarı|##/i.test(lines[i + 1])) {
             ansCandidate = lines[i + 1].trim();
           }
@@ -622,16 +649,16 @@ export function parseMarkdownExamReport(
           }
         }
 
-        // Cevap Anahtarı
-        if (/Cevap\s*Anahtarı/i.test(line)) {
+        // Cevap Anahtarı (General / Türkçe / First)
+        if (/Cevap\s*Anahtarı/i.test(line) && !answerKeysMap['Türkçe'] && !/Matematik|Fen|Sosyal/i.test(line)) {
           const keyMatch = line.match(/Cevap\s*Anahtarı\s*(?:[A-Z]\s*)?([A-Z]{10,})/i);
-          if (keyMatch && !answerKeysMap['Türkçe']) {
+          if (keyMatch) {
             answerKeysMap['Türkçe'] = keyMatch[1].trim();
             answerKeysMap['TYT Türkçe'] = keyMatch[1].trim();
           }
         }
 
-        // Sosyal optical line
+        // Sosyal / TYT Sosyal optical line
         if (/TYT\s*Sosyal/i.test(line) || /b[A-Za-z\s]+Cevap\s*Anahtarı/i.test(line)) {
           let textToParse = line;
           if (/^TYT\s*Sosyal$/i.test(line) && lines[i + 1]) {
@@ -646,33 +673,51 @@ export function parseMarkdownExamReport(
           }
         }
 
-        // Matematik optical line
-        if (/TYT\s*Matematik/i.test(line) || (/Cevap\s*Anahtarı/i.test(line) && !opticalAnswersMap['TYT Matematik'] && /BCB|BBC/i.test(line))) {
+        // Matematik / TYT Matematik / Matematik-2 optical line
+        if (/(?:TYT\s*)?Matematik/i.test(line) && !/Geometri|Matematik-1/i.test(line)) {
           let textToParse = line;
-          if (/^TYT\s*Matematik$/i.test(line) && lines[i + 1]) {
+          if (/^(?:TYT\s*)?Matematik$/i.test(line) && lines[i + 1]) {
             textToParse = lines[i + 1];
           }
           const m = textToParse.match(/^([a-zA-Z\s]{8,}?)\s*Cevap\s*Anahtarı\s*(?:[A-Z]\s*)?([A-Z]+)/i);
           if (m) {
             opticalAnswersMap['TYT Matematik'] = m[1].trim();
             opticalAnswersMap['Matematik'] = m[1].trim();
+            opticalAnswersMap['Matematik-2'] = m[1].trim();
             answerKeysMap['TYT Matematik'] = m[2].trim();
             answerKeysMap['Matematik'] = m[2].trim();
+            answerKeysMap['Matematik-2'] = m[2].trim();
+          } else {
+            let ansCandidate = line.replace(/.*(?:TYT\s*)?Matematik\s*/i, '').trim();
+            if (ansCandidate && /^[A-Za-z\s]{8,}$/.test(ansCandidate)) {
+              opticalAnswersMap['TYT Matematik'] = ansCandidate;
+              opticalAnswersMap['Matematik'] = ansCandidate;
+              opticalAnswersMap['Matematik-2'] = ansCandidate;
+            }
           }
         }
 
-        // Fen optical line
-        if (/TYT\s*Fen/i.test(line) || (/Cevap\s*Anahtarı/i.test(line) && !opticalAnswersMap['TYT Fen'] && /BCA|ACB/i.test(line))) {
+        // Fen Bilimleri / TYT Fen optical line
+        if (/(?:TYT\s*)?Fen(?:\s*Bilimleri)?/i.test(line) && !/Fizik|Kimya|Biyoloji/i.test(line)) {
           let textToParse = line;
-          if (/^TYT\s*Fen$/i.test(line) && lines[i + 1]) {
+          if (/^(?:TYT\s*)?Fen(?:\s*Bilimleri)?$/i.test(line) && lines[i + 1]) {
             textToParse = lines[i + 1];
           }
           const m = textToParse.match(/^([a-zA-Z\s]{8,}?)\s*Cevap\s*Anahtarı\s*(?:[A-Z]\s*)?([A-Z]+)/i);
           if (m) {
             opticalAnswersMap['TYT Fen'] = m[1].trim();
             opticalAnswersMap['Fen'] = m[1].trim();
+            opticalAnswersMap['Fen Bilimleri'] = m[1].trim();
             answerKeysMap['TYT Fen'] = m[2].trim();
             answerKeysMap['Fen'] = m[2].trim();
+            answerKeysMap['Fen Bilimleri'] = m[2].trim();
+          } else {
+            let ansCandidate = line.replace(/.*(?:TYT\s*)?Fen(?:\s*Bilimleri)?\s*/i, '').trim();
+            if (ansCandidate && /^[A-Za-z\s]{8,}$/.test(ansCandidate)) {
+              opticalAnswersMap['TYT Fen'] = ansCandidate;
+              opticalAnswersMap['Fen'] = ansCandidate;
+              opticalAnswersMap['Fen Bilimleri'] = ansCandidate;
+            }
           }
         }
       }
