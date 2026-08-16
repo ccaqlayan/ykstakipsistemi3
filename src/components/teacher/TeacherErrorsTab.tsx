@@ -28,11 +28,13 @@ import {
   Table as TableIcon,
   ChevronDown,
   ChevronUp,
-  Maximize2
+  Maximize2,
+  Calendar
 } from 'lucide-react';
 import { TopicErrorItem, BranchExam, ResourceItem, GeneralMockExam, UserAccount, ErrorReason } from '../../types';
 import { YKS_CURRICULUM_TOPICS } from '../../data/initialData';
 import { calculateNextReviewDate, getTodayDateString, getUserRepetitionIntervals } from '../../services/spacedRepetition';
+import { formatDisplayDate } from '../../utils/dateUtils';
 
 const ALL_SUBJECTS = Object.keys(YKS_CURRICULUM_TOPICS);
 
@@ -636,9 +638,12 @@ export const TeacherErrorsTab: React.FC<TeacherErrorsTabProps> = ({
                             <span>Yüksek Öncelik</span>
                           </span>
                         )}
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          {errItem.date || 'Tarihsiz'}
-                        </span>
+                        {errItem.date && (
+                          <span className="text-[10px] font-bold bg-slate-800 text-slate-300 px-2 py-0.5 rounded-lg border border-slate-700 flex items-center space-x-1 shadow-sm" title={`Eklenme Tarihi: ${formatDisplayDate(errItem.date)}`}>
+                            <Calendar className="w-3 h-3 text-indigo-400" />
+                            <span>{formatDisplayDate(errItem.date)}</span>
+                          </span>
+                        )}
                       </div>
                       <h4 className="text-base font-bold text-white leading-snug">
                         {errItem.topicName || 'Konu Belirtilmedi'}
@@ -864,7 +869,12 @@ export const TeacherErrorsTab: React.FC<TeacherErrorsTabProps> = ({
                             {errItem.subject}
                           </span>
                           <h5 className="text-xs font-bold text-white pt-1">{errItem.topicName}</h5>
-                          <span className="text-[10px] text-slate-500 block">{errItem.date || 'Tarihsiz'}</span>
+                          {errItem.date && (
+                            <span className="text-[10px] text-slate-400 flex items-center gap-1 pt-0.5">
+                              <Calendar className="w-3 h-3 text-slate-500" />
+                              <span>{formatDisplayDate(errItem.date)}</span>
+                            </span>
+                          )}
                         </div>
                       </td>
 

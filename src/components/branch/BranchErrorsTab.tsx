@@ -22,7 +22,8 @@ import {
   Filter,
   Clock,
   Play,
-  Camera
+  Camera,
+  Calendar
 } from 'lucide-react';
 import { TopicErrorItem, BranchExam, ResourceItem, GeneralMockExam, UserAccount } from '../../types';
 import { 
@@ -33,6 +34,7 @@ import {
   calculateNextReviewDate,
   addDaysToDate
 } from '../../services/spacedRepetition';
+import { formatDisplayDate } from '../../utils/dateUtils';
 
 interface BranchErrorsTabProps {
   topicErrors: TopicErrorItem[];
@@ -658,6 +660,14 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                       </span>
                       {item.priority !== undefined && renderPriorityBar(item.priority)}
 
+                      {/* Eklenme Tarihi Rozeti */}
+                      {item.date && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-lg font-bold bg-slate-800/90 text-slate-300 border border-slate-700/80 flex items-center space-x-1" title={`Eklenme Tarihi: ${formatDisplayDate(item.date)}`}>
+                          <Calendar className="w-3 h-3 text-indigo-400 shrink-0" />
+                          <span>{formatDisplayDate(item.date)}</span>
+                        </span>
+                      )}
+
                       {/* Aralıklı Tekrar Durum Rozeti (Yalnızca Fotoğraflı Sorularda) */}
                       {item.imageUrl && (() => {
                         const intervals = getUserRepetitionIntervals();
@@ -703,33 +713,39 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                     <h3 className="text-base font-extrabold text-white leading-snug tracking-tight">
                       {item.topicName}
                     </h3>
-                    {item.publisher && (
-                      <div className="text-xs text-slate-400 font-medium flex items-center gap-2 flex-wrap pt-0.5">
-                        <span>Kaynak / Yayın: <span className="text-slate-200 font-bold">{item.publisher}</span></span>
-                        {isBookMatch(item) && (
-                          <button
-                            type="button"
-                            onClick={() => setFilterExamId(item.examId || item.publisher || null)}
-                            className="inline-flex items-center space-x-1.5 text-[10px] bg-emerald-500/15 hover:bg-emerald-500/30 active:bg-emerald-500/40 text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/60 px-2.5 py-0.5 rounded-lg font-bold transition-all cursor-pointer shadow-sm hover:scale-105"
-                            title={`"${item.publisher}" kitabına ait tüm hataları filtrele`}
-                          >
-                            <span>📖 Kitap Eşleşmeli</span>
-                            <Filter className="w-3 h-3 text-emerald-400" />
-                          </button>
-                        )}
-                        {isExamMatch(item) && (
-                          <button
-                            type="button"
-                            onClick={() => setFilterExamId(item.examId || item.publisher || null)}
-                            className="inline-flex items-center space-x-1.5 text-[10px] bg-indigo-500/15 hover:bg-indigo-500/30 active:bg-indigo-500/40 text-indigo-300 border border-indigo-500/30 hover:border-indigo-500/60 px-2.5 py-0.5 rounded-lg font-bold transition-all cursor-pointer shadow-sm hover:scale-105"
-                            title={`"${item.publisher}" denemesine ait tüm hataları filtrele`}
-                          >
-                            <span>🎯 Deneme Eşleşmeli</span>
-                            <Filter className="w-3 h-3 text-indigo-400" />
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    <div className="text-xs text-slate-400 font-medium flex items-center gap-2 flex-wrap pt-0.5">
+                      {item.date && (
+                        <span className="text-slate-300 font-semibold flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-indigo-400 shrink-0" />
+                          <span>Eklenme: {formatDisplayDate(item.date)}</span>
+                        </span>
+                      )}
+                      {item.publisher && (
+                        <span>• Kaynak / Yayın: <span className="text-slate-200 font-bold">{item.publisher}</span></span>
+                      )}
+                      {isBookMatch(item) && (
+                        <button
+                          type="button"
+                          onClick={() => setFilterExamId(item.examId || item.publisher || null)}
+                          className="inline-flex items-center space-x-1.5 text-[10px] bg-emerald-500/15 hover:bg-emerald-500/30 active:bg-emerald-500/40 text-emerald-300 border border-emerald-500/30 hover:border-emerald-500/60 px-2.5 py-0.5 rounded-lg font-bold transition-all cursor-pointer shadow-sm hover:scale-105"
+                          title={`"${item.publisher}" kitabına ait tüm hataları filtrele`}
+                        >
+                          <span>📖 Kitap Eşleşmeli</span>
+                          <Filter className="w-3 h-3 text-emerald-400" />
+                        </button>
+                      )}
+                      {isExamMatch(item) && (
+                        <button
+                          type="button"
+                          onClick={() => setFilterExamId(item.examId || item.publisher || null)}
+                          className="inline-flex items-center space-x-1.5 text-[10px] bg-indigo-500/15 hover:bg-indigo-500/30 active:bg-indigo-500/40 text-indigo-300 border border-indigo-500/30 hover:border-indigo-500/60 px-2.5 py-0.5 rounded-lg font-bold transition-all cursor-pointer shadow-sm hover:scale-105"
+                          title={`"${item.publisher}" denemesine ait tüm hataları filtrele`}
+                        >
+                          <span>🎯 Deneme Eşleşmeli</span>
+                          <Filter className="w-3 h-3 text-indigo-400" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Actions: Edit & Delete */}

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Youtube, AlertCircle, ChevronRight, Image as ImageIcon } from 'lucide-react';
+import { Youtube, AlertCircle, ChevronRight, Image as ImageIcon, Calendar } from 'lucide-react';
 import { PaginationControls } from './PaginationControls';
 import { errorReasonLabels } from './SubjectTypes';
+import { formatDisplayDate } from '../../utils/dateUtils';
 
 interface SubjectVideoErrorsTabProps {
   activeDetailData: any;
@@ -188,7 +189,12 @@ export const SubjectVideoErrorsTab: React.FC<SubjectVideoErrorsTabProps> = ({
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 text-[10px]">
-                        {err.date && <span className="text-slate-400 font-medium">Tarih: {err.date}</span>}
+                        {err.date && (
+                          <span className="text-slate-300 font-medium flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
+                            <Calendar className="w-3 h-3 text-indigo-400" />
+                            <span>{formatDisplayDate(err.date)}</span>
+                          </span>
+                        )}
                         {err.errorReason && (
                           <span className="bg-amber-500/10 text-amber-300 border border-amber-500/20 px-2 py-0.5 rounded font-semibold">
                             Neden: {errorReasonLabels[err.errorReason] || err.errorReason}

@@ -198,3 +198,21 @@ export const addWeeks = (mondayDate: Date, weeks: number): Date => {
   return d;
 };
 
+/**
+ * Formats YYYY-MM-DD or ISO date string to Turkish display format (e.g. "17 Ağustos 2026").
+ */
+export const formatDisplayDate = (dateStr?: string): string => {
+  if (!dateStr) return '';
+  const clean = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+  const parts = clean.split('-');
+  if (parts.length === 3) {
+    const y = parts[0];
+    const mIdx = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    const mName = TURKISH_MONTHS[mIdx] || parts[1];
+    return `${d} ${mName} ${y}`;
+  }
+  return dateStr;
+};
+
+

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Target, BarChart2, ArrowUpRight, ChevronUp, ChevronDown, FileText, AlertCircle } from 'lucide-react';
+import { Target, BarChart2, ArrowUpRight, ChevronUp, ChevronDown, FileText, AlertCircle, Calendar } from 'lucide-react';
 import { PaginationControls } from './PaginationControls';
 import { getSubjectGeneralMockSummary, errorReasonLabels } from './SubjectTypes';
+import { formatDisplayDate } from '../../utils/dateUtils';
 
 interface SubjectMocksTabProps {
   activeDetailData: any;
@@ -384,6 +385,12 @@ export const SubjectMocksTab: React.FC<SubjectMocksTabProps> = ({
                                               {errorReasonLabels[err.errorReason] || err.errorReason}
                                             </span>
                                           </div>
+                                          {err.date && (
+                                            <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                                              <Calendar className="w-3 h-3 text-slate-500" />
+                                              <span>{formatDisplayDate(err.date)}</span>
+                                            </div>
+                                          )}
                                           {err.solutionNotes && (
                                             <p className="text-[11px] text-slate-400 italic">Çözüm Notu: {err.solutionNotes}</p>
                                           )}

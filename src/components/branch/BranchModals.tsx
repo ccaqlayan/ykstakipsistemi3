@@ -17,10 +17,12 @@ import {
   Eye,
   EyeOff,
   FileText,
-  Crop
+  Crop,
+  Calendar
 } from 'lucide-react';
 import { BranchExam, TopicErrorItem, ErrorReason, GeneralMockExam, ResourceItem } from '../../types';
 import { ConfirmDeleteModal } from '../ConfirmDeleteModal';
+import { formatDisplayDate } from '../../utils/dateUtils';
 
 interface BranchModalsProps {
   // Error Modal
@@ -1212,7 +1214,21 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                   <h3 className="text-sm sm:text-base font-bold text-white truncate max-w-xs sm:max-w-md">
                     {previewImage.title}
                   </h3>
-                  <p className="text-[11px] text-slate-400">Yapay zeka destekli soru analiz ve çözüm merkezi</p>
+                  <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                    {(() => {
+                      const mErr = getMatchingErrorItem();
+                      if (mErr && mErr.date) {
+                        return (
+                          <span className="text-indigo-300 font-semibold flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-indigo-400" />
+                            <span>Eklenme: {formatDisplayDate(mErr.date)}</span>
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                    <span>• Yapay zeka destekli soru analiz ve çözüm merkezi</span>
+                  </div>
                 </div>
               </div>
 
