@@ -16,4 +16,9 @@
   3. **En Soldaki Sayı (X - Major):** Ortadaki `Y` sayısı `9` ve `Z` sayısı `99` olduktan sonraki ilk artışta `Y` ve `Z` sıfırlanır (`0.0`) ve en soldaki `X` sayısı `1` artar (`v1.9.99` -> `v2.0.0`).
 - Her kod değişikliğinde `src/version.ts` ve `package.json` dosyalarındaki versiyon numarası bu kurala göre güncellenmeli ve GitHub'a commit atılmalıdır.
 
+## Yerel Geliştirme Sunucusu (Localhost) Başlatma Kuralı
+- **Windows PowerShell İzin Kısıtı (`PSSecurityException`):** Windows ortamında PowerShell varsayılan olarak `.ps1` betiklerini (`npm.ps1`) engeller. Bu nedenle doğrudan `npm run dev` çalıştırmak yerine her zaman `cmd /c npx tsx server.ts` veya `powershell -ExecutionPolicy Bypass` ile komut koşturulmalıdır.
+- **`tsx watch` vs Arka Plan Süreçleri:** Arka plan (daemon/async) süreçlerinde `tsx watch server.ts` komutu terminal TTY ve watcher beklemesi nedeniyle arka planda asılı kalabilir. Sunucuyu arka planda güvenle ayağa kaldırmak için doğrudan `cmd /c npx tsx server.ts` çalıştırılmalıdır.
+- **Vite & Firestore Başlatma Süresi:** Sunucu başladığında Vite middleware ve Firestore servislerinin derleme/bağlantı kurması yaklaşık 5-10 saniye sürer (`http://0.0.0.0:3000`). Doğrudan tarayıcı/bağlantı kontrolü yapılmadan önce sunucunun tamamen ayağa kalktığı loglardan teyit edilmelidir.
+
 eğer promptum ile bir dosyada değişikliği yaptıysan mutlaka versiyon sayısını bu kurala göre arttırıp github a commit yap, açıklamaları her zaman Türkçe yaz.
