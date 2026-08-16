@@ -195,10 +195,11 @@ export function cleanAiOutputText(rawText: string): string {
   let text = rawText.trim();
   // Strip reasoning / thinking blocks: <think>...</think>
   text = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-  // Strip safety guard preambles like "User Safety: safe", "Assistant Safety: safe", "Safety: safe"
-  text = text.replace(/^(?:User Safety|Assistant Safety|Safety Assessment|Safety|Safety Status):\s*safe\s*/i, '').trim();
-  text = text.replace(/^(?:User|Assistant)\s*Safety:\s*safe\s*/i, '').trim();
-  text = text.replace(/^User Safety:\s*safe\s*\n+/i, '').trim();
+  // Strip safety guard preambles (case-insensitive, multi-line)
+  text = text.replace(/^(?:(?:User|Assistant)\s+)?Safety(?:\s+Assessment|\s+Status)?:\s*safe\s*/gim, '').trim();
+  text = text.replace(/^User Safety:\s*safe\s*/gim, '').trim();
+  text = text.replace(/^Assistant Safety:\s*safe\s*/gim, '').trim();
+  text = text.replace(/^Safety:\s*safe\s*/gim, '').trim();
   return text.trim();
 }
 
@@ -217,17 +218,15 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
   // Vision models prioritized for multimodal requests, top-rated text models for text
   const candidateModels = hasImage
     ? [
-        'google/gemma-4-26b-a4b-it:free',
-        'openrouter/free',
-        'google/gemma-4-31b-it:free',
         'dots-studio/dots-3-note-preview:free',
+        'google/gemma-4-26b-a4b-it:free',
+        'google/gemma-4-31b-it:free',
         'nvidia/nemotron-nano-12b-v2-vl:free',
         'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free'
       ]
     : [
         'google/gemma-4-31b-it:free',
         'google/gemma-4-26b-a4b-it:free',
-        'openrouter/free',
         'nvidia/nemotron-3.5-lightning:free',
         'nvidia/nemotron-3-ultra-550b-a55b:free',
         'nvidia/nemotron-3-super-120b-a12b:free',
@@ -277,7 +276,7 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
           'HTTP-Referer': 'http://localhost:3000',
           'X-Title': 'YKS Takip Sistemi'
         },
-        signal: AbortSignal.timeout(25000), // 25sn model bazlı zaman aşımı (sıradaki ücretsiz modele hızlı failover)
+        signal: AbortSignal.timeout(20000), // 20sn model bazlı zaman aşımı (sıradaki ücretsiz modele hızlı failover)
         body: JSON.stringify(requestBody)
       });
 
@@ -287,14 +286,27 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
       }
 
       const data = await res.json();
-      const rawText = data?.choices?.[0]?.message?.content || '';
+      const choice = data?.choices?.[0];
+      let rawText = '';
+      if (typeof choice?.message?.content === 'string') {
+        rawText = choice.message.content;
+      } else if (Array.isArray(choice?.message?.content)) {
+        rawText = choice.message.content
+          .map((part: any) => (typeof part === 'string' ? part : part?.text || ''))
+          .join('\n');
+      } else if (choice?.message?.reasoning && typeof choice.message.reasoning === 'string') {
+        rawText = choice.message.reasoning;
+      } else if (typeof choice?.text === 'string') {
+        rawText = choice.text;
+      }
+
       const text = cleanAiOutputText(rawText);
       const usage = data?.usage || {};
       const resolvedModel = data?.model || model;
 
       // Validate output: If empty or only safety check returned without actual content, reject and try next model
-      if (!text || text.length < 8 || /^safe$/i.test(text) || /^user safety:\s*safe$/i.test(rawText.trim())) {
-        throw new Error(`Model ${model} geçerli bir içerik üretmedi (güvenlik kontrolü ön eki veya boş çıktı döndü).`);
+      if (!text || text.length < 8 || /^safe$/i.test(text)) {
+        throw new Error(`Model ${model} geçerli bir içerik üretmedi (boş veya geçersiz çıktı döndü).`);
       }
 
       return {

@@ -1599,7 +1599,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     setSimilarError(null);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000);
+    const timeoutId = setTimeout(() => controller.abort(), 180000);
 
     try {
       const response = await fetch('/api/gemini/analyze-photo-question-full', {
@@ -1677,7 +1677,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       console.error(err);
       const isAbort = err.name === 'AbortError' || String(err).includes('aborted');
       const msg = isAbort 
-        ? 'İşlem zaman aşımına uğradı (120sn). Lütfen tekrar deneyin.'
+        ? 'İşlem zaman aşımına uğradı (180sn). Lütfen tekrar deneyin.'
         : (err.message || 'Çözüm oluşturulamadı.');
       setSolveError(msg);
       setReportError(msg);

@@ -43,11 +43,17 @@ const router = Router();
 
 function formatGeminiErrorMessage(err: any, fallbackText: string): string {
   const msg = err?.message || String(err || '');
+  if (msg.includes('free-models-per-day') || (msg.includes('OpenRouter') && msg.includes('429'))) {
+    return 'OpenRouter günlük ücretsiz model kotası (50 istek/gün) doldu (429). Lütfen Sistem Yönetimi > Yapay Zeka sayfasından Google Gemini sağlayıcısını seçiniz veya çalışma modunu "Akıllı Otomatik Geçiş (AUTO_FALLBACK)" olarak ayarlayınız.';
+  }
+  if (msg.includes('Groq') && (msg.includes('429') || msg.includes('rate_limit_exceeded'))) {
+    return 'Groq Cloud istek kotası aşıldı (429). Lütfen birkaç saniye sonra tekrar deneyiniz.';
+  }
   if (err?.status === 401 || msg.includes('401') || msg.includes('UNAUTHENTICATED') || msg.includes('ACCESS_TOKEN_TYPE_UNSUPPORTED')) {
-    return 'Google Gemini API Anahtarınız geçersiz veya süresi dolmuş (401). Lütfen Google AI Studio (aistudio.google.com/apikey) üzerinden aldığınız geçerli API anahtarınızı (AIzaSy...) Sistem Yönetimi > Yapay Zeka > Model Ayarları bölümünden veya .env dosyasından güncelleyiniz.';
+    return 'Yapay Zeka API Anahtarınız geçersiz veya süresi dolmuş (401). Lütfen Sistem Yönetimi > Yapay Zeka > Model Ayarları bölümünden geçerli bir API anahtarı tanımlayınız.';
   }
   if (err?.status === 429 || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
-    return 'Google Gemini API istek kotası aşıldı (429). Lütfen birkaç saniye sonra tekrar deneyiniz.';
+    return 'Yapay Zeka API istek kotası aşıldı (429). Lütfen birkaç saniye sonra tekrar deneyiniz veya diğer sağlayıcıya geçiniz.';
   }
   return msg || fallbackText;
 }
@@ -1024,38 +1030,37 @@ Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'G
 1. ÇÖZÜM REHBERİ (solution alanı için):
 - Görseldeki soruyu adım adım son derece anlaşılır Türkçe ile çöz.
 - ASLA "Merhaba" veya selamlama cümleleri kullanma, doğrudan Konu Özeti ile başla.
-- Metin içinde paragraflar, adımlar (Adım 1:, Adım 2: vb.), Konu Özeti, Doğru Cevap: ve Pratik Taktik: bölümleri arasında KESİNLİKLE yeni satır (\n\n) kullan. ASLA tüm çözümü tek parça düz metin olarak yazma.
+- Metin içinde paragraflar, adımlar (Adım 1:, Adım 2: vb.), Konu Özeti, Doğru Cevap: ve Pratik Taktik: bölümleri arasında KESİNLİKLE yeni satır (\\n\\n) kullan. ASLA tüm çözümü tek parça düz metin olarak yazma.
 - KESİNLİKLE LaTeX ($...$) kullanma, düz metin ve klavye karakterleri kullan.
 - correctAnswerLetter alanına sorunun doğru cevap şıkkını (SADECE tek büyük harf: A, B, C, D veya E) yaz.
 
-2. BENZER SORULAR (similarQuestions alanı için - 3 adet):
-- Görseldeki soruya benzer tarzda, Türkiye YKS (TYT/AYT) müfredatına %100 uygun, birbirinden farklı 3 adet özgün soru üret.
-- Her biri için: soru metni ve şıkları (A, B, C, D, E), adım adım detaylı çözümü ve doğru cevabını hazırla.
+2. BENZER SORULAR (similarQuestions alanı için - 2 adet):
+- Görseldeki soruya benzer tarzda, Türkiye YKS (TYT/AYT) müfredatına %100 uygun 2 adet özgün soru üret.
+- Her biri için: soru metni, şıkları (options dizisi: A, B, C, D, E), adım adım detaylı çözümü ve doğru cevabını hazırla.
 
 3. DETAYLI SORU KARNESİ (analysis alanı için):
 - Sorunun ders, konu, MEB kazanımı, müfredat uygunluğu, zorluk (örn: 6/10 - Orta), okuma süresi, çözme süresi, ayırt edicilik ve TÜM ŞIKLARIN çeldirici analizini içeren tam bir Markdown Tablo oluştur.
-- Tablo tam olarak aşağıdaki formatta olmalıdır:
 
-**SORU ANALİZİ**
-
-| Kriter | Değerlendirme |
-| :--- | :--- |
-| **Ders** | ${subject || 'YKS'} |
-| **Konu** | ${topicName || 'Genel'} |
-| **Kazanım** | [MEB kazanımı] |
-| **Müfredat Uygunluğu** | [Uygun/Değil + açıklama] |
-| **Zorluk** | [Örn: 5/10 - Orta] |
-| **Okuma Süresi** | [Örn: 0.8 dk] |
-| **Çözme Süresi** | [Örn: 1.5 dk] |
-| **Ayırt Edicilik** | [Düşük/Orta/Yüksek] |
-| **Çeldirici Analizi** | |
-| **A Şıkkı Çeldiricisi** | [A şıkkı çeldirici analizi] |
-| **B Şıkkı Çeldiricisi** | [B şıkkı çeldirici analizi] |
-| **C Şıkkı Çeldiricisi** | [C şıkkı çeldirici analizi] |
-| **D Şıkkı Çeldiricisi** | [D şıkkı çeldirici analizi] |
-| **E Şıkkı Çeldiricisi** | [E şıkkı çeldirici analizi] |
-
-YANITINI YALNIZCA aşağıdaki JSON formatında döndür. Kesinlikle JSON dışında açıklama veya Markdown kod bloğu ekleme:
+AŞAĞIDAKİ JSON ŞEMASINA KESİNLİKLE UY VE YALNIZCA GEÇERLİ JSON DÖNDÜR:
+{
+  "solution": "Konu Özeti:\\n...\\n\\nAdım 1: ...\\n\\nAdım 2: ...\\n\\nDoğru Cevap: ...\\n\\nPratik Taktik: ...",
+  "correctAnswerLetter": "C",
+  "analysis": "**SORU ANALİZİ**\\n\\n| Kriter | Değerlendirme |\\n| :--- | :--- |\\n| **Ders** | ${subject || 'YKS'} |\\n| **Konu** | ${topicName || 'Genel'} |\\n| **Kazanım** | [MEB Kazanımı] |\\n| **Zorluk** | 6/10 - Orta |\\n| **Okuma Süresi** | 0.8 dk |\\n| **Çözme Süresi** | 1.5 dk |\\n| **Ayırt Edicilik** | Yüksek |\\n| **Çeldirici Analizi** | |\\n| **A Şıkkı Çeldiricisi** | [Analiz] |\\n| **B Şıkkı Çeldiricisi** | [Analiz] |\\n| **C Şıkkı Çeldiricisi** | [Doğru Şık] |\\n| **D Şıkkı Çeldiricisi** | [Analiz] |\\n| **E Şıkkı Çeldiricisi** | [Analiz] |",
+  "similarQuestions": [
+    {
+      "question": "1. Benzer soru metni ve şıkları...",
+      "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
+      "solution": "1. Sorunun adım adım detaylı çözümü...",
+      "correctAnswer": "A"
+    },
+    {
+      "question": "2. Benzer soru metni ve şıkları...",
+      "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
+      "solution": "2. Sorunun adım adım detaylı çözümü...",
+      "correctAnswer": "B"
+    }
+  ]
+}
 `;
 
     console.log(`[PHOTO_ANALYSIS] Starting unified analysis for subject=${subject}, topic=${topicName}, hasImage=${!!imagePart || !!imageUrl}`);
@@ -1068,7 +1073,7 @@ YANITINI YALNIZCA aşağıdaki JSON formatında döndür. Kesinlikle JSON dış�
       requireJson: true,
       featureKey: 'PHOTO_QUESTION_FULL_ANALYSIS',
       modelOverride: targetModel,
-      maxTokens: 8192
+      maxTokens: 3500
     });
 
     const responseText = unifiedResult.text;
