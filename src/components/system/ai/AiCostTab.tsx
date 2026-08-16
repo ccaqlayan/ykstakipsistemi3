@@ -145,8 +145,17 @@ export const AiCostTab: React.FC<AiCostTabProps> = ({
                     <td className="py-2.5 text-right font-mono">
                       {m.totalTokens.toLocaleString('tr-TR')}
                     </td>
-                    <td className="py-2.5 text-right font-bold text-emerald-400 font-mono">
-                      ₺{m.costTRY.toFixed(4)}
+                    <td className="py-2.5 text-right font-mono">
+                      {m.costTRY === 0 ? (
+                        <span className="font-bold text-emerald-400 text-xs inline-flex items-center gap-1">
+                          <span>₺0.0000</span>
+                          <span className="text-[9px] bg-emerald-500/10 px-1 py-0.2 rounded border border-emerald-500/20 text-emerald-300">Free</span>
+                        </span>
+                      ) : (
+                        <span className="font-bold text-emerald-400">
+                          ₺{m.costTRY.toFixed(4)}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -193,8 +202,17 @@ export const AiCostTab: React.FC<AiCostTabProps> = ({
                     <td className="py-2.5 text-right font-mono">
                       {f.totalTokens.toLocaleString('tr-TR')}
                     </td>
-                    <td className="py-2.5 text-right font-bold text-emerald-400 font-mono">
-                      ₺{f.costTRY.toFixed(4)}
+                    <td className="py-2.5 text-right font-mono">
+                      {f.costTRY === 0 ? (
+                        <span className="font-bold text-emerald-400 text-xs inline-flex items-center gap-1">
+                          <span>₺0.0000</span>
+                          <span className="text-[9px] bg-emerald-500/10 px-1 py-0.2 rounded border border-emerald-500/20 text-emerald-300">Free</span>
+                        </span>
+                      ) : (
+                        <span className="font-bold text-emerald-400">
+                          ₺{f.costTRY.toFixed(4)}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))}

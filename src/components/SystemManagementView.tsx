@@ -65,18 +65,26 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
       const estimatedCostUSD = Number(meta.estimatedCostUSD || 0);
       const estimatedCostTRY = Number(meta.estimatedCostTRY || 0);
       
+      const provider = safeString(meta.provider || (
+        modelUsed.toLowerCase().includes('llama') ? 'GROQ' :
+        modelUsed.toLowerCase().includes('openrouter') || modelUsed.toLowerCase().includes('deepseek') || modelUsed.toLowerCase().includes('qwen') ? 'OPENROUTER' : 'GEMINI'
+      ));
+      const isFreeTier = Boolean(meta.isFreeTier || provider !== 'GEMINI' || modelUsed.toLowerCase().includes('free') || estimatedCostTRY === 0);
+
       return {
         id: log.id,
         timestamp: log.timestamp || new Date(log.createdAt || Date.now()).toISOString(),
         featureKey: safeString(meta.featureKey || 'UNKNOWN'),
         featureName: safeString(meta.featureName || log.actionDescription || 'Yapay Zeka İşlemi'),
         category: meta.category === 'AI_COACH' ? 'AI_COACH' as const : 'QUESTION_ANALYSIS' as const,
+        provider,
+        isFreeTier,
         modelUsed,
         promptTokens,
         candidatesTokens,
         totalTokens,
-        estimatedCostUSD,
-        estimatedCostTRY,
+        estimatedCostUSD: isFreeTier ? 0 : estimatedCostUSD,
+        estimatedCostTRY: isFreeTier ? 0 : estimatedCostTRY,
         promptText: safeString(meta.promptText || ''),
         responseText: safeString(meta.responseText || ''),
         userName: safeString(meta.userName || log.userDisplayName || log.userName || '').replace(/\s*\(.*?\)\s*$/g, '').trim(),

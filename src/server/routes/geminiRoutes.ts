@@ -283,15 +283,47 @@ function summarizePomodoroForPrompt(history: any[], limit: number = 3) {
   };
 }
 
+function cleanAndParseJson(raw: string): any {
+  let cleaned = (raw || '').trim();
+  if (cleaned.startsWith('```json')) {
+    cleaned = cleaned.replace(/^```json\s*/, '').replace(/```\s*$/, '').trim();
+  } else if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '').trim();
+  }
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    try {
+      return JSON.parse(cleaned.substring(firstBrace, lastBrace + 1));
+    } catch {}
+  }
+  const firstBracket = cleaned.indexOf('[');
+  const lastBracket = cleaned.lastIndexOf(']');
+  if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+    try {
+      return JSON.parse(cleaned.substring(firstBracket, lastBracket + 1));
+    } catch {}
+  }
+  try {
+    return JSON.parse(cleaned || '{}');
+  } catch (err) {
+    console.warn('cleanAndParseJson fallback parse failed:', err);
+    return {};
+  }
+}
+
+function hasAnyAiApiKey(): boolean {
+  return Boolean(getEffectiveGeminiApiKey() || getEffectiveGroqApiKey() || getEffectiveOpenRouterApiKey());
+}
+
 // -------------------------------------------------------------
-// Gemini AI Endpoints
+// Unified AI Endpoints (Gemini -> Groq -> OpenRouter)
 // -------------------------------------------------------------
 
 router.post('/coach-advice', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = getEffectiveGeminiApiKey();
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
+  if (!hasAnyAiApiKey()) {
+    return res.status(400).json({ error: 'Yapay zeka API anahtarı tanımlı değil. Lütfen Sistem Yönetimi > Yapay Zeka sayfasından en az bir API anahtarı (Gemini, Groq veya OpenRouter) girin.' });
   }
 
   const {
@@ -314,8 +346,6 @@ router.post('/coach-advice', async (req, res) => {
   const settings = customSettings || coachDataSettings;
 
   try {
-    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
-
     let prompt = `
 Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) derece derece hazırlık konusunda uzman, motivasyonu yüksek ve analitik bir Rehberlik ve YKS Öğrenci Koçusun.
 
@@ -397,29 +427,27 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
 }
     `;
 
-    const targetModel = featureModelConfig['AI_COACH_STUDENT'] || 'gemini-3.1-flash-lite';
-    const { response, modelUsed } = await generateContentWithFallback(ai, {
-      model: targetModel,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json'
-      }
+    const targetModel = featureModelConfig['AI_COACH_STUDENT'] || 'gemini-3.5-flash-lite';
+    const unifiedResult = await executeAiUnifiedRequest({
+      prompt,
+      requireJson: true,
+      featureKey: 'AI_COACH_STUDENT',
+      modelOverride: targetModel
     });
 
-    const responseText = extractResponseText(response);
-    const parsedData = JSON.parse(responseText || '{}');
-
+    const parsedData = cleanAndParseJson(unifiedResult.text);
     const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const usageRecord = recordApiUsage({
       featureKey: 'AI_COACH_STUDENT',
       featureName: 'Öğrenci Bireysel Yapay Zeka Koç Tavsiyesi',
       category: 'AI_COACH',
-      modelUsed,
-      promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      provider: unifiedResult.providerUsed,
+      modelUsed: unifiedResult.modelUsed,
+      promptTokens: unifiedResult.promptTokens || Math.ceil(prompt.length / 4),
+      candidatesTokens: unifiedResult.candidatesTokens || Math.ceil(unifiedResult.text.length / 4),
       promptText: prompt,
-      responseText,
+      responseText: unifiedResult.text,
       userId,
       userName,
       userRole
@@ -434,23 +462,20 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
       aiUsage: usageRecord
     });
   } catch (err: any) {
-    console.error('Gemini AI Coach error:', err);
+    console.error('Unified AI Coach error:', err);
     res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay Zeka koç tavsiyesi üretilemedi.') });
   }
 });
 
 router.post('/class-coach-advice', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = getEffectiveGeminiApiKey();
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
+  if (!hasAnyAiApiKey()) {
+    return res.status(400).json({ error: 'Yapay zeka API anahtarı tanımlı değil. Lütfen Sistem Yönetimi > Yapay Zeka sayfasından en az bir API anahtarı girin.' });
   }
 
   const { className, studentCount, averageTYTNet, averageAYTNet, totalQuestionsSolved, topStrugglingTopics, studentsSummary } = req.body;
 
   try {
-    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
-
     const prompt = `
 Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) derece hazırlık konusunda uzman, analitik ve motivasyonu yüksek bir Okul Rehberlik Uzmanı ve Sınıf YKS Koçusun.
 
@@ -476,29 +501,27 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
 }
     `;
 
-    const targetModel = featureModelConfig['AI_COACH_CLASS'] || 'gemini-3.1-flash-lite';
-    const { response, modelUsed } = await generateContentWithFallback(ai, {
-      model: targetModel,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json'
-      }
+    const targetModel = featureModelConfig['AI_COACH_CLASS'] || 'gemini-3.5-flash-lite';
+    const unifiedResult = await executeAiUnifiedRequest({
+      prompt,
+      requireJson: true,
+      featureKey: 'AI_COACH_CLASS',
+      modelOverride: targetModel
     });
 
-    const responseText = extractResponseText(response);
-    const parsedData = JSON.parse(responseText || '{}');
-
+    const parsedData = cleanAndParseJson(unifiedResult.text);
     const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const usageRecord = recordApiUsage({
       featureKey: 'AI_COACH_CLASS',
       featureName: 'Sınıf / Okul Genel Koç Analizi',
       category: 'AI_COACH',
-      modelUsed,
-      promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      provider: unifiedResult.providerUsed,
+      modelUsed: unifiedResult.modelUsed,
+      promptTokens: unifiedResult.promptTokens || Math.ceil(prompt.length / 4),
+      candidatesTokens: unifiedResult.candidatesTokens || Math.ceil(unifiedResult.text.length / 4),
       promptText: prompt,
-      responseText,
+      responseText: unifiedResult.text,
       userId,
       userName,
       userRole
@@ -514,23 +537,20 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
       aiUsage: usageRecord
     });
   } catch (err: any) {
-    console.error('Gemini Class AI Coach error:', err);
+    console.error('Unified Class AI Coach error:', err);
     res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay Zeka sınıf koçluk tavsiyesi üretilemedi.') });
   }
 });
 
 router.post('/analyze-error-priority', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = getEffectiveGeminiApiKey();
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
+  if (!hasAnyAiApiKey()) {
+    return res.status(400).json({ error: 'Yapay zeka API anahtarı tanımlı değil.' });
   }
 
   const { subject, topicName, errorReason, solutionNotes, publisher } = req.body;
 
   try {
-    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
-
     const prompt = `YKS Koçusun. Verilen deneme hatasını teşhis et ve 1-10 arası öncelik puanı ("rating") belirle.
 
 Ders: ${subject || '-'} | Konu: ${topicName || '-'} | Yayın: ${publisher || '-'} | Hata Nedeni: ${errorReason || '-'} | Çözüm Notu: ${solutionNotes || '-'}
@@ -547,29 +567,27 @@ JSON:
   "analysis": "Bu konudan YKS'de her yıl ortalama 2 soru çıkmaktadır. ..."
 }`;
 
-    const targetModel = featureModelConfig['ERROR_PRIORITY'] || 'gemini-3.1-flash-lite';
-    const { response, modelUsed } = await generateContentWithFallback(ai, {
-      model: targetModel,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json'
-      }
+    const targetModel = featureModelConfig['ERROR_PRIORITY'] || 'gemini-3.5-flash-lite';
+    const unifiedResult = await executeAiUnifiedRequest({
+      prompt,
+      requireJson: true,
+      featureKey: 'ERROR_PRIORITY',
+      modelOverride: targetModel
     });
 
-    const responseText = extractResponseText(response);
-    const parsedData = JSON.parse(responseText || '{}');
-
+    const parsedData = cleanAndParseJson(unifiedResult.text);
     const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const usageRecord = recordApiUsage({
       featureKey: 'ERROR_PRIORITY',
       featureName: 'Öncelikli Hata Konuları Analizi',
       category: 'QUESTION_ANALYSIS',
-      modelUsed,
-      promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      provider: unifiedResult.providerUsed,
+      modelUsed: unifiedResult.modelUsed,
+      promptTokens: unifiedResult.promptTokens || Math.ceil(prompt.length / 4),
+      candidatesTokens: unifiedResult.candidatesTokens || Math.ceil(unifiedResult.text.length / 4),
       promptText: prompt,
-      responseText,
+      responseText: unifiedResult.text,
       userId,
       userName,
       userRole
@@ -588,16 +606,15 @@ JSON:
       aiUsage: usageRecord
     });
   } catch (err: any) {
-    console.error('Gemini error priority analyzer error:', err);
+    console.error('Unified error priority analyzer error:', err);
     res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay zeka öncelik analizi yapılamadı.') });
   }
 });
 
 router.post('/topic-mistake-tips', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = getEffectiveGeminiApiKey();
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
+  if (!hasAnyAiApiKey()) {
+    return res.status(400).json({ error: 'Yapay zeka API anahtarı tanımlı değil.' });
   }
 
   const { subject, topicName } = req.body;
@@ -606,8 +623,6 @@ router.post('/topic-mistake-tips', async (req, res) => {
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
-
     const prompt = `
 Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecinde öğrencilere ders anlatan uzman ve cana yakın bir branş öğretmenisin.
 Öğrencinin seçtiği "${subject}" dersindeki "${topicName}" konusu ile ilgili yaptığı yaygın hataları, bunların doğrularını ve sınavda işine yarayacak can alıcı ipuçlarını paylaşan kısa bir ipucu belgesi oluştur.
@@ -627,29 +642,27 @@ Lütfen yanıtını doğrudan öğrenciye hitap eden bir tonda yaz ve YALNIZCA g
 }
     `;
 
-    const targetModel = featureModelConfig['TOPIC_TIPS'] || 'gemini-3.1-flash-lite';
-    const { response, modelUsed } = await generateContentWithFallback(ai, {
-      model: targetModel,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json'
-      }
+    const targetModel = featureModelConfig['TOPIC_TIPS'] || 'gemini-3.5-flash-lite';
+    const unifiedResult = await executeAiUnifiedRequest({
+      prompt,
+      requireJson: true,
+      featureKey: 'TOPIC_TIPS',
+      modelOverride: targetModel
     });
 
-    const responseText = extractResponseText(response);
-    const parsedData = JSON.parse(responseText || '{}');
-
+    const parsedData = cleanAndParseJson(unifiedResult.text);
     const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const usageRecord = recordApiUsage({
       featureKey: 'TOPIC_TIPS',
       featureName: 'Konu Bazlı Pratik Taktikler',
       category: 'QUESTION_ANALYSIS',
-      modelUsed,
-      promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      provider: unifiedResult.providerUsed,
+      modelUsed: unifiedResult.modelUsed,
+      promptTokens: unifiedResult.promptTokens || Math.ceil(prompt.length / 4),
+      candidatesTokens: unifiedResult.candidatesTokens || Math.ceil(unifiedResult.text.length / 4),
       promptText: prompt,
-      responseText,
+      responseText: unifiedResult.text,
       userId,
       userName,
       userRole
@@ -663,16 +676,15 @@ Lütfen yanıtını doğrudan öğrenciye hitap eden bir tonda yaz ve YALNIZCA g
       aiUsage: usageRecord
     });
   } catch (err: any) {
-    console.error('Gemini mistake tips error:', err);
+    console.error('Unified mistake tips error:', err);
     res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay zeka konu ipuçları üretilemedi.') });
   }
 });
 
 router.post('/solve-question', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = getEffectiveGeminiApiKey();
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
+  if (!hasAnyAiApiKey()) {
+    return res.status(400).json({ error: 'Yapay zeka API anahtarı tanımlı değil.' });
   }
 
   const { imageUrl, solutionText, existingAnalysis, subject, topicName } = req.body;
@@ -681,14 +693,11 @@ router.post('/solve-question', async (req, res) => {
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
-
-    let contents: any[] = [];
     const imagePart = imageUrl ? await resolveImagePart(imageUrl) : null;
+    let promptText = '';
 
     if (solutionText || existingAnalysis) {
-      const textPart = {
-        text: `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru çözen uzman bir öğretmenisin.
+      promptText = `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru çözen uzman bir öğretmenisin.
 Aşağıda öğrencinin aynı sorusuna ait önceki çözüm/analiz verisi bulunmaktadır:
 ---
 Ders: ${subject || ''}
@@ -698,7 +707,7 @@ ${solutionText || existingAnalysis}
 ---
 Bu verilerden faydalanarak sorunun son derece anlaşılır, adım adım detaylı çözümünü sun.
 
-ASLA "Merhaba değerli öğrencim" veya benzeri giriş/selamlama cümleleri ya da sohbet ifadeleri kullanma. Doğratan çözümle başla.
+ASLA "Merhaba değerli öğrencim" veya benzeri giriş/selamlama cümleleri ya da sohbet ifadeleri kullanma. Doğrudan çözümle başla.
 
 İçerik Şunları Kapsamalıdır:
 1. Konu Özeti: Soru hangi konuyla ilgiliyse (${subject} - ${topicName}) o konunun temel kuralını veya formülünü kısaca hatırlat.
@@ -708,16 +717,13 @@ ASLA "Merhaba değerli öğrencim" veya benzeri giriş/selamlama cümleleri ya d
 
 ÖNEMLİ MATEMATİKSEL BİÇİMLENDİRME KURALLARI:
 - KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
-- Matematiksel ifadeleri normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`
-      };
-      contents = imagePart ? [imagePart, textPart] : [textPart];
+- Matematiksel ifadeleri normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`;
     } else {
-      if (!imagePart) {
+      if (!imagePart && !imageUrl) {
         return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
       }
 
-      const textPart = {
-        text: `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru çözen uzman bir öğretmenisin.
+      promptText = `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru çözen uzman bir öğretmenisin.
 Görseldeki soruyu incele ve son derece anlaşılır, adım adım bir çözüm sun.
 
 ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, selamlama ya da sohbet cümlesi yazma. Doğrudan 1. Konu Özeti veya çözüm adımları ile başla.
@@ -730,20 +736,19 @@ ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, 
 
 ÖNEMLİ MATEMATİKSEL BİÇİMLENDİRME KURALLARI:
 - KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
-- Matematiksel ve geometrik ifadeleri herkesin kolayca okuyabileceği, normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`
-      };
-
-      contents = [imagePart, textPart];
+- Matematiksel ve geometrik ifadeleri herkesin kolayca okuyabileceği, normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`;
     }
 
-    const targetModel = featureModelConfig['SOLVE_QUESTION'] || 'gemini-3.1-flash-lite';
-    const { response, modelUsed } = await generateContentWithFallback(ai, {
-      model: targetModel,
-      contents
+    const targetModel = featureModelConfig['SOLVE_QUESTION'] || 'gemini-3.5-flash-lite';
+    const unifiedResult = await executeAiUnifiedRequest({
+      prompt: promptText,
+      imagePart: imagePart || undefined,
+      imageUrl: (imageUrl || '').startsWith('data:image') || (imageUrl || '').startsWith('http') ? imageUrl : undefined,
+      featureKey: 'SOLVE_QUESTION',
+      modelOverride: targetModel
     });
 
-    const responseText = extractResponseText(response);
-
+    const responseText = unifiedResult.text;
     const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const promptSummary = solutionText || existingAnalysis || `Hata Defteri Soru Görsel Çözüm Analizi (${subject || ''} - ${topicName || ''})`;
@@ -751,9 +756,10 @@ ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, 
       featureKey: 'SOLVE_QUESTION',
       featureName: 'Hata Defteri Soru Çözümü',
       category: 'QUESTION_ANALYSIS',
-      modelUsed,
-      promptTokens: response.usageMetadata?.promptTokenCount || 2000,
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      provider: unifiedResult.providerUsed,
+      modelUsed: unifiedResult.modelUsed,
+      promptTokens: unifiedResult.promptTokens || 2000,
+      candidatesTokens: unifiedResult.candidatesTokens || Math.ceil(responseText.length / 4),
       promptText: promptSummary,
       responseText,
       userId,
@@ -767,16 +773,15 @@ ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, 
       aiUsage: usageRecord
     });
   } catch (err: any) {
-    console.error('Gemini question solver error:', err);
+    console.error('Unified question solver error:', err);
     res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay zeka soru çözümü üretilemedi.') });
   }
 });
 
 router.post('/similar-questions', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = getEffectiveGeminiApiKey();
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
+  if (!hasAnyAiApiKey()) {
+    return res.status(400).json({ error: 'Yapay zeka API anahtarı tanımlı değil.' });
   }
 
   const { imageUrl, solutionText, existingAnalysis, subject, topicName } = req.body;
@@ -785,14 +790,11 @@ router.post('/similar-questions', async (req, res) => {
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
-
-    let contents: any[] = [];
     const imagePart = imageUrl ? await resolveImagePart(imageUrl) : null;
+    let promptText = '';
 
     if (solutionText || existingAnalysis) {
-      const textPart = {
-        text: `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru üreten uzman bir öğretmenisin.
+      promptText = `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru üreten uzman bir öğretmenisin.
 Öğrencinin daha önce çözülmüş/analiz edilmiş sorusu aşağıdaki gibidir:
 ---
 Ders: ${subject || ''}
@@ -802,73 +804,48 @@ ${solutionText || existingAnalysis}
 ---
 Yapay zeka hafızandaki bu soruya ve konusuna (${subject} - ${topicName}) benzer tarzda, öğrencinin konuyu pekiştirmesini ve mantığını kavramasını sağlayacak SADECE 1 (BİR) tane kaliteli, yeni benzer soru üret.
 
-Kesinlikle selamlaşma, "İşte senin için soru", "Başarılar dilerim" gibi hiçbir konuşma cümlesi ekleme. Direkt soruyu, çözümünü ve doğru cevabını JSON alanlarında doldur.
+Yanıtını YALNIZCA geçerli bir JSON objesi olarak dön:
+{
+  "question": "Soru metni ve A, B, C, D, E şıkları",
+  "solution": "Adım adım detaylı Türkçe çözüm",
+  "correctAnswer": "Doğru seçenek (örn: C seçeneğidir)"
+}
 
 ÖNEMLİ MATEMATİKSEL BİÇİMLENDİRME KURALLARI:
 - KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
-- Matematiksel ve geometrik ifadeleri herkesin kolayca okuyabileceği, normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`
-      };
-      contents = imagePart ? [imagePart, textPart] : [textPart];
+- Matematiksel ve geometrik ifadeleri herkesin kolayca okuyabileceği, normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`;
     } else {
-      if (!imagePart) {
+      if (!imagePart && !imageUrl) {
         return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
       }
 
-      const textPart = {
-        text: `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru üreten uzman bir öğretmenisin.
+      promptText = `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru üreten uzman bir öğretmenisin.
 Görseldeki soruyu ve konuyu (${subject} - ${topicName}) incele.
 Bu soruya benzer tarzda, öğrencinin konuyu pekiştirmesini ve mantığını kavramasını sağlayacak SADECE 1 (BİR) tane kaliteli, yeni benzer soru üret.
 
-Kesinlikle selamlaşma, "İşte senin için soru", "Başarılar dilerim" gibi hiçbir konuşma cümlesi ekleme. Direkt soruyu, çözümünü ve doğru cevabını JSON alanlarında doldur.
+Yanıtını YALNIZCA geçerli bir JSON objesi olarak dön:
+{
+  "question": "Soru metni ve A, B, C, D, E şıkları",
+  "solution": "Adım adım detaylı Türkçe çözüm",
+  "correctAnswer": "Doğru seçenek (örn: C seçeneğidir)"
+}
 
 ÖNEMLİ MATEMATİKSEL BİÇİMLENDİRME KURALLARI:
 - KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
-- Matematiksel ve geometrik ifadeleri herkesin kolayca okuyabileceği, normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`
-      };
-
-      contents = [imagePart, textPart];
+- Matematiksel ve geometrik ifadeleri herkesin kolayca okuyabileceği, normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`;
     }
 
-    const targetModel = featureModelConfig['SIMILAR_QUESTION'] || 'gemini-3.1-flash-lite';
-    const { response, modelUsed } = await generateContentWithFallback(ai, {
-      model: targetModel,
-      contents,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: 'OBJECT',
-          properties: {
-            question: {
-              type: 'STRING',
-              description: 'Görseldeki veya önceki metindeki sorunun konu ve kazanımına uygun, Türkiye YKS (TYT/AYT) müfredatına tam uyumlu 1 adet özgün yeni benzer soru metni ve şıkları (A, B, C, D, E).',
-            },
-            solution: {
-              type: 'STRING',
-              description: 'Sorunun adım adım, çok detaylı Türkçe çözümü.',
-            },
-            correctAnswer: {
-              type: 'STRING',
-              description: 'Sorunun doğru seçeneği/cevabı (örn. C seçeneğidir).',
-            }
-          },
-          required: ['question', 'solution', 'correctAnswer']
-        }
-      }
+    const targetModel = featureModelConfig['SIMILAR_QUESTION'] || 'gemini-3.5-flash-lite';
+    const unifiedResult = await executeAiUnifiedRequest({
+      prompt: promptText,
+      imagePart: imagePart || undefined,
+      imageUrl: (imageUrl || '').startsWith('data:image') || (imageUrl || '').startsWith('http') ? imageUrl : undefined,
+      requireJson: true,
+      featureKey: 'SIMILAR_QUESTION',
+      modelOverride: targetModel
     });
 
-    let similarQuestionsData = null;
-    const responseText = extractResponseText(response);
-    try {
-      similarQuestionsData = JSON.parse(responseText);
-    } catch (parseErr) {
-      console.error('Failed to parse Gemini JSON output:', responseText);
-      similarQuestionsData = {
-        question: responseText || 'Benzer soru üretilemedi.',
-        solution: 'Çözüm oluşturulamadı.',
-        correctAnswer: ''
-      };
-    }
-
+    const parsedData = cleanAndParseJson(unifiedResult.text);
     const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const promptSummary = solutionText || existingAnalysis || `Benzer Soru Üretimi Promptu (${subject || ''} - ${topicName || ''})`;
@@ -876,11 +853,12 @@ Kesinlikle selamlaşma, "İşte senin için soru", "Başarılar dilerim" gibi hi
       featureKey: 'SIMILAR_QUESTION',
       featureName: 'Benzer Soru Üretimi',
       category: 'QUESTION_ANALYSIS',
-      modelUsed,
-      promptTokens: response.usageMetadata?.promptTokenCount || 1800,
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      provider: unifiedResult.providerUsed,
+      modelUsed: unifiedResult.modelUsed,
+      promptTokens: unifiedResult.promptTokens || 1800,
+      candidatesTokens: unifiedResult.candidatesTokens || Math.ceil(unifiedResult.text.length / 4),
       promptText: promptSummary,
-      responseText,
+      responseText: unifiedResult.text,
       userId,
       userName,
       userRole
@@ -888,20 +866,19 @@ Kesinlikle selamlaşma, "İşte senin için soru", "Başarılar dilerim" gibi hi
 
     res.json({
       success: true,
-      similarQuestions: similarQuestionsData,
+      similarQuestions: parsedData,
       aiUsage: usageRecord
     });
   } catch (err: any) {
-    console.error('Gemini similar questions generator error:', err);
+    console.error('Unified similar questions error:', err);
     res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay zeka benzer sorular üretemedi.') });
   }
 });
 
 router.post('/analyze-question-details', async (req, res) => {
   if (!isAiEnabledOrRespond(res)) return;
-  const apiKey = getEffectiveGeminiApiKey();
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY sunucuda tanımlı değil.' });
+  if (!hasAnyAiApiKey()) {
+    return res.status(400).json({ error: 'Yapay zeka API anahtarı tanımlı değil.' });
   }
 
   const { imageUrl, solutionText, existingAnalysis, subject, topicName } = req.body;
@@ -910,14 +887,11 @@ router.post('/analyze-question-details', async (req, res) => {
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: (apiKey || '').trim() });
-
-    let contents: any[] = [];
     const imagePart = imageUrl ? await resolveImagePart(imageUrl) : null;
+    let promptText = '';
 
     if (solutionText || existingAnalysis) {
-      const textPart = {
-        text: `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden uzman bir öğretmen ve soru analistisin.
+      promptText = `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden uzman bir öğretmen ve soru analistisin.
 Öğrencinin sorusuna ait önceden üretilmiş çözüm/metin verisi aşağıdadır:
 ---
 Ders: ${subject || ''}
@@ -950,16 +924,13 @@ BİÇİMLENDİRME:
 ÖNEMLİ KURALLAR:
 - Çeldirici Analizi Kuralı: Soruda şıklar (A, B, C, D, E) varsa TÜM şıkların ayrı ayrı çeldirici analizini yap. Eğer soruda şık yoksa "Olası Hatalı Yaklaşımlar / Hatalı Cevaplar" analizi yap.
 - KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
-- Tablonun Markdown sözdizimini bozacak karakterler kullanmaktan kaçın.`
-      };
-      contents = imagePart ? [imagePart, textPart] : [textPart];
+- Tablonun Markdown sözdizimini bozacak karakterler kullanmaktan kaçın.`;
     } else {
-      if (!imagePart) {
+      if (!imagePart && !imageUrl) {
         return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
       }
 
-      const textPart = {
-        text: `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden uzman bir öğretmen ve soru analistiysen.
+      promptText = `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden uzman bir öğretmen ve soru analistiysen.
 Görseldeki soruyu, dersi (${subject}) ve konuyu (${topicName}) incele.
 
 Lütfen bu soruya dair detaylı bir analiz yap. Cevabını KESİNLİKLE ama KESİNLİKLE aşağıdaki Markdown tablo formatında döndür. Tablonun dışına hiçbir ekstra selamlaşma, açıklama veya yorum ekleme. Direkt tabloyu başlat ve bitir.
@@ -987,20 +958,19 @@ BİÇİMLENDİRME:
 ÖNEMLİ KURALLAR:
 - Çeldirici Analizi Kuralı: Soruda şıklar (A, B, C, D, E) varsa TÜM şıkların ayrı ayrı çeldirici analizini yap. Eğer soruda şık yoksa "Olası Hatalı Yaklaşımlar / Hatalı Cevaplar" analizi yap.
 - KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
-- Tablonun Markdown sözdizimini bozacak karakterler kullanmaktan kaçın.`
-      };
-
-      contents = [imagePart, textPart];
+- Tablonun Markdown sözdizimini bozacak karakterler kullanmaktan kaçın.`;
     }
 
-    const targetModel = featureModelConfig['QUESTION_ANALYSIS'] || 'gemini-3.1-flash-lite';
-    const { response, modelUsed } = await generateContentWithFallback(ai, {
-      model: targetModel,
-      contents
+    const targetModel = featureModelConfig['QUESTION_ANALYSIS'] || 'gemini-3.5-flash-lite';
+    const unifiedResult = await executeAiUnifiedRequest({
+      prompt: promptText,
+      imagePart: imagePart || undefined,
+      imageUrl: (imageUrl || '').startsWith('data:image') || (imageUrl || '').startsWith('http') ? imageUrl : undefined,
+      featureKey: 'QUESTION_ANALYSIS',
+      modelOverride: targetModel
     });
 
-    const responseText = extractResponseText(response);
-
+    const responseText = unifiedResult.text;
     const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const promptSummary = solutionText || existingAnalysis || `Detaylı Soru & Çeldirici Analizi Promptu (${subject || ''} - ${topicName || ''})`;
@@ -1008,9 +978,10 @@ BİÇİMLENDİRME:
       featureKey: 'QUESTION_ANALYSIS',
       featureName: 'Detaylı Soru & Çeldirici Analizi',
       category: 'QUESTION_ANALYSIS',
-      modelUsed,
-      promptTokens: response.usageMetadata?.promptTokenCount || 2100,
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      provider: unifiedResult.providerUsed,
+      modelUsed: unifiedResult.modelUsed,
+      promptTokens: unifiedResult.promptTokens || 2100,
+      candidatesTokens: unifiedResult.candidatesTokens || Math.ceil(responseText.length / 4),
       promptText: promptSummary,
       responseText,
       userId,
@@ -1024,7 +995,7 @@ BİÇİMLENDİRME:
       aiUsage: usageRecord
     });
   } catch (err: any) {
-    console.error('Gemini question analysis error:', err);
+    console.error('Unified question analysis error:', err);
     res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay zeka soru analizi üretilemedi.') });
   }
 });
@@ -1552,27 +1523,27 @@ Yanıtın YALNIZCA geçerli bir JSON objesi olmalıdır:
 }
 `;
 
-    const targetModel = featureModelConfig['AI_COACH_STUDENT'] || 'gemini-3.1-flash-lite';
-    const { response, modelUsed } = await generateContentWithFallback(ai, {
-      model: targetModel,
-      contents: prompt,
-      config: { responseMimeType: 'application/json' }
+    const targetModel = featureModelConfig['AI_COACH_STUDENT'] || 'gemini-3.5-flash-lite';
+    const unifiedResult = await executeAiUnifiedRequest({
+      prompt,
+      requireJson: true,
+      featureKey: 'STUDY_TASK_SUGGEST',
+      modelOverride: targetModel
     });
 
-    const responseText = extractResponseText(response);
-    const parsedData = JSON.parse(responseText || '{}');
-
+    const parsedData = cleanAndParseJson(unifiedResult.text);
     const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const usageRecord = recordApiUsage({
       featureKey: 'STUDY_TASK_SUGGEST',
       featureName: 'Çalışma Planı Yapay Zeka Görev Önerisi',
       category: 'AI_COACH',
-      modelUsed,
-      promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil(responseText.length / 4),
+      provider: unifiedResult.providerUsed,
+      modelUsed: unifiedResult.modelUsed,
+      promptTokens: unifiedResult.promptTokens || Math.ceil(prompt.length / 4),
+      candidatesTokens: unifiedResult.candidatesTokens || Math.ceil(unifiedResult.text.length / 4),
       promptText: prompt,
-      responseText,
+      responseText: unifiedResult.text,
       userId,
       userName,
       userRole
@@ -1584,7 +1555,7 @@ Yanıtın YALNIZCA geçerli bir JSON objesi olmalıdır:
       aiUsage: usageRecord
     });
   } catch (err: any) {
-    console.error('Gemini study planner error:', err);
+    console.error('Unified study planner error:', err);
     res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay zeka görev önerisi üretilemedi.') });
   }
 });
@@ -1598,16 +1569,14 @@ router.post('/parse-pdf-exam-reports', async (req, res) => {
     return res.status(400).json({ error: 'Ayrıştırılacak sayfa metinleri bulunamadı.' });
   }
 
-  const effectiveApiKey = getEffectiveGeminiApiKey();
-  if (!effectiveApiKey) {
+  if (!hasAnyAiApiKey()) {
     return res.status(400).json({
-      error: 'Google Gemini API Anahtarı eksik. Lütfen Sistem Yönetimi > Yapay Zeka sayfasından anahtarınızı giriniz.'
+      error: 'Yapay Zeka API Anahtarı eksik. Lütfen Sistem Yönetimi > Yapay Zeka sayfasından en az bir API anahtarı giriniz.'
     });
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: effectiveApiKey });
-    const targetModel = featureModelConfig['PDF_REPORT_PARSE'] || 'gemini-3.1-flash-lite';
+    const targetModel = featureModelConfig['PDF_REPORT_PARSE'] || 'gemini-3.5-flash-lite';
 
     const prompt = `Sen Türkiye YKS (TYT ve AYT) sınav sonuç belgelerini (karne) ayrıştıran uzman bir veri analistisin.
 Sana verilen metinler, optik/yayın evlerinin (ÜçDörtBeş, Ulti, Hız ve Renk, Özdebir, 3D, Limit, vb.) karne sayfalarından çıkarılmıştır.
@@ -1720,59 +1689,27 @@ ${pagesText.map((p: any, idx: number) => `--- SAYFA ${p.pageIndex || (idx + 1)} 
 }
 `;
 
-    const { response, modelUsed } = await generateContentWithFallback(ai, {
-      model: targetModel,
-      contents: prompt,
-      config: { 
-        responseMimeType: 'application/json',
-        maxOutputTokens: 8192
-      }
+    const unifiedResult = await executeAiUnifiedRequest({
+      prompt,
+      requireJson: true,
+      featureKey: 'PDF_REPORT_PARSE',
+      modelOverride: targetModel,
+      maxTokens: 8192
     });
 
-    const responseText = extractResponseText(response);
-    let parsedData: any = {};
-    try {
-      let clean = (responseText || '').trim();
-      if (clean.startsWith('```json')) clean = clean.replace(/^```json\s*/, '').replace(/```\s*$/, '');
-      else if (clean.startsWith('```')) clean = clean.replace(/^```\s*/, '').replace(/```\s*$/, '');
-      parsedData = JSON.parse(clean.trim() || '{}');
-    } catch (parseErr: any) {
-      console.warn('Initial JSON parse warning for PDF reports, attempting recovery...', parseErr);
-      try {
-        let repaired = (responseText || '').trim();
-        if (repaired.startsWith('```json')) repaired = repaired.replace(/^```json\s*/, '').replace(/```\s*$/, '');
-        else if (repaired.startsWith('```')) repaired = repaired.replace(/^```\s*/, '').replace(/```\s*$/, '');
-        repaired = repaired.trim();
-
-        // Close unclosed quote
-        const quoteCount = (repaired.match(/(?<!\\)"/g) || []).length;
-        if (quoteCount % 2 !== 0) repaired += '"';
-
-        const openBraces = (repaired.match(/\{/g) || []).length;
-        const closeBraces = (repaired.match(/\}/g) || []).length;
-        const openBrackets = (repaired.match(/\[/g) || []).length;
-        const closeBrackets = (repaired.match(/\]/g) || []).length;
-
-        for (let i = 0; i < (openBrackets - closeBrackets); i++) repaired += ']';
-        for (let i = 0; i < (openBraces - closeBraces); i++) repaired += '}';
-
-        parsedData = JSON.parse(repaired);
-      } catch (recoveryErr) {
-        throw new Error('Yapay zeka yanıtı geçerli JSON formatında tamamlanamadı.');
-      }
-    }
-
+    const parsedData = cleanAndParseJson(unifiedResult.text);
     const { userName, userRole, userId } = resolveUserInfo(req.body);
 
     const usageRecord = recordApiUsage({
       featureKey: 'PDF_REPORT_PARSE',
       featureName: 'PDF Sınav Sonuç Belgesi Ayrıştırma',
       category: 'QUESTION_ANALYSIS',
-      modelUsed,
-      promptTokens: response.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4),
-      candidatesTokens: response.usageMetadata?.candidatesTokenCount || Math.ceil((responseText || '').length / 4),
+      provider: unifiedResult.providerUsed,
+      modelUsed: unifiedResult.modelUsed,
+      promptTokens: unifiedResult.promptTokens || Math.ceil(prompt.length / 4),
+      candidatesTokens: unifiedResult.candidatesTokens || Math.ceil((unifiedResult.text || '').length / 4),
       promptText: prompt,
-      responseText,
+      responseText: unifiedResult.text,
       userId,
       userName,
       userRole
@@ -1784,7 +1721,7 @@ ${pagesText.map((p: any, idx: number) => `--- SAYFA ${p.pageIndex || (idx + 1)} 
       aiUsage: usageRecord
     });
   } catch (err: any) {
-    console.error('PDF report parse error:', err);
+    console.error('Unified PDF report parse error:', err);
     res.status(500).json({ error: formatGeminiErrorMessage(err, 'PDF sınav sonuç belgesi ayrıştırılırken hata oluştu.') });
   }
 });

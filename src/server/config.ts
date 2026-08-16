@@ -91,6 +91,8 @@ export interface ApiUsageRecord {
   featureKey: string;
   featureName: string;
   category: 'AI_COACH' | 'QUESTION_ANALYSIS';
+  provider?: 'GEMINI' | 'GROQ' | 'OPENROUTER' | string;
+  isFreeTier?: boolean;
   modelUsed: string;
   promptTokens: number;
   candidatesTokens: number;
@@ -197,6 +199,8 @@ export function recordApiUsage(params: {
   featureKey: string;
   featureName: string;
   category: 'AI_COACH' | 'QUESTION_ANALYSIS';
+  provider?: 'GEMINI' | 'GROQ' | 'OPENROUTER' | string;
+  isFreeTier?: boolean;
   modelUsed: string;
   promptTokens: number;
   candidatesTokens: number;
@@ -206,12 +210,36 @@ export function recordApiUsage(params: {
   userName?: string;
   userRole?: string;
 }) {
-  const model = params.modelUsed.toLowerCase();
+  const model = (params.modelUsed || '').toLowerCase();
+  
+  // Auto-detect provider if not explicitly passed
+  let provider = (params.provider || '').toUpperCase();
+  if (!provider) {
+    if (model.includes('llama') || model.includes('mixtral') || model.includes('gemma')) {
+      provider = 'GROQ';
+    } else if (model.includes('openrouter') || model.includes('deepseek') || model.includes('qwen') || model.includes('mistral') || model.includes('phi-') || model.includes('/')) {
+      provider = 'OPENROUTER';
+    } else {
+      provider = 'GEMINI';
+    }
+  }
+
+  // Check if this is a zero-cost free-tier query (Groq, OpenRouter :free, or explicit free tier)
+  const isFree = Boolean(
+    params.isFreeTier ||
+    provider === 'GROQ' ||
+    provider === 'OPENROUTER' ||
+    model.includes(':free') ||
+    model.includes('/free')
+  );
 
   let inputRate = 5.00 / 1000000;
   let outputRate = 21.00 / 1000000;
 
-  if (model.includes('gemini-3.1-pro') || model.includes('gemini-3-pro')) {
+  if (isFree) {
+    inputRate = 0;
+    outputRate = 0;
+  } else if (model.includes('gemini-3.1-pro') || model.includes('gemini-3-pro')) {
     inputRate = 7.00 / 1000000;
     outputRate = 21.00 / 1000000;
   } else if (model.includes('gemini-2.5-pro')) {
@@ -234,9 +262,9 @@ export function recordApiUsage(params: {
     outputRate = 21.00 / 1000000;
   }
 
-  const estimatedCostUSD = (params.promptTokens * inputRate) + (params.candidatesTokens * outputRate);
+  const estimatedCostUSD = isFree ? 0 : (params.promptTokens * inputRate) + (params.candidatesTokens * outputRate);
   const BILLED_USD_TO_TRY_RATE = 45.00;
-  const estimatedCostTRY = estimatedCostUSD * BILLED_USD_TO_TRY_RATE;
+  const estimatedCostTRY = isFree ? 0 : estimatedCostUSD * BILLED_USD_TO_TRY_RATE;
 
   const record: ApiUsageRecord = {
     id: `use-log-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -244,6 +272,8 @@ export function recordApiUsage(params: {
     featureKey: params.featureKey,
     featureName: params.featureName,
     category: params.category,
+    provider,
+    isFreeTier: isFree,
     modelUsed: params.modelUsed,
     promptTokens: params.promptTokens,
     candidatesTokens: params.candidatesTokens,

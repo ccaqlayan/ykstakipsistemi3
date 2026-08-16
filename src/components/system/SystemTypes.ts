@@ -63,6 +63,8 @@ export interface ApiUsageLog {
   featureKey: string;
   featureName: string;
   category: 'AI_COACH' | 'QUESTION_ANALYSIS';
+  provider?: 'GEMINI' | 'GROQ' | 'OPENROUTER' | string;
+  isFreeTier?: boolean;
   modelUsed: string;
   promptTokens: number;
   candidatesTokens: number;
