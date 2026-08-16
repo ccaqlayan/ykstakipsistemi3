@@ -65,7 +65,8 @@ import { RepetitionAlertModal } from './branch/RepetitionAlertModal';
 import { 
   getDueRepetitionQuestions, 
   calculateNextReviewDate, 
-  getUserRepetitionIntervals 
+  getUserRepetitionIntervals,
+  getTodayDateString 
 } from '../services/spacedRepetition';
 
 const ERROR_REASON_COLORS: Record<string, string> = {
@@ -1461,11 +1462,12 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       inferredExamType = examType;
     }
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getTodayDateString();
+    const intervals = getUserRepetitionIntervals();
 
     if (editingError) {
       const isAddingPhotoNow = !editingError.imageUrl && !!errorImageUrl;
-      const nextReviewDate = editingError.nextReviewDate || (isAddingPhotoNow ? calculateNextReviewDate(todayStr, 0, getUserRepetitionIntervals()) : undefined);
+      const nextReviewDate = editingError.nextReviewDate || (errorImageUrl ? calculateNextReviewDate(todayStr, editingError.repetitionStage ?? 0, intervals) : undefined);
 
       onUpdateTopicError({
         ...editingError,
@@ -1500,7 +1502,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         solutionNotes,
         correctOption: correctOption.toUpperCase().trim() || undefined,
         repetitionStage: 0,
-        nextReviewDate: errorImageUrl ? calculateNextReviewDate(todayStr, 0, getUserRepetitionIntervals()) : undefined,
+        nextReviewDate: errorImageUrl ? calculateNextReviewDate(todayStr, 0, intervals) : undefined,
         aiFeedback,
         imageUrl: errorImageUrl || undefined
       });

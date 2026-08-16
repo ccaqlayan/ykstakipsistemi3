@@ -25,7 +25,14 @@ import {
   Camera
 } from 'lucide-react';
 import { TopicErrorItem, BranchExam, ResourceItem, GeneralMockExam, UserAccount } from '../../types';
-import { getDueRepetitionQuestions, isQuestionDue, getUserRepetitionIntervals } from '../../services/spacedRepetition';
+import { 
+  getDueRepetitionQuestions, 
+  isQuestionDue, 
+  getUserRepetitionIntervals,
+  getTodayDateString,
+  calculateNextReviewDate,
+  addDaysToDate
+} from '../../services/spacedRepetition';
 
 interface BranchErrorsTabProps {
   topicErrors: TopicErrorItem[];
@@ -654,8 +661,11 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                       {/* Aralıklı Tekrar Durum Rozeti (Yalnızca Fotoğraflı Sorularda) */}
                       {item.imageUrl && (() => {
                         const intervals = getUserRepetitionIntervals();
-                        const isDue = isQuestionDue(item, intervals);
+                        const todayStr = getTodayDateString();
+                        const isDue = isQuestionDue(item, intervals, todayStr);
                         const stage = item.repetitionStage ?? 0;
+                        const tomorrowStr = addDaysToDate(todayStr, 1);
+
                         if (isDue) {
                           return (
                             <span className="text-[10px] px-2 py-0.5 bg-purple-500/25 text-purple-300 border border-purple-500/50 rounded-lg font-bold flex items-center space-x-1 animate-pulse">
@@ -670,13 +680,24 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                             </span>
                           );
                         } else if (stage > 0) {
+                          const nextReview = item.nextReviewDate || calculateNextReviewDate(item.lastReviewDate || todayStr, stage, intervals);
+                          const isTomorrow = nextReview === tomorrowStr;
                           return (
                             <span className="text-[10px] px-2 py-0.5 bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 rounded-lg font-bold flex items-center space-x-1">
-                              <span>🔁 {stage}. Tekrar Yapıldı {item.lastReviewResult === 'CORRECT' ? '(✅)' : '(❌)'}</span>
+                              <span>🔁 {stage}. Tekrar Yapıldı {item.lastReviewResult === 'CORRECT' ? '(✅)' : '(❌)'} • {isTomorrow ? 'Yarın' : nextReview}</span>
+                            </span>
+                          );
+                        } else {
+                          // Henüz 1. tekrar yapılmadı (Beklemede)
+                          const nextReview = item.nextReviewDate || calculateNextReviewDate(item.date || todayStr, 0, intervals);
+                          const isTomorrow = nextReview === tomorrowStr;
+                          return (
+                            <span className="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 rounded-lg font-semibold flex items-center space-x-1" title={`1. Tekrar Planı: ${nextReview}`}>
+                              <Clock className="w-3 h-3 text-slate-500" />
+                              <span>1. Tekrar: {isTomorrow ? 'Yarın' : nextReview}</span>
                             </span>
                           );
                         }
-                        return null;
                       })()}
                     </div>
                     <h3 className="text-base font-extrabold text-white leading-snug tracking-tight">

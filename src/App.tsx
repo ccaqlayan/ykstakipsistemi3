@@ -54,6 +54,7 @@ import { BadgeDefinition, BADGE_DEFINITIONS, evaluateBadges, calculateMotivation
 import { BadgeCelebrationModal } from './components/badges/BadgeCelebrationModal';
 import { MotivationToast } from './components/motivation/MotivationToast';
 import { BadgesShowcaseModal } from './components/badges/BadgesShowcaseModal';
+import { getTodayDateString, calculateNextReviewDate, getUserRepetitionIntervals } from './services/spacedRepetition';
 
 export default function App() {
   const [globalState, setGlobalState] = useState<AppGlobalState>(() => loadGlobalState());
@@ -2295,7 +2296,17 @@ export default function App() {
   };
 
   const handleAddTopicError = (err: any) => {
-    const newItem = { ...err, id: 'err-' + Date.now() };
+    const todayStr = getTodayDateString();
+    const intervals = getUserRepetitionIntervals();
+    // 1. tekrar tarihi sisteme eklendiği tarihten (bugünden) itibaren 1. aralık kadar gün sonrasıdır (örn: 1 gün sonra / yarın)
+    const nextReviewDate = err.nextReviewDate || (err.imageUrl ? calculateNextReviewDate(todayStr, err.repetitionStage ?? 0, intervals) : undefined);
+    const newItem = { 
+      ...err, 
+      id: err.id || ('err-' + Date.now()),
+      date: err.date || todayStr,
+      repetitionStage: err.repetitionStage ?? 0,
+      nextReviewDate
+    };
     const prevErrors = currentStudentData.topicErrors || [];
     updateCurrentStudentData((prev) => ({ ...prev, topicErrors: [newItem, ...(prev.topicErrors || [])] }));
 

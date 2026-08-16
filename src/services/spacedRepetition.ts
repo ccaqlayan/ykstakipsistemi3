@@ -46,32 +46,48 @@ export const getTodayDateString = (): string => {
 };
 
 /**
- * Belirtilen tarihe gün ekleyip YYYY-MM-DD olarak döner.
+ * Belirtilen tarihe gün ekleyip YYYY-MM-DD olarak döner (Saat dilimi kaymalarına karşı güvenli).
  */
 export const addDaysToDate = (baseDateStr: string, days: number): string => {
-  const d = new Date(baseDateStr);
-  if (isNaN(d.getTime())) {
-    const today = new Date();
-    today.setDate(today.getDate() + days);
-    return today.toISOString().split('T')[0];
+  if (!baseDateStr) {
+    baseDateStr = getTodayDateString();
   }
-  d.setDate(d.getDate() + days);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const dateOnly = baseDateStr.includes('T') ? baseDateStr.split('T')[0] : baseDateStr;
+  const parts = dateOnly.split('-');
+  if (parts.length === 3) {
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+      const target = new Date(y, m, d + days);
+      const year = target.getFullYear();
+      const month = String(target.getMonth() + 1).padStart(2, '0');
+      const day = String(target.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+  }
+  const now = new Date();
+  now.setDate(now.getDate() + days);
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
 /**
  * Sorunun bir sonraki tekrar tarihini hesaplar.
+ * Aşama (stage): 0 -> 1. tekrar (örnek: 1 gün sonra)
+ * Aşama (stage): 1 -> 2. tekrar (örnek: 3 gün sonra)
+ * Aşama (stage): 2 -> 3. tekrar (örnek: 7 gün sonra)
  */
 export const calculateNextReviewDate = (
   createdOrLastDate: string,
   stage: number,
   intervals: number[] = getUserRepetitionIntervals()
 ): string => {
-  const daysToAdd = intervals[stage] ?? intervals[intervals.length - 1] ?? 7;
-  return addDaysToDate(createdOrLastDate || getTodayDateString(), daysToAdd);
+  const daysToAdd = intervals[stage] ?? intervals[intervals.length - 1] ?? 1;
+  const base = createdOrLastDate || getTodayDateString();
+  return addDaysToDate(base, daysToAdd);
 };
 
 /**
@@ -97,7 +113,17 @@ export const isQuestionDue = (
   // Henüz nextReviewDate tanımlanmadıysa hata eklenme tarihine göre ilk aşama hesaplanır
   let nextDate = errorItem.nextReviewDate;
   if (!nextDate) {
-    nextDate = calculateNextReviewDate(errorItem.date, 0, intervals);
+    const baseDate = currentStage === 0 
+      ? (errorItem.date || todayStr) 
+      : (errorItem.lastReviewDate || errorItem.date || todayStr);
+    nextDate = calculateNextReviewDate(baseDate, currentStage, intervals);
+  }
+
+  // Soru sisteme eklendiği gün (stage 0 ve henüz tekrar yapılmamış) asla aynı gün tekrar zamanı geldi uyarısı vermez.
+  // 1. tekrar için en erken ertesi gün (1 gün sonra) beklenmelidir.
+  const itemDateOnly = (errorItem.date || '').split('T')[0];
+  if (currentStage === 0 && !errorItem.lastReviewDate && itemDateOnly === todayStr) {
+    return false;
   }
 
   return nextDate <= todayStr;

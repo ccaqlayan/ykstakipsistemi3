@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { TopicErrorItem, BranchExam, ResourceItem, GeneralMockExam, UserAccount, ErrorReason } from '../../types';
 import { YKS_CURRICULUM_TOPICS } from '../../data/initialData';
+import { calculateNextReviewDate, getTodayDateString, getUserRepetitionIntervals } from '../../services/spacedRepetition';
 
 const ALL_SUBJECTS = Object.keys(YKS_CURRICULUM_TOPICS);
 
@@ -305,8 +306,11 @@ export const TeacherErrorsTab: React.FC<TeacherErrorsTabProps> = ({
       const desc = `${teacherUser.name}, ${studentUser.name} öğrencisinin "${formSubject} - ${formTopicName}" hata kaydını güncelledi.`;
       onUpdateTopicError(studentUser.id, updated, desc);
     } else if (onAddTopicError) {
+      const todayStr = getTodayDateString();
+      const intervals = getUserRepetitionIntervals();
+      const nextReviewDate = formImageUrl.trim() ? calculateNextReviewDate(dateStr || todayStr, 0, intervals) : undefined;
       const newErr: Omit<TopicErrorItem, 'id'> = {
-        date: dateStr,
+        date: dateStr || todayStr,
         subject: formSubject,
         topicName: formTopicName.trim(),
         examType: formExamType,
@@ -315,7 +319,9 @@ export const TeacherErrorsTab: React.FC<TeacherErrorsTabProps> = ({
         priority: formPriority,
         solutionNotes: formSolutionNotes.trim() || undefined,
         imageUrl: formImageUrl.trim() || undefined,
-        revised: formRevised
+        revised: formRevised,
+        repetitionStage: 0,
+        nextReviewDate
       };
       const desc = `${teacherUser.name}, ${studentUser.name} öğrencisi için hata defterine yeni soru kaydetti: "${formSubject} - ${formTopicName}".`;
       onAddTopicError(studentUser.id, newErr, desc);
