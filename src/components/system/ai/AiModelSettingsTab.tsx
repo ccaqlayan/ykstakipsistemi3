@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Key, 
   ShieldCheck, 
@@ -74,6 +74,12 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
     modelSettings?.aiProviderMode || 'AUTO_FALLBACK'
   );
   const [isSavingMode, setIsSavingMode] = useState(false);
+
+  useEffect(() => {
+    if (modelSettings?.aiProviderMode) {
+      setProviderMode(modelSettings.aiProviderMode);
+    }
+  }, [modelSettings?.aiProviderMode]);
 
   const verifiedModels = [
     { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite (En Ekonomik & Hızlı)', badge: 'Önerilen (Varsayılan)' },
@@ -221,9 +227,38 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-slate-400 font-medium">Çalışma Modu:</span>
-            {isSavingMode && <span className="w-3.5 h-3.5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />}
+            {providerMode === 'AUTO_FALLBACK' && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-sm">
+                <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />
+                <span>🔄 Akıllı Otomatik Geçiş (Gemini ➔ Groq ➔ OpenRouter)</span>
+              </span>
+            )}
+            {providerMode === 'GEMINI_ONLY' && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-sm">
+                <Cpu className="w-3.5 h-3.5 text-blue-400" />
+                <span>🔷 Yalnızca Google Gemini</span>
+              </span>
+            )}
+            {providerMode === 'GROQ_ONLY' && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm">
+                <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <span>⚡ Yalnızca Groq Cloud</span>
+              </span>
+            )}
+            {providerMode === 'OPENROUTER_ONLY' && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm">
+                <Server className="w-3.5 h-3.5 text-cyan-400" />
+                <span>🌐 Yalnızca OpenRouter :free</span>
+              </span>
+            )}
+            {isSavingMode && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 font-medium">
+                <span className="w-2.5 h-2.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                <span>Kaydediliyor...</span>
+              </span>
+            )}
           </div>
         </div>
 

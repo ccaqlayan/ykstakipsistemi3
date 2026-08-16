@@ -106,11 +106,11 @@ async function callGemini(options: UnifiedAiRequestOptions): Promise<UnifiedAiRe
     config
   });
 
-  const text = response?.candidates?.[0]?.content?.parts?.[0]?.text || response?.text || '';
+  const text = cleanAiOutputText(response?.candidates?.[0]?.content?.parts?.[0]?.text || response?.text || '');
   const usage = response?.usageMetadata || {};
 
   return {
-    text: text.trim(),
+    text,
     providerUsed: 'GEMINI',
     modelUsed,
     promptTokens: usage.promptTokenCount || 0,
@@ -171,16 +171,32 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
   }
 
   const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content || '';
+  const rawText = data?.choices?.[0]?.message?.content || '';
+  const text = cleanAiOutputText(rawText);
   const usage = data?.usage || {};
 
   return {
-    text: text.trim(),
+    text,
     providerUsed: 'GROQ',
     modelUsed: model,
     promptTokens: usage.prompt_tokens || 0,
     candidatesTokens: usage.completion_tokens || 0
   };
+}
+
+/**
+ * Cleans thinking tokens, safety guard artifacts (e.g. "User Safety: safe") and markdown wrappers from model output.
+ */
+export function cleanAiOutputText(rawText: string): string {
+  if (!rawText) return '';
+  let text = rawText.trim();
+  // Strip reasoning / thinking blocks: <think>...</think>
+  text = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+  // Strip safety guard preambles like "User Safety: safe", "Assistant Safety: safe", "Safety: safe"
+  text = text.replace(/^(?:User Safety|Assistant Safety|Safety Assessment|Safety|Safety Status):\s*safe\s*/i, '').trim();
+  text = text.replace(/^(?:User|Assistant)\s*Safety:\s*safe\s*/i, '').trim();
+  text = text.replace(/^User Safety:\s*safe\s*\n+/i, '').trim();
+  return text.trim();
 }
 
 /**
@@ -195,15 +211,14 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
   const imgDataUrl = getImageDataUrl(options);
   const hasImage = Boolean(imgDataUrl);
 
-  // Use openrouter/free auto-router as primary (auto-picks best available free model)
-  // then fall back to specific free models if the auto-router fails
+  // Vision models prioritized for multimodal requests
   const candidateModels = hasImage
     ? [
         'openrouter/free',
-        'meta-llama/llama-3.2-11b-vision-instruct:free',
-        'qwen/qwen-2.5-vl-72b-instruct:free',
         'google/gemini-2.0-flash-exp:free',
-        'google/gemini-flash-1.5:free'
+        'google/gemini-flash-1.5:free',
+        'qwen/qwen-2.5-vl-72b-instruct:free',
+        'meta-llama/llama-3.2-11b-vision-instruct:free'
       ]
     : [
         'openrouter/free',
@@ -260,12 +275,18 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
       }
 
       const data = await res.json();
-      const text = data?.choices?.[0]?.message?.content || '';
+      const rawText = data?.choices?.[0]?.message?.content || '';
+      const text = cleanAiOutputText(rawText);
       const usage = data?.usage || {};
       const resolvedModel = data?.model || model;
 
+      // Validate output: If empty or only safety check returned without actual content, reject and try next model
+      if (!text || text.length < 8 || /^safe$/i.test(text) || /^user safety:\s*safe$/i.test(rawText.trim())) {
+        throw new Error(`Model ${model} geçerli bir içerik üretmedi (güvenlik kontrolü ön eki veya boş çıktı döndü).`);
+      }
+
       return {
-        text: text.trim(),
+        text,
         providerUsed: 'OPENROUTER',
         modelUsed: resolvedModel,
         promptTokens: usage.prompt_tokens || 0,
