@@ -24,10 +24,12 @@ import {
   Info,
   UserCheck,
   UserX,
-  Plus
+  Plus,
+  GraduationCap
 } from 'lucide-react';
 import { UserAccount, YKSDataState, InstitutionalMockExam, InstitutionalSubjectDetail, ParsedStudentRow } from '../../types';
 import { extractTextFromPdfFile, matchStudentToSystem } from '../../utils/pdfReportParser';
+import { MockInstitutionalDetailView } from '../mocks/MockInstitutionalDetailView';
 
 interface BulkImportPdfTabProps {
   currentUser: UserAccount;
@@ -641,9 +643,9 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
                   <th className="p-3">Numara</th>
                   <th className="p-3">Sınıf</th>
                   <th className="p-3">Sistem Eşleşmesi</th>
-                  <th className="p-3">Puanlar</th>
-                  <th className="p-3">Toplam Net</th>
-                  <th className="p-3">Konu Analizi</th>
+                  <th className="p-3">Puan & Dereceler (Snf / Kurum / Genel)</th>
+                  <th className="p-3 text-center">Toplam Net</th>
+                  <th className="p-3 text-right">Karne & Önizleme</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -730,36 +732,61 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
                           </div>
                         </td>
 
-                        {/* Scores */}
-                        <td className="p-3 whitespace-nowrap font-mono text-[11px]">
+                        {/* Scores & Ranks */}
+                        <td className="p-3 font-mono text-[11px]">
                           {row.tytScore ? (
-                            <div>
-                              <span className="text-indigo-400 font-bold">TYT: </span>
-                              <span className="text-white">{row.tytScore.toFixed(2)}</span>
+                            <div className="space-y-1">
+                              <div className="flex items-center space-x-1.5">
+                                <span className="text-indigo-400 font-bold bg-indigo-500/10 px-1.5 py-0.5 rounded text-[10px]">TYT</span>
+                                <span className="text-white font-bold">{row.tytScore.toFixed(2)}</span>
+                              </div>
+                              <div className="flex items-center space-x-1 text-[10px] text-slate-400">
+                                {row.tytClassRank ? <span className="text-emerald-400 font-semibold">Snf: {row.tytClassRank}{row.tytClassTotal || row.classParticipantCount ? `/${row.tytClassTotal || row.classParticipantCount}` : ''}</span> : null}
+                                {row.tytInstitutionRank ? <span className="text-indigo-300 font-semibold">• Kurum: {row.tytInstitutionRank}{row.tytInstitutionTotal || row.institutionParticipantCount ? `/${row.tytInstitutionTotal || row.institutionParticipantCount}` : ''}</span> : null}
+                                {row.tytGeneralRank ? <span className="text-amber-300 font-semibold">• Genel: #{row.tytGeneralRank.toLocaleString('tr-TR')}</span> : null}
+                              </div>
                             </div>
                           ) : (
-                            <div className="space-y-0.5">
-                              {row.sayScore > 0 && <div><span className="text-emerald-400 font-bold">SAY: </span>{row.sayScore.toFixed(2)}</div>}
-                              {row.eaScore > 0 && <div><span className="text-amber-400 font-bold">EA: </span>{row.eaScore.toFixed(2)}</div>}
-                              {row.sozScore > 0 && <div><span className="text-purple-400 font-bold">SÖZ: </span>{row.sozScore.toFixed(2)}</div>}
+                            <div className="space-y-1">
+                              {row.sayScore > 0 && (
+                                <div className="flex items-center space-x-1.5">
+                                  <span className="text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded text-[10px]">SAY</span>
+                                  <span className="text-white font-bold">{row.sayScore.toFixed(2)}</span>
+                                  {row.sayClassRank ? <span className="text-[10px] text-emerald-400">(Snf: {row.sayClassRank})</span> : null}
+                                </div>
+                              )}
+                              {row.eaScore > 0 && (
+                                <div className="flex items-center space-x-1.5">
+                                  <span className="text-amber-400 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded text-[10px]">EA</span>
+                                  <span className="text-white font-bold">{row.eaScore.toFixed(2)}</span>
+                                  {row.eaClassRank ? <span className="text-[10px] text-amber-400">(Snf: {row.eaClassRank})</span> : null}
+                                </div>
+                              )}
+                              {row.sozScore > 0 && (
+                                <div className="flex items-center space-x-1.5">
+                                  <span className="text-purple-400 font-bold bg-purple-500/10 px-1.5 py-0.5 rounded text-[10px]">SÖZ</span>
+                                  <span className="text-white font-bold">{row.sozScore.toFixed(2)}</span>
+                                  {row.sozClassRank ? <span className="text-[10px] text-purple-400">(Snf: {row.sozClassRank})</span> : null}
+                                </div>
+                              )}
                             </div>
                           )}
                         </td>
 
                         {/* Total Net */}
-                        <td className="p-3 font-bold text-emerald-400 font-mono text-xs">
-                          {totalNet}
+                        <td className="p-3 font-bold text-emerald-400 font-mono text-xs text-center whitespace-nowrap">
+                          {totalNet} Net
                         </td>
 
-                        {/* Action: Detail View */}
-                        <td className="p-3">
+                        {/* Action: Karneyi Görüntüle */}
+                        <td className="p-3 text-right whitespace-nowrap">
                           <button
                             type="button"
                             onClick={() => setSelectedDetailRow(row)}
-                            className="px-2.5 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 font-bold rounded-lg border border-indigo-500/30 transition-all flex items-center gap-1 text-[11px] cursor-pointer"
+                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all flex items-center gap-1.5 text-[11px] cursor-pointer shadow-md shadow-indigo-600/30 hover:scale-[1.02] ml-auto"
                           >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>{row.subjects.length} Ders Analizi</span>
+                            <GraduationCap className="w-3.5 h-3.5" />
+                            <span>Karneyi Görüntüle</span>
                           </button>
                         </td>
                       </tr>
@@ -820,96 +847,60 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
         </div>
       )}
 
-      {/* 3. KONU VE DERS ANALİZİ DETAY MODALI */}
+      {/* 3. AUTHENTIC PDF REPORT CARD MODAL */}
       {selectedDetailRow && (
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedDetailRow(null); }}
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-6 shadow-2xl space-y-5 animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
-            
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-              <div className="flex items-center space-x-3">
-                <div className="p-3 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl text-white shadow-lg">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-black text-white">{selectedDetailRow.fileStudentName}</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    No: <span className="text-slate-200 font-bold">{selectedDetailRow.fileSchoolNumber || '-'}</span> • Sınıf: <span className="text-slate-200 font-bold">{selectedDetailRow.fileClassName || '-'}</span> • {examTitle || 'Deneme Karnesi'}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedDetailRow(null)}
-                className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Subjects & Topics Breakdown */}
-            <div className="space-y-4">
-              {selectedDetailRow.subjects.map((sub, sIdx) => (
-                <div key={sIdx} className="border border-slate-800 rounded-2xl p-4 bg-slate-950/60 space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800/60">
-                    <span className="font-extrabold text-white text-sm text-indigo-300">{sub.subjectName}</span>
-                    <div className="flex items-center space-x-3 text-xs font-mono">
-                      <span className="text-slate-400">S: <strong className="text-white">{sub.questionCount}</strong></span>
-                      <span className="text-emerald-400">D: <strong>{sub.correct}</strong></span>
-                      <span className="text-rose-400">Y: <strong>{sub.wrong}</strong></span>
-                      <span className="text-amber-400 font-bold">Net: {sub.net}</span>
-                      <span className="text-purple-400 font-bold">Başarı: %{sub.successRate}</span>
-                    </div>
-                  </div>
-
-                  {/* Topics List */}
-                  {sub.topics && sub.topics.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-[11px]">
-                        <thead>
-                          <tr className="text-slate-400 border-b border-slate-800/40">
-                            <th className="py-1.5">Konu Adı</th>
-                            <th className="py-1.5 text-center w-12">Soru</th>
-                            <th className="py-1.5 text-center w-12 text-emerald-400">D</th>
-                            <th className="py-1.5 text-center w-12 text-rose-400">Y</th>
-                            <th className="py-1.5 text-center w-12 text-slate-400">Boş</th>
-                            <th className="py-1.5 text-right w-16 text-purple-300">Başarı %</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-800/30">
-                          {sub.topics.map((top, tIdx) => (
-                            <tr key={tIdx} className="hover:bg-slate-900/30">
-                              <td className="py-1.5 text-slate-200 font-medium">{top.topicName}</td>
-                              <td className="py-1.5 text-center font-mono">{top.questionCount}</td>
-                              <td className="py-1.5 text-center font-mono text-emerald-400 font-bold">{top.correct}</td>
-                              <td className="py-1.5 text-center font-mono text-rose-400 font-bold">{top.wrong}</td>
-                              <td className="py-1.5 text-center font-mono text-slate-400">{top.empty ?? (top.questionCount - top.correct - top.wrong)}</td>
-                              <td className="py-1.5 text-right font-mono font-bold text-purple-300">%{top.successRate}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-500 italic">Bu derse ait konu kazanım detayı bulunamadı.</p>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-end pt-3 border-t border-slate-800">
-              <button
-                type="button"
-                onClick={() => setSelectedDetailRow(null)}
-                className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
-              >
-                Kapat
-              </button>
-            </div>
-
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-6xl w-full p-4 sm:p-6 shadow-2xl space-y-4 my-6">
+            <MockInstitutionalDetailView
+              selectedInstitutionalExam={{
+                id: 'preview-modal-row',
+                examTitle: examTitle || 'Deneme Sınavı',
+                examDate: examDate,
+                examType: examType,
+                studentName: selectedDetailRow.fileStudentName,
+                schoolNumber: selectedDetailRow.fileSchoolNumber,
+                className: selectedDetailRow.fileClassName,
+                createdAt: new Date().toISOString(),
+                scores: {
+                  tytScore: selectedDetailRow.tytScore,
+                  sayScore: selectedDetailRow.sayScore,
+                  eaScore: selectedDetailRow.eaScore,
+                  sozScore: selectedDetailRow.sozScore,
+                  sayClassRank: selectedDetailRow.sayClassRank,
+                  sayClassTotal: selectedDetailRow.sayClassTotal,
+                  sayInstitutionRank: selectedDetailRow.sayInstitutionRank,
+                  sayInstitutionTotal: selectedDetailRow.sayInstitutionTotal,
+                  sayGeneralRank: selectedDetailRow.sayGeneralRank,
+                  sayGeneralTotal: selectedDetailRow.sayGeneralTotal,
+                  eaClassRank: selectedDetailRow.eaClassRank,
+                  eaClassTotal: selectedDetailRow.eaClassTotal,
+                  eaInstitutionRank: selectedDetailRow.eaInstitutionRank,
+                  eaInstitutionTotal: selectedDetailRow.eaInstitutionTotal,
+                  eaGeneralRank: selectedDetailRow.eaGeneralRank,
+                  eaGeneralTotal: selectedDetailRow.eaGeneralTotal,
+                  sozClassRank: selectedDetailRow.sozClassRank,
+                  sozClassTotal: selectedDetailRow.sozClassTotal,
+                  sozInstitutionRank: selectedDetailRow.sozInstitutionRank,
+                  sozInstitutionTotal: selectedDetailRow.sozInstitutionTotal,
+                  sozGeneralRank: selectedDetailRow.sozGeneralRank,
+                  sozGeneralTotal: selectedDetailRow.sozGeneralTotal,
+                  tytClassRank: selectedDetailRow.tytClassRank,
+                  tytClassTotal: selectedDetailRow.tytClassTotal,
+                  tytInstitutionRank: selectedDetailRow.tytInstitutionRank,
+                  tytInstitutionTotal: selectedDetailRow.tytInstitutionTotal,
+                  tytGeneralRank: selectedDetailRow.tytGeneralRank,
+                  tytGeneralTotal: selectedDetailRow.tytGeneralTotal,
+                  classParticipantCount: selectedDetailRow.classParticipantCount,
+                  institutionParticipantCount: selectedDetailRow.institutionParticipantCount,
+                  generalParticipantCount: selectedDetailRow.generalParticipantCount
+                },
+                subjects: selectedDetailRow.subjects
+              }}
+              setSelectedInstitutionalExam={() => setSelectedDetailRow(null)}
+            />
           </div>
         </div>
       )}
