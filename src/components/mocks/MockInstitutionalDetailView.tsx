@@ -303,6 +303,36 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
           });
         }
       });
+
+      // ─── TYT TOPLAM ROW (Only in AYT mode after linked TYT section) ───
+      const tytTurkce = subjects.find(s => ['Türkçe', 'TYT Türkçe'].includes(s.subjectName));
+      const tytSosyal = subjects.find(s => ['TYT Sosyal', 'Sosyal'].includes(s.subjectName));
+      const tytMat = subjects.find(s => ['TYT Matematik'].includes(s.subjectName));
+      const tytFen = subjects.find(s => ['TYT Fen'].includes(s.subjectName));
+
+      const tytMainSubs = [tytTurkce, tytSosyal, tytMat, tytFen].filter(Boolean) as InstitutionalSubjectDetail[];
+      const tytQCount = tytMainSubs.reduce((sum, s) => sum + (s.questionCount || 0), 0) || 120;
+      const tytCorr = tytMainSubs.reduce((sum, s) => sum + (s.correct || 0), 0);
+      const tytWrg = tytMainSubs.reduce((sum, s) => sum + (s.wrong || 0), 0);
+      const tytNet = Math.round(tytMainSubs.reduce((sum, s) => sum + (s.net || 0), 0) * 100) / 100;
+      const tytSuccessRate = tytQCount > 0 ? Math.round((Math.max(0, tytNet) / tytQCount) * 100) : 0;
+
+      tableRows.push({
+        item: {
+          subjectName: 'TYT Toplam',
+          questionCount: tytQCount,
+          correct: tytCorr,
+          wrong: tytWrg,
+          net: tytNet,
+          successRate: tytSuccessRate,
+          classAvgNet: undefined,
+          institutionAvgNet: undefined,
+          generalAvgNet: undefined,
+          topics: []
+        },
+        isSubtotal: true,
+        isLinkedTyt: true
+      });
     }
 
     // ─── 2. AYT MAIN ROWS ───
@@ -367,9 +397,9 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
       if (sos2Sub && sos2Sub.questionCount > 0) tableRows.push({ item: sos2Sub, isSubtotal: true });
     }
 
-    // ─── 3. TOPLAM ROW ───
-    const totalRow = getSubjectItem('Toplam:') || getSubjectItem('Toplam') || {
-      subjectName: 'Toplam:',
+    // ─── 3. AYT TOPLAM ROW ───
+    const rawTotal = getSubjectItem('Toplam:') || getSubjectItem('Toplam') || {
+      subjectName: 'AYT Toplam',
       questionCount: 286,
       correct: 151,
       wrong: 34,
@@ -380,7 +410,13 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
       generalAvgNet: 93.22,
       topics: []
     };
-    tableRows.push({ item: totalRow, isTotal: true });
+    tableRows.push({
+      item: {
+        ...rawTotal,
+        subjectName: 'AYT Toplam'
+      },
+      isTotal: true
+    });
 
   } else {
     // ─── TYT REPORT CARD STRUCTURE ───
@@ -1232,14 +1268,16 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
                         className={`transition-colors ${
                           isTotal 
                             ? 'bg-slate-200 font-black border-t-2 border-slate-800 text-slate-900' 
-                            : isSubtotal 
-                              ? 'bg-slate-100 font-bold border-t border-b border-slate-400' 
-                              : isLinkedTyt
-                                ? 'bg-white hover:bg-slate-50/50'
-                                : 'hover:bg-slate-50'
+                            : item.subjectName === 'TYT Toplam'
+                              ? 'bg-slate-200/80 font-black border-t-2 border-b-2 border-slate-600 text-slate-900'
+                              : isSubtotal 
+                                ? 'bg-slate-100 font-bold border-t border-b border-slate-400' 
+                                : isLinkedTyt
+                                  ? 'bg-white hover:bg-slate-50/50'
+                                  : 'hover:bg-slate-50'
                         }`}
                       >
-                        <td className={`p-2 border-r border-slate-800 font-sans ${isTotal || isSubtotal ? 'font-bold' : ''}`}>
+                        <td className={`p-2 border-r border-slate-800 font-sans ${isTotal || isSubtotal || item.subjectName === 'TYT Toplam' ? 'font-bold' : ''}`}>
                           {item.subjectName}
                         </td>
                         <td className="p-2 border-r border-slate-800 text-center">{item.questionCount}</td>
