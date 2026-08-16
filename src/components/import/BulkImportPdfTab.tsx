@@ -850,10 +850,28 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
       {/* 3. AUTHENTIC PDF REPORT CARD MODAL */}
       {selectedDetailRow && (
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-fade-in"
+          className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-md flex items-start justify-center p-2 sm:p-4 md:p-6 pt-20 sm:pt-24 pb-16 overflow-y-auto animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedDetailRow(null); }}
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-6xl w-full p-4 sm:p-6 shadow-2xl space-y-4 my-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-6xl w-full p-4 sm:p-6 shadow-2xl space-y-4 my-2 relative">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10 no-print">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-bold text-slate-400">PDF Karne Önizleme:</span>
+                <span className="text-xs font-black text-indigo-300">{selectedDetailRow.fileStudentName}</span>
+                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">
+                  {selectedDetailRow.fileClassName || 'Sınıf Yok'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDetailRow(null)}
+                className="p-1.5 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold border border-white/10"
+              >
+                <X className="w-4 h-4" />
+                <span>Pencereyi Kapat</span>
+              </button>
+            </div>
+
             <MockInstitutionalDetailView
               selectedInstitutionalExam={{
                 id: 'preview-modal-row',

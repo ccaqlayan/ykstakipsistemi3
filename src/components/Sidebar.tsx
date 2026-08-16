@@ -123,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'teacher_summary', label: 'Genel Özet', icon: LayoutDashboard },
     { id: 'teacher_students', label: 'Öğrenci Yönetimi & Takip', icon: Users, highlight: true },
     ...(isSchoolCounselor ? [{ id: 'teacher_teachers' as TabType, label: 'Öğretmenler & Sınıf Atamaları', icon: UserCheck, highlight: true }] : []),
-    ...(isSchoolCounselor ? [{ id: 'bulk_exam_import' as TabType, label: 'Toplu Liste Girişi', icon: FileSpreadsheet, highlight: true }] : []),
+    ...(isAdmin ? [{ id: 'bulk_exam_import' as TabType, label: 'Toplu Liste Girişi', icon: FileSpreadsheet, highlight: true }] : []),
     ...(isSchoolCounselor ? [{ id: 'institutional_mocks' as TabType, label: 'Kurumsal Deneme Takip', icon: BarChart3, highlight: true }] : []),
     { id: 'teacher_templates', label: 'Çalışma Programı Şablonları', icon: Layers },
     { id: 'past_questions', label: 'Çıkmış Sorular', icon: FileSpreadsheet, highlight: true },

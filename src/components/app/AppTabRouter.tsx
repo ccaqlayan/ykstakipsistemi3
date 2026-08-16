@@ -234,7 +234,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
       )}
 
       {/* BULK EXAM IMPORT VIEW */}
-      {activeTab === 'bulk_exam_import' && (currentUser.role === 'school_counselor' || currentUser.role === 'admin') && (
+      {activeTab === 'bulk_exam_import' && currentUser.role === 'admin' && (
         <BulkExamImportView
           currentUser={currentUser}
           users={globalState.users}

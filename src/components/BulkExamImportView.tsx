@@ -184,6 +184,20 @@ export const BulkExamImportView: React.FC<BulkExamImportViewProps> = ({
     return 'all';
   };
 
+  if (currentUser?.role !== 'admin') {
+    return (
+      <div className="max-w-xl mx-auto my-16 p-8 bg-slate-900 border border-slate-800 rounded-3xl text-center space-y-4 shadow-2xl animate-fade-in">
+        <div className="w-14 h-14 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/30">
+          <AlertTriangle className="w-7 h-7" />
+        </div>
+        <h2 className="text-lg font-bold text-white">Yönetici Yetkisi Gerekli</h2>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Toplu Excel/CSV ve Yapay Zekalı PDF sınav sonuç karnesi yükleme alanı yalnızca <strong>Yönetici (Admin)</strong> hesabına özeldir.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 text-slate-100 max-w-7xl mx-auto px-4 py-6">
 
@@ -203,9 +217,12 @@ export const BulkExamImportView: React.FC<BulkExamImportViewProps> = ({
           </div>
           <div>
             <h1 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
-              <span>Toplu Liste Girişi</span>
+              <span>Toplu Deneme & PDF Yükleme</span>
+              <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                Yönetici Özel
+              </span>
             </h1>
-            <p className="text-xs text-slate-400">Toplu Excel/CSV veya Yapay Zekalı PDF karne yükleme</p>
+            <p className="text-xs text-slate-400">Yöneticiye özel toplu Excel/CSV veya Yapay Zekalı PDF karne yükleme modülü</p>
           </div>
         </div>
 

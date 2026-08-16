@@ -367,7 +367,7 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
   };
 
   return (
-    <div className="space-y-6 pb-12 animate-fade-in">
+    <div className="space-y-6 pb-16 pt-3 sm:pt-5 animate-fade-in max-w-7xl mx-auto px-2 sm:px-4">
       {/* Print Stylesheet */}
       <style>{`
         @media print {
@@ -524,18 +524,18 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
       )}
 
       {/* Top Action Bar / Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 no-print">
+      <div className="flex flex-wrap items-center justify-between gap-3 no-print bg-slate-900/90 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-slate-800 shadow-xl">
         <div className="flex items-center space-x-2">
           <button
             type="button"
             onClick={() => setSelectedInstitutionalExam(null)}
-            className="flex items-center space-x-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded-2xl text-xs font-bold border border-slate-800 transition-all cursor-pointer shadow-sm"
+            className="flex items-center space-x-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-bold border border-slate-700 transition-all cursor-pointer shadow-sm"
           >
             <ArrowLeft className="w-4 h-4 text-indigo-400" />
             <span>Sınav Listesine Dön</span>
           </button>
           <span className="text-slate-600 text-xs">/</span>
-          <span className="text-slate-400 text-xs font-semibold truncate max-w-sm font-mono">
+          <span className="text-slate-300 text-xs font-semibold truncate max-w-sm font-mono">
             {selectedInstitutionalExam.examTitle}
           </span>
         </div>
@@ -544,7 +544,7 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
           <button
             type="button"
             onClick={handlePrint}
-            className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-2xl transition-all shadow-lg shadow-indigo-600/30 cursor-pointer"
+            className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-lg shadow-indigo-600/30 cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>Yazdır / PDF Olarak Kaydet</span>
@@ -552,7 +552,7 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
           <button
             type="button"
             onClick={() => setSelectedInstitutionalExam(null)}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold px-4 py-2 rounded-2xl transition-all cursor-pointer border border-slate-700"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer border border-slate-700"
           >
             Kapat
           </button>
