@@ -825,7 +825,14 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
                 <tbody className="divide-y divide-slate-300 font-mono text-xs">
                   {tableRows.map((row, idx) => {
                     const { item, isSubtotal, isTotal } = row;
-                    const isAboveClass = item.net >= (item.classAvgNet || 0);
+                    const hasClass = item.classAvgNet !== undefined && item.classAvgNet !== null && item.classAvgNet !== 0;
+                    const isAboveClass = hasClass && item.net >= (item.classAvgNet || 0);
+
+                    const hasInst = item.institutionAvgNet !== undefined && item.institutionAvgNet !== null && item.institutionAvgNet !== 0;
+                    const isAboveInst = hasInst && item.net >= (item.institutionAvgNet || 0);
+
+                    const hasGen = item.generalAvgNet !== undefined && item.generalAvgNet !== null && item.generalAvgNet !== 0;
+                    const isAboveGen = hasGen && item.net >= (item.generalAvgNet || 0);
 
                     return (
                       <tr 
@@ -850,19 +857,53 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
                         <td className="p-2 border-r border-slate-800 text-center font-semibold">
                           {item.successRate}
                         </td>
+
+                        {/* Sınıf Ort. */}
                         <td className="p-2 border-r border-slate-800 text-center">
-                          <span className={`inline-flex items-center space-x-0.5 ${isAboveClass ? 'text-emerald-700 font-bold' : 'text-slate-600'}`}>
-                            <span>{String(item.classAvgNet || '-').replace('.', ',')}</span>
-                            {item.classAvgNet !== undefined && (
-                              <span className="text-[10px]">{isAboveClass ? '▲' : '▼'}</span>
+                          <span className={`inline-flex items-center space-x-0.5 ${
+                            !hasClass 
+                              ? 'text-slate-600' 
+                              : isAboveClass 
+                                ? 'text-emerald-700 font-bold' 
+                                : 'text-rose-700 font-semibold'
+                          }`}>
+                            <span>{item.classAvgNet !== undefined && item.classAvgNet !== null ? String(item.classAvgNet).replace('.', ',') : '-'}</span>
+                            {hasClass && (
+                              <span className="text-[9px]">{isAboveClass ? '▲' : '▼'}</span>
                             )}
                           </span>
                         </td>
-                        <td className="p-2 border-r border-slate-800 text-center text-slate-600">
-                          {String(item.institutionAvgNet || '-').replace('.', ',')}
+
+                        {/* Kurum Ort. */}
+                        <td className="p-2 border-r border-slate-800 text-center">
+                          <span className={`inline-flex items-center space-x-0.5 ${
+                            !hasInst 
+                              ? 'text-slate-600' 
+                              : isAboveInst 
+                                ? 'text-emerald-700 font-bold' 
+                                : 'text-rose-700 font-semibold'
+                          }`}>
+                            <span>{item.institutionAvgNet !== undefined && item.institutionAvgNet !== null ? String(item.institutionAvgNet).replace('.', ',') : '-'}</span>
+                            {hasInst && (
+                              <span className="text-[9px]">{isAboveInst ? '▲' : '▼'}</span>
+                            )}
+                          </span>
                         </td>
-                        <td className="p-2 text-center text-slate-600">
-                          {String(item.generalAvgNet || '-').replace('.', ',')}
+
+                        {/* Genel Ort. */}
+                        <td className="p-2 text-center">
+                          <span className={`inline-flex items-center space-x-0.5 ${
+                            !hasGen 
+                              ? 'text-slate-600' 
+                              : isAboveGen 
+                                ? 'text-emerald-700 font-bold' 
+                                : 'text-rose-700 font-semibold'
+                          }`}>
+                            <span>{item.generalAvgNet !== undefined && item.generalAvgNet !== null ? String(item.generalAvgNet).replace('.', ',') : '-'}</span>
+                            {hasGen && (
+                              <span className="text-[9px]">{isAboveGen ? '▲' : '▼'}</span>
+                            )}
+                          </span>
                         </td>
                       </tr>
                     );
