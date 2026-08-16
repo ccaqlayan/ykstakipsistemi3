@@ -294,6 +294,89 @@ export function parseMarkdownExamReport(
       }
     }
 
+    // Extract Optical Answers and Answer Keys
+    const opticalAnswersMap: Record<string, string> = {};
+    const answerKeysMap: Record<string, string> = {};
+    let inSoruNoSection = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      if (/Soru\s*No/i.test(line)) {
+        inSoruNoSection = true;
+        continue;
+      }
+
+      if (inSoruNoSection) {
+        // Türkçe optical line
+        if (/TYT\s*Türkçe/i.test(line)) {
+          let ansCandidate = line.replace(/.*TYT\s*Türkçe\s*/i, '').trim();
+          if (!ansCandidate && lines[i + 1] && !/Cevap\s*Anahtarı/i.test(lines[i + 1])) {
+            ansCandidate = lines[i + 1].trim();
+          }
+          if (ansCandidate && !/Cevap\s*Anahtarı/i.test(ansCandidate)) {
+            opticalAnswersMap['TYT Türkçe'] = ansCandidate;
+          }
+        }
+
+        // Cevap Anahtarı
+        if (/Cevap\s*Anahtarı/i.test(line)) {
+          const keyMatch = line.match(/Cevap\s*Anahtarı\s*(?:[A-Z]\s*)?([A-Z]{10,})/i);
+          if (keyMatch && !answerKeysMap['TYT Türkçe']) {
+            answerKeysMap['TYT Türkçe'] = keyMatch[1].trim();
+          }
+        }
+
+        // Sosyal optical line
+        if (/TYT\s*Sosyal/i.test(line) || /b[A-Za-z\s]+Cevap\s*Anahtarı/i.test(line)) {
+          let textToParse = line;
+          if (/^TYT\s*Sosyal$/i.test(line) && lines[i + 1]) {
+            textToParse = lines[i + 1];
+          }
+          const m = textToParse.match(/^([a-zA-Z\s]+?)\s*Cevap\s*Anahtarı\s*(?:[A-Z]\s*)?([A-Z]+)/i);
+          if (m) {
+            opticalAnswersMap['TYT Sosyal'] = m[1].trim();
+            answerKeysMap['TYT Sosyal'] = m[2].trim();
+          }
+        }
+
+        // Matematik optical line
+        if (/TYT\s*Matematik/i.test(line) || (/Cevap\s*Anahtarı/i.test(line) && !opticalAnswersMap['TYT Matematik'] && /BCB|BBC/i.test(line))) {
+          let textToParse = line;
+          if (/^TYT\s*Matematik$/i.test(line) && lines[i + 1]) {
+            textToParse = lines[i + 1];
+          }
+          const m = textToParse.match(/^([a-zA-Z\s]+?)\s*Cevap\s*Anahtarı\s*(?:[A-Z]\s*)?([A-Z]+)/i);
+          if (m) {
+            opticalAnswersMap['TYT Matematik'] = m[1].trim();
+            answerKeysMap['TYT Matematik'] = m[2].trim();
+          }
+        }
+
+        // Fen optical line
+        if (/TYT\s*Fen/i.test(line) || (/Cevap\s*Anahtarı/i.test(line) && !opticalAnswersMap['TYT Fen'] && /BCA|ACB/i.test(line))) {
+          let textToParse = line;
+          if (/^TYT\s*Fen$/i.test(line) && lines[i + 1]) {
+            textToParse = lines[i + 1];
+          }
+          const m = textToParse.match(/^([a-zA-Z\s]+?)\s*Cevap\s*Anahtarı\s*(?:[A-Z]\s*)?([A-Z]+)/i);
+          if (m) {
+            opticalAnswersMap['TYT Fen'] = m[1].trim();
+            answerKeysMap['TYT Fen'] = m[2].trim();
+          }
+        }
+      }
+    }
+
+    // Attach optical answers and answer keys to matching subjects
+    Object.entries(opticalAnswersMap).forEach(([subjName, optAns]) => {
+      const subj = getSubject(subjName);
+      subj.opticalAnswers = optAns;
+      if (answerKeysMap[subjName]) {
+        subj.answerKey = answerKeysMap[subjName];
+      }
+    });
+
     // Match student to registered database users
     const matchResult = matchStudentToSystem(studentName, schoolNumber, className, studentUsers, studentsData);
 
@@ -337,6 +420,8 @@ export function parseMarkdownExamReport(
       classParticipantCount,
       institutionParticipantCount,
       generalParticipantCount,
+      opticalAnswers: opticalAnswersMap,
+      answerKeys: answerKeysMap,
       subjects: Array.from(subjectsMap.values())
     });
   }

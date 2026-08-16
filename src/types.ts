@@ -285,6 +285,8 @@ export interface InstitutionalSubjectDetail {
   classAvgNet?: number;
   institutionAvgNet?: number;
   generalAvgNet?: number;
+  opticalAnswers?: string; // e.g. "ADCcdACEEd aaEAddBdBEaBcdeEBCdBCBDBDCCC"
+  answerKey?: string; // e.g. "ADCAAACEECCCCCEAAEBCBECBDBCEBCEBCBDBDCCC"
   topics: InstitutionalTopicDetail[];
 }
 
@@ -300,6 +302,8 @@ export interface InstitutionalMockExam {
   studentName: string;
   schoolNumber?: string;
   className?: string;
+  opticalAnswers?: Record<string, string>; // { "TYT Türkçe": "ADCcd...", "TYT Sosyal": "bC ba...", ... }
+  answerKeys?: Record<string, string>; // { "TYT Türkçe": "ADCAA...", ... }
   scores: {
     tytScore?: number;
     tytClassRank?: number;
@@ -639,6 +643,8 @@ export interface ParsedStudentRow {
   classParticipantCount?: number;
   institutionParticipantCount?: number;
   generalParticipantCount?: number;
+  opticalAnswers?: Record<string, string>;
+  answerKeys?: Record<string, string>;
   subjects: InstitutionalSubjectDetail[];
 }
 

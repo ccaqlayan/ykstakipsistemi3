@@ -247,6 +247,8 @@ export const BulkImportMarkdownTab: React.FC<BulkImportMarkdownTabProps> = ({
           institutionParticipantCount: row.institutionParticipantCount,
           generalParticipantCount: row.generalParticipantCount,
         },
+        opticalAnswers: row.opticalAnswers,
+        answerKeys: row.answerKeys,
         subjects: row.subjects
       };
     });
@@ -773,6 +775,8 @@ export const BulkImportMarkdownTab: React.FC<BulkImportMarkdownTabProps> = ({
                   institutionParticipantCount: selectedDetailRow.institutionParticipantCount,
                   generalParticipantCount: selectedDetailRow.generalParticipantCount
                 },
+                opticalAnswers: selectedDetailRow.opticalAnswers,
+                answerKeys: selectedDetailRow.answerKeys,
                 subjects: selectedDetailRow.subjects
               }}
               setSelectedInstitutionalExam={() => setSelectedDetailRow(null)}

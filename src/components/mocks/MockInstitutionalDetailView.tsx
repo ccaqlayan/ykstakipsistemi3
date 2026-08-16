@@ -330,8 +330,84 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
     return subjects.filter(s => s.topics && s.topics.length > 0);
   }, [subjects]);
 
-  // Helper for generating illustrative optical answer bubbled indicators
-  const renderOpticalRow = (title: string, correct: number, wrong: number, count: number) => {
+  // Helper for generating illustrative or authentic optical answer bubbled indicators
+  const renderOpticalRow = (title: string, correct: number, wrong: number, count: number, optAnswers?: string, ansKey?: string) => {
+    // Look up optical answers and answer keys if not passed directly
+    const subjectItem = getSubjectItem(title);
+    const opticalStr = optAnswers || selectedInstitutionalExam?.opticalAnswers?.[title] || subjectItem?.opticalAnswers || '';
+    const keyStr = ansKey || selectedInstitutionalExam?.answerKeys?.[title] || subjectItem?.answerKey || '';
+
+    // If authentic optical sequence is available:
+    if (opticalStr && opticalStr.trim().length > 0) {
+      const bubbles: Array<{
+        questionNo: number;
+        type: 'correct' | 'wrong' | 'empty';
+        char: string;
+        correctChar: string;
+        label: string;
+      }> = [];
+
+      for (let idx = 0; idx < count; idx++) {
+        const rawCh = opticalStr[idx] || ' ';
+        const correctChar = keyStr[idx] || '';
+
+        let type: 'correct' | 'wrong' | 'empty' = 'empty';
+        let char = '-';
+        let label = `${idx + 1}. Soru: Boş${correctChar ? ` (Doğru: ${correctChar})` : ''}`;
+
+        if (rawCh >= 'A' && rawCh <= 'Z') {
+          type = 'correct';
+          char = rawCh;
+          label = `${idx + 1}. Soru: Doğru (${rawCh})`;
+        } else if (rawCh >= 'a' && rawCh <= 'z') {
+          type = 'wrong';
+          char = rawCh.toUpperCase();
+          label = `${idx + 1}. Soru: Yanlış (Verilen: ${rawCh.toUpperCase()}${correctChar ? `, Doğru: ${correctChar}` : ''})`;
+        }
+
+        bubbles.push({
+          questionNo: idx + 1,
+          type,
+          char,
+          correctChar,
+          label
+        });
+      }
+
+      const calculatedCorrect = bubbles.filter(b => b.type === 'correct').length;
+      const calculatedWrong = bubbles.filter(b => b.type === 'wrong').length;
+      const calculatedEmpty = bubbles.filter(b => b.type === 'empty').length;
+
+      return (
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[9px] font-bold text-slate-700">
+            <span className="uppercase">{title}</span>
+            <span className="font-mono text-[8px] text-slate-500">
+              {calculatedCorrect}D • {calculatedWrong}Y • {calculatedEmpty}B
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-0.5">
+            {bubbles.map((b) => (
+              <div
+                key={b.questionNo}
+                className={`w-3.5 h-3.5 rounded-[3px] text-[7.5px] font-extrabold flex items-center justify-center font-mono cursor-pointer transition-transform hover:scale-125 select-none ${
+                  b.type === 'correct'
+                    ? 'bg-emerald-600 text-white shadow-xs shadow-emerald-700/30'
+                    : b.type === 'wrong'
+                      ? 'bg-rose-600 text-white shadow-xs shadow-rose-700/30'
+                      : 'bg-slate-200 text-slate-400 border border-slate-300/50'
+                }`}
+                title={b.label}
+              >
+                {b.char}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Fallback if optical sequence not available:
     const empty = Math.max(0, count - correct - wrong);
     const items: Array<'correct' | 'wrong' | 'empty'> = [];
     
@@ -349,7 +425,7 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
           {items.map((type, idx) => (
             <div
               key={idx}
-              className={`w-2.5 h-2.5 rounded-[2px] text-[7px] font-bold flex items-center justify-center font-mono ${
+              className={`w-3 h-3 rounded-[2px] text-[7px] font-bold flex items-center justify-center font-mono ${
                 type === 'correct'
                   ? 'bg-emerald-600 text-white'
                   : type === 'wrong'
@@ -756,10 +832,22 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                {renderOpticalRow('TYT Türkçe', 25, 13, 40)}
-                {renderOpticalRow('TYT Sosyal', 11, 8, 20)}
-                {renderOpticalRow('TYT Matematik', 28, 4, 40)}
-                {renderOpticalRow('TYT Fen', 15, 4, 20)}
+                {isTyt ? (
+                  <>
+                    {renderOpticalRow('TYT Türkçe', getSubjectItem('Türkçe')?.correct || 0, getSubjectItem('Türkçe')?.wrong || 0, getSubjectItem('Türkçe')?.questionCount || 40)}
+                    {renderOpticalRow('TYT Sosyal', getSubjectItem('TYT Sosyal')?.correct || 0, getSubjectItem('TYT Sosyal')?.wrong || 0, getSubjectItem('TYT Sosyal')?.questionCount || 20)}
+                    {renderOpticalRow('TYT Matematik', getSubjectItem('TYT Matematik')?.correct || 0, getSubjectItem('TYT Matematik')?.wrong || 0, getSubjectItem('TYT Matematik')?.questionCount || 40)}
+                    {renderOpticalRow('TYT Fen', getSubjectItem('TYT Fen')?.correct || 0, getSubjectItem('TYT Fen')?.wrong || 0, getSubjectItem('TYT Fen')?.questionCount || 20)}
+                  </>
+                ) : (
+                  <>
+                    {subjects.filter(s => (s.questionCount > 0 || Boolean(selectedInstitutionalExam?.opticalAnswers?.[s.subjectName])) && !s.subjectName.includes('Toplam')).map((sub, sIdx) => (
+                      <React.Fragment key={sIdx}>
+                        {renderOpticalRow(sub.subjectName, sub.correct || 0, sub.wrong || 0, sub.questionCount || 40, sub.opticalAnswers, sub.answerKey)}
+                      </React.Fragment>
+                    ))}
+                  </>
+                )}
               </div>
             </div>
 
