@@ -217,19 +217,18 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
   // Vision models prioritized for multimodal requests, top-rated text models for text
   const candidateModels = hasImage
     ? [
-        'openrouter/free',
         'google/gemini-2.0-flash-exp:free',
+        'nvidia/nemotron-nano-12b-v2-vl:free',
         'google/gemini-flash-1.5:free',
-        'qwen/qwen-2.5-vl-72b-instruct:free',
         'meta-llama/llama-3.2-11b-vision-instruct:free'
       ]
     : [
-        'openrouter/free',
-        'meta-llama/llama-3.3-70b-instruct:free',
-        'deepseek/deepseek-chat:free',
         'google/gemini-2.0-flash-exp:free',
-        'qwen/qwen-2.5-72b-instruct:free',
-        'microsoft/phi-4-reasoning-plus:free'
+        'deepseek/deepseek-r1:free',
+        'deepseek/deepseek-chat:free',
+        'meta-llama/llama-3.1-8b-instruct:free',
+        'mistralai/mistral-small-24b-instruct-2501:free',
+        'meta-llama/llama-3.2-3b-instruct:free'
       ];
 
   const messages: any[] = [];
@@ -409,13 +408,12 @@ export async function testProviderApiKey(
     }
 
     if (provider === 'openrouter') {
-      // Use openrouter/free as primary, then specific active free models as fallback
+      // Use specific active free models
       const testModels = [
-        'openrouter/free',
-        'meta-llama/llama-3.3-70b-instruct:free',
         'google/gemini-2.0-flash-exp:free',
-        'qwen/qwen-2.5-72b-instruct:free',
-        'microsoft/phi-4-reasoning-plus:free'
+        'deepseek/deepseek-r1:free',
+        'deepseek/deepseek-chat:free',
+        'meta-llama/llama-3.1-8b-instruct:free'
       ];
 
       let lastTestErr: string = '';
