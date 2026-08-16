@@ -82,7 +82,11 @@ export const isQuestionDue = (
   intervals: number[] = getUserRepetitionIntervals(),
   todayStr: string = getTodayDateString()
 ): boolean => {
-  // Sadece fotoğrafı olan veya manuel eklenen sorular
+  // Sadece fotoğrafı olan sorular aralıklı tekrar sistemine dahil edilir
+  if (!errorItem.imageUrl || errorItem.imageUrl.trim() === '') {
+    return false;
+  }
+
   const currentStage = errorItem.repetitionStage ?? 0;
   
   // Tüm aşamalar tamamlandıysa artık "Due" değil

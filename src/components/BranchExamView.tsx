@@ -1465,6 +1465,9 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     const todayStr = new Date().toISOString().split('T')[0];
 
     if (editingError) {
+      const isAddingPhotoNow = !editingError.imageUrl && !!errorImageUrl;
+      const nextReviewDate = editingError.nextReviewDate || (isAddingPhotoNow ? calculateNextReviewDate(todayStr, 0, getUserRepetitionIntervals()) : undefined);
+
       onUpdateTopicError({
         ...editingError,
         subject: errorSubject,
@@ -1478,7 +1481,9 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         solutionNotes,
         correctOption: correctOption.toUpperCase().trim() || editingError.correctOption || undefined,
         aiFeedback: aiFeedback || editingError.aiFeedback,
-        imageUrl: errorImageUrl
+        imageUrl: errorImageUrl || undefined,
+        nextReviewDate,
+        repetitionStage: editingError.repetitionStage ?? 0
       });
       setEditingError(null);
     } else {
@@ -1496,9 +1501,9 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         solutionNotes,
         correctOption: correctOption.toUpperCase().trim() || undefined,
         repetitionStage: 0,
-        nextReviewDate: calculateNextReviewDate(todayStr, 0, getUserRepetitionIntervals()),
+        nextReviewDate: errorImageUrl ? calculateNextReviewDate(todayStr, 0, getUserRepetitionIntervals()) : undefined,
         aiFeedback,
-        imageUrl: errorImageUrl
+        imageUrl: errorImageUrl || undefined
       });
     }
 

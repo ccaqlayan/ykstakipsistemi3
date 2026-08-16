@@ -21,7 +21,8 @@ import {
   Info,
   Filter,
   Clock,
-  Play
+  Play,
+  Camera
 } from 'lucide-react';
 import { TopicErrorItem, BranchExam, ResourceItem, GeneralMockExam, UserAccount } from '../../types';
 import { getDueRepetitionQuestions, isQuestionDue, getUserRepetitionIntervals } from '../../services/spacedRepetition';
@@ -657,8 +658,8 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                         </span>
                       )}
 
-                      {/* Aralıklı Tekrar Durum Rozeti */}
-                      {(() => {
+                      {/* Aralıklı Tekrar Durum Rozeti (Yalnızca Fotoğraflı Sorularda) */}
+                      {item.imageUrl && (() => {
                         const intervals = getUserRepetitionIntervals();
                         const isDue = isQuestionDue(item, intervals);
                         const stage = item.repetitionStage ?? 0;
@@ -803,6 +804,38 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                         )}
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Soru Görseli Yoksa: Fotoğraf Ekleme & Bilgi Paneli */}
+                {!item.imageUrl && (
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-950/60 p-3.5 rounded-2xl border border-dashed border-slate-800 hover:border-indigo-500/40 transition-all">
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                        <Camera className="w-4 h-4 text-slate-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs font-bold text-slate-300 truncate">Fotoğraf Eklenmemiş</span>
+                          <span className="text-[9px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700 font-semibold shrink-0">
+                            Aralıklı Tekrar Pasif
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          Soru fotoğrafı ekleyerek bu hatayı aralıklı tekrar sistemine ve yapay zeka çözümlerine dahil edebilirsiniz.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => openAddErrorModal(item)}
+                      className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 hover:border-indigo-500/50 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm hover:scale-102 shrink-0"
+                      title="Bu soruya fotoğraf eklemek için düzenleme penceresini aç"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>+ Soru Fotoğrafı Ekle</span>
+                    </button>
                   </div>
                 )}
 
