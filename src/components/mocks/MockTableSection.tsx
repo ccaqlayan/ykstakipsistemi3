@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   GraduationCap, ArrowDown, ArrowUp, CheckCircle2, Pencil, Clock, SlidersHorizontal, 
   ChevronDown, Calculator, Trash2, Search, Sparkles, Globe, Filter, Calendar,
-  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Users
 } from 'lucide-react';
 import { GeneralMockExam, InstitutionalMockExam, MockExamType } from '../../types';
 
@@ -402,79 +402,166 @@ export const MockTableSection: React.FC<MockTableSectionProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {paginatedInstitutionalMocks.map((exam) => {
-                  const dateInfo = formatMockDate(exam.examDate);
-                  const displayScores = [];
-                  if (exam.scores.sayScore !== undefined) {
-                    displayScores.push({ label: 'SAY', score: exam.scores.sayScore, rank: exam.scores.sayClassRank, total: exam.scores.sayClassTotal });
-                  }
-                  if (exam.scores.eaScore !== undefined) {
-                    displayScores.push({ label: 'EA', score: exam.scores.eaScore, rank: exam.scores.eaClassRank, total: exam.scores.eaClassTotal });
-                  }
-                  if (exam.scores.sozScore !== undefined) {
-                    displayScores.push({ label: 'SÖZ', score: exam.scores.sozScore, rank: exam.scores.sozClassRank, total: exam.scores.sozClassTotal });
-                  }
+              <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-900/90 border-b border-slate-800 text-slate-400 uppercase tracking-wider font-bold text-[11px]">
+                      <th className="p-3.5">Sınav Adı</th>
+                      <th className="p-3.5">Tarih</th>
+                      <th className="p-3.5">Tür</th>
+                      <th className="p-3.5">Puan & Dereceler (Snf / Kurum / Genel)</th>
+                      <th className="p-3.5 text-center">Katılımcı</th>
+                      <th className="p-3.5 text-right">Eylem</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-900/60 text-slate-300">
+                    {paginatedInstitutionalMocks.map((exam) => {
+                      const dateInfo = formatMockDate(exam.examDate);
+                      const displayScores: Array<{ label: string; score: number; classRank?: number; classTotal?: number; instRank?: number; instTotal?: number; genRank?: number; genTotal?: number; badgeColor: string }> = [];
 
-                  return (
-                    <div
-                      key={exam.id}
-                      className="bg-slate-950/80 border border-slate-800/80 rounded-3xl p-5 hover:border-slate-700 transition-all flex flex-col justify-between space-y-4 animate-fade-in relative group shadow-sm hover:shadow-lg"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-mono font-bold text-slate-300 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 cursor-help flex items-center gap-1" title={dateInfo.full}>
-                            <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-                            <span>{dateInfo.short}</span>
-                          </span>
-                          <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-xl border border-indigo-500/20 uppercase">
-                            {exam.examType || 'Kurumsal'}
-                          </span>
-                        </div>
+                      if (exam.scores.tytScore !== undefined && exam.scores.tytScore > 0) {
+                        displayScores.push({
+                          label: 'TYT',
+                          score: exam.scores.tytScore,
+                          classRank: exam.scores.tytClassRank,
+                          classTotal: exam.scores.tytClassTotal || exam.scores.classParticipantCount,
+                          instRank: exam.scores.tytInstitutionRank,
+                          instTotal: exam.scores.tytInstitutionTotal || exam.scores.institutionParticipantCount,
+                          genRank: exam.scores.tytGeneralRank,
+                          genTotal: exam.scores.tytGeneralTotal || exam.scores.generalParticipantCount,
+                          badgeColor: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                        });
+                      }
+                      if (exam.scores.sayScore !== undefined && exam.scores.sayScore > 0) {
+                        displayScores.push({
+                          label: 'SAY',
+                          score: exam.scores.sayScore,
+                          classRank: exam.scores.sayClassRank,
+                          classTotal: exam.scores.sayClassTotal || exam.scores.classParticipantCount,
+                          instRank: exam.scores.sayInstitutionRank,
+                          instTotal: exam.scores.sayInstitutionTotal || exam.scores.institutionParticipantCount,
+                          genRank: exam.scores.sayGeneralRank,
+                          genTotal: exam.scores.sayGeneralTotal || exam.scores.generalParticipantCount,
+                          badgeColor: 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                        });
+                      }
+                      if (exam.scores.eaScore !== undefined && exam.scores.eaScore > 0) {
+                        displayScores.push({
+                          label: 'EA',
+                          score: exam.scores.eaScore,
+                          classRank: exam.scores.eaClassRank,
+                          classTotal: exam.scores.eaClassTotal || exam.scores.classParticipantCount,
+                          instRank: exam.scores.eaInstitutionRank,
+                          instTotal: exam.scores.eaInstitutionTotal || exam.scores.institutionParticipantCount,
+                          genRank: exam.scores.eaGeneralRank,
+                          genTotal: exam.scores.eaGeneralTotal || exam.scores.generalParticipantCount,
+                          badgeColor: 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                        });
+                      }
+                      if (exam.scores.sozScore !== undefined && exam.scores.sozScore > 0) {
+                        displayScores.push({
+                          label: 'SÖZ',
+                          score: exam.scores.sozScore,
+                          classRank: exam.scores.sozClassRank,
+                          classTotal: exam.scores.sozClassTotal || exam.scores.classParticipantCount,
+                          instRank: exam.scores.sozInstitutionRank,
+                          instTotal: exam.scores.sozInstitutionTotal || exam.scores.institutionParticipantCount,
+                          genRank: exam.scores.sozGeneralRank,
+                          genTotal: exam.scores.sozGeneralTotal || exam.scores.generalParticipantCount,
+                          badgeColor: 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                        });
+                      }
 
-                        <h3 className="text-sm font-black text-white mt-3 line-clamp-2">
-                          {exam.examTitle}
-                        </h3>
+                      return (
+                        <tr key={exam.id} className="hover:bg-slate-900/50 transition-colors group">
+                          {/* Sınav Adı */}
+                          <td className="p-3.5 font-extrabold text-white max-w-xs truncate">
+                            <div className="flex items-center space-x-2">
+                              <span className="truncate group-hover:text-indigo-300 transition-colors">{exam.examTitle}</span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 font-normal font-sans mt-0.5">
+                              {exam.studentName} {exam.schoolNumber ? `(#${exam.schoolNumber})` : ''}
+                            </div>
+                          </td>
 
-                        {exam.scores.classParticipantCount && (
-                          <p className="text-[11px] text-slate-400 font-semibold mt-1.5 flex items-center space-x-1 font-mono">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
-                            <span>Katılımcı Sayısı: {exam.scores.classParticipantCount} Öğrenci</span>
-                          </p>
-                        )}
+                          {/* Tarih */}
+                          <td className="p-3.5 font-mono text-slate-300 whitespace-nowrap">
+                            <span className="text-xs">{dateInfo.short}</span>
+                          </td>
 
-                        {displayScores.length > 0 && (
-                          <div className="grid grid-cols-3 gap-2 mt-4">
-                            {displayScores.map((sc, idx) => (
-                              <div key={idx} className="bg-slate-900/80 border border-slate-800/60 rounded-2xl p-2.5 text-center">
-                                <span className="text-[10px] text-slate-400 font-bold block">{sc.label} Puanı</span>
-                                <strong className="text-indigo-300 text-sm font-mono block mt-0.5">{sc.score}</strong>
-                                {sc.rank && (
-                                  <span className="text-[9px] text-emerald-400 font-mono mt-0.5 block">Sıra: {sc.rank} / {sc.total || '-'}</span>
-                                )}
+                          {/* Sınav Türü */}
+                          <td className="p-3.5 whitespace-nowrap">
+                            <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-xl border border-indigo-500/20 uppercase">
+                              {exam.examType || 'Kurumsal'}
+                            </span>
+                          </td>
+
+                          {/* Puan & Dereceler */}
+                          <td className="p-3.5">
+                            {displayScores.length === 0 ? (
+                              <span className="text-slate-500 italic text-[11px]">Puan Girilmedi</span>
+                            ) : (
+                              <div className="space-y-1.5 font-mono text-[11px]">
+                                {displayScores.map((sc, sIdx) => (
+                                  <div key={sIdx} className="flex flex-wrap items-center gap-2">
+                                    <span className={`px-2 py-0.5 rounded-lg border font-bold text-[10px] ${sc.badgeColor}`}>
+                                      {sc.label}
+                                    </span>
+                                    <strong className="text-white text-xs font-bold">{sc.score} Puan</strong>
+                                    
+                                    <div className="flex items-center space-x-1.5 text-[10px] text-slate-400">
+                                      {sc.classRank ? (
+                                        <span className="bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 text-emerald-400 font-semibold" title="Sınıf Derecesi">
+                                          Snf: {sc.classRank}{sc.classTotal ? `/${sc.classTotal}` : ''}
+                                        </span>
+                                      ) : null}
+
+                                      {sc.instRank ? (
+                                        <span className="bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 text-indigo-300 font-semibold" title="Kurum/Okul Derecesi">
+                                          Kurum: {sc.instRank}{sc.instTotal ? `/${sc.instTotal}` : ''}
+                                        </span>
+                                      ) : null}
+
+                                      {sc.genRank ? (
+                                        <span className="bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 text-amber-300 font-semibold" title="Genel Derece">
+                                          Genel: #{sc.genRank.toLocaleString('tr-TR')}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                            )}
+                          </td>
 
-                      <div className="pt-3 border-t border-slate-900/60 flex items-center justify-between gap-2">
-                        <div className="text-[11px] text-slate-500 font-medium truncate">
-                          {exam.studentName} {exam.schoolNumber ? `(#${exam.schoolNumber})` : ''}
-                        </div>
+                          {/* Katılımcı Sayısı */}
+                          <td className="p-3.5 text-center whitespace-nowrap font-mono text-xs text-slate-400">
+                            {exam.scores.classParticipantCount ? (
+                              <span className="inline-flex items-center space-x-1 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800">
+                                <Users className="w-3 h-3 text-indigo-400" />
+                                <span>{exam.scores.classParticipantCount} Öğr.</span>
+                              </span>
+                            ) : (
+                              '-'
+                            )}
+                          </td>
 
-                        <button
-                          type="button"
-                          onClick={() => setSelectedInstitutionalExam(exam)}
-                          className="bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-bold px-4 py-2 rounded-2xl transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm"
-                        >
-                          <GraduationCap className="w-4 h-4" />
-                          <span>Karnemi Görüntüle</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                          {/* Eylem: Karneyi Görüntüle */}
+                          <td className="p-3.5 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedInstitutionalExam(exam)}
+                              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer inline-flex items-center space-x-1.5 shadow-md shadow-indigo-600/30 hover:scale-[1.02]"
+                            >
+                              <GraduationCap className="w-4 h-4" />
+                              <span>Karneyi Görüntüle</span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
 
               {renderPaginationControls(safeInstPage, totalInstPages, sortedInstitutionalMocks.length, (p) => setCurrentPage(p))}
