@@ -461,7 +461,7 @@ async function callCloudflareRunApi(apiToken: string, accountId: string, modelId
   if (!token) throw new Error('Cloudflare API Token tanımlanmamış.');
 
   const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accId}/ai/run/${modelId}`;
-  return await fetch(endpoint, {
+  let res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -470,6 +470,40 @@ async function callCloudflareRunApi(apiToken: string, accountId: string, modelId
     signal: AbortSignal.timeout(timeoutMs),
     body: JSON.stringify(body)
   });
+
+  // Check if Cloudflare requires one-time Meta license agreement ("prompt": "agree")
+  if (!res.ok) {
+    const clone = res.clone();
+    const errText = await clone.text();
+    if (errText.includes("submit the prompt 'agree'") || errText.includes('"code":5016') || errText.includes('Model Agreement')) {
+      console.log(`[AI_GATEWAY] Cloudflare model agreement required for ${modelId}. Sending automatic agreement handshake...`);
+      try {
+        await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          signal: AbortSignal.timeout(10000),
+          body: JSON.stringify({ prompt: 'agree' })
+        });
+        // Retry the original request after agreement
+        res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          signal: AbortSignal.timeout(timeoutMs),
+          body: JSON.stringify(body)
+        });
+      } catch (agreeErr: any) {
+        console.warn(`[AI_GATEWAY] Model agreement handshake failed: ${agreeErr.message}`);
+      }
+    }
+  }
+
+  return res;
 }
 
 /**
@@ -853,6 +887,13 @@ export async function testProviderApiKey(
       if (!accId) {
         return { success: false, message: 'Cloudflare Account ID sisteme girilmemiş. Lütfen Account ID alanını doldurun.' };
       }
+
+      // Pre-warm / agree to Meta Vision model license in the background
+      fetch(`https://api.cloudflare.com/client/v4/accounts/${accId}/ai/run/@cf/meta/llama-3.2-11b-vision-instruct`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: 'agree' })
+      }).catch(() => {});
 
       const testModels = [
         '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
