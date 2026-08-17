@@ -1073,7 +1073,7 @@ AŞAĞIDAKİ JSON ŞEMASINA KESİNLİKLE UY VE YALNIZCA GEÇERLİ JSON DÖNDÜR:
       requireJson: true,
       featureKey: 'PHOTO_QUESTION_FULL_ANALYSIS',
       modelOverride: targetModel,
-      maxTokens: 3500
+      maxTokens: 6000
     });
 
     const responseText = unifiedResult.text;

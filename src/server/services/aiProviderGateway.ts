@@ -133,9 +133,9 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
   // Multimodal vision models prioritized for images, high-throughput text models for text
   const candidateModels = hasImage
     ? [
+        'qwen/qwen3.6-27b',
         'llama-3.2-11b-vision-preview',
-        'llama-3.2-90b-vision-preview',
-        'qwen/qwen3.6-27b'
+        'llama-3.2-90b-vision-preview'
       ]
     : [
         'llama-3.3-70b-versatile',
@@ -167,13 +167,14 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
   }
 
   let lastError: any = null;
+  const allocatedMaxTokens = Math.max(options.maxTokens || 4096, hasImage ? 6144 : 4096);
 
   for (const model of candidateModels) {
     try {
       const requestBody: any = {
         model,
         messages,
-        max_tokens: options.maxTokens || 4096,
+        max_tokens: allocatedMaxTokens,
         temperature: options.temperature ?? 0.3
       };
 
@@ -181,15 +182,34 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
         requestBody.response_format = { type: 'json_object' };
       }
 
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      let res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
-        signal: AbortSignal.timeout(25000),
+        signal: AbortSignal.timeout(30000),
         body: JSON.stringify(requestBody)
       });
+
+      // If Groq's strict JSON validator fails (e.g. json_validate_failed / max completion tokens), retry without strict response_format
+      if (!res.ok && options.requireJson) {
+        const errText = await res.clone().text();
+        if (errText.includes('json_validate_failed') || errText.includes('Failed to generate JSON') || errText.includes('max completion tokens')) {
+          console.warn(`[AI_GATEWAY] Groq strict JSON validation failed for ${model}, retrying in flexible mode...`);
+          const fallbackBody = { ...requestBody };
+          delete fallbackBody.response_format;
+          res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            },
+            signal: AbortSignal.timeout(30000),
+            body: JSON.stringify(fallbackBody)
+          });
+        }
+      }
 
       if (!res.ok) {
         const errBody = await res.text();
