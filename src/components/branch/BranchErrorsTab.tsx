@@ -824,14 +824,7 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                         {onStartRepetitionSession && (
                           <button
                             type="button"
-                            onClick={() => {
-                              const hasCorrectAnswer = Boolean(item.correctOption?.trim() || item.aiSolutionCorrectAnswer?.trim());
-                              if (!hasCorrectAnswer) {
-                                alert('⚠️ Bu sorunun doğru cevabı girilmemiş.\n\nKör tekrar modunda test edebilmek için lütfen "Düzenle" (Kalem) butonuna basarak doğru cevap şıkkını (A, B, C, D veya E) kaydedin veya Yapay Zeka Çözümü ile doğru cevabı oluşturun.');
-                                return;
-                              }
-                              onStartRepetitionSession([item]);
-                            }}
+                            onClick={() => onStartRepetitionSession([item])}
                             className="px-3 py-1.5 bg-gradient-to-r from-purple-600/80 to-indigo-600/80 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shadow-sm"
                             title="Bu soruyu kör tekrar moduyla çöz"
                           >

@@ -526,6 +526,12 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   const [repetitionSessionQuestions, setRepetitionSessionQuestions] = useState<TopicErrorItem[]>([]);
   const [showRepetitionSettingsModal, setShowRepetitionSettingsModal] = useState<boolean>(false);
   const [showAlertModal, setShowAlertModal] = useState<boolean>(false);
+  const [repetitionWarningModal, setRepetitionWarningModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    targetError?: TopicErrorItem;
+  } | null>(null);
 
   const [filterExamId, setFilterExamId] = useState<string | null>(null);
   const [filterRevised, setFilterRevised] = useState<'UNREVISED' | 'REVISED' | 'ALL'>('UNREVISED');
@@ -2276,14 +2282,23 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
               const q = questions[0];
               const hasAnswer = Boolean(q.correctOption?.trim() || q.aiSolutionCorrectAnswer?.trim());
               if (!hasAnswer) {
-                alert('⚠️ Bu sorunun doğru cevabı girilmemiş.\n\nKör tekrar modunda test edebilmek için lütfen "Düzenle" (Kalem) butonuna basarak doğru cevap şıkkını (A, B, C, D veya E) kaydedin veya Yapay Zeka Çözümü ile doğru cevabı oluşturun.');
+                setRepetitionWarningModal({
+                  isOpen: true,
+                  title: 'Doğru Cevap Belirtilmemiş',
+                  message: 'Bu sorunun doğru cevabı girilmemiş. Kör tekrar modunda test edebilmek için lütfen "Düzenle" butonuna basarak doğru cevap şıkkını (A, B, C, D veya E) kaydedin veya Yapay Zeka Çözümü ile doğru cevabı oluşturun.',
+                  targetError: q
+                });
                 return;
               }
             }
 
             const validList = list.filter(e => Boolean(e.imageUrl) && Boolean(e.correctOption?.trim() || e.aiSolutionCorrectAnswer?.trim()));
             if (validList.length === 0) {
-              alert('⚠️ Kör tekrar testi başlatılamadı.\n\nTekrar yapabilmek için soruların fotoğraflı olması ve doğru cevap şıkkının (A, B, C, D veya E) girilmiş olması gerekir. Lütfen hata kayıtlarınızı düzenleyerek doğru şıklarını kaydediniz.');
+              setRepetitionWarningModal({
+                isOpen: true,
+                title: 'Kör Tekrar Başlatılamadı',
+                message: 'Kör tekrar testi yapabilmek için soruların fotoğraflı olması ve doğru cevap şıkkının (A, B, C, D veya E) girilmiş olması gerekir. Lütfen hata kayıtlarınızı düzenleyerek doğru şıklarını kaydediniz.'
+              });
               return;
             }
 
@@ -2461,13 +2476,105 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
           const due = getDueRepetitionQuestions(topicErrors);
           const validList = due.filter(e => Boolean(e.imageUrl) && Boolean(e.correctOption?.trim() || e.aiSolutionCorrectAnswer?.trim()));
           if (validList.length === 0) {
-            alert('⚠️ Tekrar zamanı gelen soruların henüz doğru cevap şıkları kaydedilmemiş.\n\nLütfen hata defterindeki soruları düzenleyerek doğru şıklarını (A, B, C, D, E) kaydediniz.');
+            setRepetitionWarningModal({
+              isOpen: true,
+              title: 'Tekrar Soruları Eksik',
+              message: 'Tekrar zamanı gelen soruların henüz doğru cevap şıkları kaydedilmemiş. Lütfen hata defterindeki soruları düzenleyerek doğru şıklarını (A, B, C, D veya E) kaydediniz.'
+            });
             return;
           }
           setRepetitionSessionQuestions(validList);
           setShowRepetitionModal(true);
         }}
       />
+
+      {/* ⚠️ Doğru Cevap Eksik / Kör Tekrar Bilgilendirme Modalı (Site Temasına Uygun) */}
+      {repetitionWarningModal?.isOpen && (
+        <div 
+          className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
+          onClick={(e) => { if (e.target === e.currentTarget) setRepetitionWarningModal(null); }}
+        >
+          <div className="bg-slate-900 border border-amber-500/30 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl shadow-amber-950/40 space-y-4 animate-scale-in relative overflow-hidden">
+            {/* Glow background accent */}
+            <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+            
+            {/* Header with Icon */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-inner">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-black text-white">
+                    {repetitionWarningModal.title}
+                  </h3>
+                  {repetitionWarningModal.targetError && (
+                    <span className="text-[11px] font-bold text-amber-300/90 block mt-0.5">
+                      {repetitionWarningModal.targetError.subject} • {repetitionWarningModal.targetError.topicName}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRepetitionWarningModal(null)}
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-all cursor-pointer"
+                title="Kapat"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Message Body */}
+            <div className="bg-slate-950/70 border border-slate-800 rounded-2xl p-4 space-y-2">
+              <p className="text-xs text-slate-200 leading-relaxed font-medium">
+                {repetitionWarningModal.message}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+              {repetitionWarningModal.targetError ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const err = repetitionWarningModal.targetError!;
+                      setRepetitionWarningModal(null);
+                      handleOpenEditErrorModal(err);
+                    }}
+                    className="w-full sm:flex-1 py-2.5 px-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-lg shadow-indigo-600/30 cursor-pointer active:scale-95"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>Hata Kaydını Düzenle</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const err = repetitionWarningModal.targetError!;
+                      setRepetitionWarningModal(null);
+                      handleOpenSolveModal(err);
+                    }}
+                    className="w-full sm:flex-1 py-2.5 px-3.5 bg-slate-800 hover:bg-slate-750 text-cyan-300 hover:text-cyan-200 border border-cyan-500/30 font-bold text-xs rounded-xl transition-all flex items-center justify-center space-x-1.5 cursor-pointer active:scale-95"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Yapay Zeka Çözümü</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setRepetitionWarningModal(null)}
+                  className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all shadow-lg shadow-indigo-600/30 cursor-pointer active:scale-95"
+                >
+                  Anladım
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
