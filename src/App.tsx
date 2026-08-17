@@ -41,7 +41,7 @@ import {
   deleteAllInstitutionalExamsFromFirestore,
   flushPendingFirestoreWrites
 } from './services/firebase';
-import { INITIAL_STATE, createEmptyStudentData, DEFAULT_AVATAR } from './data/initialData';
+import { createEmptyStudentData, DEFAULT_AVATAR } from './data/initialData';
 import { syncCompletedPlanToYoutubeVideos } from './utils/youtubeUtils';
 import { resolveStudentData } from './utils/studentDataUtils';
 
@@ -627,7 +627,7 @@ export default function App() {
 
 
   const activeViewingUser = previewStudentUser || currentUser;
-  const currentStudentData: YKSDataState = (activeViewingUser && globalState.studentsData[activeViewingUser.id]) || (activeViewingUser ? createEmptyStudentData(activeViewingUser.name, activeViewingUser.className) : INITIAL_STATE);
+  const currentStudentData: YKSDataState = (activeViewingUser && globalState.studentsData[activeViewingUser.id]) || (activeViewingUser ? createEmptyStudentData(activeViewingUser.name, activeViewingUser.className) : createEmptyStudentData('', ''));
   const unresolvedErrorCount = currentStudentData.topicErrors.filter((e) => !e.revised).length;
 
   const updateCurrentStudentData = (updater: (prev: YKSDataState) => YKSDataState) => {
@@ -766,7 +766,7 @@ export default function App() {
   const handleUpdateStudentSubjectNotesByTeacher = (studentId: string, subjectName: string, notes: { studentNote?: string; teacherNote?: string }) => {
     const targetStudent = globalState.users.find(u => u.id === studentId);
     setGlobalState((prev) => {
-      const studentData = prev.studentsData[studentId] || INITIAL_STATE;
+      const studentData = prev.studentsData[studentId] || createEmptyStudentData(targetStudent?.name || '', targetStudent?.className || '');
       const currentNotes = studentData.subjectNotes || {};
       const updatedData = {
         ...studentData,
@@ -863,7 +863,7 @@ export default function App() {
       currentUser: user,
       auditLogs: [loginAuditItem, ...(prev.auditLogs || [])],
       studentsData: user.role === 'student' && !prev.studentsData[user.id] 
-        ? { ...prev.studentsData, [user.id]: { ...INITIAL_STATE, profile: { ...INITIAL_STATE.profile, name: user.name, className: user.className } } }
+        ? { ...prev.studentsData, [user.id]: createEmptyStudentData(user.name, user.className) }
         : prev.studentsData
     }));
   };
@@ -875,14 +875,7 @@ export default function App() {
     saveUserToFirestore(newUser);
 
     if (newUser.role === 'student') {
-      const initialStudentData: YKSDataState = {
-        ...INITIAL_STATE,
-        profile: {
-          ...INITIAL_STATE.profile,
-          name: newUser.name,
-          className: newUser.className || '12-A SAY'
-        }
-      };
+      const initialStudentData: YKSDataState = createEmptyStudentData(newUser.name, newUser.className || '12-A SAY');
       saveStudentDataToFirestore(newId, initialStudentData);
     }
 
@@ -922,14 +915,7 @@ export default function App() {
       const updatedUsers = [...prev.users, newUser];
       const updatedStudentsData = { ...prev.studentsData };
       if (newUser.role === 'student') {
-        updatedStudentsData[newId] = {
-          ...INITIAL_STATE,
-          profile: {
-            ...INITIAL_STATE.profile,
-            name: newUser.name,
-            className: newUser.className || '12-A SAY'
-          }
-        };
+        updatedStudentsData[newId] = createEmptyStudentData(newUser.name, newUser.className || '12-A SAY');
       }
       return {
         ...prev,
@@ -1005,10 +991,10 @@ export default function App() {
 
   const handleUpdateStudentProfileByTeacher = (studentId: string, updatedProfile: StudentProfile) => {
     const studentUser = globalState.users.find(u => u.id === studentId);
-    const prevStudentData = globalState.studentsData[studentId] || INITIAL_STATE;
+    const prevStudentData = globalState.studentsData[studentId] || createEmptyStudentData(studentUser?.name || '', studentUser?.className || '');
 
     setGlobalState((prev) => {
-      const studentData = prev.studentsData[studentId] || INITIAL_STATE;
+      const studentData = prev.studentsData[studentId] || createEmptyStudentData(studentUser?.name || '', studentUser?.className || '');
       const updatedData = { ...studentData, profile: updatedProfile };
       saveStudentDataToFirestore(studentId, updatedData);
       return {
@@ -1140,7 +1126,7 @@ export default function App() {
     const prevPlans = globalState.studentsData[studentId]?.studyPlans || [];
 
     setGlobalState((prev) => {
-      const studentData = prev.studentsData[studentId] || INITIAL_STATE;
+      const studentData = prev.studentsData[studentId] || createEmptyStudentData(targetStudent?.name || '', targetStudent?.className || '');
       const updatedData = { ...studentData, studyPlans: updatedPlans };
       saveStudentDataToFirestore(studentId, updatedData);
       return {
@@ -1169,7 +1155,7 @@ export default function App() {
     const prevErrors = globalState.studentsData[studentId]?.topicErrors || [];
 
     setGlobalState((prev) => {
-      const studentData = prev.studentsData[studentId] || INITIAL_STATE;
+      const studentData = prev.studentsData[studentId] || createEmptyStudentData(targetStudent?.name || '', targetStudent?.className || '');
       const updatedData = { ...studentData, topicErrors: updatedErrors };
       saveStudentDataToFirestore(studentId, updatedData);
       return {
@@ -1276,7 +1262,7 @@ export default function App() {
     }));
 
     setGlobalState((prev) => {
-      const studentData = prev.studentsData[studentId] || INITIAL_STATE;
+      const studentData = prev.studentsData[studentId] || createEmptyStudentData(targetStudent?.name || '', targetStudent?.className || '');
       const existingPlans = studentData.studyPlans || [];
       const updatedPlans = mode === 'overwrite' ? newItems : [...newItems, ...existingPlans];
       const updatedData = { ...studentData, studyPlans: updatedPlans };

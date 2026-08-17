@@ -99,14 +99,9 @@ import { BadgeShield } from '../badges/BadgeShield';
 import { BADGE_DEFINITIONS, evaluateBadges } from '../../services/motivationEngine';
 import { 
   YKS_CURRICULUM_TOPICS, 
-  INITIAL_STATE, 
-  INITIAL_STUDENT_2_STATE, 
-  INITIAL_STUDENT_3_STATE, 
-  INITIAL_STUDENT_4_STATE, 
   DEFAULT_AVATAR,
   DEFAULT_PROGRAM_TEMPLATES
 } from '../../data/initialData';
-import { INITIAL_GLOBAL_STATE } from '../../services/storage';
 import { resolveStudentData } from '../../utils/studentDataUtils';
 
 const DAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];

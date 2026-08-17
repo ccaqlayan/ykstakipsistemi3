@@ -49,7 +49,7 @@ import {
   LabelList
 } from 'recharts';
 import { QuestionLog } from '../types';
-import { YKS_SUBJECTS, INITIAL_STATE } from '../data/initialData';
+import { YKS_SUBJECTS } from '../data/initialData';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 const SUBJECT_COLORS: Record<string, string> = {
@@ -554,10 +554,6 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
   // Helper for computing or falling back duration minutes
   const getLogDuration = (log: QuestionLog): number => {
     if (log.durationMinutes && log.durationMinutes > 0) return log.durationMinutes;
-    const initialMatch = INITIAL_STATE.questionLogs.find(iLog => iLog.id === log.id || (iLog.date === log.date && iLog.subject === log.subject));
-    if (initialMatch?.durationMinutes && initialMatch.durationMinutes > 0) {
-      return initialMatch.durationMinutes;
-    }
     const solved = log.solvedCount || 30;
     let factor = 1.2;
     if (log.subject?.includes('Matematik')) factor = 1.4;

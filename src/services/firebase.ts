@@ -20,7 +20,6 @@ import {
 import firebaseConfig from '../../firebase-applet-config.json';
 import { AppGlobalState, UserAccount, ClassDefinition, YKSDataState, RecommendedChannel, RecommendedBook, DirectMessage, AuditLogItem, InstitutionalMockExam, QuestionLog } from '../types';
 import { INITIAL_GLOBAL_STATE, loadGlobalState } from './storage';
-import { INITIAL_STATE } from '../data/initialData';
 
 // Initialize Firebase App
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
@@ -170,53 +169,8 @@ export function handleFirebaseError(err: any) {
   }
 }
 
-/**
- * Migration v3: student-1 questionLogs'u son 30 güne yayılmış yeni verilerle günceller.
- * Bir kez çalışır — meta/migrations/questionlogs_v3 marker ile izlenir.
- */
-export async function migrateStudentQuestionLogs() {
-  try {
-    // Migration daha önce yapıldıysa atla
-    const markerRef = doc(db, 'meta', 'migrations');
-    const markerSnap = await getDoc(markerRef);
-    if (markerSnap.exists() && markerSnap.data()?.questionlogs_v3 === true) {
-      return;
-    }
-
-    console.log('[Migration v3] Running questionLogs migration for student-1...');
-    const student1Ref = doc(db, STUDENTS_DATA_COL, 'student-1');
-    const student1Snap = await getDoc(student1Ref);
-
-    if (student1Snap.exists()) {
-      const data = student1Snap.data();
-      const cleanLogs = sanitizeAndPrepareForFirestore(INITIAL_STATE.questionLogs);
-      await setDoc(student1Ref, { ...data, questionLogs: cleanLogs }, { merge: false });
-      console.log('[Migration v3] student-1 questionLogs updated successfully.');
-    }
-
-    // student-4 de güncelle (Burak ÇAKIR)
-    const student4Ref = doc(db, STUDENTS_DATA_COL, 'student-4');
-    const student4Snap = await getDoc(student4Ref);
-    if (student4Snap.exists()) {
-      const data4 = student4Snap.data();
-      const cleanLogs4 = sanitizeAndPrepareForFirestore(INITIAL_STATE.questionLogs);
-      await setDoc(student4Ref, { ...data4, questionLogs: cleanLogs4 }, { merge: false });
-      console.log('[Migration v3] student-4 questionLogs updated successfully.');
-    }
-
-    // Marker'ı kaydet — bir daha çalışmasın
-    await setDoc(markerRef, { questionlogs_v3: true, migratedAt: new Date().toISOString() }, { merge: true });
-    console.log('[Migration v3] Migration marker written. Done.');
-  } catch (err) {
-    console.warn('[Migration v3] migrateStudentQuestionLogs error:', err);
-  }
-}
-
 export async function seedInitialFirestoreData() {
   try {
-    // Her zaman migration kontrolü yap (seed marker'a bakmaksızın)
-    await migrateStudentQuestionLogs();
-
     // Hafif "seed marker" kontrolü — tüm koleksiyonları taramak yerine TEK bir doküman oku
     const seedMarkerRef = doc(db, 'meta', 'seed_status');
     const seedMarkerSnap = await getDoc(seedMarkerRef);
@@ -226,59 +180,11 @@ export async function seedInitialFirestoreData() {
       return;
     }
 
-    const studentsSnap = await getDocs(collection(db, STUDENTS_DATA_COL));
-    if (studentsSnap.empty) {
-      for (const [stId, stData] of Object.entries(INITIAL_GLOBAL_STATE.studentsData)) {
-        await setDoc(doc(db, STUDENTS_DATA_COL, stId), stData);
-      }
-    } else {
-      const student1Doc = studentsSnap.docs.find(d => d.id === 'student-1');
-      if (student1Doc) {
-        const data = student1Doc.data() as YKSDataState;
-        const needsBranchUpdate = !data.branchExams || data.branchExams.length < INITIAL_STATE.branchExams.length;
-        const needsGeneralUpdate = !data.generalMocks || data.generalMocks.length < INITIAL_STATE.generalMocks.length || data.generalMocks[2]?.tyt?.totalNet === 87.5;
-        const needsQuestionLogUpdate = !data.questionLogs || data.questionLogs.length < INITIAL_STATE.questionLogs.length || data.questionLogs.some(l => l.date && l.date.startsWith('2026-06-'));
-        
-        let finalSt1Data = data;
-        if (needsBranchUpdate || needsGeneralUpdate || needsQuestionLogUpdate) {
-          finalSt1Data = {
-            ...data,
-            branchExams: needsBranchUpdate ? INITIAL_STATE.branchExams : data.branchExams,
-            generalMocks: needsGeneralUpdate ? INITIAL_STATE.generalMocks : data.generalMocks,
-            questionLogs: needsQuestionLogUpdate ? INITIAL_STATE.questionLogs : data.questionLogs
-          };
-          await setDoc(doc(db, STUDENTS_DATA_COL, 'student-1'), finalSt1Data, { merge: true });
-        }
-
-        // Kopyalama / Yedekleme: student-1 (Ahmet Yılmaz) verilerini student-4 (Burak ÇAKIR) hesabına sadece yoksa kopyala
-        const student4Doc = studentsSnap.docs.find(d => d.id === 'student-4');
-        if (!student4Doc) {
-          const student4Data: YKSDataState = {
-            ...finalSt1Data,
-            profile: {
-              ...finalSt1Data.profile,
-              name: 'Burak ÇAKIR'
-            }
-          };
-          await setDoc(doc(db, STUDENTS_DATA_COL, 'student-4'), student4Data);
-        }
-      }
-    }
-
     const usersSnap = await getDocs(collection(db, USERS_COL));
     if (usersSnap.empty) {
       console.log('Seeding initial users to Firestore...');
       for (const u of INITIAL_GLOBAL_STATE.users) {
         await setDoc(doc(db, USERS_COL, u.id), u);
-      }
-    } else {
-      // Burak ÇAKIR (student-4) kullanıcısının Firestore'da olduğundan emin ol
-      const hasStudent4 = usersSnap.docs.some(d => d.id === 'student-4');
-      if (!hasStudent4) {
-        const burakUser = INITIAL_GLOBAL_STATE.users.find(u => u.id === 'student-4');
-        if (burakUser) {
-          await setDoc(doc(db, USERS_COL, 'student-4'), burakUser);
-        }
       }
     }
 
@@ -534,15 +440,11 @@ export function subscribeToAuditLogs(
 }
 
 const enrichQuestionLogs = (logs: QuestionLog[]) => {
-  if (!logs) return INITIAL_STATE.questionLogs;
+  if (!logs || !Array.isArray(logs)) return [];
   return logs.map((log) => {
-    const initialMatch = INITIAL_STATE.questionLogs.find(iLog => iLog.id === log.id || (iLog.date === log.date && iLog.subject === log.subject));
-    const topic = log.topic || initialMatch?.topic || log.notes || 'Genel Soru Çözümü';
+    const topic = log.topic || log.notes || 'Genel Soru Çözümü';
     if (log.durationMinutes && log.durationMinutes > 0) {
       return { ...log, topic };
-    }
-    if (initialMatch?.durationMinutes && initialMatch.durationMinutes > 0) {
-      return { ...log, topic, durationMinutes: initialMatch.durationMinutes };
     }
     const solved = log.solvedCount || 30;
     let factor = 1.2;
@@ -570,14 +472,7 @@ export function subscribeToAllStudentsData(
       dataMap[docSnap.id] = parsed;
     });
 
-    // Ensure demo students have full fallback data only if not present in Firestore
-    Object.entries(INITIAL_GLOBAL_STATE.studentsData).forEach(([demoId, demoState]) => {
-      if (!dataMap[demoId]) {
-        dataMap[demoId] = demoState;
-      }
-    });
-
-    onChange(Object.keys(dataMap).length > 0 ? dataMap : INITIAL_GLOBAL_STATE.studentsData);
+    onChange(dataMap);
   }, (err) => {
     console.error('Firestore studentsData subscription error:', err);
     handleFirebaseError(err);

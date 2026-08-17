@@ -1,9 +1,5 @@
 import { AppGlobalState, YKSDataState } from '../types';
 import { 
-  INITIAL_STATE, 
-  INITIAL_STUDENT_2_STATE, 
-  INITIAL_STUDENT_3_STATE, 
-  INITIAL_STUDENT_4_STATE,
   DEMO_USERS, 
   DEMO_CLASSES,
   DEFAULT_PROGRAM_TEMPLATES,
@@ -15,36 +11,11 @@ const STORAGE_KEY = 'yks_kocluk_global_data_v5';
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000; // 3 gün (72 saat)
 const LAST_ACTIVE_KEY = 'yks_last_active_time';
 
-const enrichLogsWithDuration = (logs: any[]) => {
-  if (!logs || logs.length === 0) return INITIAL_STATE.questionLogs;
-  return logs.map((log) => {
-    const initialMatch = INITIAL_STATE.questionLogs.find(iLog => iLog.id === log.id || (iLog.date === log.date && iLog.subject === log.subject));
-    const topic = log.topic || initialMatch?.topic || log.notes || 'Genel Soru Çözümü';
-    if (log.durationMinutes && log.durationMinutes > 0) {
-      return { ...log, topic };
-    }
-    if (initialMatch?.durationMinutes) {
-      return { ...log, topic, durationMinutes: initialMatch.durationMinutes };
-    }
-    const solved = log.solvedCount || 30;
-    let factor = 1.2;
-    if (log.subject?.includes('Matematik')) factor = 1.4;
-    else if (log.subject?.includes('Paragraf') || log.subject?.includes('Türkçe')) factor = 0.8;
-    else if (log.subject?.includes('Fizik') || log.subject?.includes('Geometri')) factor = 1.3;
-    return { ...log, topic, durationMinutes: Math.round(solved * factor) };
-  });
-};
-
 export const INITIAL_GLOBAL_STATE: AppGlobalState = {
   currentUser: null, // Site ilk açıldığında giriş yapma ekranının gösterilmesi için varsayılan null
   users: DEMO_USERS,
   classes: DEMO_CLASSES,
-  studentsData: {
-    'student-1': INITIAL_STATE,
-    'student-2': INITIAL_STUDENT_2_STATE,
-    'student-3': INITIAL_STUDENT_3_STATE,
-    'student-4': INITIAL_STUDENT_4_STATE
-  },
+  studentsData: {},
   programTemplates: DEFAULT_PROGRAM_TEMPLATES,
   auditLogs: INITIAL_AUDIT_LOGS,
   messages: INITIAL_MESSAGES
@@ -125,62 +96,7 @@ export function loadGlobalState(): AppGlobalState {
       ...parsed,
       users: parsed.users && parsed.users.length > 0 ? parsed.users : DEMO_USERS,
       classes: parsed.classes && parsed.classes.length > 0 ? parsed.classes : DEMO_CLASSES,
-      studentsData: {
-        ...parsed.studentsData,
-        'student-1': parsed.studentsData?.['student-1'] ? {
-          ...INITIAL_STATE,
-          ...parsed.studentsData['student-1'],
-          profile: {
-            ...INITIAL_STATE.profile,
-            ...(parsed.studentsData['student-1'].profile || {})
-          },
-          topicErrors: Array.isArray(parsed.studentsData['student-1'].topicErrors)
-            ? parsed.studentsData['student-1'].topicErrors
-            : INITIAL_STATE.topicErrors,
-          youtubeVideos: Array.isArray(parsed.studentsData['student-1'].youtubeVideos)
-            ? parsed.studentsData['student-1'].youtubeVideos
-            : INITIAL_STATE.youtubeVideos,
-          studyPlans: Array.isArray(parsed.studentsData['student-1'].studyPlans)
-            ? parsed.studentsData['student-1'].studyPlans
-            : INITIAL_STATE.studyPlans,
-          questionLogs: Array.isArray(parsed.studentsData['student-1'].questionLogs)
-            ? enrichLogsWithDuration(parsed.studentsData['student-1'].questionLogs)
-            : INITIAL_STATE.questionLogs,
-          branchExams: Array.isArray(parsed.studentsData['student-1'].branchExams)
-            ? parsed.studentsData['student-1'].branchExams
-            : INITIAL_STATE.branchExams,
-          generalMocks: Array.isArray(parsed.studentsData['student-1'].generalMocks)
-            ? parsed.studentsData['student-1'].generalMocks
-            : INITIAL_STATE.generalMocks
-        } : INITIAL_STATE,
-        'student-4': parsed.studentsData?.['student-4'] ? {
-          ...INITIAL_STUDENT_4_STATE,
-          ...parsed.studentsData['student-4'],
-          profile: {
-            ...INITIAL_STUDENT_4_STATE.profile,
-            ...(parsed.studentsData['student-4'].profile || {}),
-            name: 'Burak ÇAKIR'
-          },
-          topicErrors: Array.isArray(parsed.studentsData['student-4'].topicErrors)
-            ? parsed.studentsData['student-4'].topicErrors
-            : INITIAL_STUDENT_4_STATE.topicErrors,
-          youtubeVideos: Array.isArray(parsed.studentsData['student-4'].youtubeVideos)
-            ? parsed.studentsData['student-4'].youtubeVideos
-            : INITIAL_STUDENT_4_STATE.youtubeVideos,
-          studyPlans: Array.isArray(parsed.studentsData['student-4'].studyPlans)
-            ? parsed.studentsData['student-4'].studyPlans
-            : INITIAL_STUDENT_4_STATE.studyPlans,
-          questionLogs: Array.isArray(parsed.studentsData['student-4'].questionLogs)
-            ? enrichLogsWithDuration(parsed.studentsData['student-4'].questionLogs)
-            : INITIAL_STUDENT_4_STATE.questionLogs,
-          branchExams: Array.isArray(parsed.studentsData['student-4'].branchExams)
-            ? parsed.studentsData['student-4'].branchExams
-            : INITIAL_STUDENT_4_STATE.branchExams,
-          generalMocks: Array.isArray(parsed.studentsData['student-4'].generalMocks)
-            ? parsed.studentsData['student-4'].generalMocks
-            : INITIAL_STUDENT_4_STATE.generalMocks
-        } : INITIAL_STUDENT_4_STATE
-      },
+      studentsData: parsed.studentsData || {},
       programTemplates: parsed.programTemplates && parsed.programTemplates.length > 0 
         ? parsed.programTemplates 
         : DEFAULT_PROGRAM_TEMPLATES,
