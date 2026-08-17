@@ -1580,6 +1580,25 @@ router.post('/failover-toggle-model-status', async (req, res) => {
   }
 });
 
+router.post('/failover-update-model-vision', async (req, res) => {
+  try {
+    const { provider, modelId, isVisionCapable } = req.body;
+    if (!provider || !modelId || typeof isVisionCapable !== 'boolean') {
+      return res.status(400).json({ success: false, error: 'Sağlayıcı, model ID ve isVisionCapable (boolean) zorunludur.' });
+    }
+    const { updateModelVisionCapability, getFailoverStatus } = await import('../services/aiFailoverManager');
+    await updateModelVisionCapability(provider, modelId, isVisionCapable);
+    const status = getFailoverStatus();
+    res.json({
+      success: true,
+      message: `${modelId} modelinin Vision yeteneği başarıyla ${isVisionCapable ? 'AKTİF' : 'PASİF'} yapıldı.`,
+      ...status
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.post('/failover-add-custom-model', async (req, res) => {
   try {
     const { provider, id, name, description, badge, isVisionCapable } = req.body;

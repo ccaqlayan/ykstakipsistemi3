@@ -429,6 +429,43 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
     }
   };
 
+  const [isUpdatingVision, setIsUpdatingVision] = useState(false);
+
+  const handleToggleModelVision = async (provider: string, modelId: string, currentVisionVal: boolean) => {
+    setIsUpdatingVision(true);
+    const newVisionVal = !currentVisionVal;
+    try {
+      const res = await fetch('/api/gemini/failover-update-model-vision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider,
+          modelId,
+          isVisionCapable: newVisionVal
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFailoverData(data);
+        if (testModalModel && testModalModel.id === modelId) {
+          setTestModalModel({
+            ...testModalModel,
+            isVisionCapable: newVisionVal
+          });
+        }
+        setFailoverFeedback({
+          text: `${modelId} modelinin Vision (Görsel İşleme) desteği ${newVisionVal ? 'AÇIK (Aktif)' : 'KAPALI (Pasif)'} olarak kaydedildi!`
+        });
+      } else {
+        setFailoverFeedback({ text: data.error || 'Ayar güncellenemedi.', isError: true });
+      }
+    } catch (err: any) {
+      setFailoverFeedback({ text: err.message || 'Sunucu hatası', isError: true });
+    } finally {
+      setIsUpdatingVision(false);
+    }
+  };
+
   const handleTestNewModel = async () => {
     if (!newModelForm.id.trim()) {
       alert('Lütfen test etmek için Model ID (kod adı) girin.');
@@ -1944,6 +1981,63 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                 </div>
               </div>
 
+              {/* Vision (Görsel İşleme) Yetenek Durumu & Değiştirme Butonu */}
+              <div className="p-3.5 rounded-2xl bg-slate-950/90 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-xl border ${
+                    testModalModel.isVisionCapable 
+                      ? 'bg-purple-950/60 border-purple-500/40 text-purple-300 shadow-md shadow-purple-500/10' 
+                      : 'bg-slate-900 border-slate-700 text-slate-400'
+                  }`}>
+                    <FileImage className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-white">Vision (Görsel Çözüm) Yeteneği:</span>
+                      {testModalModel.isVisionCapable ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                          👁️ AÇIK (Destekliyor)
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                          🚫 KAPALI (Salt Metin)
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {testModalModel.isVisionCapable 
+                        ? 'Bu model görsel soru çözümlerinde ve resim analiz isteklerinde doğrudan kullanılabilir.' 
+                        : 'Bu model yalnızca metin tabanlı koçluk ve planlama isteklerinde kullanılır.'}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isUpdatingVision}
+                  onClick={() => handleToggleModelVision(testModalModel.provider, testModalModel.id, Boolean(testModalModel.isVisionCapable))}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow active:scale-95 disabled:opacity-50 ${
+                    testModalModel.isVisionCapable
+                      ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700'
+                      : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/20'
+                  }`}
+                  title="Modelin Vision görsel işleme desteğini açar veya kapatır"
+                >
+                  {isUpdatingVision ? (
+                    <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+                  ) : testModalModel.isVisionCapable ? (
+                    <>
+                      <span>Vision Desteğini Kapat</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileImage className="w-3.5 h-3.5" />
+                      <span>Vision Desteğini Aç</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
               {/* Görsel (Vision) Yükleme Alanı */}
               <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
@@ -2096,6 +2190,74 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                   )}
                 </button>
               </div>
+
+              {/* 🎯 Görsel Test Sonrası Akıllı Vision Eylem Bildirimi */}
+              {testResultData && testImagePreview && (
+                <div className="animate-fade-in">
+                  {testResultData.success && !testModalModel.isVisionCapable && (
+                    <div className="p-3.5 bg-gradient-to-r from-purple-950/80 to-indigo-950/80 border border-purple-500/50 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-purple-500/10">
+                      <div className="flex items-center gap-2.5">
+                        <Sparkles className="w-5 h-5 text-purple-400 shrink-0" />
+                        <div>
+                          <div className="text-xs font-bold text-white">✨ Görsel Test Başarılı Oldu!</div>
+                          <div className="text-[11px] text-purple-200">
+                            Bu model görseli başarıyla inceledi ve yanıt üretti. Modelin <strong>Vision (Görsel İşleme)</strong> yeteneğini hemen aktif etmek ister misiniz?
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={isUpdatingVision}
+                        onClick={() => handleToggleModelVision(testModalModel.provider, testModalModel.id, false)}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-purple-600/30 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer active:scale-95 disabled:opacity-50"
+                      >
+                        {isUpdatingVision ? <RotateCcw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                        <span>👁️ Vision Desteğini Aktif Et</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {testResultData.success && testModalModel.isVisionCapable && (
+                    <div className="p-3 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl flex items-center justify-between gap-3 text-xs text-emerald-300">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>Bu modelin <strong>Vision Desteği</strong> açık ve görsel işleme yeteneği başarıyla doğrulandı.</span>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={isUpdatingVision}
+                        onClick={() => handleToggleModelVision(testModalModel.provider, testModalModel.id, true)}
+                        className="px-3 py-1 bg-slate-800 hover:bg-rose-900/60 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-700/60 rounded-lg text-[11px] font-bold transition-all cursor-pointer"
+                      >
+                        Desteği Kapat
+                      </button>
+                    </div>
+                  )}
+
+                  {!testResultData.success && testModalModel.isVisionCapable && (
+                    <div className="p-3.5 bg-rose-950/40 border border-rose-500/50 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+                        <div>
+                          <div className="text-xs font-bold text-white">⚠️ Görsel Test Başarısız Oldu</div>
+                          <div className="text-[11px] text-rose-200">
+                            Model görseli işleyemedi veya görsel desteği bulunmuyor. Modelin <strong>Vision Desteğini Kapatmak</strong> ister misiniz?
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={isUpdatingVision}
+                        onClick={() => handleToggleModelVision(testModalModel.provider, testModalModel.id, true)}
+                        className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-rose-600/30 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer active:scale-95 disabled:opacity-50"
+                      >
+                        {isUpdatingVision ? <RotateCcw className="w-3.5 h-3.5 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                        <span>🚫 Vision Desteğini Kapat</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Model Output / Error Inspection Box */}
               {testResultData && (

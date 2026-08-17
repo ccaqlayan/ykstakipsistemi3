@@ -34,6 +34,7 @@ export interface AiFailoverState {
     OPENROUTER?: ProviderModelMetadata[];
     GITHUB?: ProviderModelMetadata[];
   };
+  modelVisionOverrides?: Record<string, boolean>; // key: `${provider}:${modelId}`
   cooldowns: Record<string, ModelCooldownEntry>; // key: `${provider}:${modelId}`
   updatedAt: string;
 }
@@ -105,6 +106,7 @@ let failoverState: AiFailoverState = {
     ],
     GITHUB: ['gpt-4o', 'gpt-4o-mini', 'meta-llama-3.2-11b-vision-instruct', 'Phi-3.5-vision-instruct']
   },
+  modelVisionOverrides: {},
   cooldowns: {},
   updatedAt: new Date().toISOString()
 };
@@ -164,6 +166,12 @@ export async function initFailoverStateFromFirestore() {
         failoverState.customModels = {
           ...failoverState.customModels,
           ...data.customModels
+        };
+      }
+      if (data.modelVisionOverrides && typeof data.modelVisionOverrides === 'object') {
+        failoverState.modelVisionOverrides = {
+          ...failoverState.modelVisionOverrides,
+          ...data.modelVisionOverrides
         };
       }
       if (data.cooldowns && typeof data.cooldowns === 'object') {
@@ -573,6 +581,33 @@ export async function moveProvider(provider: AiProviderName, direction: 'left' |
 }
 
 /**
+ * Updates the Vision capability of a model (default or custom) and saves to Firestore
+ */
+export async function updateModelVisionCapability(
+  provider: AiProviderName,
+  modelId: string,
+  isVisionCapable: boolean
+): Promise<AiFailoverState> {
+  if (!failoverState.modelVisionOverrides) {
+    failoverState.modelVisionOverrides = {};
+  }
+  const key = `${provider}:${modelId}`;
+  failoverState.modelVisionOverrides[key] = Boolean(isVisionCapable);
+
+  // If this is a custom model, also sync its object property
+  if (failoverState.customModels?.[provider]) {
+    const target = failoverState.customModels[provider]?.find(m => m.id === modelId);
+    if (target) {
+      target.isVisionCapable = Boolean(isVisionCapable);
+    }
+  }
+
+  await syncToFirestore();
+  console.log(`[AI_FAILOVER] 👁️ Vision capability updated for ${key}: ${isVisionCapable}`);
+  return failoverState;
+}
+
+/**
  * Updates the cooldown duration (in hours)
  */
 export async function setCooldownHours(hours: number): Promise<AiFailoverState> {
@@ -648,6 +683,10 @@ export function getFailoverStatus() {
       const remainingCooldownMs = isIndefinite ? 999999999 : (isInCooldown ? entry.cooldownUntil - now : 0);
       const isCustom = customAdded.some(c => c.id === m.id);
       
+      const isVisionCapable = typeof failoverState.modelVisionOverrides?.[key] === 'boolean'
+        ? failoverState.modelVisionOverrides[key]
+        : Boolean(m.isVisionCapable);
+      
       let remainingFormatted = '';
       if (isIndefinite) {
         remainingFormatted = 'Süresiz Pasif';
@@ -667,7 +706,7 @@ export function getFailoverStatus() {
         name: m.name,
         description: m.description,
         badge: m.badge,
-        isVisionCapable: m.isVisionCapable,
+        isVisionCapable,
         isActive: m.id === activeModelId && !isInCooldown,
         isInCooldown,
         isIndefinite,
