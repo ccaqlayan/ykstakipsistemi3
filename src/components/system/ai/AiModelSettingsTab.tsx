@@ -701,13 +701,13 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-white text-base flex items-center gap-2">
-                <span>Dörtlü Akıllı Sağlayıcı Ağ Geçidi (Zero-Cost Failover)</span>
+                <span>Üçlü Akıllı Sağlayıcı Ağ Geçidi (Zero-Cost Failover)</span>
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/30">
                   %100 Ücretsiz Havuz
                 </span>
               </h3>
               <p className="text-xs text-slate-300 mt-0.5">
-                Google Gemini, Groq Cloud, OpenRouter ve GitHub Models (GPT-4o) kotalarını birleştirerek sınırsız ve kesintisiz sıfır maliyetli yapay zeka gücü sağlar.
+                Google Gemini, Groq Cloud ve OpenRouter kotalarını birleştirerek sınırsız ve kesintisiz sıfır maliyetli yapay zeka gücü sağlar. <span className="text-rose-400/80 text-[10px]">(GitHub Models 30 Temmuz 2026'dan itibaren kapatıldı.)</span>
               </p>
             </div>
           </div>
@@ -717,7 +717,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             {providerMode === 'AUTO_FALLBACK' && (
               <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-sm">
                 <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />
-                <span>🔄 Akıllı Otomatik Geçiş (Gemini ➔ Groq ➔ OpenRouter ➔ GitHub GPT-4o)</span>
+                <span>🔄 Akıllı Otomatik Geçiş (Gemini ➔ Groq ➔ OpenRouter)</span>
               </span>
             )}
             {providerMode === 'GEMINI_ONLY' && (
@@ -1530,95 +1530,64 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
           </div>
         </div>
 
-        {/* KART 4: GITHUB MODELS */}
-        <div className="bg-slate-900/90 border border-emerald-500/40 rounded-3xl p-5 shadow-xl backdrop-blur-md flex flex-col justify-between space-y-4">
+        {/* KART 4: GITHUB MODELS — SERVİS KALICI OLARAK KAPATILDI (30 Temmuz 2026) */}
+        <div className="bg-slate-900/60 border border-slate-600/40 rounded-3xl p-5 shadow-xl backdrop-blur-md flex flex-col justify-between space-y-4 opacity-70">
           <div className="space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <div className="flex items-center space-x-2.5">
-                <div className="p-2 bg-emerald-600/30 text-emerald-400 rounded-xl border border-emerald-500/30">
+                <div className="p-2 bg-slate-700/50 text-slate-500 rounded-xl border border-slate-600/30">
                   <Bot className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-white text-sm">GitHub Models</h4>
-                  <p className="text-[10px] text-slate-400">Resmi GPT-4o & Vision</p>
+                  <h4 className="font-bold text-slate-400 text-sm line-through">GitHub Models</h4>
+                  <p className="text-[10px] text-slate-500">Resmi GPT-4o & Vision</p>
                 </div>
               </div>
-              {modelSettings?.hasGithubKey ? (
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3" />
-                  {modelSettings.maskedGithubKey || 'Aktif'}
-                </span>
-              ) : (
-                <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-full border border-rose-500/30 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  Tanımsız
-                </span>
-              )}
+              <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-full border border-rose-500/30 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                Kapatıldı
+              </span>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Resmi OpenAI GPT-4o ve GPT-4o Mini modelleri ile görsel soru çözümü ve yüksek doğruluklu koçluk.
-            </p>
-
-            <a
-              href="https://github.com/settings/tokens"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 underline font-medium"
-            >
-              <span>GitHub'dan Ücretsiz Token Al</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-
-            {saveMessages['github'] && (
-              <div className={`text-xs p-2 rounded-xl border ${saveMessages['github'].isError ? 'bg-rose-500/20 border-rose-500/40 text-rose-300' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'}`}>
-                {saveMessages['github'].text}
-              </div>
-            )}
-
-            {testResults['github'] && (
-              <div className={`text-xs p-2 rounded-xl border ${testResults['github'].success ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : 'bg-rose-500/20 border-rose-500/40 text-rose-300'}`}>
-                {testResults['github'].message}
-              </div>
-            )}
+            {/* Servis kapatıldı uyarısı */}
+            <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-3 space-y-1">
+              <p className="text-xs text-rose-300 font-bold flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                GitHub Models Servisi Kalıcı Olarak Kapatıldı
+              </p>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                GitHub, <strong className="text-slate-300">30 Temmuz 2026</strong> itibarıyla GitHub Models playground, model kataloğu ve inference API'yi tamamen kapattı. <code className="text-rose-300 text-[10px]">models.github.ai</code> endpoint'i artık kullanılamaz. Lütfen alternatif sağlayıcı olarak <strong className="text-cyan-300">OpenRouter</strong> veya <strong className="text-amber-300">Groq</strong>'u kullanın.
+              </p>
+            </div>
 
             <div className="relative">
               <input
-                type={showGithubKey ? 'text' : 'password'}
-                value={githubKeyInput}
-                onChange={(e) => setGithubKeyInput(e.target.value)}
-                placeholder={modelSettings?.hasGithubKey ? `Mevcut: ${modelSettings.maskedGithubKey}` : 'ghp_... tokenınızı yapıştırın'}
-                className="w-full bg-slate-950/90 text-white placeholder-slate-500 text-xs font-mono px-3.5 py-2.5 rounded-xl border border-slate-700 focus:border-emerald-500 focus:outline-none pr-9"
+                type="text"
+                disabled
+                value=""
+                placeholder="Servis kapatıldı — token girişi devre dışı"
+                className="w-full bg-slate-950/60 text-slate-600 placeholder-slate-600 text-xs font-mono px-3.5 py-2.5 rounded-xl border border-slate-800 cursor-not-allowed"
               />
-              <button
-                type="button"
-                onClick={() => setShowGithubKey(!showGithubKey)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1"
-              >
-                {showGithubKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-              </button>
             </div>
           </div>
 
           <div className="flex items-center gap-2 pt-2">
             <button
               type="button"
-              disabled={savingProvider === 'github' || !githubKeyInput.trim()}
-              onClick={() => handleSaveIndividualKey('github', githubKeyInput)}
-              className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow"
+              disabled
+              className="flex-1 py-2.5 bg-slate-700/50 disabled:opacity-40 text-slate-500 text-xs font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-1.5"
             >
-              {savingProvider === 'github' ? <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-              <span>Kaydet</span>
+              <Check className="w-3.5 h-3.5" />
+              <span>Kaydet (Devre Dışı)</span>
             </button>
 
             <button
               type="button"
-              disabled={testingProvider === 'github' || (!githubKeyInput.trim() && !modelSettings?.hasGithubKey)}
-              onClick={() => handleTestProvider('github', githubKeyInput)}
-              className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 border border-slate-700"
-              title="Canlı Bağlantıyı Test Et"
+              disabled
+              className="px-3 py-2.5 bg-slate-800/50 disabled:opacity-40 text-slate-600 text-xs font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-1 border border-slate-800"
+              title="Servis kapatıldı"
             >
-              {testingProvider === 'github' ? <span className="w-3.5 h-3.5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" /> : <Zap className="w-3.5 h-3.5 text-emerald-400" />}
+              <Zap className="w-3.5 h-3.5 text-slate-600" />
               <span>Test</span>
             </button>
           </div>

@@ -430,42 +430,15 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
 }
 
 /**
- * Helper to call GitHub Models Inference API across supported endpoints
+ * Helper to call GitHub Models Inference API
+ * NOTE: GitHub Models was permanently shut down on July 30, 2026.
+ * This function always throws an error to prevent unnecessary network calls.
  */
-async function callGithubInferenceApi(apiKey: string, body: any, timeoutMs = 25000): Promise<Response> {
-  const trimmed = apiKey.trim();
-  const endpoints = [
-    'https://models.github.ai/inference/chat/completions',
-    'https://models.inference.ai.azure.com/chat/completions'
-  ];
-
-  let lastRes: Response | null = null;
-  let lastErr: any = null;
-
-  for (const ep of endpoints) {
-    try {
-      const res = await fetch(ep, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${trimmed}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'YKS-Takip-Sistemi'
-        },
-        signal: AbortSignal.timeout(timeoutMs),
-        body: JSON.stringify(body)
-      });
-      if (res.ok) {
-        return res;
-      }
-      lastRes = res;
-    } catch (e: any) {
-      lastErr = e;
-    }
-  }
-
-  if (lastRes) return lastRes;
-  throw lastErr || new Error('GitHub Models servisine bağlanılamadı.');
+async function callGithubInferenceApi(_apiKey: string, _body: any, _timeoutMs = 25000): Promise<Response> {
+  throw new Error(
+    'GitHub Models servisi 30 Temmuz 2026 itibarıyla kalıcı olarak kapatılmıştır. ' +
+    'Lütfen OpenRouter veya Groq sağlayıcısını kullanın.'
+  );
 }
 
 /**
@@ -569,7 +542,7 @@ export async function callGithubModels(options: UnifiedAiRequestOptions): Promis
 
 /**
  * Universal Unified Execution Engine with Failover Pipeline
- * Order: Gemini -> Groq -> OpenRouter -> GitHub Models (with 0ms skip for completely exhausted providers)
+ * Order: Gemini -> Groq -> OpenRouter (GitHub Models permanently shut down July 30, 2026)
  */
 export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions): Promise<UnifiedAiResponse> {
   const mode = getEffectiveProviderMode();
@@ -577,7 +550,7 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
   const hasImage = Boolean(imgDataUrl);
 
   // If request contains an image and mode is GROQ_ONLY:
-  // Automatically use Gemini, GitHub Models, or OpenRouter for image reasoning
+  // Automatically use Gemini or OpenRouter for image reasoning (GitHub Models is shut down)
   if (hasImage && mode === 'GROQ_ONLY') {
     if (getEffectiveGeminiApiKey()) {
       console.log('[AI_GATEWAY] Image detected in GROQ_ONLY mode. Seamlessly routing to Google Gemini Vision...');
@@ -585,14 +558,6 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
         return await callGemini(options);
       } catch (err: any) {
         console.warn('[AI_GATEWAY] Gemini failed for image in GROQ_ONLY mode...', err);
-      }
-    }
-    if (getEffectiveGithubApiKey()) {
-      console.log('[AI_GATEWAY] Image detected in GROQ_ONLY mode. Seamlessly routing to GitHub GPT-4o Vision...');
-      try {
-        return await callGithubModels(options);
-      } catch (err: any) {
-        console.warn('[AI_GATEWAY] GitHub Models failed for image in GROQ_ONLY mode...', err);
       }
     }
     if (getEffectiveOpenRouterApiKey()) {
@@ -620,9 +585,16 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
     return await callOpenRouter(options);
   }
 
-  // Mode 4: GITHUB_ONLY
+  // Mode 4: GITHUB_ONLY — Servis kapatıldı, OpenRouter'a yönlendir
   if (mode === 'GITHUB_ONLY') {
-    return await callGithubModels(options);
+    console.warn('[AI_GATEWAY] GITHUB_ONLY mode selected but GitHub Models is shut down (July 30, 2026). Falling back to OpenRouter.');
+    if (getEffectiveOpenRouterApiKey()) {
+      return await callOpenRouter(options);
+    }
+    if (getEffectiveGeminiApiKey()) {
+      return await callGemini(options);
+    }
+    throw new Error('GitHub Models servisi 30 Temmuz 2026 itibarıyla kalıcı olarak kapatılmıştır. Lütfen OpenRouter veya Gemini kullanın.');
   }
 
   // Mode 5: AUTO_FALLBACK (Dynamic Sequence Configured by Admin)
@@ -655,9 +627,9 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
     },
     GITHUB: {
       name: 'GITHUB',
-      hasKey: Boolean(getEffectiveGithubApiKey()),
-      isExhausted: isProviderCompletelyExhausted('GITHUB'),
-      fn: () => callGithubModels(options)
+      hasKey: false, // GitHub Models permanently shut down July 30, 2026
+      isExhausted: true,
+      fn: () => Promise.reject(new Error('GitHub Models servisi 30 Temmuz 2026 itibarıyla kapatılmıştır.'))
     }
   };
 
@@ -819,21 +791,11 @@ export async function testProviderApiKey(
     }
 
     if (provider === 'github') {
-      try {
-        const res = await callGithubInferenceApi(trimmed, {
-          model: 'gpt-4o-mini',
-          messages: [{ role: 'user', content: 'Test. Respond with OK.' }],
-          max_tokens: 5
-        }, 15000);
-
-        if (!res.ok) {
-          const body = await res.text();
-          return { success: false, message: `GitHub Models Doğrulama Hatası (${res.status}): ${body.substring(0, 200)}` };
-        }
-        return { success: true, message: 'GitHub Models (GPT-4o & GPT-4o Mini) bağlantısı başarılı!', modelUsed: 'gpt-4o-mini' };
-      } catch (err: any) {
-        return { success: false, message: `GitHub Models Bağlantı Hatası: ${err.message}` };
-      }
+      // GitHub Models permanently shut down on July 30, 2026
+      return {
+        success: false,
+        message: 'GitHub Models servisi 30 Temmuz 2026 itibarıyla kalıcı olarak kapatılmıştır. Bu sağlayıcı artık kullanılamaz. Lütfen OpenRouter veya Groq kullanın.'
+      };
     }
 
     return { success: false, message: 'Bilinmeyen sağlayıcı.' };
@@ -979,34 +941,16 @@ export async function testSingleModel(
     }
 
     if (provider === 'GITHUB') {
-      const apiKey = getEffectiveGithubApiKey();
-      if (!apiKey) throw new Error('GitHub Models Token sisteme girilmemiş.');
-
-      let messageContent: any = testPrompt;
-      if (imageBase64) {
-        const fullDataUrl = imageBase64.startsWith('data:')
-          ? imageBase64
-          : `data:${imageMimeType || 'image/jpeg'};base64,${imageBase64}`;
-        messageContent = [
-          { type: 'text', text: testPrompt },
-          { type: 'image_url', image_url: { url: fullDataUrl } }
-        ];
-      }
-
-      const res = await callGithubInferenceApi(apiKey, {
-        model: modelId,
-        messages: [{ role: 'user', content: messageContent }],
-        max_tokens: 1024
-      }, 25000);
-
+      // GitHub Models permanently shut down on July 30, 2026
       const latencyMs = Date.now() - startTime;
-      if (!res.ok) {
-        const body = await res.text();
-        return { success: false, model: modelId, provider, latencyMs, error: `GitHub Models Hatası (${res.status})`, rawError: body };
-      }
-      const data = await res.json();
-      const text = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || '';
-      return { success: true, model: modelId, provider, latencyMs, output: text };
+      return {
+        success: false,
+        model: modelId,
+        provider,
+        latencyMs,
+        error: 'GitHub Models servisi 30 Temmuz 2026 itibarıyla kalıcı olarak kapatılmıştır.',
+        rawError: 'GitHub Models (models.github.ai) was permanently shut down on July 30, 2026.'
+      };
     }
 
     throw new Error('Geçersiz sağlayıcı.');
