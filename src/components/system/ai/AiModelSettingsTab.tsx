@@ -639,7 +639,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                 </div>
 
                 {/* Model Sequence List */}
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {(prov.models || []).map((mod: any, idx: number) => {
                     const isModActive = mod.isActive;
                     const isModInCooldown = mod.isInCooldown;
@@ -649,7 +649,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                     return (
                       <div
                         key={mod.id}
-                        className={`p-3 rounded-2xl border text-xs transition-all flex flex-col gap-2 ${
+                        className={`p-3.5 rounded-2xl border text-xs transition-all flex flex-col gap-2.5 ${
                           isModActive
                             ? 'bg-indigo-950/50 border-indigo-500/60 text-white shadow-md shadow-indigo-500/10 ring-1 ring-indigo-500/30'
                             : isModInCooldown
@@ -657,33 +657,72 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                             : 'bg-slate-900/70 border-slate-800/70 text-slate-400 hover:border-slate-700'
                         }`}
                       >
-                        {/* 1. Satır: Sıra No + Model Adı + Vision Rozeti + İşlem Butonları */}
-                        <div className="flex items-center justify-between gap-2">
+                        {/* 1. EN ÜST SATIR (TEK BAŞINA): Sıra No + Model Tam İsmi + Vision Rozeti */}
+                        <div className="flex items-center justify-between gap-2 pb-1 border-b border-slate-800/50">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <span className="text-[11px] font-extrabold font-mono text-indigo-400 bg-indigo-950/80 border border-indigo-500/30 px-1.5 py-0.5 rounded-md min-w-[20px] text-center shrink-0">
+                            <span className="text-xs font-black font-mono text-indigo-400 bg-indigo-950/90 border border-indigo-500/40 px-2 py-0.5 rounded-lg shrink-0">
                               {idx + 1}
                             </span>
-                            <span className="font-bold text-xs sm:text-sm text-white tracking-wide truncate">
+                            <span className="font-bold text-sm text-white tracking-wide break-words">
                               {mod.name}
                             </span>
-                            {mod.isVisionCapable && (
-                              <span className="text-indigo-300 text-[10px] font-semibold bg-indigo-500/20 border border-indigo-500/30 px-1.5 py-0.2 rounded shrink-0 flex items-center gap-0.5">
-                                <span>📷 Vision</span>
+                          </div>
+                          {mod.isVisionCapable && (
+                            <span className="text-indigo-300 text-[10px] font-semibold bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded-md shrink-0 flex items-center gap-1">
+                              <span>📷 Vision</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 2. ORTA SATIR: Model Açıklaması & Rozeti */}
+                        <div className="flex flex-col gap-1 text-[11px] pl-1">
+                          <div className="flex items-center gap-1.5">
+                            {mod.badge && (
+                              <span className="font-semibold text-[10px] px-2 py-0.5 rounded-md bg-slate-800 text-indigo-300 border border-indigo-500/30 shrink-0">
+                                {mod.badge}
+                              </span>
+                            )}
+                          </div>
+                          {mod.description && (
+                            <p className="text-slate-300 text-xs leading-relaxed mt-0.5">
+                              {mod.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* 3. ALT SATIR: Canlı Durum (Sol) ve İşlem Butonları (Sağ) */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/60 mt-0.5">
+                          {/* Durum Göstergesi */}
+                          <div className="flex items-center text-xs font-medium">
+                            {isModInCooldown ? (
+                              <span className="text-rose-300 flex items-center gap-1.5 font-medium">
+                                <Hourglass className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+                                <span>Limit Doldu ({mod.remainingFormatted || '24h'} kaldı)</span>
+                              </span>
+                            ) : isModActive ? (
+                              <span className="text-emerald-400 flex items-center gap-1.5 font-semibold">
+                                <Activity className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                                <span>Şu Anda Aktif Model</span>
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 flex items-center gap-1.5 text-[11px]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                                <span>Sırada Bekliyor</span>
                               </span>
                             )}
                           </div>
 
                           {/* Buton Grubu: Sıralama (Yukarı / Aşağı) & Önceliğe Al */}
-                          <div className="flex items-center gap-1 shrink-0">
+                          <div className="flex items-center gap-1.5 ml-auto">
                             {/* Yukarı Taşı */}
                             <button
                               type="button"
                               onClick={() => handleReorderModel(prov.name, mod.id, 'UP')}
                               disabled={idx === 0 || isOperating}
-                              className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all disabled:opacity-25 disabled:cursor-not-allowed cursor-pointer"
+                              className="p-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer shadow-sm"
                               title="Bu modeli 1 sıra yukarı taşı (önceliğini artır)"
                             >
-                              <ArrowUp className="w-3 h-3" />
+                              <ArrowUp className="w-3.5 h-3.5" />
                             </button>
 
                             {/* Aşağı Taşı */}
@@ -691,10 +730,10 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                               type="button"
                               onClick={() => handleReorderModel(prov.name, mod.id, 'DOWN')}
                               disabled={idx === totalModels - 1 || isOperating}
-                              className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all disabled:opacity-25 disabled:cursor-not-allowed cursor-pointer"
+                              className="p-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-all disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer shadow-sm"
                               title="Bu modeli 1 sıra aşağı taşı"
                             >
-                              <ArrowDown className="w-3 h-3" />
+                              <ArrowDown className="w-3.5 h-3.5" />
                             </button>
 
                             {/* Önceliğe Al / Aktif Yap Butonu */}
@@ -702,62 +741,28 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                               type="button"
                               onClick={() => handleForceActive(prov.name, mod.id)}
                               disabled={isModActive || isOperating}
-                              className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all flex items-center gap-1 cursor-pointer ${
+                              className={`text-xs font-bold px-3 py-1 rounded-xl border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
                                 isModActive
                                   ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 cursor-default shadow-sm'
-                                  : 'bg-indigo-600/25 hover:bg-indigo-600/40 border-indigo-500/40 text-indigo-300 hover:text-white active:scale-95'
+                                  : 'bg-indigo-600/30 hover:bg-indigo-600/50 border-indigo-500/40 text-indigo-200 hover:text-white active:scale-95'
                               }`}
                               title="Bu modeli sıranın en başına al ve bekleme süresi varsa temizle"
                             >
                               {isOperating ? (
-                                <RotateCcw className="w-3 h-3 animate-spin" />
+                                <RotateCcw className="w-3.5 h-3.5 animate-spin" />
                               ) : isModActive ? (
                                 <>
-                                  <Check className="w-3 h-3 text-emerald-400" />
+                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
                                   <span>Aktif</span>
                                 </>
                               ) : (
                                 <>
-                                  <Play className="w-3 h-3" />
+                                  <Play className="w-3.5 h-3.5" />
                                   <span>Önceliğe Al</span>
                                 </>
                               )}
                             </button>
                           </div>
-                        </div>
-
-                        {/* 2. Satır: Model Açıklaması & Rozeti (Alt Satırda Geniş ve Okunaklı) */}
-                        <div className="flex flex-wrap items-center gap-1.5 pl-6 text-[11px]">
-                          {mod.badge && (
-                            <span className="font-semibold text-[10px] px-1.5 py-0.5 rounded-md bg-slate-800 text-indigo-300 border border-indigo-500/30 shrink-0">
-                              {mod.badge}
-                            </span>
-                          )}
-                          {mod.description && (
-                            <span className="text-slate-300 text-[11px] leading-tight">
-                              {mod.description}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* 3. Satır: Canlı Durum Bilgisi */}
-                        <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-800/60 pl-6">
-                          {isModInCooldown ? (
-                            <span className="text-rose-300 flex items-center gap-1.5 font-medium">
-                              <Hourglass className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
-                              <span>Limit Doldu ({mod.remainingFormatted || '24h'} kaldı)</span>
-                            </span>
-                          ) : isModActive ? (
-                            <span className="text-emerald-400 flex items-center gap-1.5 font-semibold">
-                              <Activity className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                              <span>Şu Anda Kullanılan Model</span>
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
-                              <span>Sırada Bekliyor (Yedek)</span>
-                            </span>
-                          )}
                         </div>
                       </div>
                     );
