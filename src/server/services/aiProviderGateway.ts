@@ -130,16 +130,15 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
   const imgDataUrl = getImageDataUrl(options);
   const hasImage = Boolean(imgDataUrl);
 
-  // Multimodal vision models prioritized for images, high-throughput text models for text
+  // Active Groq models: qwen/qwen3.6-27b for vision; llama-3.3-70b-versatile and 8b for text
   const candidateModels = hasImage
     ? [
-        'qwen/qwen3.6-27b',
-        'llama-3.2-11b-vision-preview',
-        'llama-3.2-90b-vision-preview'
+        'qwen/qwen3.6-27b'
       ]
     : [
         'llama-3.3-70b-versatile',
-        'llama-3.1-8b-instant'
+        'llama-3.1-8b-instant',
+        'openai/gpt-oss-120b'
       ];
 
   const messages: any[] = [];
@@ -177,6 +176,11 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
         max_tokens: allocatedMaxTokens,
         temperature: options.temperature ?? 0.3
       };
+
+      // Explicitly disable reasoning tokens on Qwen to prevent token exhaust and speed up output
+      if (model.includes('qwen')) {
+        requestBody.reasoning_effort = 'none';
+      }
 
       if (options.requireJson) {
         requestBody.response_format = { type: 'json_object' };
