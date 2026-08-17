@@ -166,7 +166,10 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
   }
 
   let lastError: any = null;
-  const allocatedMaxTokens = Math.max(options.maxTokens || 4096, hasImage ? 6144 : 4096);
+  // Groq Free Tier TPM limit is 8000 (input + max_tokens). For vision, cap max_tokens at 3800 so total requested never exceeds 8000 TPM.
+  const allocatedMaxTokens = hasImage
+    ? Math.min(options.maxTokens || 3800, 3800)
+    : Math.min(options.maxTokens || 4096, 6000);
 
   for (const model of candidateModels) {
     try {
