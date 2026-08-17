@@ -1490,6 +1490,47 @@ router.post('/failover-reorder-models', async (req, res) => {
   }
 });
 
+router.post('/failover-test-model', async (req, res) => {
+  try {
+    const { provider, modelId, prompt } = req.body;
+    if (!provider || !modelId) {
+      return res.status(400).json({ success: false, error: 'Sağlayıcı ve model ID zorunludur.' });
+    }
+    const { testSingleModel } = await import('../services/aiProviderGateway');
+    const result = await testSingleModel(provider, modelId, prompt);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/failover-toggle-model-status', async (req, res) => {
+  try {
+    const { provider, modelId, action, hours } = req.body;
+    if (!provider || !modelId || !action) {
+      return res.status(400).json({ success: false, error: 'Sağlayıcı, model ID ve eylem (FORCE_ACTIVE / SET_COOLDOWN / CLEAR_COOLDOWN) zorunludur.' });
+    }
+    const { forceActiveModel, setManualModelCooldown, clearModelCooldown, getFailoverStatus } = await import('../services/aiFailoverManager');
+    
+    if (action === 'FORCE_ACTIVE') {
+      await forceActiveModel(provider, modelId);
+    } else if (action === 'SET_COOLDOWN') {
+      await setManualModelCooldown(provider, modelId, hours || 24);
+    } else if (action === 'CLEAR_COOLDOWN') {
+      await clearModelCooldown(provider, modelId);
+    }
+
+    const status = getFailoverStatus();
+    res.json({
+      success: true,
+      message: `Model durumu güncellendi.`,
+      ...status
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 // -------------------------------------------------------------
 // Çalışma Planı Yapay Zeka Görev Önerisi

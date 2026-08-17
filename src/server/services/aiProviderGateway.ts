@@ -665,3 +665,106 @@ export async function testProviderApiKey(
     return { success: false, message: err.message || 'Bağlantı testi sırasında hata oluştu.' };
   }
 }
+
+/**
+ * Tests an individual specific AI model and returns its response, latency and error details
+ */
+export async function testSingleModel(
+  provider: 'GEMINI' | 'GROQ' | 'OPENROUTER',
+  modelId: string,
+  prompt?: string
+): Promise<{
+  success: boolean;
+  model: string;
+  provider: string;
+  latencyMs: number;
+  output?: string;
+  error?: string;
+  rawError?: string;
+}> {
+  const startTime = Date.now();
+  const testPrompt = (prompt || 'YKS 2026 sınavına hazırlanan bir öğrenci için hızlı 2 maddelik ders çalışma ve motivasyon tavsiyesi ver.').trim();
+
+  try {
+    if (provider === 'GEMINI') {
+      const apiKey = getEffectiveGeminiApiKey();
+      if (!apiKey) throw new Error('Google Gemini API anahtarı sisteme girilmemiş.');
+      const ai = new GoogleGenAI({ apiKey });
+      const res = await ai.models.generateContent({
+        model: modelId,
+        contents: [{ role: 'user', parts: [{ text: testPrompt }] }],
+        config: { maxOutputTokens: 1024 }
+      });
+      const latencyMs = Date.now() - startTime;
+      const text = res.text || '';
+      return { success: true, model: modelId, provider, latencyMs, output: text };
+    }
+
+    if (provider === 'GROQ') {
+      const apiKey = getEffectiveGroqApiKey();
+      if (!apiKey) throw new Error('Groq Cloud API anahtarı sisteme girilmemiş.');
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        signal: AbortSignal.timeout(25000),
+        body: JSON.stringify({
+          model: modelId,
+          messages: [{ role: 'user', content: testPrompt }],
+          max_tokens: 1024
+        })
+      });
+      const latencyMs = Date.now() - startTime;
+      if (!res.ok) {
+        const body = await res.text();
+        return { success: false, model: modelId, provider, latencyMs, error: `Groq Hatası (${res.status})`, rawError: body };
+      }
+      const data = await res.json();
+      const text = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || '';
+      return { success: true, model: modelId, provider, latencyMs, output: text };
+    }
+
+    if (provider === 'OPENROUTER') {
+      const apiKey = getEffectiveOpenRouterApiKey();
+      if (!apiKey) throw new Error('OpenRouter API anahtarı sisteme girilmemiş.');
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'http://localhost:3000',
+          'X-Title': 'YKS Takip Sistemi'
+        },
+        signal: AbortSignal.timeout(25000),
+        body: JSON.stringify({
+          model: modelId,
+          messages: [{ role: 'user', content: testPrompt }],
+          max_tokens: 1024
+        })
+      });
+      const latencyMs = Date.now() - startTime;
+      if (!res.ok) {
+        const body = await res.text();
+        return { success: false, model: modelId, provider, latencyMs, error: `OpenRouter Hatası (${res.status})`, rawError: body };
+      }
+      const data = await res.json();
+      const text = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || '';
+      return { success: true, model: modelId, provider, latencyMs, output: text };
+    }
+
+    throw new Error('Geçersiz sağlayıcı.');
+  } catch (err: any) {
+    const latencyMs = Date.now() - startTime;
+    return {
+      success: false,
+      model: modelId,
+      provider,
+      latencyMs,
+      error: err.message || 'Model test edilirken hata oluştu.',
+      rawError: String(err)
+    };
+  }
+}
+

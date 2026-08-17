@@ -311,6 +311,27 @@ export async function forceActiveModel(provider: AiProviderName, modelId: string
 }
 
 /**
+ * Manually sets a model into cooldown (passive / deactivated)
+ */
+export async function setManualModelCooldown(provider: AiProviderName, modelId: string, hours?: number): Promise<AiFailoverState> {
+  recordModelExhaustion(provider, modelId, 'Yönetici tarafından manuel pasife alındı', hours);
+  return failoverState;
+}
+
+/**
+ * Manually removes cooldown for a model (makes it active/ready in sequence)
+ */
+export async function clearModelCooldown(provider: AiProviderName, modelId: string): Promise<AiFailoverState> {
+  const key = `${provider}:${modelId}`;
+  if (failoverState.cooldowns[key]) {
+    delete failoverState.cooldowns[key];
+    await syncToFirestore();
+    console.log(`[AI_FAILOVER] 🔓 Admin cleared cooldown for model: ${provider}:${modelId}`);
+  }
+  return failoverState;
+}
+
+/**
  * Reorders a model inside a provider sequence (moves up or down)
  */
 export async function reorderModel(provider: AiProviderName, modelId: string, direction: 'UP' | 'DOWN'): Promise<AiFailoverState> {

@@ -27,7 +27,15 @@ import {
   Compass,
   Activity,
   Hourglass,
-  Radio
+  Radio,
+  FlaskConical,
+  Copy,
+  CheckCheck,
+  PauseCircle,
+  PlayCircle,
+  X,
+  Send,
+  Terminal
 } from 'lucide-react';
 import { ModelSettingsData } from '../SystemTypes';
 
@@ -197,6 +205,86 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
       setFailoverFeedback({ text: err.message || 'Sunucu hatası', isError: true });
     } finally {
       setActionModelKey(null);
+    }
+  };
+
+  // 🧪 Single Model Test & Analysis Modal State
+  const [testModalModel, setTestModalModel] = useState<any>(null);
+  const [testPromptInput, setTestPromptInput] = useState('YKS 2026 sınavına hazırlanan bir sayısal öğrencisi için 1 haftalık acil matematik çalışma ve motivasyon taktiği ver.');
+  const [isTestingModel, setIsTestingModel] = useState(false);
+  const [testResultData, setTestResultData] = useState<{ success: boolean; latencyMs?: number; output?: string; error?: string; rawError?: string } | null>(null);
+  const [copiedResult, setCopiedResult] = useState(false);
+
+  const handleOpenTestModal = (provName: string, mod: any) => {
+    setTestModalModel({
+      provider: provName,
+      ...mod
+    });
+    setTestResultData(null);
+    setCopiedResult(false);
+  };
+
+  const handleCloseTestModal = () => {
+    setTestModalModel(null);
+    setTestResultData(null);
+    setIsTestingModel(false);
+    setCopiedResult(false);
+  };
+
+  const handleRunModelTest = async () => {
+    if (!testModalModel) return;
+    setIsTestingModel(true);
+    setTestResultData(null);
+    try {
+      const res = await fetch('/api/gemini/failover-test-model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: testModalModel.provider,
+          modelId: testModalModel.id,
+          prompt: testPromptInput
+        })
+      });
+      const data = await res.json();
+      setTestResultData(data);
+    } catch (err: any) {
+      setTestResultData({
+        success: false,
+        error: err.message || 'Sunucuya bağlanılamadı.',
+        latencyMs: 0
+      });
+    } finally {
+      setIsTestingModel(false);
+    }
+  };
+
+  const handleModalToggleStatus = async (action: 'FORCE_ACTIVE' | 'SET_COOLDOWN' | 'CLEAR_COOLDOWN') => {
+    if (!testModalModel) return;
+    try {
+      const res = await fetch('/api/gemini/failover-toggle-model-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: testModalModel.provider,
+          modelId: testModalModel.id,
+          action
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFailoverData(data);
+        const targetProv = (data.providers || []).find((p: any) => p.name === testModalModel.provider);
+        const updatedMod = targetProv?.models?.find((m: any) => m.id === testModalModel.id);
+        if (updatedMod) {
+          setTestModalModel({
+            provider: testModalModel.provider,
+            ...updatedMod
+          });
+        }
+        setFailoverFeedback({ text: `${testModalModel.name} durumu başarıyla güncellendi!` });
+      }
+    } catch (err: any) {
+      console.warn('Status toggle error:', err);
     }
   };
 
@@ -712,8 +800,19 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                             )}
                           </div>
 
-                          {/* Buton Grubu: Sıralama (Yukarı / Aşağı) & Önceliğe Al */}
+                          {/* Buton Grubu: Test Et + Sıralama (Yukarı / Aşağı) & Önceliğe Al */}
                           <div className="flex items-center gap-1.5 ml-auto">
+                            {/* Test Et Butonu */}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenTestModal(prov.name, mod)}
+                              className="px-2.5 py-1 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 hover:text-white border border-indigo-500/40 transition-all cursor-pointer shadow-sm flex items-center gap-1 text-xs font-bold"
+                              title="Bu modelin çıktısını test et ve açılır pencerede incele"
+                            >
+                              <FlaskConical className="w-3.5 h-3.5 text-indigo-400" />
+                              <span>Test Et</span>
+                            </button>
+
                             {/* Yukarı Taşı */}
                             <button
                               type="button"
@@ -1296,6 +1395,258 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
           </div>
         )}
       </div>
+
+      {/* 🧪 SINGLE MODEL TEST & OUTPUT INTERPRETATION MODAL */}
+      {testModalModel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="bg-slate-900 border border-indigo-500/50 rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden relative">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-950/70">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400">
+                  <FlaskConical className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white">
+                      {testModalModel.name}
+                    </h3>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-indigo-950 text-indigo-300 border border-indigo-500/40">
+                      {testModalModel.provider}
+                    </span>
+                    {testModalModel.isVisionCapable && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                        📷 Vision
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Model Çıktı Testi, Hız Ölçümü & Erken Aktif/Pasif Yönetimi
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleCloseTestModal}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              {/* Durum & Erken Aksiyon Barı */}
+              <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="text-xs text-slate-400 font-medium">Modelin Sistemdeki Anlık Durumu:</div>
+                  <div className="mt-1">
+                    {testModalModel.isInCooldown ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-300 bg-rose-500/20 border border-rose-500/40 px-3 py-1 rounded-xl">
+                        <Hourglass className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+                        <span>Limit Doldu / Devre Dışı ({testModalModel.remainingFormatted || 'Beklemede'})</span>
+                      </span>
+                    ) : testModalModel.isActive ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 rounded-xl">
+                        <Activity className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                        <span>🟢 Şu Anda 1. Sırada Aktif Kullanılan Model</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-300 bg-slate-800 border border-slate-700 px-3 py-1 rounded-xl">
+                        <span>⚪ Sırada Bekliyor (Hazır / Yedek)</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Erken Aktif / Pasif Butonları */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {!testModalModel.isActive && (
+                    <button
+                      type="button"
+                      onClick={() => handleModalToggleStatus('FORCE_ACTIVE')}
+                      className="px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 hover:text-white border border-emerald-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      title="Bu modeli doğrudan 1. sıraya alır ve varsa bekleme süresini sıfırlar"
+                    >
+                      <PlayCircle className="w-4 h-4 text-emerald-400" />
+                      <span>1. Sıraya Al & Aktif Et</span>
+                    </button>
+                  )}
+
+                  {testModalModel.isInCooldown ? (
+                    <button
+                      type="button"
+                      onClick={() => handleModalToggleStatus('CLEAR_COOLDOWN')}
+                      className="px-3 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 hover:text-white border border-indigo-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      title="Bekleme süresini sıfırlar ve modeli tekrar hazır duruma getirir"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-indigo-400" />
+                      <span>Beklemeyi Kaldır (Hazır Yap)</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleModalToggleStatus('SET_COOLDOWN')}
+                      className="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 hover:text-white border border-rose-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      title="Modeli manuel olarak bekleme havuzuna alır (isteklerde kullanılmaz)"
+                    >
+                      <PauseCircle className="w-4 h-4 text-rose-400" />
+                      <span>Manuel Pasife Al (Devre Dışı)</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Test Prompt Input */}
+              <div className="space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    <Terminal className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Test İstemi (Prompt):</span>
+                  </label>
+                  {/* Quick Presets */}
+                  <div className="flex flex-wrap items-center gap-1 text-[10px]">
+                    <span className="text-slate-500">Hazır Şablonlar:</span>
+                    <button
+                      type="button"
+                      onClick={() => setTestPromptInput('YKS 2026 sınavına hazırlanan bir sayısal öğrencisi için 1 haftalık acil matematik çalışma ve motivasyon taktiği ver.')}
+                      className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-all cursor-pointer"
+                    >
+                      Matematik Tavsiyesi
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTestPromptInput('TYT Türkçe paragraf netlerini 30+ seviyesine çıkarmak için 3 somut strateji yaz.')}
+                      className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-all cursor-pointer"
+                    >
+                      Paragraf Stratejisi
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTestPromptInput('Sistem testi: 12 ile 18 sayılarının EKOK ve EBOB değerlerini açıkla.')}
+                      className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-all cursor-pointer"
+                    >
+                      Hızlı Matematik
+                    </button>
+                  </div>
+                </div>
+
+                <textarea
+                  value={testPromptInput}
+                  onChange={(e) => setTestPromptInput(e.target.value)}
+                  rows={3}
+                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-2xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-400 leading-relaxed font-mono"
+                  placeholder="Modele gönderilecek test promptunu buraya yazın..."
+                />
+              </div>
+
+              {/* Test Start Button & Latency */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  {testResultData && (
+                    <div className="flex items-center gap-2 text-xs">
+                      {testResultData.success ? (
+                        <span className="px-2.5 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Cevap Başarılı</span>
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold flex items-center gap-1.5">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          <span>Hata Oluştu</span>
+                        </span>
+                      )}
+                      {typeof testResultData.latencyMs === 'number' && testResultData.latencyMs > 0 && (
+                        <span className="px-2.5 py-1 rounded-xl bg-slate-800 text-indigo-300 border border-slate-700 font-mono font-bold flex items-center gap-1">
+                          <Zap className="w-3 h-3 text-amber-400" />
+                          <span>{testResultData.latencyMs} ms</span>
+                          <span className="text-[10px] text-slate-400">({(testResultData.latencyMs / 1000).toFixed(2)} sn)</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleRunModelTest}
+                  disabled={isTestingModel || !testPromptInput.trim()}
+                  className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-2xl text-xs font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95"
+                >
+                  {isTestingModel ? (
+                    <>
+                      <RotateCcw className="w-4 h-4 animate-spin" />
+                      <span>Model Çalıştırılıyor...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>Testi Başlat & Çıktıyı İncele</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Model Output / Error Inspection Box */}
+              {testResultData && (
+                <div className="space-y-2 animate-fade-in pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                      <span>Model Çıktısı & Cevap Analizi:</span>
+                    </span>
+                    {testResultData.output && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(testResultData.output || '');
+                          setCopiedResult(true);
+                          setTimeout(() => setCopiedResult(false), 2000);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium flex items-center gap-1 transition-all cursor-pointer"
+                      >
+                        {copiedResult ? <CheckCheck className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedResult ? 'Kopyalandı!' : 'Metni Kopyala'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {testResultData.success && testResultData.output && (
+                    <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-xs text-slate-200 leading-relaxed font-sans max-h-80 overflow-y-auto whitespace-pre-wrap select-text">
+                      {testResultData.output}
+                    </div>
+                  )}
+
+                  {!testResultData.success && (
+                    <div className="bg-rose-950/30 border border-rose-500/50 rounded-2xl p-4 space-y-2">
+                      <div className="flex items-center gap-2 text-rose-300 font-bold text-xs">
+                        <AlertCircle className="w-4 h-4" />
+                        <span>{testResultData.error || 'Model çağrısı başarısız oldu.'}</span>
+                      </div>
+                      {testResultData.rawError && (
+                        <pre className="p-3 bg-black/50 border border-rose-900/40 rounded-xl text-[11px] font-mono text-rose-200/90 overflow-x-auto whitespace-pre-wrap">
+                          {testResultData.rawError}
+                        </pre>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950/70 flex items-center justify-between text-xs text-slate-400">
+              <span>Model ID: <code className="text-indigo-300 font-mono">{testModalModel.id}</code></span>
+              <button
+                type="button"
+                onClick={handleCloseTestModal}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-all cursor-pointer"
+              >
+                Kapat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
