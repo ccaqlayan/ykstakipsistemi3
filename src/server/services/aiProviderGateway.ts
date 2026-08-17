@@ -430,8 +430,46 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
 }
 
 /**
- * Call GitHub Models (Azure AI Inference OpenAI compatible API) with automatic model fallback
- * Endpoint: https://models.inference.ai.azure.com/chat/completions
+ * Helper to call GitHub Models Inference API across supported endpoints
+ */
+async function callGithubInferenceApi(apiKey: string, body: any, timeoutMs = 25000): Promise<Response> {
+  const trimmed = apiKey.trim();
+  const endpoints = [
+    'https://models.github.ai/inference/chat/completions',
+    'https://models.inference.ai.azure.com/chat/completions'
+  ];
+
+  let lastRes: Response | null = null;
+  let lastErr: any = null;
+
+  for (const ep of endpoints) {
+    try {
+      const res = await fetch(ep, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${trimmed}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'YKS-Takip-Sistemi'
+        },
+        signal: AbortSignal.timeout(timeoutMs),
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        return res;
+      }
+      lastRes = res;
+    } catch (e: any) {
+      lastErr = e;
+    }
+  }
+
+  if (lastRes) return lastRes;
+  throw lastErr || new Error('GitHub Models servisine bağlanılamadı.');
+}
+
+/**
+ * Call GitHub Models (Azure AI Inference / GitHub Models API) with automatic model fallback
  */
 export async function callGithubModels(options: UnifiedAiRequestOptions): Promise<UnifiedAiResponse> {
   const apiKey = getEffectiveGithubApiKey();
@@ -477,15 +515,7 @@ export async function callGithubModels(options: UnifiedAiRequestOptions): Promis
         temperature: options.temperature ?? 0.3
       };
 
-      const res = await fetch('https://models.inference.ai.azure.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        signal: AbortSignal.timeout(25000),
-        body: JSON.stringify(requestBody)
-      });
+      const res = await callGithubInferenceApi(apiKey, requestBody, 25000);
 
       if (!res.ok) {
         const errBody = await res.text();
@@ -794,19 +824,12 @@ export async function testProviderApiKey(
 
     if (provider === 'github') {
       try {
-        const res = await fetch('https://models.inference.ai.azure.com/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${trimmed}`,
-            'Content-Type': 'application/json'
-          },
-          signal: AbortSignal.timeout(15000),
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [{ role: 'user', content: 'Test. Respond with OK.' }],
-            max_tokens: 5
-          })
-        });
+        const res = await callGithubInferenceApi(trimmed, {
+          model: 'gpt-4o-mini',
+          messages: [{ role: 'user', content: 'Test. Respond with OK.' }],
+          max_tokens: 5
+        }, 15000);
+
         if (!res.ok) {
           const body = await res.text();
           return { success: false, message: `GitHub Models Doğrulama Hatası (${res.status}): ${body.substring(0, 200)}` };
@@ -974,19 +997,12 @@ export async function testSingleModel(
         ];
       }
 
-      const res = await fetch('https://models.inference.ai.azure.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        signal: AbortSignal.timeout(25000),
-        body: JSON.stringify({
-          model: modelId,
-          messages: [{ role: 'user', content: messageContent }],
-          max_tokens: 1024
-        })
-      });
+      const res = await callGithubInferenceApi(apiKey, {
+        model: modelId,
+        messages: [{ role: 'user', content: messageContent }],
+        max_tokens: 1024
+      }, 25000);
+
       const latencyMs = Date.now() - startTime;
       if (!res.ok) {
         const body = await res.text();
