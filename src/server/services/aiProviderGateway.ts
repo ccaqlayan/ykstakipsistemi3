@@ -452,6 +452,27 @@ async function callCloudflareInferenceApi(apiToken: string, accountId: string, b
 }
 
 /**
+ * Helper to call Cloudflare Workers AI native REST run API (specifically for multimodal/vision models)
+ */
+async function callCloudflareRunApi(apiToken: string, accountId: string, modelId: string, body: any, timeoutMs = 25000): Promise<Response> {
+  const token = apiToken.trim();
+  const accId = accountId.trim();
+  if (!accId) throw new Error('Cloudflare Account ID tanımlanmamış.');
+  if (!token) throw new Error('Cloudflare API Token tanımlanmamış.');
+
+  const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accId}/ai/run/${modelId}`;
+  return await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    signal: AbortSignal.timeout(timeoutMs),
+    body: JSON.stringify(body)
+  });
+}
+
+/**
  * Call Cloudflare Workers AI with automatic model fallback
  */
 export async function callCloudflareWorkersAi(options: UnifiedAiRequestOptions): Promise<UnifiedAiResponse> {
@@ -462,7 +483,7 @@ export async function callCloudflareWorkersAi(options: UnifiedAiRequestOptions):
   }
 
   const { getActiveSequenceForProvider, recordModelExhaustion, recordModelSuccess } = await import('./aiFailoverManager');
-  const candidateModels = getActiveSequenceForProvider('CLOUDFLARE', [
+  let candidateModels = getActiveSequenceForProvider('CLOUDFLARE', [
     '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
     '@cf/meta/llama-3.2-3b-instruct',
     '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',
@@ -471,36 +492,50 @@ export async function callCloudflareWorkersAi(options: UnifiedAiRequestOptions):
   ]);
 
   const imgDataUrl = getImageDataUrl(options);
-  const messages: any[] = [];
+  const hasImage = Boolean(imgDataUrl);
 
-  if (options.systemInstruction) {
-    messages.push({ role: 'system', content: options.systemInstruction });
-  }
-
-  if (imgDataUrl) {
-    messages.push({
-      role: 'user',
-      content: [
-        { type: 'text', text: options.prompt },
-        { type: 'image_url', image_url: { url: imgDataUrl } }
-      ]
-    });
-  } else {
-    messages.push({ role: 'user', content: options.prompt });
+  // If request contains an image, prioritize vision-capable models
+  if (hasImage) {
+    const visionModels = candidateModels.filter(m => m.includes('vision'));
+    candidateModels = visionModels.length > 0 ? visionModels : ['@cf/meta/llama-3.2-11b-vision-instruct'];
   }
 
   let lastError: any = null;
 
   for (const model of candidateModels) {
     try {
-      const requestBody: any = {
-        model,
-        messages,
-        max_tokens: options.maxTokens || 4096,
-        temperature: options.temperature ?? 0.3
-      };
+      let res: Response;
+      const isVisionModel = model.includes('vision');
 
-      const res = await callCloudflareInferenceApi(apiToken, accountId, requestBody, 25000);
+      if (hasImage || isVisionModel) {
+        // Use Cloudflare AI Run API for vision/multimodal models
+        const visionBody: any = {
+          prompt: options.systemInstruction 
+            ? `${options.systemInstruction}\n\n${options.prompt}` 
+            : options.prompt,
+          max_tokens: options.maxTokens || 4096
+        };
+        if (imgDataUrl) {
+          visionBody.image = imgDataUrl;
+        }
+        res = await callCloudflareRunApi(apiToken, accountId, model, visionBody, 25000);
+      } else {
+        // Standard OpenAI format for text models (content must be a plain string)
+        const messages: any[] = [];
+        if (options.systemInstruction) {
+          messages.push({ role: 'system', content: options.systemInstruction });
+        }
+        messages.push({ role: 'user', content: options.prompt });
+
+        const requestBody: any = {
+          model,
+          messages,
+          max_tokens: options.maxTokens || 4096,
+          temperature: options.temperature ?? 0.3
+        };
+
+        res = await callCloudflareInferenceApi(apiToken, accountId, requestBody, 25000);
+      }
 
       if (!res.ok) {
         const errBody = await res.text();
@@ -512,18 +547,26 @@ export async function callCloudflareWorkersAi(options: UnifiedAiRequestOptions):
       }
 
       const data = await res.json();
-      const choice = data?.choices?.[0];
       let rawText = '';
-      if (typeof choice?.message?.content === 'string') {
-        rawText = choice.message.content;
-      } else if (Array.isArray(choice?.message?.content)) {
-        rawText = choice.message.content
-          .map((part: any) => (typeof part === 'string' ? part : part?.text || ''))
-          .join('\n');
-      } else if (choice?.message?.reasoning && typeof choice.message.reasoning === 'string') {
-        rawText = choice.message.reasoning;
-      } else if (typeof choice?.text === 'string') {
-        rawText = choice.text;
+      if (data?.result?.response) {
+        rawText = data.result.response;
+      } else if (typeof data?.result === 'string') {
+        rawText = data.result;
+      } else if (typeof data?.response === 'string') {
+        rawText = data.response;
+      } else {
+        const choice = data?.choices?.[0];
+        if (typeof choice?.message?.content === 'string') {
+          rawText = choice.message.content;
+        } else if (Array.isArray(choice?.message?.content)) {
+          rawText = choice.message.content
+            .map((part: any) => (typeof part === 'string' ? part : part?.text || ''))
+            .join('\n');
+        } else if (choice?.message?.reasoning && typeof choice.message.reasoning === 'string') {
+          rawText = choice.message.reasoning;
+        } else if (typeof choice?.text === 'string') {
+          rawText = choice.text;
+        }
       }
 
       const text = cleanAiOutputText(rawText);
@@ -990,22 +1033,37 @@ export async function testSingleModel(
         throw new Error('Cloudflare Workers AI Token veya Account ID sisteme girilmemiş.');
       }
 
-      let messageContent: any = testPrompt;
+      const isVisionModel = modelId.includes('vision');
+      let res: Response;
+
       if (imageBase64) {
+        if (!isVisionModel) {
+          return {
+            success: false,
+            model: modelId,
+            provider,
+            latencyMs: Date.now() - startTime,
+            error: `"${modelId}" modeli yalnızca metin (text) modelidir, görsel işleme (vision) yeteneği yoktur. Görsel ile soru çözdürmek için lütfen "Llama 3.2 11B Vision" (@cf/meta/llama-3.2-11b-vision-instruct) modelini seçiniz.`,
+            rawError: 'Model does not accept image inputs. Cloudflare text models require a string prompt without image attachments.'
+          };
+        }
+
         const fullDataUrl = imageBase64.startsWith('data:')
           ? imageBase64
           : `data:${imageMimeType || 'image/jpeg'};base64,${imageBase64}`;
-        messageContent = [
-          { type: 'text', text: testPrompt },
-          { type: 'image_url', image_url: { url: fullDataUrl } }
-        ];
-      }
 
-      const res = await callCloudflareInferenceApi(apiToken, accountId, {
-        model: modelId,
-        messages: [{ role: 'user', content: messageContent }],
-        max_tokens: 1024
-      }, 25000);
+        res = await callCloudflareRunApi(apiToken, accountId, modelId, {
+          prompt: testPrompt,
+          image: fullDataUrl,
+          max_tokens: 1024
+        }, 25000);
+      } else {
+        res = await callCloudflareInferenceApi(apiToken, accountId, {
+          model: modelId,
+          messages: [{ role: 'user', content: testPrompt }],
+          max_tokens: 1024
+        }, 25000);
+      }
 
       const latencyMs = Date.now() - startTime;
       if (!res.ok) {
@@ -1013,7 +1071,16 @@ export async function testSingleModel(
         return { success: false, model: modelId, provider, latencyMs, error: `Cloudflare Hatası (${res.status})`, rawError: body };
       }
       const data = await res.json();
-      const text = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || '';
+      let text = '';
+      if (data?.result?.response) {
+        text = data.result.response;
+      } else if (typeof data?.result === 'string') {
+        text = data.result;
+      } else if (typeof data?.response === 'string') {
+        text = data.response;
+      } else {
+        text = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || '';
+      }
       return { success: true, model: modelId, provider, latencyMs, output: text };
     }
 
