@@ -3006,7 +3006,7 @@ export default function App() {
           unreadMessageCount={unreadMessageCount}
           theme={theme}
           onToggleTheme={handleToggleTheme}
-          alwaysShowMenuButton={activeTab === 'bulk_exam_import'}
+          alwaysShowMenuButton={activeTab === 'bulk_exam_import' || activeTab === 'teacher_system'}
         />
       )}
 
@@ -3027,7 +3027,7 @@ export default function App() {
       />
 
       {/* Main Container */}
-      <div className={`flex-1 ${activeTab === 'bulk_exam_import' ? 'w-full max-w-none px-2 sm:px-4' : 'max-w-7xl w-full mx-auto'} flex flex-col md:flex-row relative z-10`}>
+      <div className={`flex-1 ${activeTab === 'bulk_exam_import' || activeTab === 'teacher_system' ? 'w-full max-w-none px-2 sm:px-4' : 'max-w-7xl w-full mx-auto'} flex flex-col md:flex-row relative z-10`}>
         
         {/* Navigation Sidebar */}
         {!isZenMode && (
@@ -3043,7 +3043,7 @@ export default function App() {
             onCloseMobile={() => setIsMobileMenuOpen(false)}
             isMobileOrTablet={isMobileOrTablet}
             onAddToHomeScreen={handleAddToHomeScreen}
-            isHideDesktopSidebar={activeTab === 'bulk_exam_import'}
+            isHideDesktopSidebar={activeTab === 'bulk_exam_import' || activeTab === 'teacher_system'}
           />
         )}
 

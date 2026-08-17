@@ -625,62 +625,58 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
     return await callGithubModels(options);
   }
 
-  // Mode 5: AUTO_FALLBACK (Gemini -> Groq -> OpenRouter -> GitHub Models)
-  const { isProviderCompletelyExhausted } = await import('./aiFailoverManager');
-  const geminiExhausted = isProviderCompletelyExhausted('GEMINI');
-  const groqExhausted = isProviderCompletelyExhausted('GROQ');
-  const openRouterExhausted = isProviderCompletelyExhausted('OPENROUTER');
-  const githubExhausted = isProviderCompletelyExhausted('GITHUB');
+  // Mode 5: AUTO_FALLBACK (Dynamic Sequence Configured by Admin)
+  const { isProviderCompletelyExhausted, getProviderSequence } = await import('./aiFailoverManager');
+  const providerOrder = getProviderSequence();
+
+  const providerMap: Record<AiProvider, {
+    name: AiProvider;
+    hasKey: boolean;
+    isExhausted: boolean;
+    fn: () => Promise<UnifiedAiResponse>;
+  }> = {
+    GEMINI: {
+      name: 'GEMINI',
+      hasKey: Boolean(getEffectiveGeminiApiKey()),
+      isExhausted: isProviderCompletelyExhausted('GEMINI'),
+      fn: () => callGemini(options)
+    },
+    GROQ: {
+      name: 'GROQ',
+      hasKey: Boolean(getEffectiveGroqApiKey()),
+      isExhausted: isProviderCompletelyExhausted('GROQ'),
+      fn: () => callGroq(options)
+    },
+    OPENROUTER: {
+      name: 'OPENROUTER',
+      hasKey: Boolean(getEffectiveOpenRouterApiKey()),
+      isExhausted: isProviderCompletelyExhausted('OPENROUTER'),
+      fn: () => callOpenRouter(options)
+    },
+    GITHUB: {
+      name: 'GITHUB',
+      hasKey: Boolean(getEffectiveGithubApiKey()),
+      isExhausted: isProviderCompletelyExhausted('GITHUB'),
+      fn: () => callGithubModels(options)
+    }
+  };
 
   const providersToTry: { name: AiProvider; fn: () => Promise<UnifiedAiResponse> }[] = [];
 
-  if (hasImage) {
-    // Multimodal Vision pipeline: Gemini -> GitHub (GPT-4o) -> OpenRouter -> Groq
-    if (getEffectiveGeminiApiKey() && !geminiExhausted) {
-      providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
+  for (const pName of providerOrder) {
+    const p = providerMap[pName];
+    if (p && p.hasKey && !p.isExhausted) {
+      providersToTry.push({ name: p.name, fn: p.fn });
     }
-    if (getEffectiveGithubApiKey() && !githubExhausted) {
-      providersToTry.push({ name: 'GITHUB', fn: () => callGithubModels(options) });
-    }
-    if (getEffectiveOpenRouterApiKey() && !openRouterExhausted) {
-      providersToTry.push({ name: 'OPENROUTER', fn: () => callOpenRouter(options) });
-    }
-    if (getEffectiveGroqApiKey() && !groqExhausted) {
-      providersToTry.push({ name: 'GROQ', fn: () => callGroq(options) });
-    }
-    // Fallback if all were skipped
-    if (providersToTry.length === 0) {
-      if (getEffectiveGeminiApiKey()) providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
-      if (getEffectiveGithubApiKey()) providersToTry.push({ name: 'GITHUB', fn: () => callGithubModels(options) });
-    }
-  } else {
-    // Text pipeline: Gemini -> Groq -> OpenRouter -> GitHub Models
-    if (getEffectiveGeminiApiKey() && !geminiExhausted) {
-      providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
-    } else if (geminiExhausted) {
-      console.log('[AI_FAILOVER] ⚡ Gemini is completely exhausted. Skipping to next provider...');
-    }
+  }
 
-    if (getEffectiveGroqApiKey() && !groqExhausted) {
-      providersToTry.push({ name: 'GROQ', fn: () => callGroq(options) });
-    } else if (groqExhausted) {
-      console.log('[AI_FAILOVER] ⚡ Groq is completely exhausted. Skipping to next provider...');
-    }
-
-    if (getEffectiveOpenRouterApiKey() && !openRouterExhausted) {
-      providersToTry.push({ name: 'OPENROUTER', fn: () => callOpenRouter(options) });
-    }
-
-    if (getEffectiveGithubApiKey() && !githubExhausted) {
-      providersToTry.push({ name: 'GITHUB', fn: () => callGithubModels(options) });
-    }
-
-    // If all providers were exhausted, try all anyway as last resort
-    if (providersToTry.length === 0) {
-      if (getEffectiveGeminiApiKey()) providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
-      if (getEffectiveGroqApiKey()) providersToTry.push({ name: 'GROQ', fn: () => callGroq(options) });
-      if (getEffectiveOpenRouterApiKey()) providersToTry.push({ name: 'OPENROUTER', fn: () => callOpenRouter(options) });
-      if (getEffectiveGithubApiKey()) providersToTry.push({ name: 'GITHUB', fn: () => callGithubModels(options) });
+  // If all were exhausted or none found, fallback to all available keyed providers in user's sequence
+  if (providersToTry.length === 0) {
+    for (const pName of providerOrder) {
+      const p = providerMap[pName];
+      if (p && p.hasKey) {
+        providersToTry.push({ name: p.name, fn: p.fn });
+      }
     }
   }
 

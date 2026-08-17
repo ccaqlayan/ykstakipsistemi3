@@ -8,11 +8,13 @@ import {
   Eye, 
   EyeOff, 
   Brain, 
-  Sparkles, 
+  Sparkles,
   Bot, 
-  Zap, 
+  Zap,
   ChevronUp, 
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   RefreshCw,
   Cpu,
   Layers,
@@ -215,6 +217,59 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
       setFailoverFeedback({ text: err.message || 'Sunucu hatası', isError: true });
     } finally {
       setActionModelKey(null);
+    }
+  };
+
+  const [isMovingProvider, setIsMovingProvider] = useState(false);
+
+  const handleMoveProvider = async (provider: string, direction: 'left' | 'right') => {
+    setIsMovingProvider(true);
+    setFailoverFeedback(null);
+
+    // Optimistic UI update
+    if (failoverData?.providers) {
+      const currentProviders = [...failoverData.providers];
+      const idx = currentProviders.findIndex(p => p.name === provider);
+      if (idx !== -1) {
+        if (direction === 'left' && idx > 0) {
+          const tmp = currentProviders[idx - 1];
+          currentProviders[idx - 1] = currentProviders[idx];
+          currentProviders[idx] = tmp;
+          setFailoverData({
+            ...failoverData,
+            providers: currentProviders,
+            providerOrder: currentProviders.map(p => p.name)
+          });
+        } else if (direction === 'right' && idx < currentProviders.length - 1) {
+          const tmp = currentProviders[idx + 1];
+          currentProviders[idx + 1] = currentProviders[idx];
+          currentProviders[idx] = tmp;
+          setFailoverData({
+            ...failoverData,
+            providers: currentProviders,
+            providerOrder: currentProviders.map(p => p.name)
+          });
+        }
+      }
+    }
+
+    try {
+      const res = await fetch('/api/gemini/failover-reorder-providers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, direction })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFailoverData(data);
+        setFailoverFeedback({ text: `${provider} sağlayıcısının sırası güncellendi!` });
+      } else {
+        setFailoverFeedback({ text: data.error || 'Sıra değiştirilemedi.', isError: true });
+      }
+    } catch (err: any) {
+      setFailoverFeedback({ text: err.message || 'Sunucu hatası', isError: true });
+    } finally {
+      setIsMovingProvider(false);
     }
   };
 
@@ -668,85 +723,76 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             <span className="text-indigo-400 font-normal lowercase">istekler sırayla denenir</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-center">
-            {/* 1. Sıra: Gemini */}
-            <div className={`p-3 rounded-xl border transition-all flex items-center justify-between ${
-              modelSettings?.hasApiKey 
-                ? 'bg-indigo-950/40 border-indigo-500/40 text-indigo-200' 
-                : 'bg-slate-900/60 border-slate-800 text-slate-400 opacity-60'
-            }`}>
-              <div className="flex items-center space-x-2.5">
-                <span className="w-6 h-6 rounded-lg bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow">1</span>
-                <div>
-                  <div className="font-bold text-xs text-white">Google Gemini</div>
-                  <div className="text-[10px] text-slate-300">Birincil Vision Motoru</div>
-                </div>
-              </div>
-              {modelSettings?.hasApiKey ? (
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Aktif</span>
-              ) : (
-                <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded border border-rose-500/30">Anahtar Yok</span>
-              )}
-            </div>
+            {(failoverData?.providerOrder || ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB']).map((pName: string, idx: number) => {
+              const metaMap: Record<string, any> = {
+                GEMINI: {
+                  title: 'Google Gemini',
+                  sub: 'Birincil Vision Motoru',
+                  bg: 'bg-indigo-600',
+                  cardBg: 'bg-indigo-950/40 border-indigo-500/40 text-indigo-200',
+                  hasKey: modelSettings?.hasApiKey,
+                  badgeActive: 'Aktif',
+                  badgeMissing: 'Anahtar Yok'
+                },
+                GROQ: {
+                  title: 'Groq Cloud',
+                  sub: 'Ultra Hızlı GPT-OSS 120B',
+                  bg: 'bg-amber-600',
+                  cardBg: 'bg-amber-950/40 border-amber-500/40 text-amber-200',
+                  hasKey: modelSettings?.hasGroqKey,
+                  badgeActive: 'Aktif',
+                  badgeMissing: 'Yedek Bekliyor'
+                },
+                OPENROUTER: {
+                  title: 'OpenRouter :free',
+                  sub: 'Limitsiz Gemma / Nemotron',
+                  bg: 'bg-cyan-600',
+                  cardBg: 'bg-cyan-950/40 border-cyan-500/40 text-cyan-200',
+                  hasKey: modelSettings?.hasOpenRouterKey,
+                  badgeActive: 'Aktif',
+                  badgeMissing: 'Yedek Bekliyor'
+                },
+                GITHUB: {
+                  title: 'GitHub Models',
+                  sub: 'Resmi GPT-4o & Mini',
+                  bg: 'bg-emerald-600',
+                  cardBg: 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200',
+                  hasKey: modelSettings?.hasGithubKey,
+                  badgeActive: 'Aktif',
+                  badgeMissing: 'Yedek Bekliyor'
+                }
+              };
 
-            {/* 2. Sıra: Groq */}
-            <div className={`p-3 rounded-xl border transition-all flex items-center justify-between ${
-              modelSettings?.hasGroqKey 
-                ? 'bg-amber-950/40 border-amber-500/40 text-amber-200' 
-                : 'bg-slate-900/60 border-slate-800 text-slate-400 opacity-60'
-            }`}>
-              <div className="flex items-center space-x-2.5">
-                <span className="w-6 h-6 rounded-lg bg-amber-600 text-white font-bold text-xs flex items-center justify-center shadow">2</span>
-                <div>
-                  <div className="font-bold text-xs text-white">Groq Cloud</div>
-                  <div className="text-[10px] text-slate-300">Ultra Hızlı GPT-OSS 120B</div>
-                </div>
-              </div>
-              {modelSettings?.hasGroqKey ? (
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Aktif</span>
-              ) : (
-                <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/30">Yedek Bekliyor</span>
-              )}
-            </div>
+              const p = metaMap[pName] || metaMap['GEMINI'];
 
-            {/* 3. Sıra: OpenRouter */}
-            <div className={`p-3 rounded-xl border transition-all flex items-center justify-between ${
-              modelSettings?.hasOpenRouterKey 
-                ? 'bg-cyan-950/40 border-cyan-500/40 text-cyan-200' 
-                : 'bg-slate-900/60 border-slate-800 text-slate-400 opacity-60'
-            }`}>
-              <div className="flex items-center space-x-2.5">
-                <span className="w-6 h-6 rounded-lg bg-cyan-600 text-white font-bold text-xs flex items-center justify-center shadow">3</span>
-                <div>
-                  <div className="font-bold text-xs text-white">OpenRouter :free</div>
-                  <div className="text-[10px] text-slate-300">Limitsiz Gemma / Nemotron</div>
+              return (
+                <div
+                  key={pName}
+                  className={`p-3 rounded-xl border transition-all flex items-center justify-between ${
+                    p.hasKey ? p.cardBg : 'bg-slate-900/60 border-slate-800 text-slate-400 opacity-60'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <span className={`w-6 h-6 rounded-lg ${p.bg} text-white font-bold text-xs flex items-center justify-center shadow`}>
+                      {idx + 1}
+                    </span>
+                    <div>
+                      <div className="font-bold text-xs text-white">{p.title}</div>
+                      <div className="text-[10px] text-slate-300">{p.sub}</div>
+                    </div>
+                  </div>
+                  {p.hasKey ? (
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/30">
+                      {p.badgeActive}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] bg-slate-800 text-slate-400 font-medium px-2 py-0.5 rounded border border-slate-700">
+                      {p.badgeMissing}
+                    </span>
+                  )}
                 </div>
-              </div>
-              {modelSettings?.hasOpenRouterKey ? (
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Aktif</span>
-              ) : (
-                <span className="text-[10px] bg-cyan-500/20 text-cyan-300 font-bold px-2 py-0.5 rounded border border-cyan-500/30">Yedek Bekliyor</span>
-              )}
-            </div>
-
-            {/* 4. Sıra: GitHub Models */}
-            <div className={`p-3 rounded-xl border transition-all flex items-center justify-between ${
-              modelSettings?.hasGithubKey 
-                ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' 
-                : 'bg-slate-900/60 border-slate-800 text-slate-400 opacity-60'
-            }`}>
-              <div className="flex items-center space-x-2.5">
-                <span className="w-6 h-6 rounded-lg bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shadow">4</span>
-                <div>
-                  <div className="font-bold text-xs text-white">GitHub Models</div>
-                  <div className="text-[10px] text-slate-300">Resmi GPT-4o & Mini</div>
-                </div>
-              </div>
-              {modelSettings?.hasGithubKey ? (
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Aktif</span>
-              ) : (
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Yedek Bekliyor</span>
-              )}
-            </div>
+              );
+            })}
           </div>
         </div>
 
@@ -767,7 +813,11 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                 <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />
                 <span>🔄 Akıllı Otomatik Geçiş</span>
               </div>
-              <p className="text-[11px] text-slate-300 mt-1">Önerilen: Gemini ➔ Groq ➔ OpenRouter ➔ GitHub</p>
+              <p className="text-[11px] text-slate-300 mt-1">
+                {(failoverData?.providerOrder || ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB'])
+                  .map((p: string) => p === 'GEMINI' ? 'Gemini' : p === 'GROQ' ? 'Groq' : p === 'OPENROUTER' ? 'OpenRouter' : 'GitHub GPT-4o')
+                  .join(' ➔ ')}
+              </p>
             </button>
 
             <button
@@ -928,7 +978,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             { name: 'GROQ', displayName: 'Groq Cloud', isActiveProvider: false, isCompletelyExhausted: false, activeModelId: 'openai/gpt-oss-120b', models: [] },
             { name: 'OPENROUTER', displayName: 'OpenRouter :free', isActiveProvider: false, isCompletelyExhausted: false, activeModelId: 'google/gemma-4-31b-it:free', models: [] },
             { name: 'GITHUB', displayName: 'GitHub Models (GPT-4o)', isActiveProvider: false, isCompletelyExhausted: false, activeModelId: 'gpt-4o', models: [] }
-          ]).map((prov: any) => {
+          ]).map((prov: any, providerIndex: number, allProvs: any[]) => {
             const isCurrentActiveProvider = failoverData?.activeProvider === prov.name;
             const isExhausted = prov.isCompletelyExhausted;
 
@@ -943,26 +993,56 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                     : 'bg-slate-950/50 border-slate-800/80'
                 }`}
               >
-                {/* Header */}
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
-                    <h4 className="font-bold text-white text-xs">{prov.displayName}</h4>
+                {/* Header with Reorder Left/Right buttons */}
+                <div className="flex flex-col gap-2 pb-2.5 border-b border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-lg bg-indigo-600/40 border border-indigo-400/40 text-indigo-200 font-black text-[11px] flex items-center justify-center">
+                        {providerIndex + 1}
+                      </span>
+                      <h4 className="font-bold text-white text-xs">{prov.displayName}</h4>
+                    </div>
+
+                    {/* Move Left / Move Right Buttons */}
+                    <div className="flex items-center gap-1 bg-slate-900/80 p-0.5 rounded-lg border border-slate-800">
+                      <button
+                        type="button"
+                        disabled={isMovingProvider || providerIndex === 0}
+                        onClick={() => handleMoveProvider(prov.name, 'left')}
+                        className="p-1 rounded-md bg-slate-800/80 hover:bg-indigo-600 text-slate-300 hover:text-white disabled:opacity-20 disabled:pointer-events-none transition-all cursor-pointer shadow-sm active:scale-95"
+                        title="Bu sağlayıcıyı sola (önceki sıraya) taşı"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={isMovingProvider || providerIndex === (allProvs.length - 1)}
+                        onClick={() => handleMoveProvider(prov.name, 'right')}
+                        className="p-1 rounded-md bg-slate-800/80 hover:bg-indigo-600 text-slate-300 hover:text-white disabled:opacity-20 disabled:pointer-events-none transition-all cursor-pointer shadow-sm active:scale-95"
+                        title="Bu sağlayıcıyı sağa (sonraki sıraya) taşı"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  {isCurrentActiveProvider ? (
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/40 flex items-center gap-1">
-                      <CheckCircle2 className="w-2.5 h-2.5" />
-                      Aktif Sağlayıcı
-                    </span>
-                  ) : isExhausted ? (
-                    <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-full border border-rose-500/30">
-                      Tüm Modeller Dolu
-                    </span>
-                  ) : (
-                    <span className="text-[10px] bg-slate-800 text-slate-400 font-medium px-2 py-0.5 rounded-full">
-                      Yedek Sırada
-                    </span>
-                  )}
+
+                  <div className="flex items-center justify-between">
+                    {isCurrentActiveProvider ? (
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/40 flex items-center gap-1">
+                        <CheckCircle2 className="w-2.5 h-2.5" />
+                        Aktif Sağlayıcı
+                      </span>
+                    ) : isExhausted ? (
+                      <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-full border border-rose-500/30">
+                        Tüm Modeller Dolu
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-slate-800 text-slate-400 font-medium px-2 py-0.5 rounded-full">
+                        {providerIndex + 1}. Sırada Yedek
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Model Sequence List */}

@@ -21,6 +21,7 @@ export interface AiFailoverState {
     OPENROUTER: string;
     GITHUB: string;
   };
+  customProviderOrder?: AiProviderName[];
   customModelOrder?: {
     GEMINI?: string[];
     GROQ?: string[];
@@ -89,6 +90,7 @@ let failoverState: AiFailoverState = {
     OPENROUTER: 'google/gemma-4-31b-it:free',
     GITHUB: 'gpt-4o'
   },
+  customProviderOrder: ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB'],
   customModelOrder: {
     GEMINI: ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.1-pro'],
     GROQ: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'groq/compound', 'groq/compound-mini'],
@@ -131,6 +133,14 @@ export async function initFailoverStateFromFirestore() {
           ...failoverState.activeModelCursors,
           ...data.activeModelCursors
         };
+      }
+      if (Array.isArray(data.customProviderOrder) && data.customProviderOrder.length > 0) {
+        const validProviders: AiProviderName[] = ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB'];
+        const filtered = data.customProviderOrder.filter(p => validProviders.includes(p));
+        for (const vp of validProviders) {
+          if (!filtered.includes(vp)) filtered.push(vp);
+        }
+        failoverState.customProviderOrder = filtered;
       }
       if (data.customModelOrder && typeof data.customModelOrder === 'object') {
         // Sanitize and purge decommissioned models
@@ -510,6 +520,59 @@ export async function reorderModel(provider: AiProviderName, modelId: string, di
 }
 
 /**
+ * Gets the current ordered sequence of AI Providers
+ */
+export function getProviderSequence(): AiProviderName[] {
+  const validNames: AiProviderName[] = ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB'];
+  const current = failoverState.customProviderOrder;
+  if (Array.isArray(current) && current.length > 0) {
+    const filtered = current.filter(p => validNames.includes(p));
+    for (const v of validNames) {
+      if (!filtered.includes(v)) filtered.push(v);
+    }
+    return filtered;
+  }
+  return validNames;
+}
+
+/**
+ * Reorders the custom sequence of AI Providers and saves to Firestore
+ */
+export async function reorderProviders(newOrder: AiProviderName[]): Promise<AiFailoverState> {
+  const validNames: AiProviderName[] = ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB'];
+  const filtered = (newOrder || []).filter(p => validNames.includes(p));
+  for (const v of validNames) {
+    if (!filtered.includes(v)) filtered.push(v);
+  }
+  failoverState.customProviderOrder = filtered;
+  await syncToFirestore();
+  console.log('[AI_FAILOVER] 🔀 Reordered providers sequence:', filtered);
+  return failoverState;
+}
+
+/**
+ * Moves a provider one position left or right in the provider sequence
+ */
+export async function moveProvider(provider: AiProviderName, direction: 'left' | 'right'): Promise<AiFailoverState> {
+  const seq = [...getProviderSequence()];
+  const idx = seq.indexOf(provider);
+  if (idx === -1) return failoverState;
+
+  if (direction === 'left' && idx > 0) {
+    const tmp = seq[idx - 1];
+    seq[idx - 1] = seq[idx];
+    seq[idx] = tmp;
+    return reorderProviders(seq);
+  } else if (direction === 'right' && idx < seq.length - 1) {
+    const tmp = seq[idx + 1];
+    seq[idx + 1] = seq[idx];
+    seq[idx] = tmp;
+    return reorderProviders(seq);
+  }
+  return failoverState;
+}
+
+/**
  * Updates the cooldown duration (in hours)
  */
 export async function setCooldownHours(hours: number): Promise<AiFailoverState> {
@@ -546,7 +609,7 @@ export function getFailoverStatus() {
     }>;
   }> = [];
 
-  const providerNames: AiProviderName[] = ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB'];
+  const providerNames: AiProviderName[] = getProviderSequence();
   const displayNames: Record<AiProviderName, string> = {
     GEMINI: 'Google Gemini',
     GROQ: 'Groq Cloud',
@@ -631,6 +694,7 @@ export function getFailoverStatus() {
     activeProvider: failoverState.activeProvider,
     activeModelCursors: failoverState.activeModelCursors,
     customModelOrder: failoverState.customModelOrder,
+    providerOrder: providerNames,
     providers,
     cooldownCount: Object.keys(failoverState.cooldowns).length,
     updatedAt: failoverState.updatedAt

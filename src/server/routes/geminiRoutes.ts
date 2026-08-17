@@ -1506,6 +1506,31 @@ router.post('/failover-reorder-models', async (req, res) => {
   }
 });
 
+router.post('/failover-reorder-providers', async (req, res) => {
+  try {
+    const { provider, direction, order } = req.body;
+    const { moveProvider, reorderProviders, getFailoverStatus } = await import('../services/aiFailoverManager');
+    
+    if (Array.isArray(order) && order.length > 0) {
+      await reorderProviders(order);
+    } else if (provider && direction) {
+      const dir = String(direction).toLowerCase() === 'left' ? 'left' : 'right';
+      await moveProvider(provider, dir);
+    } else {
+      return res.status(400).json({ success: false, error: 'order dizisi veya provider ile direction zorunludur.' });
+    }
+
+    const status = getFailoverStatus();
+    res.json({
+      success: true,
+      message: 'Sağlayıcı sırası başarıyla güncellendi.',
+      ...status
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.post('/failover-test-model', async (req, res) => {
   try {
     const { provider, modelId, prompt, imageBase64, imageMimeType } = req.body;
