@@ -132,13 +132,31 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
   const imgDataUrl = getImageDataUrl(options);
   const hasImage = Boolean(imgDataUrl);
 
-  const rawCandidateModels = hasImage
-    ? ['qwen/qwen3.6-27b']
-    : ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'llama-3.3-70b-specdec'];
+  const rawCandidateModels = [
+    'openai/gpt-oss-120b',
+    'openai/gpt-oss-20b',
+    'qwen/qwen3.6-27b',
+    'groq/compound',
+    'groq/compound-mini'
+  ];
 
-  // 🚀 AI Failover & Cooldown Manager: Cooldown'da olmayan aktif Groq modellerini getir
+  // 🚀 AI Failover & Cooldown Manager: Cooldown'da olmayan ve (varsa görsel gereksinimine uyan) aktif Groq modellerini getir
   const { getActiveSequenceForProvider, recordModelExhaustion, recordModelSuccess } = await import('./aiFailoverManager');
-  const candidateModels = getActiveSequenceForProvider('GROQ', rawCandidateModels);
+  const candidateModels = getActiveSequenceForProvider('GROQ', rawCandidateModels, hasImage);
+
+  if (hasImage && candidateModels.length === 0) {
+    console.warn('[AI_GATEWAY] No Groq models with vision capability. Seamlessly auto-routing to available vision provider...');
+    if (getEffectiveGeminiApiKey()) {
+      return await callGemini(options);
+    }
+    if (getEffectiveCloudflareApiToken() && getEffectiveCloudflareAccountId()) {
+      return await callCloudflareWorkersAi(options);
+    }
+    if (getEffectiveOpenRouterApiKey()) {
+      return await callOpenRouter(options);
+    }
+    throw new Error('Fotoğraflı soru çözümü için aktif bir Vision modeli bulunamadı.');
+  }
 
   const messages: any[] = [];
 
@@ -330,7 +348,7 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
 
   // 🚀 AI Failover & Cooldown Manager: Cooldown'da olmayan aktif OpenRouter modellerini getir
   const { getActiveSequenceForProvider, recordModelExhaustion, recordModelSuccess } = await import('./aiFailoverManager');
-  const candidateModels = getActiveSequenceForProvider('OPENROUTER', rawCandidateModels);
+  const candidateModels = getActiveSequenceForProvider('OPENROUTER', rawCandidateModels, hasImage);
 
   const messages: any[] = [];
 
@@ -519,23 +537,17 @@ export async function callCloudflareWorkersAi(options: UnifiedAiRequestOptions):
     throw new Error('Cloudflare Workers AI API Token veya Account ID sistemde tanımlanmamış.');
   }
 
+  const imgDataUrl = getImageDataUrl(options);
+  const hasImage = Boolean(imgDataUrl);
+
   const { getActiveSequenceForProvider, recordModelExhaustion, recordModelSuccess } = await import('./aiFailoverManager');
-  let candidateModels = getActiveSequenceForProvider('CLOUDFLARE', [
+  const candidateModels = getActiveSequenceForProvider('CLOUDFLARE', [
     '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
     '@cf/meta/llama-3.2-3b-instruct',
     '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',
     '@cf/meta/llama-3.2-11b-vision-instruct',
     '@cf/meta/llama-3.2-1b-instruct'
-  ]);
-
-  const imgDataUrl = getImageDataUrl(options);
-  const hasImage = Boolean(imgDataUrl);
-
-  // If request contains an image, prioritize vision-capable models
-  if (hasImage) {
-    const visionModels = candidateModels.filter(m => m.includes('vision'));
-    candidateModels = visionModels.length > 0 ? visionModels : ['@cf/meta/llama-3.2-11b-vision-instruct'];
-  }
+  ], hasImage);
 
   let lastError: any = null;
 

@@ -262,9 +262,29 @@ export function isProviderCompletelyExhausted(provider: AiProviderName): boolean
 }
 
 /**
- * Returns the active available models sequence for a provider, respecting custom order, starting from the current cursor and skipping cooled-down models
+ * Checks if a specific model has Vision capability enabled (respecting admin overrides and defaults)
  */
-export function getActiveSequenceForProvider(provider: AiProviderName, baseSequence?: string[]): string[] {
+export function isModelVisionCapable(provider: AiProviderName, modelId: string): boolean {
+  const key = `${provider}:${modelId}`;
+  if (failoverState.modelVisionOverrides && typeof failoverState.modelVisionOverrides[key] === 'boolean') {
+    return failoverState.modelVisionOverrides[key];
+  }
+  const defaultSeq = PROVIDER_MODEL_SEQUENCES[provider] || [];
+  const found = defaultSeq.find(m => m.id === modelId);
+  if (found) return Boolean(found.isVisionCapable);
+
+  const customList = failoverState.customModels?.[provider] || [];
+  const customFound = customList.find(m => m.id === modelId);
+  if (customFound) return Boolean(customFound.isVisionCapable);
+
+  return false;
+}
+
+/**
+ * Returns the active available models sequence for a provider, respecting custom order, starting from the current cursor and skipping cooled-down models.
+ * If requireVision is true, filters strictly for models that have vision capability enabled.
+ */
+export function getActiveSequenceForProvider(provider: AiProviderName, baseSequence?: string[], requireVision?: boolean): string[] {
   const defaultList = (PROVIDER_MODEL_SEQUENCES[provider] || []).map(m => m.id);
   const customAddedList = (failoverState.customModels?.[provider] || []).map(m => m.id);
   const combinedDefault = [...defaultList, ...customAddedList];
@@ -287,6 +307,11 @@ export function getActiveSequenceForProvider(provider: AiProviderName, baseSeque
     }
   } else {
     fullList = combinedDefault;
+  }
+
+  // Filter for vision capability if request contains an image
+  if (requireVision) {
+    fullList = fullList.filter(mId => isModelVisionCapable(provider, mId));
   }
 
   const available = fullList.filter(mId => !isModelInCooldown(provider, mId));
