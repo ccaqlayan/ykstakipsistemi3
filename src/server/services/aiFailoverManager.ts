@@ -39,9 +39,11 @@ export interface ProviderModelMetadata {
 // 🎯 Default Quality Sequences for each Provider
 export const PROVIDER_MODEL_SEQUENCES: Record<AiProviderName, ProviderModelMetadata[]> = {
   GEMINI: [
-    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash', description: 'En Gelişmiş Akıl Yürütme & Hızlı Çözüm', badge: 'Gelişmiş & Hızlı', isVisionCapable: true },
+    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash', description: 'En Gelişmiş Akıl Yürütme & Yüksek Kalite', badge: 'Gelişmiş & Kalite', isVisionCapable: true },
     { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash', description: 'Dengeli Hız, Yüksek Kalite & Güvenilirlik', badge: 'Dengeli', isVisionCapable: true },
-    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite', description: 'Ultra Hafif, Düşük Gecikme & Ekonomik Kota', badge: 'Ultra Hafif', isVisionCapable: true },
+    { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', description: 'Geniş Kapsamlı & Hızlı Problem Çözümü', badge: 'Flash Hızlı', isVisionCapable: true },
+    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite', description: 'Ultra Hafif, En Düşük Gecikme (~800ms) & Rahat Kota', badge: 'Ultra Hafif', isVisionCapable: true },
+    { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash-Lite', description: 'Hızlı & Stabil Alternatif Yedek Model (~1.8sn)', badge: 'Lite Yedek', isVisionCapable: true },
     { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro', description: 'Derin Analiz, Ağır Strateji & Büyük Bağlam', badge: 'Pro & Derinlik', isVisionCapable: true }
   ],
   GROQ: [
@@ -72,7 +74,7 @@ let failoverState: AiFailoverState = {
     OPENROUTER: 'google/gemma-4-31b-it:free'
   },
   customModelOrder: {
-    GEMINI: ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro'],
+    GEMINI: ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.1-pro'],
     GROQ: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'groq/compound', 'groq/compound-mini'],
     OPENROUTER: [
       'google/gemma-4-31b-it:free',

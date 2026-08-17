@@ -357,10 +357,12 @@ export async function clearApiUsageLogs(olderThanDays = 30) {
 
 export async function fetchLiveGoogleModels(): Promise<{ id: string; name: string; badge: string }[]> {
   return [
-    { id: 'SYSTEM_DEFAULT', name: '⚡ Sistem Otomatik (Önerilen Kalite Zinciri: 3.7 ➔ 3.6 ➔ 3.5 ➔ Pro)', badge: 'Varsayılan & Önerilen' },
-    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash (En Gelişmiş Akıl Yürütme & Hızlı)', badge: 'Gelişmiş' },
-    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Dengeli Hız & Kalite)', badge: 'Dengeli' },
-    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite (En Ekonomik & Ultra Hafif)', badge: 'Ekonomik' },
+    { id: 'SYSTEM_DEFAULT', name: '⚡ Sistem Otomatik (Önerilen Kalite Zinciri: 3.7 ➔ 3.6 ➔ 3.5 ➔ 3.5 Lite ➔ 3.1 Lite)', badge: 'Varsayılan & Önerilen' },
+    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash (En Gelişmiş Akıl Yürütme & Yüksek Kalite)', badge: 'Gelişmiş & Kalite' },
+    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Dengeli Hız & Güvenilirlik)', badge: 'Dengeli' },
+    { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash (Geniş Kapsam & Hızlı Problem Çözümü)', badge: 'Flash Hızlı' },
+    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite (Ultra Hafif & En Düşük Gecikme ~800ms)', badge: 'Ultra Hafif' },
+    { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash-Lite (Hızlı Alternatif Yedek ~1.8sn)', badge: 'Lite Yedek' },
     { id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro (Derin Strateji & Ağır Analiz)', badge: 'Pro' }
   ];
 }
@@ -400,18 +402,22 @@ export async function generateContentWithFallback(
 
   // Model bazlı akıllı fallback zincirleri (Öncelikli modelden sıradaki en uygun modele)
   const qualitySequenceMap: Record<string, string[]> = {
-    'gemini-3.1-pro-preview': ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'],
-    'gemini-3.1-pro': ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'],
-    'gemini-3.7-flash': ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro-preview'],
-    'gemini-3.6-flash': ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro-preview'],
-    'gemini-3.5-flash-lite': ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-pro-preview']
+    'gemini-3.1-pro-preview': ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'],
+    'gemini-3.1-pro': ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'],
+    'gemini-3.7-flash': ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview'],
+    'gemini-3.6-flash': ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview'],
+    'gemini-3.5-flash': ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview'],
+    'gemini-3.5-flash-lite': ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-pro-preview'],
+    'gemini-3.1-flash-lite': ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-pro-preview']
   };
 
   const baseSequence = qualitySequenceMap[primaryApiModel] || [
     primaryApiModel,
     'gemini-3.7-flash',
     'gemini-3.6-flash',
+    'gemini-3.5-flash',
     'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite',
     'gemini-3.1-pro-preview'
   ];
 

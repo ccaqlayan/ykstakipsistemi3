@@ -289,10 +289,12 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   };
 
   const verifiedModels = [
-    { id: 'SYSTEM_DEFAULT', name: '⚡ Sistem Otomatik (Önerilen Kalite Zinciri: 3.7 ➔ 3.6 ➔ 3.5 ➔ Pro)', badge: 'Varsayılan & Önerilen' },
-    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash (En Gelişmiş Akıl Yürütme & Hızlı)', badge: 'Gelişmiş' },
-    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Dengeli Hız & Kalite)', badge: 'Dengeli' },
-    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite (En Ekonomik & Ultra Hafif)', badge: 'Ekonomik' },
+    { id: 'SYSTEM_DEFAULT', name: '⚡ Sistem Otomatik (Önerilen Kalite Zinciri: 3.7 ➔ 3.6 ➔ 3.5 ➔ 3.5 Lite ➔ 3.1 Lite)', badge: 'Varsayılan & Önerilen' },
+    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash (En Gelişmiş Akıl Yürütme & Yüksek Kalite)', badge: 'Gelişmiş & Kalite' },
+    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Dengeli Hız & Güvenilirlik)', badge: 'Dengeli' },
+    { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash (Geniş Kapsam & Hızlı Problem Çözümü)', badge: 'Flash Hızlı' },
+    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite (Ultra Hafif & En Düşük Gecikme ~800ms)', badge: 'Ultra Hafif' },
+    { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash-Lite (Hızlı Alternatif Yedek ~1.8sn)', badge: 'Lite Yedek' },
     { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro (Derin Strateji & Ağır Analiz)', badge: 'Pro' }
   ];
 
