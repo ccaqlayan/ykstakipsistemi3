@@ -31,6 +31,9 @@ import {
   getEffectiveOpenRouterApiKey,
   setCustomOpenRouterApiKey,
   customOpenRouterApiKey,
+  getEffectiveGithubApiKey,
+  setCustomGithubApiKey,
+  customGithubApiKey,
   getEffectiveProviderMode,
   setAiProviderMode,
   aiProviderMode,
@@ -1264,6 +1267,7 @@ router.get('/model-settings', async (req, res) => {
   const currentKey = getEffectiveGeminiApiKey();
   const groqKey = getEffectiveGroqApiKey();
   const openRouterKey = getEffectiveOpenRouterApiKey();
+  const githubKey = getEffectiveGithubApiKey();
   
   const mask = (k: string) => k ? (k.length > 10 ? `${k.slice(0, 6)}...${k.slice(-4)}` : '***') : '';
 
@@ -1283,6 +1287,8 @@ router.get('/model-settings', async (req, res) => {
     maskedGroqKey: mask(groqKey),
     hasOpenRouterKey: Boolean(openRouterKey),
     maskedOpenRouterKey: mask(openRouterKey),
+    hasGithubKey: Boolean(githubKey),
+    maskedGithubKey: mask(githubKey),
     availableModels: liveModels,
     features: [
       { key: 'AI_COACH_STUDENT', name: 'Öğrenci Bireysel Yapay Zeka Koç Tavsiyesi', category: 'Yapay Zeka Koçluğu', description: 'Öğrencinin haftalık çalışma tavsiyelerini ve net analizlerini hazırlar.' },
@@ -1305,13 +1311,14 @@ router.post('/refresh-models', async (req, res) => {
 
 router.post('/test-provider-key', async (req, res) => {
   const { provider, apiKey } = req.body;
-  if (!provider || !['gemini', 'groq', 'openrouter'].includes(provider)) {
+  if (!provider || !['gemini', 'groq', 'openrouter', 'github'].includes(provider)) {
     return res.status(400).json({ success: false, message: 'Geçersiz sağlayıcı belirtildi.' });
   }
 
   const effectiveKey = apiKey || (
     provider === 'gemini' ? getEffectiveGeminiApiKey() :
     provider === 'groq' ? getEffectiveGroqApiKey() :
+    provider === 'github' ? getEffectiveGithubApiKey() :
     getEffectiveOpenRouterApiKey()
   );
 
@@ -1329,6 +1336,7 @@ router.post('/model-settings', async (req, res) => {
     geminiApiKey: newApiKey,
     groqApiKey: newGroqKey,
     openRouterApiKey: newOpenRouterKey,
+    githubApiKey: newGithubKey,
     aiProviderMode: newProviderMode
   } = req.body;
   
@@ -1344,7 +1352,11 @@ router.post('/model-settings', async (req, res) => {
     setCustomOpenRouterApiKey(newOpenRouterKey.trim());
   }
 
-  if (newProviderMode && ['AUTO_FALLBACK', 'GEMINI_ONLY', 'GROQ_ONLY', 'OPENROUTER_ONLY'].includes(newProviderMode)) {
+  if (typeof newGithubKey === 'string') {
+    setCustomGithubApiKey(newGithubKey.trim());
+  }
+
+  if (newProviderMode && ['AUTO_FALLBACK', 'GEMINI_ONLY', 'GROQ_ONLY', 'OPENROUTER_ONLY', 'GITHUB_ONLY'].includes(newProviderMode)) {
     setAiProviderMode(newProviderMode);
   }
 
@@ -1378,13 +1390,15 @@ router.post('/model-settings', async (req, res) => {
       aiProviderMode: getEffectiveProviderMode(),
       ...(customGeminiApiKey ? { geminiApiKey: customGeminiApiKey } : {}),
       ...(customGroqApiKey ? { groqApiKey: customGroqApiKey } : {}),
-      ...(customOpenRouterApiKey ? { openRouterApiKey: customOpenRouterApiKey } : {})
+      ...(customOpenRouterApiKey ? { openRouterApiKey: customOpenRouterApiKey } : {}),
+      ...(customGithubApiKey ? { githubApiKey: customGithubApiKey } : {})
     }).catch(err => console.error('Failed to save settings to Firestore:', err));
   }
 
   const currentKey = getEffectiveGeminiApiKey();
   const groqKey = getEffectiveGroqApiKey();
   const openRouterKey = getEffectiveOpenRouterApiKey();
+  const githubKey = getEffectiveGithubApiKey();
   const mask = (k: string) => k ? (k.length > 10 ? `${k.slice(0, 6)}...${k.slice(-4)}` : '***') : '';
 
   return res.json({ 
@@ -1401,6 +1415,8 @@ router.post('/model-settings', async (req, res) => {
     maskedGroqKey: mask(groqKey),
     hasOpenRouterKey: Boolean(openRouterKey),
     maskedOpenRouterKey: mask(openRouterKey),
+    hasGithubKey: Boolean(githubKey),
+    maskedGithubKey: mask(githubKey),
     message: aiFeaturesEnabled 
       ? 'Yapay zeka çoklu sağlayıcı ayarları ve API anahtarları başarıyla güncellendi.'
       : 'Tüm yapay zeka servisleri rehber öğretmen / yönetici kararıyla KAPATILDI.'

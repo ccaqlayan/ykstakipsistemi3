@@ -85,16 +85,19 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   const [openRouterKeyInput, setOpenRouterKeyInput] = useState('');
   const [showOpenRouterKey, setShowOpenRouterKey] = useState(false);
 
+  const [githubKeyInput, setGithubKeyInput] = useState('');
+  const [showGithubKey, setShowGithubKey] = useState(false);
+
   // Saving states
-  const [savingProvider, setSavingProvider] = useState<'gemini' | 'groq' | 'openrouter' | null>(null);
+  const [savingProvider, setSavingProvider] = useState<'gemini' | 'groq' | 'openrouter' | 'github' | null>(null);
   const [saveMessages, setSaveMessages] = useState<Record<string, { text: string; isError?: boolean }>>({});
 
   // Testing states
-  const [testingProvider, setTestingProvider] = useState<'gemini' | 'groq' | 'openrouter' | null>(null);
+  const [testingProvider, setTestingProvider] = useState<'gemini' | 'groq' | 'openrouter' | 'github' | null>(null);
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string; modelUsed?: string }>>({});
 
   // Mode state
-  const [providerMode, setProviderMode] = useState<'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY'>(
+  const [providerMode, setProviderMode] = useState<'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY' | 'GITHUB_ONLY'>(
     modelSettings?.aiProviderMode || 'AUTO_FALLBACK'
   );
   const [isSavingMode, setIsSavingMode] = useState(false);
@@ -228,7 +231,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   // ➕ Add Custom Model Modal State
   const [showAddModelModal, setShowAddModelModal] = useState(false);
   const [newModelForm, setNewModelForm] = useState<{
-    provider: 'GEMINI' | 'GROQ' | 'OPENROUTER';
+    provider: 'GEMINI' | 'GROQ' | 'OPENROUTER' | 'GITHUB';
     id: string;
     name: string;
     description: string;
@@ -482,7 +485,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   const activeModelsList = displayModels.length > 0 ? displayModels : verifiedModels;
 
   // Single provider save handler
-  const handleSaveIndividualKey = async (provider: 'gemini' | 'groq' | 'openrouter', keyValue: string) => {
+  const handleSaveIndividualKey = async (provider: 'gemini' | 'groq' | 'openrouter' | 'github', keyValue: string) => {
     if (!keyValue.trim()) return;
     setSavingProvider(provider);
     setSaveMessages(prev => ({ ...prev, [provider]: undefined as any }));
@@ -492,6 +495,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
       if (provider === 'gemini') payload.geminiApiKey = keyValue.trim();
       if (provider === 'groq') payload.groqApiKey = keyValue.trim();
       if (provider === 'openrouter') payload.openRouterApiKey = keyValue.trim();
+      if (provider === 'github') payload.githubApiKey = keyValue.trim();
 
       const res = await fetch('/api/gemini/model-settings', {
         method: 'POST',
@@ -516,6 +520,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
         if (provider === 'gemini') setGeminiKeyInput('');
         if (provider === 'groq') setGroqKeyInput('');
         if (provider === 'openrouter') setOpenRouterKeyInput('');
+        if (provider === 'github') setGithubKeyInput('');
 
         // Also trigger parent callback if available
         if (provider === 'gemini' && handleSaveApiKey) {
@@ -538,7 +543,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   };
 
   // Provider test handler
-  const handleTestProvider = async (provider: 'gemini' | 'groq' | 'openrouter', customKey?: string) => {
+  const handleTestProvider = async (provider: 'gemini' | 'groq' | 'openrouter' | 'github', customKey?: string) => {
     setTestingProvider(provider);
     setTestResults(prev => ({ ...prev, [provider]: undefined as any }));
 
@@ -577,7 +582,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   };
 
   // Provider mode save handler
-  const handleSelectMode = async (mode: 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY') => {
+  const handleSelectMode = async (mode: 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY' | 'GITHUB_ONLY') => {
     setProviderMode(mode);
     setIsSavingMode(true);
     try {
@@ -595,7 +600,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* 1. ÜÇLÜ SAĞLAYICI GEÇİŞ MİMARİSİ VE ÇALIŞMA MODU SEÇİCİ */}
+      {/* 1. DÖRTLÜ SAĞLAYICI GEÇİŞ MİMARİSİ VE ÇALIŞMA MODU SEÇİCİ */}
       <div className="bg-slate-900/90 border border-indigo-500/40 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
           <div className="flex items-center space-x-3">
@@ -604,13 +609,13 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-white text-base flex items-center gap-2">
-                <span>Üçlü Akıllı Sağlayıcı Ağ Geçidi (Zero-Cost Failover)</span>
+                <span>Dörtlü Akıllı Sağlayıcı Ağ Geçidi (Zero-Cost Failover)</span>
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/30">
                   %100 Ücretsiz Havuz
                 </span>
               </h3>
               <p className="text-xs text-slate-300 mt-0.5">
-                Google Gemini, Groq Cloud ve OpenRouter kotalarını birleştirerek sınırsız ve kesintisiz sıfır maliyetli yapay zeka gücü sağlar.
+                Google Gemini, Groq Cloud, OpenRouter ve GitHub Models (GPT-4o) kotalarını birleştirerek sınırsız ve kesintisiz sıfır maliyetli yapay zeka gücü sağlar.
               </p>
             </div>
           </div>
@@ -620,7 +625,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             {providerMode === 'AUTO_FALLBACK' && (
               <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-sm">
                 <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />
-                <span>🔄 Akıllı Otomatik Geçiş (Gemini ➔ Groq ➔ OpenRouter)</span>
+                <span>🔄 Akıllı Otomatik Geçiş (Gemini ➔ Groq ➔ OpenRouter ➔ GitHub GPT-4o)</span>
               </span>
             )}
             {providerMode === 'GEMINI_ONLY' && (
@@ -641,6 +646,12 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                 <span>🌐 Yalnızca OpenRouter :free</span>
               </span>
             )}
+            {providerMode === 'GITHUB_ONLY' && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm">
+                <Bot className="w-3.5 h-3.5 text-emerald-400" />
+                <span>🐙 Yalnızca GitHub Models (GPT-4o)</span>
+              </span>
+            )}
             {isSavingMode && (
               <span className="inline-flex items-center gap-1 text-[11px] text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 font-medium">
                 <span className="w-2.5 h-2.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
@@ -656,7 +667,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             <span>Aktif Otomatik Geçiş Hattı (Pipeline)</span>
             <span className="text-indigo-400 font-normal lowercase">istekler sırayla denenir</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-center">
             {/* 1. Sıra: Gemini */}
             <div className={`p-3 rounded-xl border transition-all flex items-center justify-between ${
               modelSettings?.hasApiKey 
@@ -687,7 +698,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                 <span className="w-6 h-6 rounded-lg bg-amber-600 text-white font-bold text-xs flex items-center justify-center shadow">2</span>
                 <div>
                   <div className="font-bold text-xs text-white">Groq Cloud</div>
-                  <div className="text-[10px] text-slate-300">Ultra Hızlı Llama 3.2/3.3</div>
+                  <div className="text-[10px] text-slate-300">Ultra Hızlı GPT-OSS 120B</div>
                 </div>
               </div>
               {modelSettings?.hasGroqKey ? (
@@ -707,7 +718,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                 <span className="w-6 h-6 rounded-lg bg-cyan-600 text-white font-bold text-xs flex items-center justify-center shadow">3</span>
                 <div>
                   <div className="font-bold text-xs text-white">OpenRouter :free</div>
-                  <div className="text-[10px] text-slate-300">Limitsiz DeepSeek / Qwen</div>
+                  <div className="text-[10px] text-slate-300">Limitsiz Gemma / Nemotron</div>
                 </div>
               </div>
               {modelSettings?.hasOpenRouterKey ? (
@@ -716,13 +727,33 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                 <span className="text-[10px] bg-cyan-500/20 text-cyan-300 font-bold px-2 py-0.5 rounded border border-cyan-500/30">Yedek Bekliyor</span>
               )}
             </div>
+
+            {/* 4. Sıra: GitHub Models */}
+            <div className={`p-3 rounded-xl border transition-all flex items-center justify-between ${
+              modelSettings?.hasGithubKey 
+                ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' 
+                : 'bg-slate-900/60 border-slate-800 text-slate-400 opacity-60'
+            }`}>
+              <div className="flex items-center space-x-2.5">
+                <span className="w-6 h-6 rounded-lg bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shadow">4</span>
+                <div>
+                  <div className="font-bold text-xs text-white">GitHub Models</div>
+                  <div className="text-[10px] text-slate-300">Resmi GPT-4o & Mini</div>
+                </div>
+              </div>
+              {modelSettings?.hasGithubKey ? (
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Aktif</span>
+              ) : (
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/30">Yedek Bekliyor</span>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Çalışma Modu Seçici Butonları */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-slate-300">Geçiş & Öncelik Tercihi Seçimi:</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
             <button
               type="button"
               onClick={() => handleSelectMode('AUTO_FALLBACK')}
@@ -736,7 +767,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                 <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />
                 <span>🔄 Akıllı Otomatik Geçiş</span>
               </div>
-              <p className="text-[11px] text-slate-300 mt-1">Önerilen: Gemini ➔ Groq ➔ OpenRouter</p>
+              <p className="text-[11px] text-slate-300 mt-1">Önerilen: Gemini ➔ Groq ➔ OpenRouter ➔ GitHub</p>
             </button>
 
             <button
@@ -785,6 +816,22 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                 <span>🌐 Yalnızca OpenRouter</span>
               </div>
               <p className="text-[11px] text-slate-300 mt-1">Sadece OpenRouter :free havuzunu kullanır.</p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectMode('GITHUB_ONLY')}
+              className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                providerMode === 'GITHUB_ONLY'
+                  ? 'bg-emerald-600/30 border-emerald-400 text-white shadow-lg shadow-emerald-600/20 ring-1 ring-emerald-400'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+              }`}
+            >
+              <div className="font-bold text-xs flex items-center gap-1.5">
+                <Bot className="w-3.5 h-3.5 text-emerald-400" />
+                <span>🐙 Yalnızca GitHub (GPT-4o)</span>
+              </div>
+              <p className="text-[11px] text-slate-300 mt-1">Sadece resmi GPT-4o & GPT-4o Mini kullanır.</p>
             </button>
           </div>
         </div>
@@ -874,12 +921,13 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
           </div>
         )}
 
-        {/* 3 Provider Flow Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+        {/* 4 Provider Flow Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
           {(failoverData?.providers || [
             { name: 'GEMINI', displayName: 'Google Gemini', isActiveProvider: true, isCompletelyExhausted: false, activeModelId: 'gemini-3.7-flash', models: [] },
             { name: 'GROQ', displayName: 'Groq Cloud', isActiveProvider: false, isCompletelyExhausted: false, activeModelId: 'openai/gpt-oss-120b', models: [] },
-            { name: 'OPENROUTER', displayName: 'OpenRouter :free', isActiveProvider: false, isCompletelyExhausted: false, activeModelId: 'google/gemma-4-31b-it:free', models: [] }
+            { name: 'OPENROUTER', displayName: 'OpenRouter :free', isActiveProvider: false, isCompletelyExhausted: false, activeModelId: 'google/gemma-4-31b-it:free', models: [] },
+            { name: 'GITHUB', displayName: 'GitHub Models (GPT-4o)', isActiveProvider: false, isCompletelyExhausted: false, activeModelId: 'gpt-4o', models: [] }
           ]).map((prov: any) => {
             const isCurrentActiveProvider = failoverData?.activeProvider === prov.name;
             const isExhausted = prov.isCompletelyExhausted;
@@ -1081,8 +1129,8 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
         </div>
       </div>
 
-      {/* 2. ÜÇ AYRI API ANAHTARI YÖNETİM KARTLARI */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* 2. DÖRT AYRI API ANAHTARI YÖNETİM KARTLARI */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {/* KART 1: GOOGLE GEMINI */}
         <div className="bg-slate-900/90 border border-indigo-500/40 rounded-3xl p-5 shadow-xl backdrop-blur-md flex flex-col justify-between space-y-4">
           <div className="space-y-3">
@@ -1360,6 +1408,100 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
               title="Canlı Bağlantıyı Test Et"
             >
               {testingProvider === 'openrouter' ? <span className="w-3.5 h-3.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" /> : <Zap className="w-3.5 h-3.5 text-cyan-400" />}
+              <span>Test</span>
+            </button>
+          </div>
+        </div>
+
+        {/* KART 4: GITHUB MODELS */}
+        <div className="bg-slate-900/90 border border-emerald-500/40 rounded-3xl p-5 shadow-xl backdrop-blur-md flex flex-col justify-between space-y-4">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 bg-emerald-600/30 text-emerald-400 rounded-xl border border-emerald-500/30">
+                  <Bot className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-sm">GitHub Models</h4>
+                  <p className="text-[10px] text-slate-400">Resmi GPT-4o & Vision</p>
+                </div>
+              </div>
+              {modelSettings?.hasGithubKey ? (
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" />
+                  {modelSettings.maskedGithubKey || 'Aktif'}
+                </span>
+              ) : (
+                <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-full border border-rose-500/30 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  Tanımsız
+                </span>
+              )}
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Resmi OpenAI GPT-4o ve GPT-4o Mini modelleri ile görsel soru çözümü ve yüksek doğruluklu koçluk.
+            </p>
+
+            <a
+              href="https://github.com/settings/tokens"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 underline font-medium"
+            >
+              <span>GitHub'dan Ücretsiz Token Al</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+
+            {saveMessages['github'] && (
+              <div className={`text-xs p-2 rounded-xl border ${saveMessages['github'].isError ? 'bg-rose-500/20 border-rose-500/40 text-rose-300' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'}`}>
+                {saveMessages['github'].text}
+              </div>
+            )}
+
+            {testResults['github'] && (
+              <div className={`text-xs p-2 rounded-xl border ${testResults['github'].success ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : 'bg-rose-500/20 border-rose-500/40 text-rose-300'}`}>
+                {testResults['github'].message}
+              </div>
+            )}
+
+            <div className="relative">
+              <input
+                type={showGithubKey ? 'text' : 'password'}
+                value={githubKeyInput}
+                onChange={(e) => setGithubKeyInput(e.target.value)}
+                placeholder={modelSettings?.hasGithubKey ? `Mevcut: ${modelSettings.maskedGithubKey}` : 'ghp_... tokenınızı yapıştırın'}
+                className="w-full bg-slate-950/90 text-white placeholder-slate-500 text-xs font-mono px-3.5 py-2.5 rounded-xl border border-slate-700 focus:border-emerald-500 focus:outline-none pr-9"
+              />
+              <button
+                type="button"
+                onClick={() => setShowGithubKey(!showGithubKey)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1"
+              >
+                {showGithubKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 pt-2">
+            <button
+              type="button"
+              disabled={savingProvider === 'github' || !githubKeyInput.trim()}
+              onClick={() => handleSaveIndividualKey('github', githubKeyInput)}
+              className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow"
+            >
+              {savingProvider === 'github' ? <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+              <span>Kaydet</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={testingProvider === 'github' || (!githubKeyInput.trim() && !modelSettings?.hasGithubKey)}
+              onClick={() => handleTestProvider('github', githubKeyInput)}
+              className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 border border-slate-700"
+              title="Canlı Bağlantıyı Test Et"
+            >
+              {testingProvider === 'github' ? <span className="w-3.5 h-3.5 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" /> : <Zap className="w-3.5 h-3.5 text-emerald-400" />}
               <span>Test</span>
             </button>
           </div>
@@ -1966,11 +2108,12 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
               {/* Sağlayıcı Seçimi */}
               <div>
                 <label className="text-xs font-bold text-slate-300 block mb-1.5">Sağlayıcı Seçin:</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
                     { id: 'GEMINI', name: 'Google Gemini' },
                     { id: 'GROQ', name: 'Groq Cloud' },
-                    { id: 'OPENROUTER', name: 'OpenRouter :free' }
+                    { id: 'OPENROUTER', name: 'OpenRouter' },
+                    { id: 'GITHUB', name: 'GitHub Models' }
                   ].map((p) => (
                     <button
                       key={p.id}
@@ -2003,6 +2146,8 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                         ? 'Örn: gemini-3.5-flash'
                         : newModelForm.provider === 'GROQ'
                         ? 'Örn: groq/compound'
+                        : newModelForm.provider === 'GITHUB'
+                        ? 'Örn: gpt-4o veya gpt-4o-mini'
                         : 'Örn: google/gemma-4-31b-it:free'
                     }
                     className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400"

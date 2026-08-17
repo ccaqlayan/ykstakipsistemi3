@@ -3,13 +3,14 @@ import {
   getEffectiveGeminiApiKey, 
   getEffectiveGroqApiKey, 
   getEffectiveOpenRouterApiKey, 
+  getEffectiveGithubApiKey,
   getEffectiveProviderMode,
   generateContentWithFallback,
   mapToActualGeminiModel
 } from '../config';
 
-export type AiProvider = 'GEMINI' | 'GROQ' | 'OPENROUTER';
-export type AiProviderMode = 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY';
+export type AiProvider = 'GEMINI' | 'GROQ' | 'OPENROUTER' | 'GITHUB';
+export type AiProviderMode = 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY' | 'GITHUB_ONLY';
 
 export interface UnifiedAiRequestOptions {
   prompt: string;
@@ -429,8 +430,116 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
 }
 
 /**
+ * Call GitHub Models (Azure AI Inference OpenAI compatible API) with automatic model fallback
+ * Endpoint: https://models.inference.ai.azure.com/chat/completions
+ */
+export async function callGithubModels(options: UnifiedAiRequestOptions): Promise<UnifiedAiResponse> {
+  const apiKey = getEffectiveGithubApiKey();
+  if (!apiKey) {
+    throw new Error('GitHub Models API Token (Personal Access Token) sistemde tanımlanmamış.');
+  }
+
+  const { getActiveSequenceForProvider, recordModelExhaustion, recordModelSuccess } = await import('./aiFailoverManager');
+  const candidateModels = getActiveSequenceForProvider('GITHUB', [
+    'gpt-4o',
+    'gpt-4o-mini',
+    'meta-llama-3.2-11b-vision-instruct',
+    'Phi-3.5-vision-instruct'
+  ]);
+
+  const imgDataUrl = getImageDataUrl(options);
+  const messages: any[] = [];
+
+  if (options.systemInstruction) {
+    messages.push({ role: 'system', content: options.systemInstruction });
+  }
+
+  if (imgDataUrl) {
+    messages.push({
+      role: 'user',
+      content: [
+        { type: 'text', text: options.prompt },
+        { type: 'image_url', image_url: { url: imgDataUrl } }
+      ]
+    });
+  } else {
+    messages.push({ role: 'user', content: options.prompt });
+  }
+
+  let lastError: any = null;
+
+  for (const model of candidateModels) {
+    try {
+      const requestBody: any = {
+        model,
+        messages,
+        max_tokens: options.maxTokens || 4096,
+        temperature: options.temperature ?? 0.3
+      };
+
+      const res = await fetch('https://models.inference.ai.azure.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        signal: AbortSignal.timeout(25000),
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        if (res.status === 429 || res.status === 402 || res.status === 503 || res.status === 502 || res.status === 504 || errBody.includes('rate_limit') || errBody.includes('quota') || errBody.includes('exceeded')) {
+          console.warn(`[AI_FAILOVER] GitHub Model ${model} limit hatası aldı (${res.status}). Cooldown'a alındı.`);
+          recordModelExhaustion('GITHUB', model, errBody);
+        }
+        throw new Error(`GitHub Models API Hatası (${res.status}): ${errBody.substring(0, 300)}`);
+      }
+
+      const data = await res.json();
+      const choice = data?.choices?.[0];
+      let rawText = '';
+      if (typeof choice?.message?.content === 'string') {
+        rawText = choice.message.content;
+      } else if (Array.isArray(choice?.message?.content)) {
+        rawText = choice.message.content
+          .map((part: any) => (typeof part === 'string' ? part : part?.text || ''))
+          .join('\n');
+      } else if (choice?.message?.reasoning && typeof choice.message.reasoning === 'string') {
+        rawText = choice.message.reasoning;
+      } else if (typeof choice?.text === 'string') {
+        rawText = choice.text;
+      }
+
+      const text = cleanAiOutputText(rawText);
+      const usage = data?.usage || {};
+      const resolvedModel = data?.model || model;
+
+      if (!text || text.length < 8) {
+        throw new Error(`Model ${model} geçerli bir içerik üretmedi.`);
+      }
+
+      recordModelSuccess('GITHUB', resolvedModel);
+
+      return {
+        text,
+        providerUsed: 'GITHUB',
+        modelUsed: resolvedModel,
+        promptTokens: usage.prompt_tokens || 0,
+        candidatesTokens: usage.completion_tokens || 0
+      };
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[AI_GATEWAY] GitHub Model ${model} failed: ${err.message}. Trying next model...`);
+    }
+  }
+
+  throw lastError || new Error('GitHub Models tüm modelleri denenirken hata oluştu.');
+}
+
+/**
  * Universal Unified Execution Engine with Failover Pipeline
- * Order: Gemini -> Groq -> OpenRouter (with 0ms skip for completely exhausted providers)
+ * Order: Gemini -> Groq -> OpenRouter -> GitHub Models (with 0ms skip for completely exhausted providers)
  */
 export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions): Promise<UnifiedAiResponse> {
   const mode = getEffectiveProviderMode();
@@ -438,14 +547,22 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
   const hasImage = Boolean(imgDataUrl);
 
   // If request contains an image and mode is GROQ_ONLY:
-  // Since Groq API currently only provides text LLMs, automatically use Gemini or OpenRouter for image reasoning if keys exist
+  // Automatically use Gemini, GitHub Models, or OpenRouter for image reasoning
   if (hasImage && mode === 'GROQ_ONLY') {
     if (getEffectiveGeminiApiKey()) {
       console.log('[AI_GATEWAY] Image detected in GROQ_ONLY mode. Seamlessly routing to Google Gemini Vision...');
       try {
         return await callGemini(options);
       } catch (err: any) {
-        console.warn('[AI_GATEWAY] Gemini failed for image in GROQ_ONLY mode, continuing with Groq/OpenRouter fallback...', err);
+        console.warn('[AI_GATEWAY] Gemini failed for image in GROQ_ONLY mode...', err);
+      }
+    }
+    if (getEffectiveGithubApiKey()) {
+      console.log('[AI_GATEWAY] Image detected in GROQ_ONLY mode. Seamlessly routing to GitHub GPT-4o Vision...');
+      try {
+        return await callGithubModels(options);
+      } catch (err: any) {
+        console.warn('[AI_GATEWAY] GitHub Models failed for image in GROQ_ONLY mode...', err);
       }
     }
     if (getEffectiveOpenRouterApiKey()) {
@@ -473,45 +590,59 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
     return await callOpenRouter(options);
   }
 
-  // Mode 4: AUTO_FALLBACK (Gemini -> Groq -> OpenRouter)
-  // Check if providers are completely exhausted to skip them instantly in 0ms!
+  // Mode 4: GITHUB_ONLY
+  if (mode === 'GITHUB_ONLY') {
+    return await callGithubModels(options);
+  }
+
+  // Mode 5: AUTO_FALLBACK (Gemini -> Groq -> OpenRouter -> GitHub Models)
   const { isProviderCompletelyExhausted } = await import('./aiFailoverManager');
   const geminiExhausted = isProviderCompletelyExhausted('GEMINI');
   const groqExhausted = isProviderCompletelyExhausted('GROQ');
+  const openRouterExhausted = isProviderCompletelyExhausted('OPENROUTER');
+  const githubExhausted = isProviderCompletelyExhausted('GITHUB');
 
   const providersToTry: { name: AiProvider; fn: () => Promise<UnifiedAiResponse> }[] = [];
 
   if (hasImage) {
-    // Multimodal pipeline: Gemini -> OpenRouter -> Groq
+    // Multimodal Vision pipeline: Gemini -> GitHub (GPT-4o) -> OpenRouter -> Groq
     if (getEffectiveGeminiApiKey() && !geminiExhausted) {
       providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
     }
-    if (getEffectiveOpenRouterApiKey()) {
+    if (getEffectiveGithubApiKey() && !githubExhausted) {
+      providersToTry.push({ name: 'GITHUB', fn: () => callGithubModels(options) });
+    }
+    if (getEffectiveOpenRouterApiKey() && !openRouterExhausted) {
       providersToTry.push({ name: 'OPENROUTER', fn: () => callOpenRouter(options) });
     }
     if (getEffectiveGroqApiKey() && !groqExhausted) {
       providersToTry.push({ name: 'GROQ', fn: () => callGroq(options) });
     }
     // Fallback if all were skipped
-    if (providersToTry.length === 0 && getEffectiveGeminiApiKey()) {
-      providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
+    if (providersToTry.length === 0) {
+      if (getEffectiveGeminiApiKey()) providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
+      if (getEffectiveGithubApiKey()) providersToTry.push({ name: 'GITHUB', fn: () => callGithubModels(options) });
     }
   } else {
-    // Text pipeline: Gemini -> Groq -> OpenRouter
+    // Text pipeline: Gemini -> Groq -> OpenRouter -> GitHub Models
     if (getEffectiveGeminiApiKey() && !geminiExhausted) {
       providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
     } else if (geminiExhausted) {
-      console.log('[AI_FAILOVER] ⚡ Gemini is completely exhausted (24h cooldown). Instantly skipping to next provider (0ms latency)...');
+      console.log('[AI_FAILOVER] ⚡ Gemini is completely exhausted. Skipping to next provider...');
     }
 
     if (getEffectiveGroqApiKey() && !groqExhausted) {
       providersToTry.push({ name: 'GROQ', fn: () => callGroq(options) });
     } else if (groqExhausted) {
-      console.log('[AI_FAILOVER] ⚡ Groq is completely exhausted (24h cooldown). Instantly skipping to OpenRouter...');
+      console.log('[AI_FAILOVER] ⚡ Groq is completely exhausted. Skipping to next provider...');
     }
 
-    if (getEffectiveOpenRouterApiKey()) {
+    if (getEffectiveOpenRouterApiKey() && !openRouterExhausted) {
       providersToTry.push({ name: 'OPENROUTER', fn: () => callOpenRouter(options) });
+    }
+
+    if (getEffectiveGithubApiKey() && !githubExhausted) {
+      providersToTry.push({ name: 'GITHUB', fn: () => callGithubModels(options) });
     }
 
     // If all providers were exhausted, try all anyway as last resort
@@ -519,6 +650,7 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
       if (getEffectiveGeminiApiKey()) providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
       if (getEffectiveGroqApiKey()) providersToTry.push({ name: 'GROQ', fn: () => callGroq(options) });
       if (getEffectiveOpenRouterApiKey()) providersToTry.push({ name: 'OPENROUTER', fn: () => callOpenRouter(options) });
+      if (getEffectiveGithubApiKey()) providersToTry.push({ name: 'GITHUB', fn: () => callGithubModels(options) });
     }
   }
 
@@ -547,7 +679,7 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
  * Test Connection for a specific Provider Key
  */
 export async function testProviderApiKey(
-  provider: 'gemini' | 'groq' | 'openrouter',
+  provider: 'gemini' | 'groq' | 'openrouter' | 'github',
   apiKey: string
 ): Promise<{ success: boolean; message: string; modelUsed?: string }> {
   const trimmed = (apiKey || '').trim();
@@ -609,7 +741,7 @@ export async function testProviderApiKey(
         });
         if (!res.ok) {
           const body = await res.text();
-          return { success: false, message: `Groq Doğrulama Hatası (${res.status}): ${body.substring(0, 200)}` };
+          return { success: false, message: `Groq Doğrulama Hatası (${modelsRes.status}): ${body.substring(0, 200)}` };
         }
         return { success: true, message: 'Groq Cloud bağlantısı başarılı!', modelUsed: selectedModel };
       } catch (err: any) {
@@ -618,7 +750,6 @@ export async function testProviderApiKey(
     }
 
     if (provider === 'openrouter') {
-      // Use specific active free models
       const testModels = [
         'google/gemma-4-26b-a4b-it:free',
         'openrouter/free',
@@ -661,6 +792,31 @@ export async function testProviderApiKey(
       return { success: false, message: `OpenRouter Doğrulama Hatası: ${lastTestErr}` };
     }
 
+    if (provider === 'github') {
+      try {
+        const res = await fetch('https://models.inference.ai.azure.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${trimmed}`,
+            'Content-Type': 'application/json'
+          },
+          signal: AbortSignal.timeout(15000),
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: 'Test. Respond with OK.' }],
+            max_tokens: 5
+          })
+        });
+        if (!res.ok) {
+          const body = await res.text();
+          return { success: false, message: `GitHub Models Doğrulama Hatası (${res.status}): ${body.substring(0, 200)}` };
+        }
+        return { success: true, message: 'GitHub Models (GPT-4o & GPT-4o Mini) bağlantısı başarılı!', modelUsed: 'gpt-4o-mini' };
+      } catch (err: any) {
+        return { success: false, message: `GitHub Models Bağlantı Hatası: ${err.message}` };
+      }
+    }
+
     return { success: false, message: 'Bilinmeyen sağlayıcı.' };
   } catch (err: any) {
     return { success: false, message: err.message || 'Bağlantı testi sırasında hata oluştu.' };
@@ -672,7 +828,7 @@ export async function testProviderApiKey(
  * Supports both text prompts and vision/image testing
  */
 export async function testSingleModel(
-  provider: 'GEMINI' | 'GROQ' | 'OPENROUTER',
+  provider: 'GEMINI' | 'GROQ' | 'OPENROUTER' | 'GITHUB',
   modelId: string,
   prompt?: string,
   imageBase64?: string,
@@ -797,6 +953,44 @@ export async function testSingleModel(
       if (!res.ok) {
         const body = await res.text();
         return { success: false, model: modelId, provider, latencyMs, error: `OpenRouter Hatası (${res.status})`, rawError: body };
+      }
+      const data = await res.json();
+      const text = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || '';
+      return { success: true, model: modelId, provider, latencyMs, output: text };
+    }
+
+    if (provider === 'GITHUB') {
+      const apiKey = getEffectiveGithubApiKey();
+      if (!apiKey) throw new Error('GitHub Models Token sisteme girilmemiş.');
+
+      let messageContent: any = testPrompt;
+      if (imageBase64) {
+        const fullDataUrl = imageBase64.startsWith('data:')
+          ? imageBase64
+          : `data:${imageMimeType || 'image/jpeg'};base64,${imageBase64}`;
+        messageContent = [
+          { type: 'text', text: testPrompt },
+          { type: 'image_url', image_url: { url: fullDataUrl } }
+        ];
+      }
+
+      const res = await fetch('https://models.inference.ai.azure.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        signal: AbortSignal.timeout(25000),
+        body: JSON.stringify({
+          model: modelId,
+          messages: [{ role: 'user', content: messageContent }],
+          max_tokens: 1024
+        })
+      });
+      const latencyMs = Date.now() - startTime;
+      if (!res.ok) {
+        const body = await res.text();
+        return { success: false, model: modelId, provider, latencyMs, error: `GitHub Models Hatası (${res.status})`, rawError: body };
       }
       const data = await res.json();
       const text = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || '';

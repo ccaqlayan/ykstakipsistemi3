@@ -107,7 +107,9 @@ export interface ModelSettingsData {
   maskedGroqKey?: string;
   hasOpenRouterKey?: boolean;
   maskedOpenRouterKey?: string;
-  aiProviderMode?: 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY';
+  hasGithubKey?: boolean;
+  maskedGithubKey?: string;
+  aiProviderMode?: 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY' | 'GITHUB_ONLY';
 }
 
 export interface StorageFolderItem {

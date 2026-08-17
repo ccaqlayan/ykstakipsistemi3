@@ -1,7 +1,7 @@
 import { db } from '../config';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-export type AiProviderName = 'GEMINI' | 'GROQ' | 'OPENROUTER';
+export type AiProviderName = 'GEMINI' | 'GROQ' | 'OPENROUTER' | 'GITHUB';
 
 export interface ModelCooldownEntry {
   provider: AiProviderName;
@@ -19,16 +19,19 @@ export interface AiFailoverState {
     GEMINI: string;
     GROQ: string;
     OPENROUTER: string;
+    GITHUB: string;
   };
   customModelOrder?: {
     GEMINI?: string[];
     GROQ?: string[];
     OPENROUTER?: string[];
+    GITHUB?: string[];
   };
   customModels?: {
     GEMINI?: ProviderModelMetadata[];
     GROQ?: ProviderModelMetadata[];
     OPENROUTER?: ProviderModelMetadata[];
+    GITHUB?: ProviderModelMetadata[];
   };
   cooldowns: Record<string, ModelCooldownEntry>; // key: `${provider}:${modelId}`
   updatedAt: string;
@@ -67,6 +70,12 @@ export const PROVIDER_MODEL_SEQUENCES: Record<AiProviderName, ProviderModelMetad
     { id: 'openai/gpt-oss-20b:free', name: 'GPT-OSS 20B Free', description: 'Açık Kaynak Hızlı Yedek Model', badge: ':free Açık', isVisionCapable: false },
     { id: 'z-ai/glm-5.2:free', name: 'GLM 5.2 Free', description: 'Çok Dilli & Geniş Kapsamlı Yedek', badge: ':free Yedek', isVisionCapable: false },
     { id: 'liquid/lfm-2.5-2.6b:free', name: 'LFM 2.5 Free', description: 'Temel Görevler İçin Son Savunma Hattı', badge: ':free Son Yedek', isVisionCapable: false }
+  ],
+  GITHUB: [
+    { id: 'gpt-4o', name: 'GPT-4o (OpenAI)', description: 'En Gelişmiş OpenAI Zekası & Görsel Soru Çözümü', badge: 'GPT-4o Lider', isVisionCapable: true },
+    { id: 'gpt-4o-mini', name: 'GPT-4o Mini (OpenAI)', description: 'Hızlı, Akıllı & Görsel Analiz Destekli', badge: 'GPT-4o Mini Hızlı', isVisionCapable: true },
+    { id: 'meta-llama-3.2-11b-vision-instruct', name: 'Llama 3.2 11B Vision', description: 'Meta Açık Kaynak Görsel & Problem Çözümü', badge: '11B Vision', isVisionCapable: true },
+    { id: 'Phi-3.5-vision-instruct', name: 'Phi 3.5 Vision', description: 'Microsoft Grafik ve Tablo Analizi', badge: 'Phi Vision', isVisionCapable: true }
   ]
 };
 
@@ -77,7 +86,8 @@ let failoverState: AiFailoverState = {
   activeModelCursors: {
     GEMINI: 'gemini-3.7-flash',
     GROQ: 'openai/gpt-oss-120b',
-    OPENROUTER: 'google/gemma-4-31b-it:free'
+    OPENROUTER: 'google/gemma-4-31b-it:free',
+    GITHUB: 'gpt-4o'
   },
   customModelOrder: {
     GEMINI: ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.1-pro'],
@@ -90,7 +100,8 @@ let failoverState: AiFailoverState = {
       'openai/gpt-oss-20b:free',
       'z-ai/glm-5.2:free',
       'liquid/lfm-2.5-2.6b:free'
-    ]
+    ],
+    GITHUB: ['gpt-4o', 'gpt-4o-mini', 'meta-llama-3.2-11b-vision-instruct', 'Phi-3.5-vision-instruct']
   },
   cooldowns: {},
   updatedAt: new Date().toISOString()
@@ -112,7 +123,7 @@ export async function initFailoverStateFromFirestore() {
       if (typeof data.cooldownHours === 'number') {
         failoverState.cooldownHours = data.cooldownHours;
       }
-      if (data.activeProvider && ['GEMINI', 'GROQ', 'OPENROUTER'].includes(data.activeProvider)) {
+      if (data.activeProvider && ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB'].includes(data.activeProvider)) {
         failoverState.activeProvider = data.activeProvider;
       }
       if (data.activeModelCursors && typeof data.activeModelCursors === 'object') {
@@ -324,11 +335,13 @@ export async function resetAllFailovers(): Promise<AiFailoverState> {
   const geminiFirst = failoverState.customModelOrder?.GEMINI?.[0] || 'gemini-3.7-flash';
   const groqFirst = failoverState.customModelOrder?.GROQ?.[0] || 'openai/gpt-oss-120b';
   const openRouterFirst = failoverState.customModelOrder?.OPENROUTER?.[0] || 'google/gemma-4-31b-it:free';
+  const githubFirst = failoverState.customModelOrder?.GITHUB?.[0] || 'gpt-4o';
 
   failoverState.activeModelCursors = {
     GEMINI: geminiFirst,
     GROQ: groqFirst,
-    OPENROUTER: openRouterFirst
+    OPENROUTER: openRouterFirst,
+    GITHUB: githubFirst
   };
   await syncToFirestore();
   console.log('[AI_FAILOVER] 🔄 All cooldowns have been reset by admin.');
@@ -533,11 +546,12 @@ export function getFailoverStatus() {
     }>;
   }> = [];
 
-  const providerNames: AiProviderName[] = ['GEMINI', 'GROQ', 'OPENROUTER'];
+  const providerNames: AiProviderName[] = ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB'];
   const displayNames: Record<AiProviderName, string> = {
     GEMINI: 'Google Gemini',
     GROQ: 'Groq Cloud',
-    OPENROUTER: 'OpenRouter :free'
+    OPENROUTER: 'OpenRouter :free',
+    GITHUB: 'GitHub Models (GPT-4o)'
   };
 
   const now = Date.now();
