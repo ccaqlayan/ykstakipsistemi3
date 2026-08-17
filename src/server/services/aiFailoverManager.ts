@@ -1,7 +1,7 @@
 import { db } from '../config';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-export type AiProviderName = 'GEMINI' | 'GROQ' | 'OPENROUTER' | 'GITHUB';
+export type AiProviderName = 'GEMINI' | 'GROQ' | 'OPENROUTER' | 'CLOUDFLARE';
 
 export interface ModelCooldownEntry {
   provider: AiProviderName;
@@ -19,20 +19,20 @@ export interface AiFailoverState {
     GEMINI: string;
     GROQ: string;
     OPENROUTER: string;
-    GITHUB: string;
+    CLOUDFLARE: string;
   };
   customProviderOrder?: AiProviderName[];
   customModelOrder?: {
     GEMINI?: string[];
     GROQ?: string[];
     OPENROUTER?: string[];
-    GITHUB?: string[];
+    CLOUDFLARE?: string[];
   };
   customModels?: {
     GEMINI?: ProviderModelMetadata[];
     GROQ?: ProviderModelMetadata[];
     OPENROUTER?: ProviderModelMetadata[];
-    GITHUB?: ProviderModelMetadata[];
+    CLOUDFLARE?: ProviderModelMetadata[];
   };
   modelVisionOverrides?: Record<string, boolean>; // key: `${provider}:${modelId}`
   cooldowns: Record<string, ModelCooldownEntry>; // key: `${provider}:${modelId}`
@@ -73,11 +73,12 @@ export const PROVIDER_MODEL_SEQUENCES: Record<AiProviderName, ProviderModelMetad
     { id: 'z-ai/glm-5.2:free', name: 'GLM 5.2 Free', description: 'Çok Dilli & Geniş Kapsamlı Yedek', badge: ':free Yedek', isVisionCapable: false },
     { id: 'liquid/lfm-2.5-2.6b:free', name: 'LFM 2.5 Free', description: 'Temel Görevler İçin Son Savunma Hattı', badge: ':free Son Yedek', isVisionCapable: false }
   ],
-  GITHUB: [
-    { id: 'gpt-4o', name: 'GPT-4o (OpenAI)', description: 'En Gelişmiş OpenAI Zekası & Görsel Soru Çözümü', badge: 'GPT-4o Lider', isVisionCapable: true },
-    { id: 'gpt-4o-mini', name: 'GPT-4o Mini (OpenAI)', description: 'Hızlı, Akıllı & Görsel Analiz Destekli', badge: 'GPT-4o Mini Hızlı', isVisionCapable: true },
-    { id: 'meta-llama-3.2-11b-vision-instruct', name: 'Llama 3.2 11B Vision', description: 'Meta Açık Kaynak Görsel & Problem Çözümü', badge: '11B Vision', isVisionCapable: true },
-    { id: 'Phi-3.5-vision-instruct', name: 'Phi 3.5 Vision', description: 'Microsoft Grafik ve Tablo Analizi', badge: 'Phi Vision', isVisionCapable: true }
+  CLOUDFLARE: [
+    { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', name: 'Llama 3.3 70B Fast', description: 'Meta\'nın En Güçlü Açık Modeli — Yüksek Akıl Yürütme', badge: '70B Hızlı Amiral', isVisionCapable: false },
+    { id: '@cf/meta/llama-3.1-8b-instruct', name: 'Llama 3.1 8B Instruct', description: 'Ultra Düşük Gecikme & Hızlı Soru Cevaplama', badge: '8B Ultra Hızlı', isVisionCapable: false },
+    { id: '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b', name: 'DeepSeek R1 Distill 32B', description: 'Derin Mantıksal Çözümleme & Matematik Muhakemesi', badge: 'R1 Akıl Yürütme', isVisionCapable: false },
+    { id: '@cf/meta/llama-3.2-11b-vision-instruct', name: 'Llama 3.2 11B Vision', description: 'Görsel Soru Çözümü & Resim Analizi', badge: '11B Vision', isVisionCapable: true },
+    { id: '@cf/qwen/qwen2.5-7b-instruct', name: 'Qwen 2.5 7B', description: 'Çok Dilli, Dengeli & Hızlı Türkçe Başarımı', badge: 'Qwen 7B Dengeli', isVisionCapable: false }
   ]
 };
 
@@ -89,9 +90,9 @@ let failoverState: AiFailoverState = {
     GEMINI: 'gemini-3.7-flash',
     GROQ: 'openai/gpt-oss-120b',
     OPENROUTER: 'google/gemma-4-31b-it:free',
-    GITHUB: 'gpt-4o'
+    CLOUDFLARE: '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
   },
-  customProviderOrder: ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB'],
+  customProviderOrder: ['GEMINI', 'GROQ', 'OPENROUTER', 'CLOUDFLARE'],
   customModelOrder: {
     GEMINI: ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.1-pro'],
     GROQ: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'groq/compound', 'groq/compound-mini'],
@@ -104,7 +105,13 @@ let failoverState: AiFailoverState = {
       'z-ai/glm-5.2:free',
       'liquid/lfm-2.5-2.6b:free'
     ],
-    GITHUB: ['gpt-4o', 'gpt-4o-mini', 'meta-llama-3.2-11b-vision-instruct', 'Phi-3.5-vision-instruct']
+    CLOUDFLARE: [
+      '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+      '@cf/meta/llama-3.1-8b-instruct',
+      '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',
+      '@cf/meta/llama-3.2-11b-vision-instruct',
+      '@cf/qwen/qwen2.5-7b-instruct'
+    ]
   },
   modelVisionOverrides: {},
   cooldowns: {},
@@ -127,7 +134,7 @@ export async function initFailoverStateFromFirestore() {
       if (typeof data.cooldownHours === 'number') {
         failoverState.cooldownHours = data.cooldownHours;
       }
-      if (data.activeProvider && ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB'].includes(data.activeProvider)) {
+      if (data.activeProvider && ['GEMINI', 'GROQ', 'OPENROUTER', 'CLOUDFLARE'].includes(data.activeProvider)) {
         failoverState.activeProvider = data.activeProvider;
       }
       if (data.activeModelCursors && typeof data.activeModelCursors === 'object') {
@@ -137,8 +144,8 @@ export async function initFailoverStateFromFirestore() {
         };
       }
       if (Array.isArray(data.customProviderOrder) && data.customProviderOrder.length > 0) {
-        const validProviders: AiProviderName[] = ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB'];
-        const filtered = data.customProviderOrder.filter(p => validProviders.includes(p));
+        const validProviders: AiProviderName[] = ['GEMINI', 'GROQ', 'OPENROUTER', 'CLOUDFLARE'];
+        const filtered = data.customProviderOrder.filter(p => validProviders.includes(p as AiProviderName)) as AiProviderName[];
         for (const vp of validProviders) {
           if (!filtered.includes(vp)) filtered.push(vp);
         }
@@ -353,13 +360,13 @@ export async function resetAllFailovers(): Promise<AiFailoverState> {
   const geminiFirst = failoverState.customModelOrder?.GEMINI?.[0] || 'gemini-3.7-flash';
   const groqFirst = failoverState.customModelOrder?.GROQ?.[0] || 'openai/gpt-oss-120b';
   const openRouterFirst = failoverState.customModelOrder?.OPENROUTER?.[0] || 'google/gemma-4-31b-it:free';
-  const githubFirst = failoverState.customModelOrder?.GITHUB?.[0] || 'gpt-4o';
+  const cloudflareFirst = failoverState.customModelOrder?.CLOUDFLARE?.[0] || '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
   failoverState.activeModelCursors = {
     GEMINI: geminiFirst,
     GROQ: groqFirst,
     OPENROUTER: openRouterFirst,
-    GITHUB: githubFirst
+    CLOUDFLARE: cloudflareFirst
   };
   await syncToFirestore();
   console.log('[AI_FAILOVER] 🔄 All cooldowns have been reset by admin.');
@@ -531,10 +538,10 @@ export async function reorderModel(provider: AiProviderName, modelId: string, di
  * Gets the current ordered sequence of AI Providers
  */
 export function getProviderSequence(): AiProviderName[] {
-  const validNames: AiProviderName[] = ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB'];
+  const validNames: AiProviderName[] = ['GEMINI', 'GROQ', 'OPENROUTER', 'CLOUDFLARE'];
   const current = failoverState.customProviderOrder;
   if (Array.isArray(current) && current.length > 0) {
-    const filtered = current.filter(p => validNames.includes(p));
+    const filtered = current.filter(p => validNames.includes(p as AiProviderName)) as AiProviderName[];
     for (const v of validNames) {
       if (!filtered.includes(v)) filtered.push(v);
     }
@@ -547,8 +554,8 @@ export function getProviderSequence(): AiProviderName[] {
  * Reorders the custom sequence of AI Providers and saves to Firestore
  */
 export async function reorderProviders(newOrder: AiProviderName[]): Promise<AiFailoverState> {
-  const validNames: AiProviderName[] = ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB'];
-  const filtered = (newOrder || []).filter(p => validNames.includes(p));
+  const validNames: AiProviderName[] = ['GEMINI', 'GROQ', 'OPENROUTER', 'CLOUDFLARE'];
+  const filtered = (newOrder || []).filter(p => validNames.includes(p as AiProviderName)) as AiProviderName[];
   for (const v of validNames) {
     if (!filtered.includes(v)) filtered.push(v);
   }
@@ -649,7 +656,7 @@ export function getFailoverStatus() {
     GEMINI: 'Google Gemini',
     GROQ: 'Groq Cloud',
     OPENROUTER: 'OpenRouter :free',
-    GITHUB: 'GitHub Models (GPT-4o)'
+    CLOUDFLARE: 'Cloudflare Workers AI'
   };
 
   const now = Date.now();

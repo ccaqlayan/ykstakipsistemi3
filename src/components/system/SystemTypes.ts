@@ -107,9 +107,11 @@ export interface ModelSettingsData {
   maskedGroqKey?: string;
   hasOpenRouterKey?: boolean;
   maskedOpenRouterKey?: string;
-  hasGithubKey?: boolean;
-  maskedGithubKey?: string;
-  aiProviderMode?: 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY' | 'GITHUB_ONLY';
+  hasCloudflareToken?: boolean;
+  maskedCloudflareToken?: string;
+  hasCloudflareAccountId?: boolean;
+  maskedCloudflareAccountId?: string;
+  aiProviderMode?: 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY' | 'CLOUDFLARE_ONLY';
 }
 
 export interface StorageFolderItem {

@@ -31,9 +31,12 @@ import {
   getEffectiveOpenRouterApiKey,
   setCustomOpenRouterApiKey,
   customOpenRouterApiKey,
-  getEffectiveGithubApiKey,
-  setCustomGithubApiKey,
-  customGithubApiKey,
+  getEffectiveCloudflareApiToken,
+  setCustomCloudflareApiToken,
+  customCloudflareApiToken,
+  getEffectiveCloudflareAccountId,
+  setCustomCloudflareAccountId,
+  customCloudflareAccountId,
   getEffectiveProviderMode,
   setAiProviderMode,
   aiProviderMode,
@@ -322,7 +325,7 @@ function cleanAndParseJson(raw: string): any {
 }
 
 function hasAnyAiApiKey(): boolean {
-  return Boolean(getEffectiveGeminiApiKey() || getEffectiveGroqApiKey() || getEffectiveOpenRouterApiKey());
+  return Boolean(getEffectiveGeminiApiKey() || getEffectiveGroqApiKey() || getEffectiveOpenRouterApiKey() || getEffectiveCloudflareApiToken());
 }
 
 // -------------------------------------------------------------
@@ -1267,7 +1270,8 @@ router.get('/model-settings', async (req, res) => {
   const currentKey = getEffectiveGeminiApiKey();
   const groqKey = getEffectiveGroqApiKey();
   const openRouterKey = getEffectiveOpenRouterApiKey();
-  const githubKey = getEffectiveGithubApiKey();
+  const cloudflareToken = getEffectiveCloudflareApiToken();
+  const cloudflareAccountId = getEffectiveCloudflareAccountId();
   
   const mask = (k: string) => k ? (k.length > 10 ? `${k.slice(0, 6)}...${k.slice(-4)}` : '***') : '';
 
@@ -1287,8 +1291,10 @@ router.get('/model-settings', async (req, res) => {
     maskedGroqKey: mask(groqKey),
     hasOpenRouterKey: Boolean(openRouterKey),
     maskedOpenRouterKey: mask(openRouterKey),
-    hasGithubKey: Boolean(githubKey),
-    maskedGithubKey: mask(githubKey),
+    hasCloudflareToken: Boolean(cloudflareToken),
+    maskedCloudflareToken: mask(cloudflareToken),
+    hasCloudflareAccountId: Boolean(cloudflareAccountId),
+    maskedCloudflareAccountId: mask(cloudflareAccountId),
     availableModels: liveModels,
     features: [
       { key: 'AI_COACH_STUDENT', name: 'Öğrenci Bireysel Yapay Zeka Koç Tavsiyesi', category: 'Yapay Zeka Koçluğu', description: 'Öğrencinin haftalık çalışma tavsiyelerini ve net analizlerini hazırlar.' },
@@ -1310,19 +1316,21 @@ router.post('/refresh-models', async (req, res) => {
 });
 
 router.post('/test-provider-key', async (req, res) => {
-  const { provider, apiKey } = req.body;
-  if (!provider || !['gemini', 'groq', 'openrouter', 'github'].includes(provider)) {
+  const { provider, apiKey, accountId } = req.body;
+  if (!provider || !['gemini', 'groq', 'openrouter', 'cloudflare'].includes(provider)) {
     return res.status(400).json({ success: false, message: 'Geçersiz sağlayıcı belirtildi.' });
   }
 
   const effectiveKey = apiKey || (
     provider === 'gemini' ? getEffectiveGeminiApiKey() :
     provider === 'groq' ? getEffectiveGroqApiKey() :
-    provider === 'github' ? getEffectiveGithubApiKey() :
+    provider === 'cloudflare' ? getEffectiveCloudflareApiToken() :
     getEffectiveOpenRouterApiKey()
   );
 
-  const result = await testProviderApiKey(provider, effectiveKey);
+  const effectiveAccountId = accountId || getEffectiveCloudflareAccountId();
+
+  const result = await testProviderApiKey(provider, effectiveKey, effectiveAccountId);
   res.json(result);
 });
 
@@ -1336,7 +1344,8 @@ router.post('/model-settings', async (req, res) => {
     geminiApiKey: newApiKey,
     groqApiKey: newGroqKey,
     openRouterApiKey: newOpenRouterKey,
-    githubApiKey: newGithubKey,
+    cloudflareApiToken: newCloudflareToken,
+    cloudflareAccountId: newCloudflareAccountId,
     aiProviderMode: newProviderMode
   } = req.body;
   
@@ -1352,11 +1361,15 @@ router.post('/model-settings', async (req, res) => {
     setCustomOpenRouterApiKey(newOpenRouterKey.trim());
   }
 
-  if (typeof newGithubKey === 'string') {
-    setCustomGithubApiKey(newGithubKey.trim());
+  if (typeof newCloudflareToken === 'string') {
+    setCustomCloudflareApiToken(newCloudflareToken.trim());
   }
 
-  if (newProviderMode && ['AUTO_FALLBACK', 'GEMINI_ONLY', 'GROQ_ONLY', 'OPENROUTER_ONLY', 'GITHUB_ONLY'].includes(newProviderMode)) {
+  if (typeof newCloudflareAccountId === 'string') {
+    setCustomCloudflareAccountId(newCloudflareAccountId.trim());
+  }
+
+  if (newProviderMode && ['AUTO_FALLBACK', 'GEMINI_ONLY', 'GROQ_ONLY', 'OPENROUTER_ONLY', 'CLOUDFLARE_ONLY'].includes(newProviderMode)) {
     setAiProviderMode(newProviderMode);
   }
 
@@ -1391,14 +1404,16 @@ router.post('/model-settings', async (req, res) => {
       ...(customGeminiApiKey ? { geminiApiKey: customGeminiApiKey } : {}),
       ...(customGroqApiKey ? { groqApiKey: customGroqApiKey } : {}),
       ...(customOpenRouterApiKey ? { openRouterApiKey: customOpenRouterApiKey } : {}),
-      ...(customGithubApiKey ? { githubApiKey: customGithubApiKey } : {})
+      ...(customCloudflareApiToken ? { cloudflareApiToken: customCloudflareApiToken } : {}),
+      ...(customCloudflareAccountId ? { cloudflareAccountId: customCloudflareAccountId } : {})
     }).catch(err => console.error('Failed to save settings to Firestore:', err));
   }
 
   const currentKey = getEffectiveGeminiApiKey();
   const groqKey = getEffectiveGroqApiKey();
   const openRouterKey = getEffectiveOpenRouterApiKey();
-  const githubKey = getEffectiveGithubApiKey();
+  const cloudflareToken = getEffectiveCloudflareApiToken();
+  const cloudflareAccountId = getEffectiveCloudflareAccountId();
   const mask = (k: string) => k ? (k.length > 10 ? `${k.slice(0, 6)}...${k.slice(-4)}` : '***') : '';
 
   return res.json({ 
@@ -1415,10 +1430,12 @@ router.post('/model-settings', async (req, res) => {
     maskedGroqKey: mask(groqKey),
     hasOpenRouterKey: Boolean(openRouterKey),
     maskedOpenRouterKey: mask(openRouterKey),
-    hasGithubKey: Boolean(githubKey),
-    maskedGithubKey: mask(githubKey),
+    hasCloudflareToken: Boolean(cloudflareToken),
+    maskedCloudflareToken: mask(cloudflareToken),
+    hasCloudflareAccountId: Boolean(cloudflareAccountId),
+    maskedCloudflareAccountId: mask(cloudflareAccountId),
     message: aiFeaturesEnabled 
-      ? 'Yapay zeka çoklu sağlayıcı ayarları ve API anahtarları başarıyla güncellendi.'
+      ? 'Yapay zeka çoklu sağlayıcı ayarları ve API anahtarları (Cloudflare / OpenRouter / Groq / Gemini) başarıyla güncellendi.'
       : 'Tüm yapay zeka servisleri rehber öğretmen / yönetici kararıyla KAPATILDI.'
   });
 });

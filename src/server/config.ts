@@ -40,15 +40,21 @@ export function getEffectiveOpenRouterApiKey(): string {
   return (customOpenRouterApiKey || process.env.OPENROUTER_API_KEY || '').trim(); 
 }
 
-// Global dynamic GitHub Models API key (PAT)
-export let customGithubApiKey: string = '';
-export function setCustomGithubApiKey(val: string) { customGithubApiKey = val; }
-export function getEffectiveGithubApiKey(): string { 
-  return (customGithubApiKey || process.env.GITHUB_API_KEY || process.env.GITHUB_TOKEN || '').trim(); 
+// Global dynamic Cloudflare Workers AI credentials
+export let customCloudflareApiToken: string = '';
+export function setCustomCloudflareApiToken(val: string) { customCloudflareApiToken = val; }
+export function getEffectiveCloudflareApiToken(): string { 
+  return (customCloudflareApiToken || process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_API_KEY || '').trim(); 
+}
+
+export let customCloudflareAccountId: string = '';
+export function setCustomCloudflareAccountId(val: string) { customCloudflareAccountId = val; }
+export function getEffectiveCloudflareAccountId(): string { 
+  return (customCloudflareAccountId || process.env.CLOUDFLARE_ACCOUNT_ID || '').trim(); 
 }
 
 // Global AI Provider Failover Mode
-export type AiProviderMode = 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY' | 'GITHUB_ONLY';
+export type AiProviderMode = 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY' | 'CLOUDFLARE_ONLY';
 export let aiProviderMode: AiProviderMode = 'AUTO_FALLBACK';
 export function setAiProviderMode(val: AiProviderMode) { aiProviderMode = val; }
 export function getEffectiveProviderMode(): AiProviderMode { return aiProviderMode; }
@@ -140,10 +146,13 @@ export async function initFirebaseAndLogs() {
           if (typeof sData.openRouterApiKey === 'string' && sData.openRouterApiKey.trim()) {
             customOpenRouterApiKey = sData.openRouterApiKey.trim();
           }
-          if (typeof sData.githubApiKey === 'string' && sData.githubApiKey.trim()) {
-            customGithubApiKey = sData.githubApiKey.trim();
+          if (typeof sData.cloudflareApiToken === 'string' && sData.cloudflareApiToken.trim()) {
+            customCloudflareApiToken = sData.cloudflareApiToken.trim();
           }
-          if (sData.aiProviderMode && ['AUTO_FALLBACK', 'GEMINI_ONLY', 'GROQ_ONLY', 'OPENROUTER_ONLY', 'GITHUB_ONLY'].includes(sData.aiProviderMode)) {
+          if (typeof sData.cloudflareAccountId === 'string' && sData.cloudflareAccountId.trim()) {
+            customCloudflareAccountId = sData.cloudflareAccountId.trim();
+          }
+          if (sData.aiProviderMode && ['AUTO_FALLBACK', 'GEMINI_ONLY', 'GROQ_ONLY', 'OPENROUTER_ONLY', 'CLOUDFLARE_ONLY'].includes(sData.aiProviderMode)) {
             aiProviderMode = sData.aiProviderMode;
           }
           if (typeof sData.aiFeaturesEnabled === 'boolean') {

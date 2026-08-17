@@ -87,19 +87,20 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   const [openRouterKeyInput, setOpenRouterKeyInput] = useState('');
   const [showOpenRouterKey, setShowOpenRouterKey] = useState(false);
 
-  const [githubKeyInput, setGithubKeyInput] = useState('');
-  const [showGithubKey, setShowGithubKey] = useState(false);
+  const [cloudflareTokenInput, setCloudflareTokenInput] = useState('');
+  const [showCloudflareToken, setShowCloudflareToken] = useState(false);
+  const [cloudflareAccountIdInput, setCloudflareAccountIdInput] = useState('');
 
   // Saving states
-  const [savingProvider, setSavingProvider] = useState<'gemini' | 'groq' | 'openrouter' | 'github' | null>(null);
+  const [savingProvider, setSavingProvider] = useState<'gemini' | 'groq' | 'openrouter' | 'cloudflare' | null>(null);
   const [saveMessages, setSaveMessages] = useState<Record<string, { text: string; isError?: boolean }>>({});
 
   // Testing states
-  const [testingProvider, setTestingProvider] = useState<'gemini' | 'groq' | 'openrouter' | 'github' | null>(null);
+  const [testingProvider, setTestingProvider] = useState<'gemini' | 'groq' | 'openrouter' | 'cloudflare' | null>(null);
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string; modelUsed?: string }>>({});
 
   // Mode state
-  const [providerMode, setProviderMode] = useState<'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY' | 'GITHUB_ONLY'>(
+  const [providerMode, setProviderMode] = useState<'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY' | 'CLOUDFLARE_ONLY'>(
     modelSettings?.aiProviderMode || 'AUTO_FALLBACK'
   );
   const [isSavingMode, setIsSavingMode] = useState(false);
@@ -286,7 +287,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   // ➕ Add Custom Model Modal State
   const [showAddModelModal, setShowAddModelModal] = useState(false);
   const [newModelForm, setNewModelForm] = useState<{
-    provider: 'GEMINI' | 'GROQ' | 'OPENROUTER' | 'GITHUB';
+    provider: 'GEMINI' | 'GROQ' | 'OPENROUTER' | 'CLOUDFLARE';
     id: string;
     name: string;
     description: string;
@@ -577,8 +578,12 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   const activeModelsList = displayModels.length > 0 ? displayModels : verifiedModels;
 
   // Single provider save handler
-  const handleSaveIndividualKey = async (provider: 'gemini' | 'groq' | 'openrouter' | 'github', keyValue: string) => {
-    if (!keyValue.trim()) return;
+  const handleSaveIndividualKey = async (
+    provider: 'gemini' | 'groq' | 'openrouter' | 'cloudflare', 
+    keyValue: string,
+    extraValue?: string
+  ) => {
+    if (!keyValue.trim() && !extraValue?.trim()) return;
     setSavingProvider(provider);
     setSaveMessages(prev => ({ ...prev, [provider]: undefined as any }));
 
@@ -587,7 +592,10 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
       if (provider === 'gemini') payload.geminiApiKey = keyValue.trim();
       if (provider === 'groq') payload.groqApiKey = keyValue.trim();
       if (provider === 'openrouter') payload.openRouterApiKey = keyValue.trim();
-      if (provider === 'github') payload.githubApiKey = keyValue.trim();
+      if (provider === 'cloudflare') {
+        if (keyValue.trim()) payload.cloudflareApiToken = keyValue.trim();
+        if (extraValue?.trim()) payload.cloudflareAccountId = extraValue.trim();
+      }
 
       const res = await fetch('/api/gemini/model-settings', {
         method: 'POST',
@@ -607,16 +615,14 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
       if (data.success) {
         setSaveMessages(prev => ({
           ...prev,
-          [provider]: { text: `${provider.toUpperCase()} API Anahtarı başarıyla kaydedildi ve aktif edildi!` }
+          [provider]: { text: `${provider.toUpperCase()} bilgileri başarıyla kaydedildi ve aktif edildi!` }
         }));
         if (provider === 'gemini') setGeminiKeyInput('');
         if (provider === 'groq') setGroqKeyInput('');
         if (provider === 'openrouter') setOpenRouterKeyInput('');
-        if (provider === 'github') setGithubKeyInput('');
-
-        // Also trigger parent callback if available
-        if (provider === 'gemini' && handleSaveApiKey) {
-          // Handled
+        if (provider === 'cloudflare') {
+          setCloudflareTokenInput('');
+          setCloudflareAccountIdInput('');
         }
       } else {
         setSaveMessages(prev => ({
@@ -635,7 +641,11 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   };
 
   // Provider test handler
-  const handleTestProvider = async (provider: 'gemini' | 'groq' | 'openrouter' | 'github', customKey?: string) => {
+  const handleTestProvider = async (
+    provider: 'gemini' | 'groq' | 'openrouter' | 'cloudflare', 
+    customKey?: string,
+    customAccountId?: string
+  ) => {
     setTestingProvider(provider);
     setTestResults(prev => ({ ...prev, [provider]: undefined as any }));
 
@@ -643,7 +653,11 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
       const res = await fetch('/api/gemini/test-provider-key', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider, apiKey: customKey?.trim() || undefined })
+        body: JSON.stringify({ 
+          provider, 
+          apiKey: customKey?.trim() || undefined,
+          accountId: customAccountId?.trim() || undefined
+        })
       });
       
       const contentType = res.headers.get('content-type') || '';
@@ -674,7 +688,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   };
 
   // Provider mode save handler
-  const handleSelectMode = async (mode: 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY' | 'GITHUB_ONLY') => {
+  const handleSelectMode = async (mode: 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY' | 'CLOUDFLARE_ONLY') => {
     setProviderMode(mode);
     setIsSavingMode(true);
     try {
@@ -701,13 +715,13 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-white text-base flex items-center gap-2">
-                <span>Üçlü Akıllı Sağlayıcı Ağ Geçidi (Zero-Cost Failover)</span>
+                <span>Dörtlü Akıllı Sağlayıcı Ağ Geçidi (Zero-Cost Failover)</span>
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/30">
                   %100 Ücretsiz Havuz
                 </span>
               </h3>
               <p className="text-xs text-slate-300 mt-0.5">
-                Google Gemini, Groq Cloud ve OpenRouter kotalarını birleştirerek sınırsız ve kesintisiz sıfır maliyetli yapay zeka gücü sağlar. <span className="text-rose-400/80 text-[10px]">(GitHub Models 30 Temmuz 2026'dan itibaren kapatıldı.)</span>
+                Google Gemini, Groq Cloud, OpenRouter ve Cloudflare Workers AI kotalarını birleştirerek sınırsız ve kesintisiz sıfır maliyetli yapay zeka gücü sağlar.
               </p>
             </div>
           </div>
@@ -717,7 +731,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             {providerMode === 'AUTO_FALLBACK' && (
               <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow-sm">
                 <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />
-                <span>🔄 Akıllı Otomatik Geçiş (Gemini ➔ Groq ➔ OpenRouter)</span>
+                <span>🔄 Akıllı Otomatik Geçiş (Gemini ➔ Groq ➔ OpenRouter ➔ Cloudflare)</span>
               </span>
             )}
             {providerMode === 'GEMINI_ONLY' && (
@@ -738,10 +752,10 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                 <span>🌐 Yalnızca OpenRouter :free</span>
               </span>
             )}
-            {providerMode === 'GITHUB_ONLY' && (
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm">
-                <Bot className="w-3.5 h-3.5 text-emerald-400" />
-                <span>🐙 Yalnızca GitHub Models (GPT-4o)</span>
+            {providerMode === 'CLOUDFLARE_ONLY' && (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm">
+                <Cpu className="w-3.5 h-3.5 text-amber-400" />
+                <span>🔥 Yalnızca Cloudflare Workers AI</span>
               </span>
             )}
             {isSavingMode && (
@@ -760,7 +774,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             <span className="text-indigo-400 font-normal lowercase">istekler sırayla denenir</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-center">
-            {(failoverData?.providerOrder || ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB']).map((pName: string, idx: number) => {
+            {(failoverData?.providerOrder || ['GEMINI', 'GROQ', 'OPENROUTER', 'CLOUDFLARE']).map((pName: string, idx: number) => {
               const metaMap: Record<string, any> = {
                 GEMINI: {
                   title: 'Google Gemini',
@@ -789,14 +803,14 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                   badgeActive: 'Aktif',
                   badgeMissing: 'Yedek Bekliyor'
                 },
-                GITHUB: {
-                  title: 'GitHub Models',
-                  sub: 'Resmi GPT-4o & Mini',
-                  bg: 'bg-emerald-600',
-                  cardBg: 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200',
-                  hasKey: modelSettings?.hasGithubKey,
+                CLOUDFLARE: {
+                  title: 'Cloudflare Workers AI',
+                  sub: 'Edge Llama 3.3 & Vision',
+                  bg: 'bg-amber-500',
+                  cardBg: 'bg-amber-950/40 border-amber-500/40 text-amber-200',
+                  hasKey: Boolean(modelSettings?.hasCloudflareToken && modelSettings?.hasCloudflareAccountId),
                   badgeActive: 'Aktif',
-                  badgeMissing: 'Yedek Bekliyor'
+                  badgeMissing: 'Token / ID Yok'
                 }
               };
 
@@ -851,8 +865,8 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                 <span>🔄 Akıllı Otomatik Geçiş</span>
               </div>
               <p className="text-[11px] text-slate-300 mt-1">
-                {(failoverData?.providerOrder || ['GEMINI', 'GROQ', 'OPENROUTER', 'GITHUB'])
-                  .map((p: string) => p === 'GEMINI' ? 'Gemini' : p === 'GROQ' ? 'Groq' : p === 'OPENROUTER' ? 'OpenRouter' : 'GitHub GPT-4o')
+                {(failoverData?.providerOrder || ['GEMINI', 'GROQ', 'OPENROUTER', 'CLOUDFLARE'])
+                  .map((p: string) => p === 'GEMINI' ? 'Gemini' : p === 'GROQ' ? 'Groq' : p === 'OPENROUTER' ? 'OpenRouter' : 'Cloudflare')
                   .join(' ➔ ')}
               </p>
             </button>
@@ -907,18 +921,18 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
 
             <button
               type="button"
-              onClick={() => handleSelectMode('GITHUB_ONLY')}
+              onClick={() => handleSelectMode('CLOUDFLARE_ONLY')}
               className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                providerMode === 'GITHUB_ONLY'
-                  ? 'bg-emerald-600/30 border-emerald-400 text-white shadow-lg shadow-emerald-600/20 ring-1 ring-emerald-400'
+                providerMode === 'CLOUDFLARE_ONLY'
+                  ? 'bg-amber-600/30 border-amber-400 text-white shadow-lg shadow-amber-600/20 ring-1 ring-amber-400'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
               }`}
             >
               <div className="font-bold text-xs flex items-center gap-1.5">
-                <Bot className="w-3.5 h-3.5 text-emerald-400" />
-                <span>🐙 Yalnızca GitHub (GPT-4o)</span>
+                <Cpu className="w-3.5 h-3.5 text-amber-400" />
+                <span>🔥 Yalnızca Cloudflare</span>
               </div>
-              <p className="text-[11px] text-slate-300 mt-1">Sadece resmi GPT-4o & GPT-4o Mini kullanır.</p>
+              <p className="text-[11px] text-slate-300 mt-1">Sadece Cloudflare Workers AI modellerini kullanır.</p>
             </button>
           </div>
         </div>
@@ -1530,64 +1544,107 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
           </div>
         </div>
 
-        {/* KART 4: GITHUB MODELS — SERVİS KALICI OLARAK KAPATILDI (30 Temmuz 2026) */}
-        <div className="bg-slate-900/60 border border-slate-600/40 rounded-3xl p-5 shadow-xl backdrop-blur-md flex flex-col justify-between space-y-4 opacity-70">
+        {/* KART 4: CLOUDFLARE WORKERS AI */}
+        <div className="bg-slate-900/90 border border-amber-500/40 rounded-3xl p-5 shadow-xl backdrop-blur-md flex flex-col justify-between space-y-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <div className="flex items-center space-x-2.5">
-                <div className="p-2 bg-slate-700/50 text-slate-500 rounded-xl border border-slate-600/30">
-                  <Bot className="w-4 h-4" />
+                <div className="p-2 bg-amber-600/30 text-amber-400 rounded-xl border border-amber-500/30">
+                  <Cpu className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-400 text-sm line-through">GitHub Models</h4>
-                  <p className="text-[10px] text-slate-500">Resmi GPT-4o & Vision</p>
+                  <h4 className="font-bold text-white text-sm">Cloudflare Workers AI</h4>
+                  <p className="text-[10px] text-slate-400">Edge Llama 3.3 70B & Vision</p>
                 </div>
               </div>
-              <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-full border border-rose-500/30 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
-                Kapatıldı
-              </span>
+              {modelSettings?.hasCloudflareToken && modelSettings?.hasCloudflareAccountId ? (
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" />
+                  {modelSettings.maskedCloudflareToken || 'Aktif'}
+                </span>
+              ) : (
+                <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-full border border-rose-500/30 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  Tanımsız
+                </span>
+              )}
             </div>
 
-            {/* Servis kapatıldı uyarısı */}
-            <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-3 space-y-1">
-              <p className="text-xs text-rose-300 font-bold flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                GitHub Models Servisi Kalıcı Olarak Kapatıldı
-              </p>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                GitHub, <strong className="text-slate-300">30 Temmuz 2026</strong> itibarıyla GitHub Models playground, model kataloğu ve inference API'yi tamamen kapattı. <code className="text-rose-300 text-[10px]">models.github.ai</code> endpoint'i artık kullanılamaz. Lütfen alternatif sağlayıcı olarak <strong className="text-cyan-300">OpenRouter</strong> veya <strong className="text-amber-300">Groq</strong>'u kullanın.
-              </p>
-            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Meta Llama 3.3 70B, Llama 3.1 8B, DeepSeek R1 ve Llama 3.2 Vision ile Cloudflare global edge ağında sıfır maliyetli ve ultra hızlı yapay zeka.
+            </p>
 
-            <div className="relative">
+            <a
+              href="https://dash.cloudflare.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[11px] text-amber-400 hover:text-amber-300 underline font-medium"
+            >
+              <span>Cloudflare'dan Ücretsiz Token ve Account ID Al</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+
+            {saveMessages['cloudflare'] && (
+              <div className={`text-xs p-2 rounded-xl border ${saveMessages['cloudflare'].isError ? 'bg-rose-500/20 border-rose-500/40 text-rose-300' : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'}`}>
+                {saveMessages['cloudflare'].text}
+              </div>
+            )}
+
+            {testResults['cloudflare'] && (
+              <div className={`text-xs p-2 rounded-xl border ${testResults['cloudflare'].success ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : 'bg-rose-500/20 border-rose-500/40 text-rose-300'}`}>
+                {testResults['cloudflare'].message}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {/* Account ID Input */}
               <input
                 type="text"
-                disabled
-                value=""
-                placeholder="Servis kapatıldı — token girişi devre dışı"
-                className="w-full bg-slate-950/60 text-slate-600 placeholder-slate-600 text-xs font-mono px-3.5 py-2.5 rounded-xl border border-slate-800 cursor-not-allowed"
+                value={cloudflareAccountIdInput}
+                onChange={(e) => setCloudflareAccountIdInput(e.target.value)}
+                placeholder={modelSettings?.hasCloudflareAccountId ? `Mevcut Account ID: ${modelSettings.maskedCloudflareAccountId}` : 'Cloudflare Account ID (Workers & Pages panelinden)'}
+                className="w-full bg-slate-950/90 text-white placeholder-slate-500 text-xs font-mono px-3.5 py-2.5 rounded-xl border border-slate-700 focus:border-amber-500 focus:outline-none"
               />
+
+              {/* API Token Input */}
+              <div className="relative">
+                <input
+                  type={showCloudflareToken ? 'text' : 'password'}
+                  value={cloudflareTokenInput}
+                  onChange={(e) => setCloudflareTokenInput(e.target.value)}
+                  placeholder={modelSettings?.hasCloudflareToken ? `Mevcut Token: ${modelSettings.maskedCloudflareToken}` : 'Workers AI API Token (Bearer)'}
+                  className="w-full bg-slate-950/90 text-white placeholder-slate-500 text-xs font-mono px-3.5 py-2.5 rounded-xl border border-slate-700 focus:border-amber-500 focus:outline-none pr-9"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCloudflareToken(!showCloudflareToken)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1 cursor-pointer"
+                >
+                  {showCloudflareToken ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 pt-2">
             <button
               type="button"
-              disabled
-              className="flex-1 py-2.5 bg-slate-700/50 disabled:opacity-40 text-slate-500 text-xs font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-1.5"
+              disabled={savingProvider === 'cloudflare' || (!cloudflareTokenInput.trim() && !cloudflareAccountIdInput.trim())}
+              onClick={() => handleSaveIndividualKey('cloudflare', cloudflareTokenInput, cloudflareAccountIdInput)}
+              className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow"
             >
-              <Check className="w-3.5 h-3.5" />
-              <span>Kaydet (Devre Dışı)</span>
+              {savingProvider === 'cloudflare' ? <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+              <span>Kaydet</span>
             </button>
 
             <button
               type="button"
-              disabled
-              className="px-3 py-2.5 bg-slate-800/50 disabled:opacity-40 text-slate-600 text-xs font-bold rounded-xl cursor-not-allowed flex items-center justify-center gap-1 border border-slate-800"
-              title="Servis kapatıldı"
+              disabled={testingProvider === 'cloudflare' || ((!cloudflareTokenInput.trim() || !cloudflareAccountIdInput.trim()) && (!modelSettings?.hasCloudflareToken || !modelSettings?.hasCloudflareAccountId))}
+              onClick={() => handleTestProvider('cloudflare', cloudflareTokenInput, cloudflareAccountIdInput)}
+              className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 border border-slate-700"
+              title="Canlı Bağlantıyı Test Et"
             >
-              <Zap className="w-3.5 h-3.5 text-slate-600" />
+              {testingProvider === 'cloudflare' ? <span className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" /> : <Zap className="w-3.5 h-3.5 text-amber-400" />}
               <span>Test</span>
             </button>
           </div>
@@ -2324,7 +2381,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                     { id: 'GEMINI', name: 'Google Gemini' },
                     { id: 'GROQ', name: 'Groq Cloud' },
                     { id: 'OPENROUTER', name: 'OpenRouter' },
-                    { id: 'GITHUB', name: 'GitHub Models' }
+                    { id: 'CLOUDFLARE', name: 'Cloudflare Workers AI' }
                   ].map((p) => (
                     <button
                       key={p.id}
@@ -2357,8 +2414,8 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                         ? 'Örn: gemini-3.5-flash'
                         : newModelForm.provider === 'GROQ'
                         ? 'Örn: groq/compound'
-                        : newModelForm.provider === 'GITHUB'
-                        ? 'Örn: gpt-4o veya gpt-4o-mini'
+                        : newModelForm.provider === 'CLOUDFLARE'
+                        ? 'Örn: @cf/meta/llama-3.3-70b-instruct-fp8-fast'
                         : 'Örn: google/gemma-4-31b-it:free'
                     }
                     className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400"

@@ -3,14 +3,15 @@ import {
   getEffectiveGeminiApiKey, 
   getEffectiveGroqApiKey, 
   getEffectiveOpenRouterApiKey, 
-  getEffectiveGithubApiKey,
+  getEffectiveCloudflareApiToken,
+  getEffectiveCloudflareAccountId,
   getEffectiveProviderMode,
   generateContentWithFallback,
   mapToActualGeminiModel
 } from '../config';
 
-export type AiProvider = 'GEMINI' | 'GROQ' | 'OPENROUTER' | 'GITHUB';
-export type AiProviderMode = 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY' | 'GITHUB_ONLY';
+export type AiProvider = 'GEMINI' | 'GROQ' | 'OPENROUTER' | 'CLOUDFLARE';
+export type AiProviderMode = 'AUTO_FALLBACK' | 'GEMINI_ONLY' | 'GROQ_ONLY' | 'OPENROUTER_ONLY' | 'CLOUDFLARE_ONLY';
 
 export interface UnifiedAiRequestOptions {
   prompt: string;
@@ -430,32 +431,43 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
 }
 
 /**
- * Helper to call GitHub Models Inference API
- * NOTE: GitHub Models was permanently shut down on July 30, 2026.
- * This function always throws an error to prevent unnecessary network calls.
+ * Helper to call Cloudflare Workers AI OpenAI-compatible Inference API
  */
-async function callGithubInferenceApi(_apiKey: string, _body: any, _timeoutMs = 25000): Promise<Response> {
-  throw new Error(
-    'GitHub Models servisi 30 Temmuz 2026 itibarıyla kalıcı olarak kapatılmıştır. ' +
-    'Lütfen OpenRouter veya Groq sağlayıcısını kullanın.'
-  );
+async function callCloudflareInferenceApi(apiToken: string, accountId: string, body: any, timeoutMs = 25000): Promise<Response> {
+  const token = apiToken.trim();
+  const accId = accountId.trim();
+  if (!accId) throw new Error('Cloudflare Account ID tanımlanmamış.');
+  if (!token) throw new Error('Cloudflare API Token tanımlanmamış.');
+
+  const endpoint = `https://api.cloudflare.com/client/v4/accounts/${accId}/ai/v1/chat/completions`;
+  return await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    signal: AbortSignal.timeout(timeoutMs),
+    body: JSON.stringify(body)
+  });
 }
 
 /**
- * Call GitHub Models (Azure AI Inference / GitHub Models API) with automatic model fallback
+ * Call Cloudflare Workers AI with automatic model fallback
  */
-export async function callGithubModels(options: UnifiedAiRequestOptions): Promise<UnifiedAiResponse> {
-  const apiKey = getEffectiveGithubApiKey();
-  if (!apiKey) {
-    throw new Error('GitHub Models API Token (Personal Access Token) sistemde tanımlanmamış.');
+export async function callCloudflareWorkersAi(options: UnifiedAiRequestOptions): Promise<UnifiedAiResponse> {
+  const apiToken = getEffectiveCloudflareApiToken();
+  const accountId = getEffectiveCloudflareAccountId();
+  if (!apiToken || !accountId) {
+    throw new Error('Cloudflare Workers AI API Token veya Account ID sistemde tanımlanmamış.');
   }
 
   const { getActiveSequenceForProvider, recordModelExhaustion, recordModelSuccess } = await import('./aiFailoverManager');
-  const candidateModels = getActiveSequenceForProvider('GITHUB', [
-    'gpt-4o',
-    'gpt-4o-mini',
-    'meta-llama-3.2-11b-vision-instruct',
-    'Phi-3.5-vision-instruct'
+  const candidateModels = getActiveSequenceForProvider('CLOUDFLARE', [
+    '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+    '@cf/meta/llama-3.1-8b-instruct',
+    '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',
+    '@cf/meta/llama-3.2-11b-vision-instruct',
+    '@cf/qwen/qwen2.5-7b-instruct'
   ]);
 
   const imgDataUrl = getImageDataUrl(options);
@@ -488,15 +500,15 @@ export async function callGithubModels(options: UnifiedAiRequestOptions): Promis
         temperature: options.temperature ?? 0.3
       };
 
-      const res = await callGithubInferenceApi(apiKey, requestBody, 25000);
+      const res = await callCloudflareInferenceApi(apiToken, accountId, requestBody, 25000);
 
       if (!res.ok) {
         const errBody = await res.text();
         if (res.status === 429 || res.status === 402 || res.status === 503 || res.status === 502 || res.status === 504 || errBody.includes('rate_limit') || errBody.includes('quota') || errBody.includes('exceeded')) {
-          console.warn(`[AI_FAILOVER] GitHub Model ${model} limit hatası aldı (${res.status}). Cooldown'a alındı.`);
-          recordModelExhaustion('GITHUB', model, errBody);
+          console.warn(`[AI_FAILOVER] Cloudflare Model ${model} limit hatası aldı (${res.status}). Cooldown'a alındı.`);
+          recordModelExhaustion('CLOUDFLARE', model, errBody);
         }
-        throw new Error(`GitHub Models API Hatası (${res.status}): ${errBody.substring(0, 300)}`);
+        throw new Error(`Cloudflare Workers AI Hatası (${res.status}): ${errBody.substring(0, 300)}`);
       }
 
       const data = await res.json();
@@ -522,27 +534,27 @@ export async function callGithubModels(options: UnifiedAiRequestOptions): Promis
         throw new Error(`Model ${model} geçerli bir içerik üretmedi.`);
       }
 
-      recordModelSuccess('GITHUB', resolvedModel);
+      recordModelSuccess('CLOUDFLARE', resolvedModel);
 
       return {
         text,
-        providerUsed: 'GITHUB',
+        providerUsed: 'CLOUDFLARE',
         modelUsed: resolvedModel,
         promptTokens: usage.prompt_tokens || 0,
         candidatesTokens: usage.completion_tokens || 0
       };
     } catch (err: any) {
       lastError = err;
-      console.warn(`[AI_GATEWAY] GitHub Model ${model} failed: ${err.message}. Trying next model...`);
+      console.warn(`[AI_GATEWAY] Cloudflare Model ${model} failed: ${err.message}. Trying next model...`);
     }
   }
 
-  throw lastError || new Error('GitHub Models tüm modelleri denenirken hata oluştu.');
+  throw lastError || new Error('Cloudflare Workers AI tüm modelleri denenirken hata oluştu.');
 }
 
 /**
  * Universal Unified Execution Engine with Failover Pipeline
- * Order: Gemini -> Groq -> OpenRouter (GitHub Models permanently shut down July 30, 2026)
+ * Order: Gemini -> Groq -> OpenRouter -> Cloudflare Workers AI (Zero-Cost Multi-Provider Failover)
  */
 export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions): Promise<UnifiedAiResponse> {
   const mode = getEffectiveProviderMode();
@@ -550,7 +562,7 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
   const hasImage = Boolean(imgDataUrl);
 
   // If request contains an image and mode is GROQ_ONLY:
-  // Automatically use Gemini or OpenRouter for image reasoning (GitHub Models is shut down)
+  // Automatically use Gemini, OpenRouter or Cloudflare for image reasoning
   if (hasImage && mode === 'GROQ_ONLY') {
     if (getEffectiveGeminiApiKey()) {
       console.log('[AI_GATEWAY] Image detected in GROQ_ONLY mode. Seamlessly routing to Google Gemini Vision...');
@@ -558,6 +570,14 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
         return await callGemini(options);
       } catch (err: any) {
         console.warn('[AI_GATEWAY] Gemini failed for image in GROQ_ONLY mode...', err);
+      }
+    }
+    if (getEffectiveCloudflareApiToken() && getEffectiveCloudflareAccountId()) {
+      console.log('[AI_GATEWAY] Image detected in GROQ_ONLY mode. Seamlessly routing to Cloudflare Workers AI Vision...');
+      try {
+        return await callCloudflareWorkersAi(options);
+      } catch (err: any) {
+        console.warn('[AI_GATEWAY] Cloudflare failed for image in GROQ_ONLY mode...', err);
       }
     }
     if (getEffectiveOpenRouterApiKey()) {
@@ -585,16 +605,9 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
     return await callOpenRouter(options);
   }
 
-  // Mode 4: GITHUB_ONLY — Servis kapatıldı, OpenRouter'a yönlendir
-  if (mode === 'GITHUB_ONLY') {
-    console.warn('[AI_GATEWAY] GITHUB_ONLY mode selected but GitHub Models is shut down (July 30, 2026). Falling back to OpenRouter.');
-    if (getEffectiveOpenRouterApiKey()) {
-      return await callOpenRouter(options);
-    }
-    if (getEffectiveGeminiApiKey()) {
-      return await callGemini(options);
-    }
-    throw new Error('GitHub Models servisi 30 Temmuz 2026 itibarıyla kalıcı olarak kapatılmıştır. Lütfen OpenRouter veya Gemini kullanın.');
+  // Mode 4: CLOUDFLARE_ONLY
+  if (mode === 'CLOUDFLARE_ONLY') {
+    return await callCloudflareWorkersAi(options);
   }
 
   // Mode 5: AUTO_FALLBACK (Dynamic Sequence Configured by Admin)
@@ -625,11 +638,11 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
       isExhausted: isProviderCompletelyExhausted('OPENROUTER'),
       fn: () => callOpenRouter(options)
     },
-    GITHUB: {
-      name: 'GITHUB',
-      hasKey: false, // GitHub Models permanently shut down July 30, 2026
-      isExhausted: true,
-      fn: () => Promise.reject(new Error('GitHub Models servisi 30 Temmuz 2026 itibarıyla kapatılmıştır.'))
+    CLOUDFLARE: {
+      name: 'CLOUDFLARE',
+      hasKey: Boolean(getEffectiveCloudflareApiToken() && getEffectiveCloudflareAccountId()),
+      isExhausted: isProviderCompletelyExhausted('CLOUDFLARE'),
+      fn: () => callCloudflareWorkersAi(options)
     }
   };
 
@@ -677,12 +690,13 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
  * Test Connection for a specific Provider Key
  */
 export async function testProviderApiKey(
-  provider: 'gemini' | 'groq' | 'openrouter' | 'github',
-  apiKey: string
+  provider: 'gemini' | 'groq' | 'openrouter' | 'cloudflare',
+  apiKey: string,
+  accountId?: string
 ): Promise<{ success: boolean; message: string; modelUsed?: string }> {
   const trimmed = (apiKey || '').trim();
   if (!trimmed) {
-    return { success: false, message: 'API anahtarı boş olamaz.' };
+    return { success: false, message: 'API anahtarı / token boş olamaz.' };
   }
 
   try {
@@ -790,12 +804,27 @@ export async function testProviderApiKey(
       return { success: false, message: `OpenRouter Doğrulama Hatası: ${lastTestErr}` };
     }
 
-    if (provider === 'github') {
-      // GitHub Models permanently shut down on July 30, 2026
-      return {
-        success: false,
-        message: 'GitHub Models servisi 30 Temmuz 2026 itibarıyla kalıcı olarak kapatılmıştır. Bu sağlayıcı artık kullanılamaz. Lütfen OpenRouter veya Groq kullanın.'
-      };
+    if (provider === 'cloudflare') {
+      const token = trimmed;
+      const accId = (accountId || getEffectiveCloudflareAccountId()).trim();
+      if (!accId) {
+        return { success: false, message: 'Cloudflare Account ID sisteme girilmemiş. Lütfen Account ID alanını doldurun.' };
+      }
+      try {
+        const res = await callCloudflareInferenceApi(token, accId, {
+          model: '@cf/meta/llama-3.1-8b-instruct',
+          messages: [{ role: 'user', content: 'Test ping. Respond with OK.' }],
+          max_tokens: 10
+        }, 15000);
+
+        if (!res.ok) {
+          const body = await res.text();
+          return { success: false, message: `Cloudflare Doğrulama Hatası (${res.status}): ${body.substring(0, 200)}` };
+        }
+        return { success: true, message: 'Cloudflare Workers AI bağlantısı başarılı! [Llama 3.1 8B]', modelUsed: '@cf/meta/llama-3.1-8b-instruct' };
+      } catch (err: any) {
+        return { success: false, message: `Cloudflare Bağlantı Hatası: ${err.message}` };
+      }
     }
 
     return { success: false, message: 'Bilinmeyen sağlayıcı.' };
@@ -809,7 +838,7 @@ export async function testProviderApiKey(
  * Supports both text prompts and vision/image testing
  */
 export async function testSingleModel(
-  provider: 'GEMINI' | 'GROQ' | 'OPENROUTER' | 'GITHUB',
+  provider: 'GEMINI' | 'GROQ' | 'OPENROUTER' | 'CLOUDFLARE',
   modelId: string,
   prompt?: string,
   imageBase64?: string,
@@ -940,17 +969,38 @@ export async function testSingleModel(
       return { success: true, model: modelId, provider, latencyMs, output: text };
     }
 
-    if (provider === 'GITHUB') {
-      // GitHub Models permanently shut down on July 30, 2026
-      const latencyMs = Date.now() - startTime;
-      return {
-        success: false,
+    if (provider === 'CLOUDFLARE') {
+      const apiToken = getEffectiveCloudflareApiToken();
+      const accountId = getEffectiveCloudflareAccountId();
+      if (!apiToken || !accountId) {
+        throw new Error('Cloudflare Workers AI Token veya Account ID sisteme girilmemiş.');
+      }
+
+      let messageContent: any = testPrompt;
+      if (imageBase64) {
+        const fullDataUrl = imageBase64.startsWith('data:')
+          ? imageBase64
+          : `data:${imageMimeType || 'image/jpeg'};base64,${imageBase64}`;
+        messageContent = [
+          { type: 'text', text: testPrompt },
+          { type: 'image_url', image_url: { url: fullDataUrl } }
+        ];
+      }
+
+      const res = await callCloudflareInferenceApi(apiToken, accountId, {
         model: modelId,
-        provider,
-        latencyMs,
-        error: 'GitHub Models servisi 30 Temmuz 2026 itibarıyla kalıcı olarak kapatılmıştır.',
-        rawError: 'GitHub Models (models.github.ai) was permanently shut down on July 30, 2026.'
-      };
+        messages: [{ role: 'user', content: messageContent }],
+        max_tokens: 1024
+      }, 25000);
+
+      const latencyMs = Date.now() - startTime;
+      if (!res.ok) {
+        const body = await res.text();
+        return { success: false, model: modelId, provider, latencyMs, error: `Cloudflare Hatası (${res.status})`, rawError: body };
+      }
+      const data = await res.json();
+      const text = data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || '';
+      return { success: true, model: modelId, provider, latencyMs, output: text };
     }
 
     throw new Error('Geçersiz sağlayıcı.');
