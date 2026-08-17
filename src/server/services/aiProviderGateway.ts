@@ -220,6 +220,17 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
 
       if (!res.ok) {
         const errBody = await res.text();
+        // If error is caused by Groq's lack of image support (e.g. content must be a string or model not supporting vision), failover seamlessly
+        if (hasImage && (errBody.includes('must be a string') || errBody.includes('model_not_found') || res.status === 400 || res.status === 404)) {
+          console.warn(`[AI_GATEWAY] Groq does not support multimodal image input (${errBody.substring(0, 100)}). Auto-routing to available vision provider...`);
+          if (getEffectiveGeminiApiKey()) {
+            return await callGemini(options);
+          }
+          if (getEffectiveOpenRouterApiKey()) {
+            return await callOpenRouter(options);
+          }
+          throw new Error('Groq Cloud şu anda sadece metin modellerini desteklemektedir. Fotoğraflı soru çözümü için lütfen Sistem Yönetimi > Model Ayarları bölümünden Google Gemini veya OpenRouter anahtarınızı aktif ediniz.');
+        }
         throw new Error(`Groq API Hatası (${res.status}): ${errBody.substring(0, 300)}`);
       }
 
@@ -406,6 +417,29 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
  */
 export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions): Promise<UnifiedAiResponse> {
   const mode = getEffectiveProviderMode();
+  const imgDataUrl = getImageDataUrl(options);
+  const hasImage = Boolean(imgDataUrl);
+
+  // If request contains an image and mode is GROQ_ONLY:
+  // Since Groq API currently only provides text LLMs, automatically use Gemini or OpenRouter for image reasoning if keys exist
+  if (hasImage && mode === 'GROQ_ONLY') {
+    if (getEffectiveGeminiApiKey()) {
+      console.log('[AI_GATEWAY] Image detected in GROQ_ONLY mode. Seamlessly routing to Google Gemini Vision...');
+      try {
+        return await callGemini(options);
+      } catch (err: any) {
+        console.warn('[AI_GATEWAY] Gemini failed for image in GROQ_ONLY mode, continuing with Groq/OpenRouter fallback...', err);
+      }
+    }
+    if (getEffectiveOpenRouterApiKey()) {
+      console.log('[AI_GATEWAY] Image detected in GROQ_ONLY mode. Seamlessly routing to OpenRouter Vision...');
+      try {
+        return await callOpenRouter(options);
+      } catch (err: any) {
+        console.warn('[AI_GATEWAY] OpenRouter failed for image in GROQ_ONLY mode...', err);
+      }
+    }
+  }
 
   // Mode 1: GEMINI_ONLY
   if (mode === 'GEMINI_ONLY') {
@@ -423,16 +457,29 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
   }
 
   // Mode 4: AUTO_FALLBACK (Gemini -> Groq -> OpenRouter)
+  // When an image is present, prioritize vision-capable providers (Gemini -> OpenRouter -> Groq)
   const providersToTry: { name: AiProvider; fn: () => Promise<UnifiedAiResponse> }[] = [];
 
-  if (getEffectiveGeminiApiKey()) {
-    providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
-  }
-  if (getEffectiveGroqApiKey()) {
-    providersToTry.push({ name: 'GROQ', fn: () => callGroq(options) });
-  }
-  if (getEffectiveOpenRouterApiKey()) {
-    providersToTry.push({ name: 'OPENROUTER', fn: () => callOpenRouter(options) });
+  if (hasImage) {
+    if (getEffectiveGeminiApiKey()) {
+      providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
+    }
+    if (getEffectiveOpenRouterApiKey()) {
+      providersToTry.push({ name: 'OPENROUTER', fn: () => callOpenRouter(options) });
+    }
+    if (getEffectiveGroqApiKey()) {
+      providersToTry.push({ name: 'GROQ', fn: () => callGroq(options) });
+    }
+  } else {
+    if (getEffectiveGeminiApiKey()) {
+      providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
+    }
+    if (getEffectiveGroqApiKey()) {
+      providersToTry.push({ name: 'GROQ', fn: () => callGroq(options) });
+    }
+    if (getEffectiveOpenRouterApiKey()) {
+      providersToTry.push({ name: 'OPENROUTER', fn: () => callOpenRouter(options) });
+    }
   }
 
   if (providersToTry.length === 0) {
