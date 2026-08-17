@@ -433,7 +433,7 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
 }
     `;
 
-    const targetModel = featureModelConfig['AI_COACH_STUDENT'] || 'gemini-3.5-flash-lite';
+    const targetModel = featureModelConfig['AI_COACH_STUDENT'] || 'SYSTEM_DEFAULT';
     const unifiedResult = await executeAiUnifiedRequest({
       prompt,
       requireJson: true,
@@ -507,7 +507,7 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
 }
     `;
 
-    const targetModel = featureModelConfig['AI_COACH_CLASS'] || 'gemini-3.5-flash-lite';
+    const targetModel = featureModelConfig['AI_COACH_CLASS'] || 'SYSTEM_DEFAULT';
     const unifiedResult = await executeAiUnifiedRequest({
       prompt,
       requireJson: true,
@@ -573,7 +573,7 @@ JSON:
   "analysis": "Bu konudan YKS'de her yıl ortalama 2 soru çıkmaktadır. ..."
 }`;
 
-    const targetModel = featureModelConfig['ERROR_PRIORITY'] || 'gemini-3.5-flash-lite';
+    const targetModel = featureModelConfig['ERROR_PRIORITY'] || 'SYSTEM_DEFAULT';
     const unifiedResult = await executeAiUnifiedRequest({
       prompt,
       requireJson: true,
@@ -648,7 +648,7 @@ Lütfen yanıtını doğrudan öğrenciye hitap eden bir tonda yaz ve YALNIZCA g
 }
     `;
 
-    const targetModel = featureModelConfig['TOPIC_TIPS'] || 'gemini-3.5-flash-lite';
+    const targetModel = featureModelConfig['TOPIC_TIPS'] || 'SYSTEM_DEFAULT';
     const unifiedResult = await executeAiUnifiedRequest({
       prompt,
       requireJson: true,
@@ -745,7 +745,7 @@ ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, 
 - Matematiksel ve geometrik ifadeleri herkesin kolayca okuyabileceği, normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`;
     }
 
-    const targetModel = featureModelConfig['SOLVE_QUESTION'] || 'gemini-3.5-flash-lite';
+    const targetModel = featureModelConfig['SOLVE_QUESTION'] || 'SYSTEM_DEFAULT';
     const unifiedResult = await executeAiUnifiedRequest({
       prompt: promptText,
       imagePart: imagePart || undefined,
@@ -841,7 +841,7 @@ Yanıtını YALNIZCA geçerli bir JSON objesi olarak dön:
 - Matematiksel ve geometrik ifadeleri herkesin kolayca okuyabileceği, normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`;
     }
 
-    const targetModel = featureModelConfig['SIMILAR_QUESTION'] || 'gemini-3.5-flash-lite';
+    const targetModel = featureModelConfig['SIMILAR_QUESTION'] || 'SYSTEM_DEFAULT';
     const unifiedResult = await executeAiUnifiedRequest({
       prompt: promptText,
       imagePart: imagePart || undefined,
@@ -967,7 +967,7 @@ BİÇİMLENDİRME:
 - Tablonun Markdown sözdizimini bozacak karakterler kullanmaktan kaçın.`;
     }
 
-    const targetModel = featureModelConfig['QUESTION_ANALYSIS'] || 'gemini-3.5-flash-lite';
+    const targetModel = featureModelConfig['QUESTION_ANALYSIS'] || 'SYSTEM_DEFAULT';
     const unifiedResult = await executeAiUnifiedRequest({
       prompt: promptText,
       imagePart: imagePart || undefined,
@@ -1064,7 +1064,7 @@ AŞAĞIDAKİ JSON ŞEMASINA KESİNLİKLE UY VE YALNIZCA GEÇERLİ JSON DÖNDÜR:
 `;
 
     console.log(`[PHOTO_ANALYSIS] Starting unified analysis for subject=${subject}, topic=${topicName}, hasImage=${!!imagePart || !!imageUrl}`);
-    const targetModel = featureModelConfig['SOLVE_QUESTION'] || featureModelConfig['SIMILAR_QUESTION'] || 'gemini-3.5-flash-lite';
+    const targetModel = featureModelConfig['SOLVE_QUESTION'] || featureModelConfig['SIMILAR_QUESTION'] || 'SYSTEM_DEFAULT';
     
     const unifiedResult = await executeAiUnifiedRequest({
       prompt: textPrompt,

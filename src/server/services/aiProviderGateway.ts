@@ -85,7 +85,7 @@ async function callGemini(options: UnifiedAiRequestOptions): Promise<UnifiedAiRe
   }
   contents.push({ text: options.prompt });
 
-  const targetModel = mapToActualGeminiModel(options.modelOverride || 'gemini-3.5-flash-lite');
+  const targetModel = mapToActualGeminiModel(options.modelOverride || 'SYSTEM_DEFAULT');
   
   const config: any = {
     maxOutputTokens: options.maxTokens || 4096,

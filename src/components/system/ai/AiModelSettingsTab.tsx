@@ -82,10 +82,11 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   }, [modelSettings?.aiProviderMode]);
 
   const verifiedModels = [
-    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite (En Ekonomik & Hızlı)', badge: 'Önerilen (Varsayılan)' },
+    { id: 'SYSTEM_DEFAULT', name: '⚡ Sistem Otomatik (Önerilen Kalite Zinciri: 3.7 ➔ 3.6 ➔ 3.5 ➔ Pro)', badge: 'Varsayılan & Önerilen' },
+    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash (En Gelişmiş Akıl Yürütme & Hızlı)', badge: 'Gelişmiş' },
     { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Dengeli Hız & Kalite)', badge: 'Dengeli' },
-    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash (En Gelişmiş Akıl Yürütme)', badge: 'Gelişmiş' },
-    { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro (Derin Strateji & Planlama)', badge: 'Pro' }
+    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite (En Ekonomik & Ultra Hafif)', badge: 'Ekonomik' },
+    { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro (Derin Strateji & Ağır Analiz)', badge: 'Pro' }
   ];
 
   const displayModels = (modelSettings?.availableModels && modelSettings.availableModels.length > 0)
@@ -788,22 +789,14 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                 <span className="text-[11px] text-slate-400">Tek tıkla tüm modülleri ayarlayın</span>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
                 <button
                   type="button"
-                  onClick={() => handleSetAllModels('gemini-3.5-flash-lite')}
-                  className="px-3 py-2 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-200 border border-indigo-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                  onClick={() => handleSetAllModels('SYSTEM_DEFAULT')}
+                  className="px-3 py-2 bg-gradient-to-r from-purple-600/30 to-indigo-600/30 hover:from-purple-600/50 hover:to-indigo-600/50 text-white border border-purple-400/50 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm ring-1 ring-purple-400/30"
                 >
-                  <Zap className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>⚡ Hepsini 3.5 Flash-Lite Yap</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSetAllModels('gemini-3.6-flash')}
-                  className="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-200 border border-emerald-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>🚀 Hepsini 3.6 Flash Yap</span>
+                  <RefreshCw className="w-3.5 h-3.5 text-purple-300" />
+                  <span>⚡ Sistem Otomatik</span>
                 </button>
                 <button
                   type="button"
@@ -811,7 +804,23 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                   className="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/40 text-amber-200 border border-amber-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-amber-400" />
-                  <span>🎯 Hepsini 3.7 Flash Yap</span>
+                  <span>🎯 3.7 Flash</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetAllModels('gemini-3.6-flash')}
+                  className="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-200 border border-emerald-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>🚀 3.6 Flash</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetAllModels('gemini-3.5-flash-lite')}
+                  className="px-3 py-2 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-200 border border-indigo-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Zap className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>⚡ 3.5 Flash-Lite</span>
                 </button>
                 <button
                   type="button"
@@ -819,7 +828,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                   className="px-3 py-2 bg-purple-600/20 hover:bg-purple-600/40 text-purple-200 border border-purple-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <Brain className="w-3.5 h-3.5 text-purple-400" />
-                  <span>🧠 Hepsini 3.1 Pro Yap</span>
+                  <span>🧠 3.1 Pro</span>
                 </button>
               </div>
             </div>
@@ -827,7 +836,8 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             {/* Feature Selectors Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {modelSettings?.features.map((feat) => {
-                const currentModelId = modelSettings.config?.[feat.key] || 'gemini-3.5-flash-lite';
+                const currentModelId = modelSettings.config?.[feat.key] || 'SYSTEM_DEFAULT';
+                const isAuto = currentModelId === 'SYSTEM_DEFAULT' || !currentModelId;
                 return (
                   <div 
                     key={feat.key} 
@@ -848,9 +858,21 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                        Kullanılacak Gemini Modeli:
-                      </label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                          Kullanılacak Model:
+                        </label>
+                        {isAuto ? (
+                          <span className="text-[10px] bg-purple-500/20 text-purple-300 font-bold px-2 py-0.5 rounded border border-purple-500/30 flex items-center gap-1">
+                            <RefreshCw className="w-2.5 h-2.5" />
+                            Otomatik Kalite Zinciri
+                          </span>
+                        ) : (
+                          <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/30">
+                            Sabit Tercih
+                          </span>
+                        )}
+                      </div>
                       <select
                         value={currentModelId}
                         onChange={(e) => handleModelChange(feat.key, e.target.value)}
@@ -862,6 +884,17 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                           </option>
                         ))}
                       </select>
+                      {isAuto ? (
+                        <p className="text-[10px] text-indigo-300/90 mt-1.5 flex items-center gap-1">
+                          <span>🔄</span>
+                          <span>Gemini 3.7 Flash ile başlar, kota dolarsa 3.6 ➔ 3.5 ➔ Pro'ya otomatik geçer.</span>
+                        </p>
+                      ) : (
+                        <p className="text-[10px] text-amber-400/90 mt-1.5 flex items-center gap-1">
+                          <span>📌</span>
+                          <span>Bu modülde doğrudan seçilen model öncelikli olarak kullanılır.</span>
+                        </p>
+                      )}
                     </div>
                   </div>
                 );

@@ -52,15 +52,15 @@ export function setAiFeaturesEnabled(val: boolean) { aiFeaturesEnabled = val; }
 
 // Global configurable model mapping for each AI feature
 export let featureModelConfig: Record<string, string> = {
-  AI_COACH_STUDENT: 'gemini-3.5-flash-lite',
-  AI_COACH_CLASS: 'gemini-3.5-flash-lite',
-  SOLVE_QUESTION: 'gemini-3.5-flash-lite',
-  QUESTION_ANALYSIS: 'gemini-3.5-flash-lite',
-  SIMILAR_QUESTION: 'gemini-3.5-flash-lite',
-  ERROR_PRIORITY: 'gemini-3.5-flash-lite',
-  TOPIC_TIPS: 'gemini-3.5-flash-lite',
-  YOUTUBE_PLANNER: 'gemini-3.5-flash-lite',
-  PDF_REPORT_PARSE: 'gemini-3.5-flash-lite'
+  AI_COACH_STUDENT: 'SYSTEM_DEFAULT',
+  AI_COACH_CLASS: 'SYSTEM_DEFAULT',
+  SOLVE_QUESTION: 'SYSTEM_DEFAULT',
+  QUESTION_ANALYSIS: 'SYSTEM_DEFAULT',
+  SIMILAR_QUESTION: 'SYSTEM_DEFAULT',
+  ERROR_PRIORITY: 'SYSTEM_DEFAULT',
+  TOPIC_TIPS: 'SYSTEM_DEFAULT',
+  YOUTUBE_PLANNER: 'SYSTEM_DEFAULT',
+  PDF_REPORT_PARSE: 'SYSTEM_DEFAULT'
 };
 export function setFeatureModelConfig(cfg: Record<string, string>) { featureModelConfig = cfg; }
 
@@ -145,7 +145,12 @@ export async function initFirebaseAndLogs() {
           if (sData.featureModelConfig && typeof sData.featureModelConfig === 'object') {
             const sanitized: Record<string, string> = {};
             for (const [k, v] of Object.entries(sData.featureModelConfig)) {
-              sanitized[k] = mapToActualGeminiModel(String(v));
+              const val = String(v || '').trim();
+              if (!val || val === 'SYSTEM_DEFAULT' || val === 'auto') {
+                sanitized[k] = 'SYSTEM_DEFAULT';
+              } else {
+                sanitized[k] = mapToActualGeminiModel(val);
+              }
             }
             featureModelConfig = { ...featureModelConfig, ...sanitized };
           }
@@ -344,23 +349,24 @@ export async function clearApiUsageLogs(olderThanDays = 30) {
 
 export async function fetchLiveGoogleModels(): Promise<{ id: string; name: string; badge: string }[]> {
   return [
-    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite (En Ekonomik & Hızlı)', badge: 'Önerilen (Varsayılan)' },
+    { id: 'SYSTEM_DEFAULT', name: '⚡ Sistem Otomatik (Önerilen Kalite Zinciri: 3.7 ➔ 3.6 ➔ 3.5 ➔ Pro)', badge: 'Varsayılan & Önerilen' },
+    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash (En Gelişmiş Akıl Yürütme & Hızlı)', badge: 'Gelişmiş' },
     { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Dengeli Hız & Kalite)', badge: 'Dengeli' },
-    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash (En Gelişmiş Akıl Yürütme)', badge: 'Gelişmiş' },
-    { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro (Derin Strateji & Planlama)', badge: 'Pro' }
+    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite (En Ekonomik & Ultra Hafif)', badge: 'Ekonomik' },
+    { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro (Derin Strateji & Ağır Analiz)', badge: 'Pro' }
   ];
 }
 
-export function mapToActualGeminiModel(modelId: string): string {
+export function mapToActualGeminiModel(modelId?: string): string {
   const m = (modelId || '').trim();
-  if (!m) return 'gemini-3.5-flash-lite';
+  if (!m || m === 'SYSTEM_DEFAULT' || m === 'auto' || m === 'system_auto') return 'gemini-3.7-flash';
   // Map deprecated models to current active Gemini 3.x models
   const deprecatedMap: Record<string, string> = {
-    'gemini-2.0-flash': 'gemini-3.5-flash-lite',
+    'gemini-2.0-flash': 'gemini-3.7-flash',
     'gemini-2.0-flash-lite': 'gemini-3.5-flash-lite',
     'gemini-2.5-flash': 'gemini-3.6-flash',
     'gemini-2.5-pro': 'gemini-3.1-pro',
-    'gemini-1.5-flash': 'gemini-3.5-flash-lite',
+    'gemini-1.5-flash': 'gemini-3.7-flash',
     'gemini-1.5-pro': 'gemini-3.1-pro',
     'gemini-flash-lite-latest': 'gemini-3.5-flash-lite'
   };
@@ -377,28 +383,18 @@ export async function generateContentWithFallback(
     config?: any;
   }
 ) {
-  const requestedModel = options.model || 'gemini-3.5-flash-lite';
+  const requestedModel = options.model || 'SYSTEM_DEFAULT';
   const primaryApiModel = mapToActualGeminiModel(requestedModel);
 
-  // Discover active models dynamically from live Google API
-  const liveModels = await fetchLiveGoogleModels();
-  const liveIds = liveModels.map(m => m.id);
+  // Quality-first fallback hierarchy: 3.7 Flash -> 3.6 Flash -> 3.5 Flash-Lite -> 3.1 Pro
+  const staticFallbacks = ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro'];
 
   const fallbackList: { requested: string; apiModel: string }[] = [
     { requested: requestedModel, apiModel: primaryApiModel }
   ];
 
-  // Add live discovered models to fallback list
-  for (const lId of liveIds) {
-    if (lId !== primaryApiModel) {
-      fallbackList.push({ requested: lId, apiModel: lId });
-    }
-  }
-
-  // Add static resilient fallbacks if not already present
-  const staticFallbacks = ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-pro'];
   for (const sf of staticFallbacks) {
-    if (!fallbackList.some(f => f.apiModel === sf)) {
+    if (sf !== primaryApiModel) {
       fallbackList.push({ requested: sf, apiModel: sf });
     }
   }
