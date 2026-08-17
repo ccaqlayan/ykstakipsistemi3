@@ -130,12 +130,17 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
   const imgDataUrl = getImageDataUrl(options);
   const hasImage = Boolean(imgDataUrl);
 
-  // Groq decommissioned Llama 3.2 Vision models on their platform
-  if (hasImage) {
-    throw new Error('Groq Cloud şu anda görsel (Vision) modellerini desteklememektedir (Llama 3.2 Vision modelleri Groq tarafından kullanımdan kaldırılmıştır). Görsel analiz Google Gemini veya OpenRouter üzerinden işlenmektedir.');
-  }
-
-  const model = 'llama-3.3-70b-versatile';
+  // Multimodal vision models prioritized for images, high-throughput text models for text
+  const candidateModels = hasImage
+    ? [
+        'llama-3.2-11b-vision-preview',
+        'llama-3.2-90b-vision-preview',
+        'qwen/qwen3.6-27b'
+      ]
+    : [
+        'llama-3.3-70b-versatile',
+        'llama-3.1-8b-instant'
+      ];
 
   const messages: any[] = [];
 
@@ -143,48 +148,91 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
     messages.push({ role: 'system', content: options.systemInstruction });
   }
 
-  messages.push({ role: 'user', content: options.prompt });
-
-  const requestBody: any = {
-    model,
-    messages,
-    max_tokens: options.maxTokens || 4096,
-    temperature: options.temperature ?? 0.3
-  };
-
   if (options.requireJson) {
-    requestBody.response_format = { type: 'json_object' };
     if (!options.prompt.toLowerCase().includes('json')) {
-      messages.unshift({ role: 'system', content: 'Respond with valid JSON.' });
+      messages.unshift({ role: 'system', content: 'Respond strictly with valid JSON format.' });
     }
   }
 
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(requestBody)
-  });
-
-  if (!res.ok) {
-    const errBody = await res.text();
-    throw new Error(`Groq API Hatası (${res.status}): ${errBody.substring(0, 300)}`);
+  if (hasImage && imgDataUrl) {
+    messages.push({
+      role: 'user',
+      content: [
+        { type: 'text', text: options.prompt },
+        { type: 'image_url', image_url: { url: imgDataUrl } }
+      ]
+    });
+  } else {
+    messages.push({ role: 'user', content: options.prompt });
   }
 
-  const data = await res.json();
-  const rawText = data?.choices?.[0]?.message?.content || '';
-  const text = cleanAiOutputText(rawText);
-  const usage = data?.usage || {};
+  let lastError: any = null;
 
-  return {
-    text,
-    providerUsed: 'GROQ',
-    modelUsed: model,
-    promptTokens: usage.prompt_tokens || 0,
-    candidatesTokens: usage.completion_tokens || 0
-  };
+  for (const model of candidateModels) {
+    try {
+      const requestBody: any = {
+        model,
+        messages,
+        max_tokens: options.maxTokens || 4096,
+        temperature: options.temperature ?? 0.3
+      };
+
+      if (options.requireJson) {
+        requestBody.response_format = { type: 'json_object' };
+      }
+
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        signal: AbortSignal.timeout(25000),
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(`Groq API Hatası (${res.status}): ${errBody.substring(0, 300)}`);
+      }
+
+      const data = await res.json();
+      const choice = data?.choices?.[0];
+      let rawText = '';
+      if (typeof choice?.message?.content === 'string') {
+        rawText = choice.message.content;
+      } else if (Array.isArray(choice?.message?.content)) {
+        rawText = choice.message.content
+          .map((part: any) => (typeof part === 'string' ? part : part?.text || ''))
+          .join('\n');
+      } else if (choice?.message?.reasoning && typeof choice.message.reasoning === 'string') {
+        rawText = choice.message.reasoning;
+      } else if (typeof choice?.text === 'string') {
+        rawText = choice.text;
+      }
+
+      const text = cleanAiOutputText(rawText);
+      const usage = data?.usage || {};
+      const resolvedModel = data?.model || model;
+
+      if (!text || text.length < 5) {
+        throw new Error(`Model ${model} geçerli bir içerik üretmedi.`);
+      }
+
+      return {
+        text,
+        providerUsed: 'GROQ',
+        modelUsed: resolvedModel,
+        promptTokens: usage.prompt_tokens || 0,
+        candidatesTokens: usage.completion_tokens || 0
+      };
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`[AI_GATEWAY] Groq model ${model} failed: ${err.message}. Trying next Groq model...`);
+    }
+  }
+
+  throw lastError || new Error('Groq modelleri denenirken hata oluştu.');
 }
 
 /**
