@@ -890,9 +890,9 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                           <span>Gemini 3.7 Flash ile başlar, kota dolarsa 3.6 ➔ 3.5 ➔ Pro'ya otomatik geçer.</span>
                         </p>
                       ) : (
-                        <p className="text-[10px] text-amber-400/90 mt-1.5 flex items-center gap-1">
-                          <span>📌</span>
-                          <span>Bu modülde doğrudan seçilen model öncelikli olarak kullanılır.</span>
+                        <p className="text-[10px] text-amber-300/90 mt-1.5 flex items-center gap-1">
+                          <span>🛡️</span>
+                          <span>Öncelikli modeldir; kotası dolarsa sistem anında sıradaki modele kesintisiz geçer.</span>
                         </p>
                       )}
                     </div>

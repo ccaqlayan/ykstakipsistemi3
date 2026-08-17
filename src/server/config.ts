@@ -386,26 +386,29 @@ export async function generateContentWithFallback(
   const requestedModel = options.model || 'SYSTEM_DEFAULT';
   const primaryApiModel = mapToActualGeminiModel(requestedModel);
 
-  // Quality-first fallback hierarchy: 3.7 Flash -> 3.6 Flash -> 3.5 Flash-Lite -> 3.1 Pro
-  const staticFallbacks = ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro'];
+  // Model bazlı akıllı fallback zincirleri (Öncelikli modelden sıradaki en uygun modele)
+  const qualitySequenceMap: Record<string, string[]> = {
+    'gemini-3.1-pro': ['gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'],
+    'gemini-3.7-flash': ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro'],
+    'gemini-3.6-flash': ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro'],
+    'gemini-3.5-flash-lite': ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-pro']
+  };
 
-  const fallbackList: { requested: string; apiModel: string }[] = [
-    { requested: requestedModel, apiModel: primaryApiModel }
+  const prioritizedSequence = qualitySequenceMap[primaryApiModel] || [
+    primaryApiModel,
+    'gemini-3.7-flash',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-pro'
   ];
-
-  for (const sf of staticFallbacks) {
-    if (sf !== primaryApiModel) {
-      fallbackList.push({ requested: sf, apiModel: sf });
-    }
-  }
 
   const uniqueList: { requested: string; apiModel: string }[] = [];
   const seenApiModels = new Set<string>();
 
-  for (const item of fallbackList) {
-    if (!seenApiModels.has(item.apiModel)) {
-      seenApiModels.add(item.apiModel);
-      uniqueList.push(item);
+  for (const mId of prioritizedSequence) {
+    if (!seenApiModels.has(mId)) {
+      seenApiModels.add(mId);
+      uniqueList.push({ requested: requestedModel, apiModel: mId });
     }
   }
 
@@ -415,7 +418,7 @@ export async function generateContentWithFallback(
     let retries = 1;
     while (retries >= 0) {
       try {
-        console.log(`Generating content using API model: ${item.apiModel} (Requested config model: ${requestedModel}, Retries left: ${retries})`);
+        console.log(`[GEMINI EXEC] Model çağrılıyor: ${item.apiModel} (İstenen Yapılandırma: ${requestedModel})`);
         const mergedConfig = {
           maxOutputTokens: 2048,
           ...(options.config || {})
@@ -425,21 +428,30 @@ export async function generateContentWithFallback(
           contents: options.contents,
           config: mergedConfig,
         });
-        const reportedModel = (item.apiModel === primaryApiModel) ? requestedModel : item.requested;
-        return { response, modelUsed: reportedModel };
+        return { response, modelUsed: item.apiModel };
       } catch (err: any) {
         lastError = err;
-        console.warn(`Model ${item.apiModel} failed (Retries left: ${retries}):`, err.message || err);
         const errMsg = err?.message || String(err || '');
+        console.warn(`[GEMINI EXEC] Model ${item.apiModel} hatası (Kalan deneme: ${retries}):`, errMsg);
+        
         const isAuthError = err.status === 401 || errMsg.includes('401') || errMsg.includes('UNAUTHENTICATED') || errMsg.includes('ACCESS_TOKEN_TYPE_UNSUPPORTED') || errMsg.includes('invalid authentication credentials');
         if (isAuthError) {
-          // Immediately throw authentication failure so user gets the accurate 401 message
+          // Doğrudan yetkilendirme hatası fırlat
           throw err;
         }
-        const isNotFound = err.status === 404 || errMsg.includes('not found') || errMsg.includes('no longer available') || errMsg.includes('unsupported') || errMsg.includes('Thinking is not enabled');
-        if (isNotFound) {
-          break; // Model not available or invalid arguments, try next fallback model immediately
+
+        const isQuotaOrRateLimit = err.status === 429 || errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota') || errMsg.includes('Rate limit') || errMsg.includes('rate limit');
+        if (isQuotaOrRateLimit) {
+          console.warn(`[GEMINI AUTO-FALLBACK] Model ${item.apiModel} kota/hız sınırına ulaştı (429 RESOURCE_EXHAUSTED). Sıradaki yedek modele kesintisiz geçiliyor...`);
+          break; // Kota dolduğunda bekleme yapmadan anında sıradaki modele geç
         }
+
+        const isNotFoundOrUnsupported = err.status === 404 || errMsg.includes('not found') || errMsg.includes('no longer available') || errMsg.includes('unsupported') || errMsg.includes('Thinking is not enabled') || errMsg.includes('is not supported');
+        if (isNotFoundOrUnsupported) {
+          console.warn(`[GEMINI AUTO-FALLBACK] Model ${item.apiModel} desteklenmiyor (404). Sıradaki modele geçiliyor...`);
+          break;
+        }
+
         retries--;
         if (retries >= 0) {
           await new Promise((resolve) => setTimeout(resolve, 800));
@@ -448,7 +460,7 @@ export async function generateContentWithFallback(
     }
   }
 
-  throw lastError || new Error('All Gemini model fallbacks exhausted.');
+  throw lastError || new Error('Tüm Gemini modellerinin kotaları veya limitleri tükendi.');
 }
 
 export function getOAuth2Client(req?: express.Request) {
