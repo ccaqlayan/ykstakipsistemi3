@@ -465,11 +465,11 @@ export async function generateContentWithFallback(
         continue;
       }
 
-      // 503 UNAVAILABLE: Yüksek talep/geçici servis hatası → kısa süreli cooldown (30 dk) ve sıradaki modele geç
+      // 503 UNAVAILABLE: Yüksek talep/geçici servis hatası → tam cooldown süresi (1 gün / 24 saat) ve sıradaki modele geç
       const isUnavailable = err.status === 503 || errMsg.includes('503') || errMsg.includes('UNAVAILABLE') || errMsg.includes('high demand') || errMsg.includes('temporarily unavailable') || errMsg.includes('Service Unavailable');
       if (isUnavailable) {
-        console.warn(`[GEMINI AUTO-FALLBACK] Model ${item.apiModel} geçici olarak erişilemez (503). Kısa süreli cooldown'a alındı. Sıradaki modele geçiliyor...`);
-        recordModelExhaustion('GEMINI', item.apiModel, errMsg, 0.5); // 30 dakika cooldown
+        console.warn(`[GEMINI AUTO-FALLBACK] Model ${item.apiModel} geçici olarak erişilemez (503). 24 saatlik cooldown'a alındı. Sıradaki modele geçiliyor...`);
+        recordModelExhaustion('GEMINI', item.apiModel, errMsg);
         continue;
       }
 

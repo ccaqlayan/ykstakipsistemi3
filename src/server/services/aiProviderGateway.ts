@@ -228,9 +228,9 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
           throw new Error('Groq Cloud şu anda sadece metin modellerini desteklemektedir. Fotoğraflı soru çözümü için lütfen Sistem Yönetimi > Model Ayarları bölümünden Google Gemini veya OpenRouter anahtarınızı aktif ediniz.');
         }
 
-        // Check for rate limits / quota issues on Groq
-        if (res.status === 429 || errBody.includes('rate_limit_exceeded') || errBody.includes('tokens per day') || errBody.includes('TPM')) {
-          console.warn(`[AI_FAILOVER] Groq model ${model} rate/TPM limitine ulaştı. Cooldown'a alındı.`);
+        // Check for rate limits / quota / service unavailable issues on Groq
+        if (res.status === 429 || res.status === 503 || errBody.includes('rate_limit_exceeded') || errBody.includes('tokens per day') || errBody.includes('TPM') || errBody.includes('UNAVAILABLE') || errBody.includes('Service Unavailable')) {
+          console.warn(`[AI_FAILOVER] Groq model ${model} limit/hizmet hatası aldı (${res.status}). Cooldown'a alındı.`);
           recordModelExhaustion('GROQ', model, errBody);
         }
 
@@ -378,8 +378,8 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
       if (!res.ok) {
         const errBody = await res.text();
         // Cooldown record for failed OpenRouter model
-        if (res.status === 429 || res.status === 402 || errBody.includes('rate_limit') || errBody.includes('quota')) {
-          console.warn(`[AI_FAILOVER] OpenRouter model ${model} rate/limit hatası aldı. Cooldown'a alındı.`);
+        if (res.status === 429 || res.status === 402 || res.status === 503 || res.status === 502 || res.status === 504 || errBody.includes('rate_limit') || errBody.includes('quota') || errBody.includes('UNAVAILABLE') || errBody.includes('Service Unavailable')) {
+          console.warn(`[AI_FAILOVER] OpenRouter model ${model} limit/hizmet hatası aldı (${res.status}). Cooldown'a alındı.`);
           recordModelExhaustion('OPENROUTER', model, errBody);
         }
         throw new Error(`OpenRouter API Hatası (${res.status}): ${errBody.substring(0, 300)}`);
