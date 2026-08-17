@@ -188,9 +188,10 @@ export function getActiveSequenceForProvider(provider: AiProviderName, baseSeque
  * Records that a model has hit rate limit / quota exhaustion.
  * Enters cooldown for configured hours (default 24h) and advances cursor to next available model.
  */
-export function recordModelExhaustion(provider: AiProviderName, modelId: string, errorReason?: string) {
+export function recordModelExhaustion(provider: AiProviderName, modelId: string, errorReason?: string, cooldownHoursOverride?: number) {
   const key = `${provider}:${modelId}`;
-  const cooldownDurationMs = failoverState.cooldownHours * 60 * 60 * 1000;
+  const effectiveCooldownHours = cooldownHoursOverride !== undefined ? cooldownHoursOverride : failoverState.cooldownHours;
+  const cooldownDurationMs = effectiveCooldownHours * 60 * 60 * 1000;
   const cooldownUntil = Date.now() + cooldownDurationMs;
 
   failoverState.cooldowns[key] = {
@@ -201,7 +202,7 @@ export function recordModelExhaustion(provider: AiProviderName, modelId: string,
     reason: (errorReason || 'Quota / Rate limit reached').substring(0, 200)
   };
 
-  console.warn(`[AI_FAILOVER] ⏳ Model ${provider}:${modelId} entered cooldown until ${new Date(cooldownUntil).toLocaleString()} (${failoverState.cooldownHours} hours). Reason: ${errorReason || 'Rate limit'}`);
+  console.warn(`[AI_FAILOVER] ⏳ Model ${provider}:${modelId} entered cooldown until ${new Date(cooldownUntil).toLocaleString()} (${effectiveCooldownHours} hours). Reason: ${errorReason || 'Rate limit'}`);
 
   // Advance cursor to next model
   const seq = (PROVIDER_MODEL_SEQUENCES[provider] || []).map(m => m.id);

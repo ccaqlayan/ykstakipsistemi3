@@ -453,7 +453,7 @@ export async function generateContentWithFallback(
 
       const isQuotaOrRateLimit = err.status === 429 || errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota') || errMsg.includes('Rate limit') || errMsg.includes('rate limit');
       if (isQuotaOrRateLimit) {
-        console.warn(`[GEMINI AUTO-FALLBACK] Model ${item.apiModel} kota/hız sınırına ulaştı. 24 saatlik bekleme havuzuna (cooldown) alındı. Sıradaki modele geçiliyor...`);
+        console.warn(`[GEMINI AUTO-FALLBACK] Model ${item.apiModel} kota/hız sınırına ulaştı. Cooldown'a alındı. Sıradaki modele geçiliyor...`);
         recordModelExhaustion('GEMINI', item.apiModel, errMsg);
         continue;
       }
@@ -464,6 +464,18 @@ export async function generateContentWithFallback(
         recordModelExhaustion('GEMINI', item.apiModel, errMsg);
         continue;
       }
+
+      // 503 UNAVAILABLE: Yüksek talep/geçici servis hatası → kısa süreli cooldown (30 dk) ve sıradaki modele geç
+      const isUnavailable = err.status === 503 || errMsg.includes('503') || errMsg.includes('UNAVAILABLE') || errMsg.includes('high demand') || errMsg.includes('temporarily unavailable') || errMsg.includes('Service Unavailable');
+      if (isUnavailable) {
+        console.warn(`[GEMINI AUTO-FALLBACK] Model ${item.apiModel} geçici olarak erişilemez (503). Kısa süreli cooldown'a alındı. Sıradaki modele geçiliyor...`);
+        recordModelExhaustion('GEMINI', item.apiModel, errMsg, 0.5); // 30 dakika cooldown
+        continue;
+      }
+
+      // Diğer bilinmeyen hatalar da bir sonraki modele geç
+      console.warn(`[GEMINI AUTO-FALLBACK] Model ${item.apiModel} bilinmeyen hata, sıradaki modele geçiliyor...`);
+      continue;
     }
   }
 
