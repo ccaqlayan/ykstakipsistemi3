@@ -130,15 +130,17 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
   const imgDataUrl = getImageDataUrl(options);
   const hasImage = Boolean(imgDataUrl);
 
-  // Active Groq models: qwen/qwen3.6-27b for vision; llama-3.3-70b-versatile and 8b for text
+  // Active Groq models: openai/gpt-oss-120b, openai/gpt-oss-20b, qwen/qwen3.6-27b, llama-3.3-70b-specdec
   const candidateModels = hasImage
     ? [
-        'qwen/qwen3.6-27b'
+        'qwen/qwen3.6-27b',
+        'openai/gpt-oss-120b'
       ]
     : [
-        'llama-3.3-70b-versatile',
-        'llama-3.1-8b-instant',
-        'openai/gpt-oss-120b'
+        'openai/gpt-oss-120b',
+        'openai/gpt-oss-20b',
+        'qwen/qwen3.6-27b',
+        'llama-3.3-70b-specdec'
       ];
 
   const messages: any[] = [];
@@ -481,23 +483,53 @@ export async function testProviderApiKey(
     }
 
     if (provider === 'groq') {
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${trimmed}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: 'Test ping. Respond with OK.' }],
-          max_tokens: 10
-        })
-      });
-      if (!res.ok) {
-        const body = await res.text();
-        return { success: false, message: `Groq Doğrulama Hatası (${res.status}): ${body.substring(0, 200)}` };
+      try {
+        const modelsRes = await fetch('https://api.groq.com/openai/v1/models', {
+          headers: {
+            'Authorization': `Bearer ${trimmed}`
+          },
+          signal: AbortSignal.timeout(10000)
+        });
+        if (!modelsRes.ok) {
+          const body = await modelsRes.text();
+          return { success: false, message: `Groq Doğrulama Hatası (${modelsRes.status}): ${body.substring(0, 200)}` };
+        }
+
+        const modelsData = await modelsRes.json() as any;
+        const availableModelIds: string[] = (modelsData.data || []).map((m: any) => m.id);
+        
+        const preferredModels = [
+          'openai/gpt-oss-120b',
+          'openai/gpt-oss-20b',
+          'qwen/qwen3.6-27b',
+          'llama-3.3-70b-specdec'
+        ];
+        const selectedModel = preferredModels.find(m => availableModelIds.includes(m)) 
+          || availableModelIds.find(id => !id.includes('whisper') && !id.includes('guard'))
+          || availableModelIds[0] 
+          || 'openai/gpt-oss-120b';
+
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${trimmed}`,
+            'Content-Type': 'application/json'
+          },
+          signal: AbortSignal.timeout(15000),
+          body: JSON.stringify({
+            model: selectedModel,
+            messages: [{ role: 'user', content: 'Test ping. Respond with OK.' }],
+            max_tokens: 10
+          })
+        });
+        if (!res.ok) {
+          const body = await res.text();
+          return { success: false, message: `Groq Doğrulama Hatası (${res.status}): ${body.substring(0, 200)}` };
+        }
+        return { success: true, message: 'Groq Cloud bağlantısı başarılı!', modelUsed: selectedModel };
+      } catch (err: any) {
+        return { success: false, message: `Groq Bağlantı Hatası: ${err.message}` };
       }
-      return { success: true, message: 'Groq Cloud bağlantısı başarılı!', modelUsed: 'llama-3.3-70b-versatile' };
     }
 
     if (provider === 'openrouter') {

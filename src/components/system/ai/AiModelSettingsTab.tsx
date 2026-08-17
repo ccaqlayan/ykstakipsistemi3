@@ -381,7 +381,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
                 <span>⚡ Yalnızca Groq</span>
               </div>
-              <p className="text-[11px] text-slate-300 mt-1">Sadece Groq Llama modellerini kullanır.</p>
+              <p className="text-[11px] text-slate-300 mt-1">Sadece Groq Cloud modellerini kullanır.</p>
             </button>
 
             <button
