@@ -248,6 +248,13 @@ export const SpacedRepetitionModal: React.FC<SpacedRepetitionModalProps> = ({
 
         {/* Option Selection Buttons */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-2.5 sm:p-3 shadow-xl backdrop-blur-md">
+          {!currentQuestion.correctOption && !currentQuestion.aiSolutionCorrectAnswer && (
+            <div className="mb-2.5 p-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-bold flex items-center space-x-1.5">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+              <span>Bu sorunun doğru cevabı girilmemiş. Lütfen hata kaydını düzenleyerek doğru şıkkı kaydediniz.</span>
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-2">
             <span className="text-[11px] font-bold text-slate-400 flex items-center space-x-1">
               <span>👇 Şıkkını İşaretle:</span>

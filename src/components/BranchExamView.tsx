@@ -2271,7 +2271,23 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
             const list = (questions && questions.length > 0) 
               ? questions 
               : getDueRepetitionQuestions(topicErrors);
-            setRepetitionSessionQuestions(list.length > 0 ? list : topicErrors.filter(e => !!e.imageUrl));
+
+            if (questions && questions.length === 1) {
+              const q = questions[0];
+              const hasAnswer = Boolean(q.correctOption?.trim() || q.aiSolutionCorrectAnswer?.trim());
+              if (!hasAnswer) {
+                alert('⚠️ Bu sorunun doğru cevabı girilmemiş.\n\nKör tekrar modunda test edebilmek için lütfen "Düzenle" (Kalem) butonuna basarak doğru cevap şıkkını (A, B, C, D veya E) kaydedin veya Yapay Zeka Çözümü ile doğru cevabı oluşturun.');
+                return;
+              }
+            }
+
+            const validList = list.filter(e => Boolean(e.imageUrl) && Boolean(e.correctOption?.trim() || e.aiSolutionCorrectAnswer?.trim()));
+            if (validList.length === 0) {
+              alert('⚠️ Kör tekrar testi başlatılamadı.\n\nTekrar yapabilmek için soruların fotoğraflı olması ve doğru cevap şıkkının (A, B, C, D veya E) girilmiş olması gerekir. Lütfen hata kayıtlarınızı düzenleyerek doğru şıklarını kaydediniz.');
+              return;
+            }
+
+            setRepetitionSessionQuestions(validList);
             setShowRepetitionModal(true);
           }}
           onOpenRepetitionSettings={() => setShowRepetitionSettingsModal(true)}
@@ -2443,7 +2459,12 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         dueQuestions={getDueRepetitionQuestions(topicErrors)}
         onStartRepetition={() => {
           const due = getDueRepetitionQuestions(topicErrors);
-          setRepetitionSessionQuestions(due.length > 0 ? due : topicErrors.filter(e => !!e.imageUrl));
+          const validList = due.filter(e => Boolean(e.imageUrl) && Boolean(e.correctOption?.trim() || e.aiSolutionCorrectAnswer?.trim()));
+          if (validList.length === 0) {
+            alert('⚠️ Tekrar zamanı gelen soruların henüz doğru cevap şıkları kaydedilmemiş.\n\nLütfen hata defterindeki soruları düzenleyerek doğru şıklarını (A, B, C, D, E) kaydediniz.');
+            return;
+          }
+          setRepetitionSessionQuestions(validList);
           setShowRepetitionModal(true);
         }}
       />
