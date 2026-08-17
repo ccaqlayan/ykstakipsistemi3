@@ -48,7 +48,8 @@ export const PROVIDER_MODEL_SEQUENCES: Record<AiProviderName, ProviderModelMetad
     { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B', description: 'En Yüksek Muhakeme & Problem Çözme Kapasitesi', badge: '120B Amiral', isVisionCapable: false },
     { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B', description: 'Ultra Hızlı Cevap Süresi & Düşük Gecikme', badge: 'Ultra Hızlı', isVisionCapable: false },
     { id: 'qwen/qwen3.6-27b', name: 'Qwen 3.6 27B', description: 'Matematik ve Kodlamada Dengeli Başarı', badge: '27B Dengeli', isVisionCapable: false },
-    { id: 'llama-3.3-70b-specdec', name: 'Llama 3.3 70B Speculative', description: 'Meta Llama Tabanlı Güçlü Analiz & Hızlı Çıkarım', badge: '70B Güçlü', isVisionCapable: false }
+    { id: 'groq/compound', name: 'Groq Compound', description: 'Akıllı Bileşik Muhakeme & Yüksek Hızlı Çıkarım', badge: 'Compound Güçlü', isVisionCapable: false },
+    { id: 'groq/compound-mini', name: 'Groq Compound Mini', description: 'Ultra Hızlı & Kompakt Cevap Motoru', badge: 'Compound Mini', isVisionCapable: false }
   ],
   OPENROUTER: [
     { id: 'google/gemma-4-31b-it:free', name: 'Gemma 4 31B Free', description: 'Google Gemma Tabanlı Ücretsiz Lider Model', badge: ':free Lider', isVisionCapable: true },
@@ -72,7 +73,7 @@ let failoverState: AiFailoverState = {
   },
   customModelOrder: {
     GEMINI: ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro'],
-    GROQ: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'llama-3.3-70b-specdec'],
+    GROQ: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'groq/compound', 'groq/compound-mini'],
     OPENROUTER: [
       'google/gemma-4-31b-it:free',
       'google/gemma-4-26b-a4b-it:free',
@@ -113,23 +114,36 @@ export async function initFailoverStateFromFirestore() {
         };
       }
       if (data.customModelOrder && typeof data.customModelOrder === 'object') {
+        // Sanitize and purge decommissioned models
+        const sanitized: Record<string, string[]> = {};
+        for (const [pName, list] of Object.entries(data.customModelOrder)) {
+          if (Array.isArray(list)) {
+            const validDefaultIds = (PROVIDER_MODEL_SEQUENCES[pName as AiProviderName] || []).map(m => m.id);
+            const filtered = list.filter(mId => mId !== 'llama-3.3-70b-specdec' && validDefaultIds.includes(mId));
+            for (const vId of validDefaultIds) {
+              if (!filtered.includes(vId)) filtered.push(vId);
+            }
+            sanitized[pName] = filtered;
+          }
+        }
         failoverState.customModelOrder = {
           ...failoverState.customModelOrder,
-          ...data.customModelOrder
+          ...sanitized
         };
       }
       if (data.cooldowns && typeof data.cooldowns === 'object') {
-        // Clean expired cooldowns on load
+        // Clean expired cooldowns and decommissioned models on load
         const now = Date.now();
         const cleaned: Record<string, ModelCooldownEntry> = {};
         for (const [k, v] of Object.entries(data.cooldowns)) {
-          if (v && v.cooldownUntil && v.cooldownUntil > now) {
+          if (v && v.cooldownUntil && v.cooldownUntil > now && v.modelId !== 'llama-3.3-70b-specdec') {
             cleaned[k] = v;
           }
         }
         failoverState.cooldowns = cleaned;
       }
       console.log(`[AI_FAILOVER] Loaded failover state from Firestore. Active Provider: ${failoverState.activeProvider}, Active Cooldowns: ${Object.keys(failoverState.cooldowns).length}`);
+      await syncToFirestore();
     }
   } catch (err: any) {
     console.warn('[AI_FAILOVER] Failed to load failover state from Firestore:', err.message);

@@ -586,7 +586,8 @@ export async function testProviderApiKey(
           'openai/gpt-oss-120b',
           'openai/gpt-oss-20b',
           'qwen/qwen3.6-27b',
-          'llama-3.3-70b-specdec'
+          'groq/compound',
+          'groq/compound-mini'
         ];
         const selectedModel = preferredModels.find(m => availableModelIds.includes(m)) 
           || availableModelIds.find(id => !id.includes('whisper') && !id.includes('guard'))
