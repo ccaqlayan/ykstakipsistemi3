@@ -361,24 +361,28 @@ export async function fetchLiveGoogleModels(): Promise<{ id: string; name: strin
     { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash (En Gelişmiş Akıl Yürütme & Hızlı)', badge: 'Gelişmiş' },
     { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash (Dengeli Hız & Kalite)', badge: 'Dengeli' },
     { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite (En Ekonomik & Ultra Hafif)', badge: 'Ekonomik' },
-    { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro (Derin Strateji & Ağır Analiz)', badge: 'Pro' }
+    { id: 'gemini-3.1-pro-preview', name: 'Gemini 3.1 Pro (Derin Strateji & Ağır Analiz)', badge: 'Pro' }
   ];
 }
 
 export function mapToActualGeminiModel(modelId?: string): string {
   const m = (modelId || '').trim();
   if (!m || m === 'SYSTEM_DEFAULT' || m === 'auto' || m === 'system_auto') return 'gemini-3.7-flash';
-  // Map deprecated models to current active Gemini 3.x models
-  const deprecatedMap: Record<string, string> = {
+  // Map models to valid Google Gemini API endpoints
+  const modelMap: Record<string, string> = {
+    'gemini-3.1-pro': 'gemini-3.1-pro-preview',
+    'gemini-3.1-pro-preview': 'gemini-3.1-pro-preview',
+    'gemini-2.5-pro': 'gemini-3.1-pro-preview',
+    'gemini-1.5-pro': 'gemini-3.1-pro-preview',
+    'gemini-2.0-pro-exp-02-05': 'gemini-3.1-pro-preview',
     'gemini-2.0-flash': 'gemini-3.7-flash',
     'gemini-2.0-flash-lite': 'gemini-3.5-flash-lite',
     'gemini-2.5-flash': 'gemini-3.6-flash',
-    'gemini-2.5-pro': 'gemini-3.1-pro',
-    'gemini-1.5-flash': 'gemini-3.7-flash',
-    'gemini-1.5-pro': 'gemini-3.1-pro',
-    'gemini-flash-lite-latest': 'gemini-3.5-flash-lite'
+    'gemini-1.5-flash': 'gemini-3.6-flash',
+    'gemini-flash-lite-latest': 'gemini-3.5-flash-lite',
+    'gemini-pro-latest': 'gemini-3.1-pro-preview'
   };
-  if (deprecatedMap[m]) return deprecatedMap[m];
+  if (modelMap[m]) return modelMap[m];
   if (m.startsWith('gemma')) return 'gemini-3.5-flash-lite';
   return m;
 }
@@ -396,10 +400,11 @@ export async function generateContentWithFallback(
 
   // Model bazlı akıllı fallback zincirleri (Öncelikli modelden sıradaki en uygun modele)
   const qualitySequenceMap: Record<string, string[]> = {
-    'gemini-3.1-pro': ['gemini-3.1-pro', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'],
-    'gemini-3.7-flash': ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro'],
-    'gemini-3.6-flash': ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro'],
-    'gemini-3.5-flash-lite': ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-pro']
+    'gemini-3.1-pro-preview': ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'],
+    'gemini-3.1-pro': ['gemini-3.1-pro-preview', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'],
+    'gemini-3.7-flash': ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro-preview'],
+    'gemini-3.6-flash': ['gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro-preview'],
+    'gemini-3.5-flash-lite': ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-pro-preview']
   };
 
   const baseSequence = qualitySequenceMap[primaryApiModel] || [
@@ -407,7 +412,7 @@ export async function generateContentWithFallback(
     'gemini-3.7-flash',
     'gemini-3.6-flash',
     'gemini-3.5-flash-lite',
-    'gemini-3.1-pro'
+    'gemini-3.1-pro-preview'
   ];
 
   // 🚀 AI Failover & Cooldown Manager: Cooldown'da olmayan aktif modelleri getir

@@ -689,15 +689,17 @@ export async function testSingleModel(
     if (provider === 'GEMINI') {
       const apiKey = getEffectiveGeminiApiKey();
       if (!apiKey) throw new Error('Google Gemini API anahtarı sisteme girilmemiş.');
+      const { mapToActualGeminiModel } = await import('../config');
+      const actualModel = mapToActualGeminiModel(modelId);
       const ai = new GoogleGenAI({ apiKey });
       const res = await ai.models.generateContent({
-        model: modelId,
+        model: actualModel,
         contents: [{ role: 'user', parts: [{ text: testPrompt }] }],
         config: { maxOutputTokens: 1024 }
       });
       const latencyMs = Date.now() - startTime;
       const text = res.text || '';
-      return { success: true, model: modelId, provider, latencyMs, output: text };
+      return { success: true, model: actualModel, provider, latencyMs, output: text };
     }
 
     if (provider === 'GROQ') {
