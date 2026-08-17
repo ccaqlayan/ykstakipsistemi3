@@ -328,11 +328,11 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
   if (!isOpen || !imageSrc) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-between p-2 sm:p-4 select-none touch-none animate-fade-in overflow-hidden">
+    <div className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-between p-3 sm:p-6 select-none touch-none animate-fade-in overflow-y-auto">
       
-      {/* 🟢 TOP BAR */}
-      <div className="w-full max-w-4xl flex items-center justify-between px-3 py-2 bg-slate-900/90 border border-white/10 rounded-2xl shadow-xl backdrop-blur-md shrink-0 z-20">
-        <div className="flex items-center space-x-2 min-w-0">
+      {/* 🟢 TOP BAR (Always sticky and on top of everything) */}
+      <div className="w-full max-w-4xl flex items-center justify-between px-4 py-3 bg-slate-900/95 border border-white/15 rounded-2xl shadow-2xl backdrop-blur-xl shrink-0 z-30 sticky top-0">
+        <div className="flex items-center space-x-2.5 min-w-0">
           <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0">
             <Crop className="w-4 h-4" />
           </div>
@@ -340,7 +340,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
             <h3 className="text-xs sm:text-sm font-black text-white truncate flex items-center space-x-1.5">
               <span>{title}</span>
               <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-500/30">
-                Mobil Uyumlu
+                Kırpma & Döndürme
               </span>
             </h3>
             <p className="text-[10px] text-slate-400 truncate hidden sm:block">
@@ -349,15 +349,15 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center space-x-1.5 shrink-0">
+        <div className="flex items-center space-x-2 shrink-0">
           {onUseOriginal && imageFile && (
             <button
               type="button"
               onClick={() => onUseOriginal(imageFile)}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold transition-all border border-slate-700 hover:border-slate-600 cursor-pointer hidden md:flex items-center space-x-1"
+              className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all border border-slate-700 hover:border-indigo-500/50 cursor-pointer flex items-center space-x-1.5 shadow-sm active:scale-95"
               title="Kırpmadan orijinal fotoğrafı kullan"
             >
-              <ImageIcon className="w-3.5 h-3.5 text-slate-400" />
+              <ImageIcon className="w-4 h-4 text-indigo-400" />
               <span>Orijinali Kullan</span>
             </button>
           )}
@@ -365,16 +365,16 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
+            className="p-2 text-slate-400 hover:text-white hover:bg-rose-500/20 rounded-xl transition-all border border-transparent hover:border-rose-500/30 cursor-pointer active:scale-95"
             title="Kapat"
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6 text-slate-300 hover:text-rose-400" />
           </button>
         </div>
       </div>
 
       {/* 🖼️ MIDDLE WORKSPACE (TOUCH CANVAS / CONTAINER) */}
-      <div className="relative flex-1 w-full max-w-4xl my-2 flex items-center justify-center overflow-hidden bg-slate-950/80 rounded-2xl border border-white/10 shadow-inner">
+      <div className="relative flex-1 w-full max-w-4xl my-2 flex items-center justify-center overflow-hidden bg-slate-950/80 rounded-2xl border border-white/10 shadow-inner min-h-[300px]">
         <div 
           ref={containerRef}
           onPointerMove={handlePointerMove}
@@ -394,7 +394,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
             alt="Kırpılacak Soru"
             onLoad={onImageLoad}
             draggable={false}
-            className="block max-h-[60vh] sm:max-h-[66vh] w-auto max-w-full object-contain pointer-events-none transition-transform duration-200 select-none"
+            className="block max-h-[48vh] sm:max-h-[56vh] w-auto max-w-full object-contain pointer-events-none transition-transform duration-200 select-none"
             style={{
               transform: `rotate(${rotation}deg)`
             }}

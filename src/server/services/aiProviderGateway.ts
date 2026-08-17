@@ -130,11 +130,10 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
   const imgDataUrl = getImageDataUrl(options);
   const hasImage = Boolean(imgDataUrl);
 
-  // Active Groq models: openai/gpt-oss-120b, openai/gpt-oss-20b, qwen/qwen3.6-27b, llama-3.3-70b-specdec
+  // Active Groq models: qwen/qwen3.6-27b for vision; gpt-oss-120b, 20b etc. for text
   const candidateModels = hasImage
     ? [
-        'qwen/qwen3.6-27b',
-        'openai/gpt-oss-120b'
+        'qwen/qwen3.6-27b'
       ]
     : [
         'openai/gpt-oss-120b',
@@ -145,26 +144,25 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
 
   const messages: any[] = [];
 
-  if (options.systemInstruction) {
-    messages.push({ role: 'system', content: options.systemInstruction });
+  let userText = options.prompt;
+  if (options.requireJson && !userText.toLowerCase().includes('json')) {
+    userText += '\n\nIMPORTANT: Respond strictly with valid JSON format.';
   }
 
-  if (options.requireJson) {
-    if (!options.prompt.toLowerCase().includes('json')) {
-      messages.unshift({ role: 'system', content: 'Respond strictly with valid JSON format.' });
-    }
+  if (options.systemInstruction) {
+    messages.push({ role: 'system', content: options.systemInstruction });
   }
 
   if (hasImage && imgDataUrl) {
     messages.push({
       role: 'user',
       content: [
-        { type: 'text', text: options.prompt },
+        { type: 'text', text: userText },
         { type: 'image_url', image_url: { url: imgDataUrl } }
       ]
     });
   } else {
-    messages.push({ role: 'user', content: options.prompt });
+    messages.push({ role: 'user', content: userText });
   }
 
   let lastError: any = null;
@@ -187,7 +185,7 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
         requestBody.reasoning_effort = 'none';
       }
 
-      if (options.requireJson) {
+      if (options.requireJson && !hasImage) {
         requestBody.response_format = { type: 'json_object' };
       }
 
