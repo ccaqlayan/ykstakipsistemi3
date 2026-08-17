@@ -1034,8 +1034,8 @@ Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'G
 - KESİNLİKLE LaTeX ($...$) kullanma, düz metin ve klavye karakterleri kullan.
 - correctAnswerLetter alanına sorunun doğru cevap şıkkını (SADECE tek büyük harf: A, B, C, D veya E) yaz.
 
-2. BENZER SORULAR (similarQuestions alanı için - 2 adet):
-- Görseldeki soruya benzer tarzda, Türkiye YKS (TYT/AYT) müfredatına %100 uygun 2 adet özgün soru üret.
+2. BENZER SORULAR (similarQuestions alanı için - TAM 3 ADET):
+- Görseldeki soruya benzer tarzda, Türkiye YKS (TYT/AYT) müfredatına %100 uygun TAM 3 ADET özgün soru üret.
 - Her biri için: soru metni, şıkları (options dizisi: A, B, C, D, E), adım adım detaylı çözümü ve doğru cevabını hazırla.
 
 3. DETAYLI SORU KARNESİ (analysis alanı için):
@@ -1058,6 +1058,12 @@ AŞAĞIDAKİ JSON ŞEMASINA KESİNLİKLE UY VE YALNIZCA GEÇERLİ JSON DÖNDÜR:
       "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
       "solution": "2. Sorunun adım adım detaylı çözümü...",
       "correctAnswer": "B"
+    },
+    {
+      "question": "3. Benzer soru metni ve şıkları...",
+      "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
+      "solution": "3. Sorunun adım adım detaylı çözümü...",
+      "correctAnswer": "C"
     }
   ]
 }
