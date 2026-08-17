@@ -1492,12 +1492,12 @@ router.post('/failover-reorder-models', async (req, res) => {
 
 router.post('/failover-test-model', async (req, res) => {
   try {
-    const { provider, modelId, prompt } = req.body;
+    const { provider, modelId, prompt, imageBase64, imageMimeType } = req.body;
     if (!provider || !modelId) {
       return res.status(400).json({ success: false, error: 'Sağlayıcı ve model ID zorunludur.' });
     }
     const { testSingleModel } = await import('../services/aiProviderGateway');
-    const result = await testSingleModel(provider, modelId, prompt);
+    const result = await testSingleModel(provider, modelId, prompt, imageBase64, imageMimeType);
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
@@ -1508,14 +1508,22 @@ router.post('/failover-toggle-model-status', async (req, res) => {
   try {
     const { provider, modelId, action, hours } = req.body;
     if (!provider || !modelId || !action) {
-      return res.status(400).json({ success: false, error: 'Sağlayıcı, model ID ve eylem (FORCE_ACTIVE / SET_COOLDOWN / CLEAR_COOLDOWN) zorunludur.' });
+      return res.status(400).json({ success: false, error: 'Sağlayıcı, model ID ve eylem zorunludur.' });
     }
-    const { forceActiveModel, setManualModelCooldown, clearModelCooldown, getFailoverStatus } = await import('../services/aiFailoverManager');
+    const { 
+      forceActiveModel, 
+      setManualModelCooldown, 
+      setIndefinitePassive, 
+      clearModelCooldown, 
+      getFailoverStatus 
+    } = await import('../services/aiFailoverManager');
     
     if (action === 'FORCE_ACTIVE') {
       await forceActiveModel(provider, modelId);
     } else if (action === 'SET_COOLDOWN') {
       await setManualModelCooldown(provider, modelId, hours || 24);
+    } else if (action === 'SET_INDEFINITE_PASSIVE') {
+      await setIndefinitePassive(provider, modelId);
     } else if (action === 'CLEAR_COOLDOWN') {
       await clearModelCooldown(provider, modelId);
     }
@@ -1524,6 +1532,50 @@ router.post('/failover-toggle-model-status', async (req, res) => {
     res.json({
       success: true,
       message: `Model durumu güncellendi.`,
+      ...status
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/failover-add-custom-model', async (req, res) => {
+  try {
+    const { provider, id, name, description, badge, isVisionCapable } = req.body;
+    if (!provider || !id || !name) {
+      return res.status(400).json({ success: false, error: 'Sağlayıcı, model ID ve model ismi zorunludur.' });
+    }
+    const { addCustomModel, getFailoverStatus } = await import('../services/aiFailoverManager');
+    await addCustomModel(provider, {
+      id: id.trim(),
+      name: name.trim(),
+      description: (description || '').trim(),
+      badge: (badge || 'Özel Model').trim(),
+      isVisionCapable: Boolean(isVisionCapable)
+    });
+    const status = getFailoverStatus();
+    res.json({
+      success: true,
+      message: `Yeni model başarıyla eklendi.`,
+      ...status
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/failover-remove-custom-model', async (req, res) => {
+  try {
+    const { provider, modelId } = req.body;
+    if (!provider || !modelId) {
+      return res.status(400).json({ success: false, error: 'Sağlayıcı ve model ID zorunludur.' });
+    }
+    const { removeCustomModel, getFailoverStatus } = await import('../services/aiFailoverManager');
+    await removeCustomModel(provider, modelId);
+    const status = getFailoverStatus();
+    res.json({
+      success: true,
+      message: `Model listeden kaldırıldı.`,
       ...status
     });
   } catch (err: any) {

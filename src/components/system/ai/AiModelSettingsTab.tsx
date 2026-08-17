@@ -35,7 +35,14 @@ import {
   PlayCircle,
   X,
   Send,
-  Terminal
+  Terminal,
+  Plus,
+  Trash2,
+  Image,
+  Upload,
+  Lock,
+  Unlock,
+  FileImage
 } from 'lucide-react';
 import { ModelSettingsData } from '../SystemTypes';
 
@@ -211,9 +218,37 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   // 🧪 Single Model Test & Analysis Modal State
   const [testModalModel, setTestModalModel] = useState<any>(null);
   const [testPromptInput, setTestPromptInput] = useState('YKS 2026 sınavına hazırlanan bir sayısal öğrencisi için 1 haftalık acil matematik çalışma ve motivasyon taktiği ver.');
+  const [testImageBase64, setTestImageBase64] = useState<string | null>(null);
+  const [testImageMime, setTestImageMime] = useState<string | null>(null);
+  const [testImagePreview, setTestImagePreview] = useState<string | null>(null);
   const [isTestingModel, setIsTestingModel] = useState(false);
   const [testResultData, setTestResultData] = useState<{ success: boolean; latencyMs?: number; output?: string; error?: string; rawError?: string } | null>(null);
   const [copiedResult, setCopiedResult] = useState(false);
+
+  // ➕ Add Custom Model Modal State
+  const [showAddModelModal, setShowAddModelModal] = useState(false);
+  const [newModelForm, setNewModelForm] = useState<{
+    provider: 'GEMINI' | 'GROQ' | 'OPENROUTER';
+    id: string;
+    name: string;
+    description: string;
+    badge: string;
+    isVisionCapable: boolean;
+  }>({
+    provider: 'GEMINI',
+    id: '',
+    name: '',
+    description: '',
+    badge: 'Özel Model',
+    isVisionCapable: false
+  });
+  const [newModelPromptInput, setNewModelPromptInput] = useState('Bu modelin çalışmasını ve yanıt üretme yeteneğini test et.');
+  const [newModelImageBase64, setNewModelImageBase64] = useState<string | null>(null);
+  const [newModelImageMime, setNewModelImageMime] = useState<string | null>(null);
+  const [newModelImagePreview, setNewModelImagePreview] = useState<string | null>(null);
+  const [isTestingNewModel, setIsTestingNewModel] = useState(false);
+  const [newModelTestResult, setNewModelTestResult] = useState<any>(null);
+  const [isSavingNewModel, setIsSavingNewModel] = useState(false);
 
   const handleOpenTestModal = (provName: string, mod: any) => {
     setTestModalModel({
@@ -222,6 +257,9 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
     });
     setTestResultData(null);
     setCopiedResult(false);
+    setTestImageBase64(null);
+    setTestImageMime(null);
+    setTestImagePreview(null);
   };
 
   const handleCloseTestModal = () => {
@@ -229,6 +267,49 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
     setTestResultData(null);
     setIsTestingModel(false);
     setCopiedResult(false);
+    setTestImageBase64(null);
+    setTestImageMime(null);
+    setTestImagePreview(null);
+  };
+
+  // Image Upload handler for Test Modal
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      setTestImagePreview(result);
+      setTestImageBase64(result);
+      setTestImageMime(file.type || 'image/jpeg');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearTestImage = () => {
+    setTestImageBase64(null);
+    setTestImageMime(null);
+    setTestImagePreview(null);
+  };
+
+  // Image Upload handler for Add Model Modal
+  const handleNewModelImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      setNewModelImagePreview(result);
+      setNewModelImageBase64(result);
+      setNewModelImageMime(file.type || 'image/jpeg');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearNewModelImage = () => {
+    setNewModelImageBase64(null);
+    setNewModelImageMime(null);
+    setNewModelImagePreview(null);
   };
 
   const handleRunModelTest = async () => {
@@ -242,7 +323,9 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
         body: JSON.stringify({
           provider: testModalModel.provider,
           modelId: testModalModel.id,
-          prompt: testPromptInput
+          prompt: testPromptInput,
+          imageBase64: testImageBase64,
+          imageMimeType: testImageMime
         })
       });
       const data = await res.json();
@@ -258,7 +341,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
     }
   };
 
-  const handleModalToggleStatus = async (action: 'FORCE_ACTIVE' | 'SET_COOLDOWN' | 'CLEAR_COOLDOWN') => {
+  const handleModalToggleStatus = async (action: 'FORCE_ACTIVE' | 'SET_COOLDOWN' | 'SET_INDEFINITE_PASSIVE' | 'CLEAR_COOLDOWN') => {
     if (!testModalModel) return;
     try {
       const res = await fetch('/api/gemini/failover-toggle-model-status', {
@@ -285,6 +368,101 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
       }
     } catch (err: any) {
       console.warn('Status toggle error:', err);
+    }
+  };
+
+  const handleTestNewModel = async () => {
+    if (!newModelForm.id.trim()) {
+      alert('Lütfen test etmek için Model ID (kod adı) girin.');
+      return;
+    }
+    setIsTestingNewModel(true);
+    setNewModelTestResult(null);
+    try {
+      const res = await fetch('/api/gemini/failover-test-model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: newModelForm.provider,
+          modelId: newModelForm.id.trim(),
+          prompt: newModelPromptInput,
+          imageBase64: newModelImageBase64,
+          imageMimeType: newModelImageMime
+        })
+      });
+      const data = await res.json();
+      setNewModelTestResult(data);
+    } catch (err: any) {
+      setNewModelTestResult({
+        success: false,
+        error: err.message || 'Sunucuya bağlanılamadı.',
+        latencyMs: 0
+      });
+    } finally {
+      setIsTestingNewModel(false);
+    }
+  };
+
+  const handleSaveNewModel = async () => {
+    if (!newModelForm.id.trim() || !newModelForm.name.trim()) {
+      alert('Model ID ve Model İsmi alanları zorunludur.');
+      return;
+    }
+    setIsSavingNewModel(true);
+    try {
+      const res = await fetch('/api/gemini/failover-add-custom-model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: newModelForm.provider,
+          id: newModelForm.id.trim(),
+          name: newModelForm.name.trim(),
+          description: newModelForm.description.trim(),
+          badge: newModelForm.badge.trim() || 'Özel Model',
+          isVisionCapable: newModelForm.isVisionCapable
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFailoverData(data);
+        setShowAddModelModal(false);
+        setNewModelForm({
+          provider: 'GEMINI',
+          id: '',
+          name: '',
+          description: '',
+          badge: 'Özel Model',
+          isVisionCapable: false
+        });
+        setNewModelTestResult(null);
+        setNewModelImageBase64(null);
+        setNewModelImagePreview(null);
+        setFailoverFeedback({ text: `Yeni model (${newModelForm.name}) başarıyla sıraya eklendi!` });
+      } else {
+        alert(data.error || 'Model eklenirken bir hata oluştu.');
+      }
+    } catch (err: any) {
+      alert('Sunucu hatası: ' + err.message);
+    } finally {
+      setIsSavingNewModel(false);
+    }
+  };
+
+  const handleRemoveCustomModel = async (provider: string, modelId: string) => {
+    if (!confirm('Bu özel modeli listeden kaldırmak istediğinize emin misiniz?')) return;
+    try {
+      const res = await fetch('/api/gemini/failover-remove-custom-model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, modelId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFailoverData(data);
+        setFailoverFeedback({ text: 'Model listeden kaldırıldı.' });
+      }
+    } catch (err: any) {
+      console.warn('Remove custom model error:', err);
     }
   };
 
@@ -657,6 +835,17 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
               </select>
             </div>
 
+            {/* Add Custom Model button */}
+            <button
+              type="button"
+              onClick={() => setShowAddModelModal(true)}
+              className="px-3 py-1.5 bg-gradient-to-r from-emerald-600/30 to-teal-600/30 hover:from-emerald-600/50 hover:to-teal-600/50 text-emerald-200 hover:text-white border border-emerald-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+              title="Sağlayıcılara yeni özel yapay zeka modeli ekle ve önceden test et"
+            >
+              <Plus className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Yeni Model Ekle</span>
+            </button>
+
             {/* Reset All button */}
             <button
               type="button"
@@ -784,7 +973,12 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/60 mt-0.5">
                           {/* Durum Göstergesi */}
                           <div className="flex items-center text-xs font-medium">
-                            {isModInCooldown ? (
+                            {mod.isIndefinite ? (
+                              <span className="text-rose-400 flex items-center gap-1.5 font-semibold">
+                                <Lock className="w-3.5 h-3.5 text-rose-400" />
+                                <span>Süresiz Pasif (Devre Dışı)</span>
+                              </span>
+                            ) : isModInCooldown ? (
                               <span className="text-rose-300 flex items-center gap-1.5 font-medium">
                                 <Hourglass className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
                                 <span>Limit Doldu ({mod.remainingFormatted || '24h'} kaldı)</span>
@@ -804,6 +998,18 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
 
                           {/* Buton Grubu: Test Et + Sıralama (Yukarı / Aşağı) & Önceliğe Al */}
                           <div className="flex items-center gap-1.5 ml-auto">
+                            {/* Özel Model ise Sil Butonu */}
+                            {mod.isCustom && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveCustomModel(prov.name, mod.id)}
+                                className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-800/60 transition-all cursor-pointer shadow-sm"
+                                title="Bu özel modeli listeden tamamen kaldır"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                              </button>
+                            )}
+
                             {/* Test Et Butonu */}
                             <button
                               type="button"
@@ -1439,11 +1645,16 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             {/* Modal Body */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {/* Durum & Erken Aksiyon Barı */}
-              <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                 <div>
                   <div className="text-xs text-slate-400 font-medium">Modelin Sistemdeki Anlık Durumu:</div>
                   <div className="mt-1">
-                    {testModalModel.isInCooldown ? (
+                    {testModalModel.isIndefinite ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-300 bg-rose-500/20 border border-rose-500/40 px-3 py-1 rounded-xl">
+                        <Lock className="w-3.5 h-3.5 text-rose-400" />
+                        <span>🔒 Süresiz Pasif (Devre Dışı)</span>
+                      </span>
+                    ) : testModalModel.isInCooldown ? (
                       <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-300 bg-rose-500/20 border border-rose-500/40 px-3 py-1 rounded-xl">
                         <Hourglass className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
                         <span>Limit Doldu / Devre Dışı ({testModalModel.remainingFormatted || 'Beklemede'})</span>
@@ -1475,28 +1686,94 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                     </button>
                   )}
 
-                  {testModalModel.isInCooldown ? (
+                  {testModalModel.isInCooldown || testModalModel.isIndefinite ? (
                     <button
                       type="button"
                       onClick={() => handleModalToggleStatus('CLEAR_COOLDOWN')}
                       className="px-3 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 hover:text-white border border-indigo-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
-                      title="Bekleme süresini sıfırlar ve modeli tekrar hazır duruma getirir"
+                      title="Bekleme süresini veya süresiz pasifliği kaldırır ve modeli tekrar hazır duruma getirir"
                     >
-                      <CheckCircle2 className="w-4 h-4 text-indigo-400" />
-                      <span>Beklemeyi Kaldır (Hazır Yap)</span>
+                      <Unlock className="w-4 h-4 text-indigo-400" />
+                      <span>Etkinleştir (Hazır Yap)</span>
                     </button>
                   ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleModalToggleStatus('SET_COOLDOWN')}
+                        className="px-3 py-1.5 bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 hover:text-white border border-amber-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        title="Modeli 24 saatliğine bekleme havuzuna alır"
+                      >
+                        <PauseCircle className="w-4 h-4 text-amber-400" />
+                        <span>24 Saate Kadar Pasife Al</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleModalToggleStatus('SET_INDEFINITE_PASSIVE')}
+                        className="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 hover:text-white border border-rose-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        title="Modeli siz tekrar açana kadar SÜRESİZ olarak devre dışı bırakır"
+                      >
+                        <Lock className="w-4 h-4 text-rose-400" />
+                        <span>Süresiz Pasife Al</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Görsel (Vision) Yükleme Alanı */}
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    <FileImage className="w-3.5 h-3.5 text-purple-400" />
+                    <span>📷 Test Görseli Ekle (Vision / Resim İşleme Yeteneği)</span>
+                  </span>
+                  {testImagePreview && (
                     <button
                       type="button"
-                      onClick={() => handleModalToggleStatus('SET_COOLDOWN')}
-                      className="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 hover:text-white border border-rose-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
-                      title="Modeli manuel olarak bekleme havuzuna alır (isteklerde kullanılmaz)"
+                      onClick={handleClearTestImage}
+                      className="text-[11px] text-rose-400 hover:text-rose-300 font-bold px-2 py-0.5 rounded bg-rose-950/60 border border-rose-800/60 transition-all cursor-pointer"
                     >
-                      <PauseCircle className="w-4 h-4 text-rose-400" />
-                      <span>Manuel Pasife Al (Devre Dışı)</span>
+                      Görseli Kaldır ✕
                     </button>
                   )}
                 </div>
+
+                {!testImagePreview ? (
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <label className="flex items-center gap-2 px-4 py-2 bg-purple-950/60 hover:bg-purple-900/80 text-purple-300 hover:text-white border border-purple-500/40 rounded-xl text-xs font-bold cursor-pointer transition-all shadow-sm">
+                      <Upload className="w-4 h-4 text-purple-400" />
+                      <span>Bilgisayardan Resim Seç</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="text-[11px] text-slate-500">
+                      Soru fotoğrafı, geometri şekli veya ekran görüntüsü yükleyerek modelin resim anlama yeteneğini test edin.
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 p-2 bg-slate-900/80 rounded-xl border border-purple-500/30">
+                    <img
+                      src={testImagePreview}
+                      alt="Test Preview"
+                      className="w-16 h-16 object-cover rounded-lg border border-slate-700"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Görsel Yüklendi & Teste Hazır</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                        Görsel istek ile birlikte modele gönderilecek.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Test Prompt Input */}
@@ -1516,6 +1793,15 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                     >
                       Matematik Tavsiyesi
                     </button>
+                    {testImagePreview && (
+                      <button
+                        type="button"
+                        onClick={() => setTestPromptInput('Bu görseldeki soruyu incele, adım adım çöz ve doğru cevabı belirt.')}
+                        className="px-2 py-0.5 rounded bg-purple-950 text-purple-300 hover:text-white border border-purple-500/40 transition-all cursor-pointer font-bold"
+                      >
+                        📷 Görsel Soru Çözümü
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setTestPromptInput('TYT Türkçe paragraf netlerini 30+ seviyesine çıkarmak için 3 somut strateji yaz.')}
@@ -1644,6 +1930,236 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition-all cursor-pointer"
               >
                 Kapat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ➕ YENİ MODEL EKLE & ÖN-TEST MODALI */}
+      {showAddModelModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-scale-in">
+            {/* Header */}
+            <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-base">Yeni Yapay Zeka Modeli Ekle</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Sağlayıcı sırasına yeni bir model dahil edin ve kaydetmeden önce canlı test edin.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddModelModal(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+              {/* Sağlayıcı Seçimi */}
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1.5">Sağlayıcı Seçin:</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'GEMINI', name: 'Google Gemini' },
+                    { id: 'GROQ', name: 'Groq Cloud' },
+                    { id: 'OPENROUTER', name: 'OpenRouter :free' }
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setNewModelForm({ ...newModelForm, provider: p.id as any })}
+                      className={`p-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                        newModelForm.provider === p.id
+                          ? 'bg-emerald-600/30 border-emerald-400 text-white shadow-sm ring-1 ring-emerald-400'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Model ID & İsim */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                    Model ID (API Kod Adı) <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newModelForm.id}
+                    onChange={(e) => setNewModelForm({ ...newModelForm, id: e.target.value })}
+                    placeholder={
+                      newModelForm.provider === 'GEMINI'
+                        ? 'Örn: gemini-3.5-flash'
+                        : newModelForm.provider === 'GROQ'
+                        ? 'Örn: groq/compound'
+                        : 'Örn: google/gemma-4-31b-it:free'
+                    }
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1.5">
+                    Model Görünen Adı <span className="text-rose-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newModelForm.name}
+                    onChange={(e) => setNewModelForm({ ...newModelForm, name: e.target.value })}
+                    placeholder="Örn: Gemini 3.5 Flash Hızlı"
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  />
+                </div>
+              </div>
+
+              {/* Rozet & Açıklama */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1.5">Rozet (Badge)</label>
+                  <input
+                    type="text"
+                    value={newModelForm.badge}
+                    onChange={(e) => setNewModelForm({ ...newModelForm, badge: e.target.value })}
+                    placeholder="Örn: Ultra Hızlı, Özel Model"
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-300 block mb-1.5">Açıklama</label>
+                  <input
+                    type="text"
+                    value={newModelForm.description}
+                    onChange={(e) => setNewModelForm({ ...newModelForm, description: e.target.value })}
+                    placeholder="Örn: Yüksek hızlı çıkarım ve soru çözümü"
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+                  />
+                </div>
+              </div>
+
+              {/* Vision Yeteneği Checkbox */}
+              <label className="flex items-center gap-2 p-3 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer hover:border-slate-700 transition-all">
+                <input
+                  type="checkbox"
+                  checked={newModelForm.isVisionCapable}
+                  onChange={(e) => setNewModelForm({ ...newModelForm, isVisionCapable: e.target.checked })}
+                  className="rounded border-slate-700 text-emerald-500 focus:ring-emerald-400"
+                />
+                <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                  <span>📷 Görsel (Vision / Resim İşleme) Desteği Var</span>
+                </span>
+              </label>
+
+              {/* CANLI ÖN-TEST ALANI */}
+              <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                    <FlaskConical className="w-4 h-4 text-indigo-400" />
+                    <span>Eklemeden Önce Modeli Canlı Test Et (Opsiyonel):</span>
+                  </span>
+                </div>
+
+                {/* Resim Yükleme (Opsiyonel) */}
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 px-3 py-1.5 bg-purple-950/60 hover:bg-purple-900 text-purple-300 text-xs font-bold rounded-xl border border-purple-500/30 cursor-pointer transition-all">
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{newModelImagePreview ? 'Görsel Seçildi' : 'Test Görseli Ekle'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleNewModelImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  {newModelImagePreview && (
+                    <button
+                      type="button"
+                      onClick={handleClearNewModelImage}
+                      className="text-[11px] text-rose-400 hover:text-rose-300 font-bold px-2 py-1 bg-rose-950/60 rounded-xl border border-rose-800/60"
+                    >
+                      Kaldır ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Test Prompt Input */}
+                <textarea
+                  value={newModelPromptInput}
+                  onChange={(e) => setNewModelPromptInput(e.target.value)}
+                  rows={2}
+                  className="w-full bg-slate-900 border border-slate-800 focus:border-indigo-500 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-400 font-mono"
+                  placeholder="Test için gönderilecek istem..."
+                />
+
+                {/* Test Button & Result */}
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={handleTestNewModel}
+                    disabled={isTestingNewModel || !newModelForm.id.trim()}
+                    className="px-4 py-2 bg-indigo-600/40 hover:bg-indigo-600/60 text-indigo-200 hover:text-white border border-indigo-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    {isTestingNewModel ? <RotateCcw className="w-3.5 h-3.5 animate-spin" /> : <FlaskConical className="w-3.5 h-3.5" />}
+                    <span>{isTestingNewModel ? 'Test Ediliyor...' : 'Modeli Test Et'}</span>
+                  </button>
+
+                  {newModelTestResult && (
+                    <div className="text-xs font-bold flex items-center gap-2">
+                      {newModelTestResult.success ? (
+                        <span className="text-emerald-400 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Başarılı ({newModelTestResult.latencyMs} ms)</span>
+                        </span>
+                      ) : (
+                        <span className="text-rose-400 flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          <span>Hata Alındı</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {newModelTestResult && (
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs max-h-36 overflow-y-auto whitespace-pre-wrap">
+                    {newModelTestResult.success ? (
+                      <span className="text-slate-200">{newModelTestResult.output}</span>
+                    ) : (
+                      <span className="text-rose-300">{newModelTestResult.error || newModelTestResult.rawError}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-800 bg-slate-950/80 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowAddModelModal(false)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                İptal
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveNewModel}
+                disabled={isSavingNewModel || !newModelForm.id.trim() || !newModelForm.name.trim()}
+                className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/20 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {isSavingNewModel ? <RotateCcw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                <span>Modeli Sıraya Ekle</span>
               </button>
             </div>
           </div>

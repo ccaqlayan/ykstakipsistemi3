@@ -9,6 +9,7 @@ export interface ModelCooldownEntry {
   cooldownUntil: number; // timestamp ms
   exhaustedAt: string;
   reason?: string;
+  isIndefinite?: boolean; // 🔒 Süresiz pasife alınmış model
 }
 
 export interface AiFailoverState {
@@ -23,6 +24,11 @@ export interface AiFailoverState {
     GEMINI?: string[];
     GROQ?: string[];
     OPENROUTER?: string[];
+  };
+  customModels?: {
+    GEMINI?: ProviderModelMetadata[];
+    GROQ?: ProviderModelMetadata[];
+    OPENROUTER?: ProviderModelMetadata[];
   };
   cooldowns: Record<string, ModelCooldownEntry>; // key: `${provider}:${modelId}`
   updatedAt: string;
@@ -133,12 +139,18 @@ export async function initFailoverStateFromFirestore() {
           ...sanitized
         };
       }
+      if (data.customModels && typeof data.customModels === 'object') {
+        failoverState.customModels = {
+          ...failoverState.customModels,
+          ...data.customModels
+        };
+      }
       if (data.cooldowns && typeof data.cooldowns === 'object') {
         // Clean expired cooldowns and decommissioned models on load
         const now = Date.now();
         const cleaned: Record<string, ModelCooldownEntry> = {};
         for (const [k, v] of Object.entries(data.cooldowns)) {
-          if (v && v.cooldownUntil && v.cooldownUntil > now && v.modelId !== 'llama-3.3-70b-specdec') {
+          if (v && (v.isIndefinite || (v.cooldownUntil && v.cooldownUntil > now)) && v.modelId !== 'llama-3.3-70b-specdec') {
             cleaned[k] = v;
           }
         }
@@ -169,12 +181,13 @@ async function syncToFirestore() {
 }
 
 /**
- * Checks if a specific model is currently in cooldown (rate limit/quota exhaustion)
+ * Checks if a specific model is currently in cooldown or indefinitely disabled
  */
 export function isModelInCooldown(provider: AiProviderName, modelId: string): boolean {
   const key = `${provider}:${modelId}`;
   const entry = failoverState.cooldowns[key];
   if (!entry) return false;
+  if (entry.isIndefinite) return true;
   if (Date.now() > entry.cooldownUntil) {
     // Expired, clean it up
     delete failoverState.cooldowns[key];
@@ -191,9 +204,11 @@ export function getModelRemainingCooldownMs(provider: AiProviderName, modelId: s
   const key = `${provider}:${modelId}`;
   const entry = failoverState.cooldowns[key];
   if (!entry) return 0;
+  if (entry.isIndefinite) return 999999999;
   const rem = entry.cooldownUntil - Date.now();
   if (rem <= 0) {
     delete failoverState.cooldowns[key];
+    syncToFirestore().catch(() => {});
     return 0;
   }
   return rem;
@@ -203,7 +218,9 @@ export function getModelRemainingCooldownMs(provider: AiProviderName, modelId: s
  * Checks if an entire provider has all its models in cooldown
  */
 export function isProviderCompletelyExhausted(provider: AiProviderName): boolean {
-  const seq = PROVIDER_MODEL_SEQUENCES[provider] || [];
+  const defaultSeq = PROVIDER_MODEL_SEQUENCES[provider] || [];
+  const customList = failoverState.customModels?.[provider] || [];
+  const seq = [...defaultSeq, ...customList];
   if (seq.length === 0) return false;
   return seq.every(m => isModelInCooldown(provider, m.id));
 }
@@ -213,20 +230,27 @@ export function isProviderCompletelyExhausted(provider: AiProviderName): boolean
  */
 export function getActiveSequenceForProvider(provider: AiProviderName, baseSequence?: string[]): string[] {
   const defaultList = (PROVIDER_MODEL_SEQUENCES[provider] || []).map(m => m.id);
-  const customList = failoverState.customModelOrder?.[provider];
+  const customAddedList = (failoverState.customModels?.[provider] || []).map(m => m.id);
+  const combinedDefault = [...defaultList, ...customAddedList];
+  const customOrder = failoverState.customModelOrder?.[provider];
 
   let fullList: string[] = [];
-  if (customList && customList.length > 0) {
-    fullList = [...customList];
-    for (const mId of defaultList) {
+  if (customOrder && customOrder.length > 0) {
+    fullList = [...customOrder];
+    for (const mId of combinedDefault) {
       if (!fullList.includes(mId)) {
         fullList.push(mId);
       }
     }
   } else if (baseSequence && baseSequence.length > 0) {
-    fullList = baseSequence;
+    fullList = [...baseSequence];
+    for (const mId of combinedDefault) {
+      if (!fullList.includes(mId)) {
+        fullList.push(mId);
+      }
+    }
   } else {
-    fullList = defaultList;
+    fullList = combinedDefault;
   }
 
   const available = fullList.filter(mId => !isModelInCooldown(provider, mId));
@@ -335,7 +359,35 @@ export async function setManualModelCooldown(provider: AiProviderName, modelId: 
 }
 
 /**
- * Manually removes cooldown for a model (makes it active/ready in sequence)
+ * Manually sets a model into indefinite passive state (never expires until admin manually activates)
+ */
+export async function setIndefinitePassive(provider: AiProviderName, modelId: string): Promise<AiFailoverState> {
+  const key = `${provider}:${modelId}`;
+  failoverState.cooldowns[key] = {
+    provider,
+    modelId,
+    cooldownUntil: Date.now() + 100 * 365 * 24 * 60 * 60 * 1000,
+    exhaustedAt: new Date().toISOString(),
+    reason: 'Yönetici tarafından süresiz pasife alındı',
+    isIndefinite: true
+  };
+
+  // Advance cursor if this model was active
+  const defaultSeq = (PROVIDER_MODEL_SEQUENCES[provider] || []).map(m => m.id);
+  const customAddedList = (failoverState.customModels?.[provider] || []).map(m => m.id);
+  const combined = [...defaultSeq, ...customAddedList];
+  const customSeq = failoverState.customModelOrder?.[provider] || combined;
+  const nextAvailable = customSeq.find(mId => mId !== modelId && !isModelInCooldown(provider, mId));
+  if (nextAvailable) {
+    failoverState.activeModelCursors[provider] = nextAvailable;
+    console.log(`[AI_FAILOVER] 🔒 Model ${provider}:${modelId} indefinitely deactivated. Cursor moved to: ${nextAvailable}`);
+  }
+  await syncToFirestore();
+  return failoverState;
+}
+
+/**
+ * Manually removes cooldown / indefinite passive for a model (makes it active/ready in sequence)
  */
 export async function clearModelCooldown(provider: AiProviderName, modelId: string): Promise<AiFailoverState> {
   const key = `${provider}:${modelId}`;
@@ -348,13 +400,79 @@ export async function clearModelCooldown(provider: AiProviderName, modelId: stri
 }
 
 /**
+ * Adds a new custom model to a provider sequence
+ */
+export async function addCustomModel(provider: AiProviderName, model: ProviderModelMetadata): Promise<AiFailoverState> {
+  if (!failoverState.customModels) {
+    failoverState.customModels = {};
+  }
+  if (!failoverState.customModels[provider]) {
+    failoverState.customModels[provider] = [];
+  }
+
+  // Check if model with same ID already exists
+  const existingIdx = failoverState.customModels[provider]!.findIndex(m => m.id === model.id);
+  if (existingIdx !== -1) {
+    failoverState.customModels[provider]![existingIdx] = model;
+  } else {
+    failoverState.customModels[provider]!.push(model);
+  }
+
+  // Ensure it's present in customModelOrder
+  if (!failoverState.customModelOrder) {
+    failoverState.customModelOrder = {};
+  }
+  if (!failoverState.customModelOrder[provider]) {
+    const defaultSeq = (PROVIDER_MODEL_SEQUENCES[provider] || []).map(m => m.id);
+    failoverState.customModelOrder[provider] = [...defaultSeq];
+  }
+  if (!failoverState.customModelOrder[provider]!.includes(model.id)) {
+    failoverState.customModelOrder[provider]!.push(model.id);
+  }
+
+  await syncToFirestore();
+  console.log(`[AI_FAILOVER] ➕ Added custom model ${provider}:${model.id} (${model.name})`);
+  return failoverState;
+}
+
+/**
+ * Removes a custom model from a provider sequence
+ */
+export async function removeCustomModel(provider: AiProviderName, modelId: string): Promise<AiFailoverState> {
+  if (failoverState.customModels?.[provider]) {
+    failoverState.customModels[provider] = failoverState.customModels[provider]!.filter(m => m.id !== modelId);
+  }
+  if (failoverState.customModelOrder?.[provider]) {
+    failoverState.customModelOrder[provider] = failoverState.customModelOrder[provider]!.filter(id => id !== modelId);
+  }
+  const key = `${provider}:${modelId}`;
+  if (failoverState.cooldowns[key]) {
+    delete failoverState.cooldowns[key];
+  }
+  // If active cursor was on this model, advance to next
+  if (failoverState.activeModelCursors[provider] === modelId) {
+    const defaultSeq = (PROVIDER_MODEL_SEQUENCES[provider] || []).map(m => m.id);
+    const customAddedList = (failoverState.customModels?.[provider] || []).map(m => m.id);
+    const combined = [...defaultSeq, ...customAddedList];
+    const customSeq = failoverState.customModelOrder?.[provider] || combined;
+    failoverState.activeModelCursors[provider] = customSeq[0] || '';
+  }
+  await syncToFirestore();
+  console.log(`[AI_FAILOVER] 🗑️ Removed custom model ${provider}:${modelId}`);
+  return failoverState;
+}
+
+/**
  * Reorders a model inside a provider sequence (moves up or down)
  */
 export async function reorderModel(provider: AiProviderName, modelId: string, direction: 'UP' | 'DOWN'): Promise<AiFailoverState> {
   const defaultSeq = (PROVIDER_MODEL_SEQUENCES[provider] || []).map(m => m.id);
+  const customAddedList = (failoverState.customModels?.[provider] || []).map(m => m.id);
+  const combined = [...defaultSeq, ...customAddedList];
+
   const currentOrder = failoverState.customModelOrder?.[provider] && failoverState.customModelOrder[provider]!.length > 0
     ? [...failoverState.customModelOrder[provider]!]
-    : [...defaultSeq];
+    : [...combined];
 
   const idx = currentOrder.indexOf(modelId);
   if (idx !== -1) {
@@ -407,6 +525,8 @@ export function getFailoverStatus() {
       isVisionCapable?: boolean;
       isActive: boolean;
       isInCooldown: boolean;
+      isIndefinite: boolean;
+      isCustom: boolean;
       remainingCooldownMs: number;
       remainingFormatted?: string;
       reason?: string;
@@ -424,10 +544,12 @@ export function getFailoverStatus() {
 
   for (const p of providerNames) {
     const defaultSeq = PROVIDER_MODEL_SEQUENCES[p] || [];
+    const customAdded = failoverState.customModels?.[p] || [];
+    const allKnown = [...defaultSeq, ...customAdded];
     const customOrder = failoverState.customModelOrder?.[p];
     
-    // Sort default models according to customOrder
-    let seq = [...defaultSeq];
+    // Sort all models according to customOrder
+    let seq = [...allKnown];
     if (customOrder && customOrder.length > 0) {
       seq.sort((a, b) => {
         const idxA = customOrder.indexOf(a.id);
@@ -444,11 +566,15 @@ export function getFailoverStatus() {
     const models = seq.map(m => {
       const key = `${p}:${m.id}`;
       const entry = failoverState.cooldowns[key];
-      const isInCooldown = entry ? entry.cooldownUntil > now : false;
-      const remainingCooldownMs = isInCooldown ? entry.cooldownUntil - now : 0;
+      const isIndefinite = Boolean(entry?.isIndefinite);
+      const isInCooldown = entry ? (isIndefinite || entry.cooldownUntil > now) : false;
+      const remainingCooldownMs = isIndefinite ? 999999999 : (isInCooldown ? entry.cooldownUntil - now : 0);
+      const isCustom = customAdded.some(c => c.id === m.id);
       
       let remainingFormatted = '';
-      if (isInCooldown && remainingCooldownMs > 0) {
+      if (isIndefinite) {
+        remainingFormatted = 'Süresiz Pasif';
+      } else if (isInCooldown && remainingCooldownMs > 0) {
         const totalMinutes = Math.floor(remainingCooldownMs / (60 * 1000));
         const hours = Math.floor(totalMinutes / 60);
         const minutes = totalMinutes % 60;
@@ -467,6 +593,8 @@ export function getFailoverStatus() {
         isVisionCapable: m.isVisionCapable,
         isActive: m.id === activeModelId && !isInCooldown,
         isInCooldown,
+        isIndefinite,
+        isCustom,
         remainingCooldownMs,
         remainingFormatted,
         reason: entry?.reason
@@ -488,7 +616,9 @@ export function getFailoverStatus() {
     cooldownHours: failoverState.cooldownHours,
     activeProvider: failoverState.activeProvider,
     activeModelCursors: failoverState.activeModelCursors,
-    updatedAt: failoverState.updatedAt,
-    providers
+    customModelOrder: failoverState.customModelOrder,
+    providers,
+    cooldownCount: Object.keys(failoverState.cooldowns).length,
+    updatedAt: failoverState.updatedAt
   };
 }

@@ -669,11 +669,14 @@ export async function testProviderApiKey(
 
 /**
  * Tests an individual specific AI model and returns its response, latency and error details
+ * Supports both text prompts and vision/image testing
  */
 export async function testSingleModel(
   provider: 'GEMINI' | 'GROQ' | 'OPENROUTER',
   modelId: string,
-  prompt?: string
+  prompt?: string,
+  imageBase64?: string,
+  imageMimeType?: string
 ): Promise<{
   success: boolean;
   model: string;
@@ -684,7 +687,7 @@ export async function testSingleModel(
   rawError?: string;
 }> {
   const startTime = Date.now();
-  const testPrompt = (prompt || 'YKS 2026 sınavına hazırlanan bir öğrenci için hızlı 2 maddelik ders çalışma ve motivasyon tavsiyesi ver.').trim();
+  const testPrompt = (prompt || (imageBase64 ? 'Bu görseldeki soruyu incele, adım adım çöz ve doğru cevabı belirt.' : 'YKS 2026 sınavına hazırlanan bir öğrenci için hızlı 2 maddelik ders çalışma ve motivasyon tavsiyesi ver.')).trim();
 
   try {
     if (provider === 'GEMINI') {
@@ -693,9 +696,28 @@ export async function testSingleModel(
       const { mapToActualGeminiModel } = await import('../config');
       const actualModel = mapToActualGeminiModel(modelId);
       const ai = new GoogleGenAI({ apiKey });
+
+      const parts: any[] = [];
+      if (imageBase64) {
+        let cleanBase64 = imageBase64;
+        let mime = imageMimeType || 'image/jpeg';
+        const match = imageBase64.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+        if (match) {
+          mime = match[1];
+          cleanBase64 = match[2];
+        }
+        parts.push({
+          inlineData: {
+            mimeType: mime,
+            data: cleanBase64
+          }
+        });
+      }
+      parts.push({ text: testPrompt });
+
       const res = await ai.models.generateContent({
         model: actualModel,
-        contents: [{ role: 'user', parts: [{ text: testPrompt }] }],
+        contents: [{ role: 'user', parts }],
         config: { maxOutputTokens: 1024 }
       });
       const latencyMs = Date.now() - startTime;
@@ -706,6 +728,18 @@ export async function testSingleModel(
     if (provider === 'GROQ') {
       const apiKey = getEffectiveGroqApiKey();
       if (!apiKey) throw new Error('Groq Cloud API anahtarı sisteme girilmemiş.');
+
+      let messageContent: any = testPrompt;
+      if (imageBase64) {
+        const fullDataUrl = imageBase64.startsWith('data:')
+          ? imageBase64
+          : `data:${imageMimeType || 'image/jpeg'};base64,${imageBase64}`;
+        messageContent = [
+          { type: 'text', text: testPrompt },
+          { type: 'image_url', image_url: { url: fullDataUrl } }
+        ];
+      }
+
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -715,7 +749,7 @@ export async function testSingleModel(
         signal: AbortSignal.timeout(25000),
         body: JSON.stringify({
           model: modelId,
-          messages: [{ role: 'user', content: testPrompt }],
+          messages: [{ role: 'user', content: messageContent }],
           max_tokens: 1024
         })
       });
@@ -732,6 +766,18 @@ export async function testSingleModel(
     if (provider === 'OPENROUTER') {
       const apiKey = getEffectiveOpenRouterApiKey();
       if (!apiKey) throw new Error('OpenRouter API anahtarı sisteme girilmemiş.');
+
+      let messageContent: any = testPrompt;
+      if (imageBase64) {
+        const fullDataUrl = imageBase64.startsWith('data:')
+          ? imageBase64
+          : `data:${imageMimeType || 'image/jpeg'};base64,${imageBase64}`;
+        messageContent = [
+          { type: 'text', text: testPrompt },
+          { type: 'image_url', image_url: { url: fullDataUrl } }
+        ];
+      }
+
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -743,7 +789,7 @@ export async function testSingleModel(
         signal: AbortSignal.timeout(25000),
         body: JSON.stringify({
           model: modelId,
-          messages: [{ role: 'user', content: testPrompt }],
+          messages: [{ role: 'user', content: messageContent }],
           max_tokens: 1024
         })
       });
