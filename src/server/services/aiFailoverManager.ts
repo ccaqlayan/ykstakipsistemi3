@@ -75,10 +75,10 @@ export const PROVIDER_MODEL_SEQUENCES: Record<AiProviderName, ProviderModelMetad
   ],
   CLOUDFLARE: [
     { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', name: 'Llama 3.3 70B Fast', description: 'Meta\'nın En Güçlü Açık Modeli — Yüksek Akıl Yürütme', badge: '70B Hızlı Amiral', isVisionCapable: false },
-    { id: '@cf/meta/llama-3.1-8b-instruct', name: 'Llama 3.1 8B Instruct', description: 'Ultra Düşük Gecikme & Hızlı Soru Cevaplama', badge: '8B Ultra Hızlı', isVisionCapable: false },
+    { id: '@cf/meta/llama-3.2-3b-instruct', name: 'Llama 3.2 3B Instruct', description: 'Ultra Düşük Gecikme & Hızlı Soru Cevaplama', badge: '3B Ultra Hızlı', isVisionCapable: false },
     { id: '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b', name: 'DeepSeek R1 Distill 32B', description: 'Derin Mantıksal Çözümleme & Matematik Muhakemesi', badge: 'R1 Akıl Yürütme', isVisionCapable: false },
     { id: '@cf/meta/llama-3.2-11b-vision-instruct', name: 'Llama 3.2 11B Vision', description: 'Görsel Soru Çözümü & Resim Analizi', badge: '11B Vision', isVisionCapable: true },
-    { id: '@cf/qwen/qwen2.5-7b-instruct', name: 'Qwen 2.5 7B', description: 'Çok Dilli, Dengeli & Hızlı Türkçe Başarımı', badge: 'Qwen 7B Dengeli', isVisionCapable: false }
+    { id: '@cf/meta/llama-3.2-1b-instruct', name: 'Llama 3.2 1B Instruct', description: 'Kompakt & Hafif Yanıt Motoru', badge: '1B Hafif', isVisionCapable: false }
   ]
 };
 
@@ -107,10 +107,10 @@ let failoverState: AiFailoverState = {
     ],
     CLOUDFLARE: [
       '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
-      '@cf/meta/llama-3.1-8b-instruct',
+      '@cf/meta/llama-3.2-3b-instruct',
       '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',
       '@cf/meta/llama-3.2-11b-vision-instruct',
-      '@cf/qwen/qwen2.5-7b-instruct'
+      '@cf/meta/llama-3.2-1b-instruct'
     ]
   },
   modelVisionOverrides: {},

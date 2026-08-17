@@ -464,10 +464,10 @@ export async function callCloudflareWorkersAi(options: UnifiedAiRequestOptions):
   const { getActiveSequenceForProvider, recordModelExhaustion, recordModelSuccess } = await import('./aiFailoverManager');
   const candidateModels = getActiveSequenceForProvider('CLOUDFLARE', [
     '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
-    '@cf/meta/llama-3.1-8b-instruct',
+    '@cf/meta/llama-3.2-3b-instruct',
     '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',
     '@cf/meta/llama-3.2-11b-vision-instruct',
-    '@cf/qwen/qwen2.5-7b-instruct'
+    '@cf/meta/llama-3.2-1b-instruct'
   ]);
 
   const imgDataUrl = getImageDataUrl(options);
@@ -810,21 +810,35 @@ export async function testProviderApiKey(
       if (!accId) {
         return { success: false, message: 'Cloudflare Account ID sisteme girilmemiş. Lütfen Account ID alanını doldurun.' };
       }
-      try {
-        const res = await callCloudflareInferenceApi(token, accId, {
-          model: '@cf/meta/llama-3.1-8b-instruct',
-          messages: [{ role: 'user', content: 'Test ping. Respond with OK.' }],
-          max_tokens: 10
-        }, 15000);
 
-        if (!res.ok) {
-          const body = await res.text();
-          return { success: false, message: `Cloudflare Doğrulama Hatası (${res.status}): ${body.substring(0, 200)}` };
+      const testModels = [
+        '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+        '@cf/meta/llama-3.2-3b-instruct',
+        '@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',
+        '@cf/meta/llama-3.2-1b-instruct'
+      ];
+
+      let lastErr = '';
+      for (const m of testModels) {
+        try {
+          const res = await callCloudflareInferenceApi(token, accId, {
+            model: m,
+            messages: [{ role: 'user', content: 'Test ping. Respond with OK.' }],
+            max_tokens: 10
+          }, 15000);
+
+          if (res.ok) {
+            return { success: true, message: `Cloudflare Workers AI bağlantısı başarılı! [${m}]`, modelUsed: m };
+          } else {
+            const body = await res.text();
+            lastErr = `(${res.status}): ${body.substring(0, 200)}`;
+          }
+        } catch (mErr: any) {
+          lastErr = mErr.message || String(mErr);
         }
-        return { success: true, message: 'Cloudflare Workers AI bağlantısı başarılı! [Llama 3.1 8B]', modelUsed: '@cf/meta/llama-3.1-8b-instruct' };
-      } catch (err: any) {
-        return { success: false, message: `Cloudflare Bağlantı Hatası: ${err.message}` };
       }
+
+      return { success: false, message: `Cloudflare Doğrulama Hatası: ${lastErr}` };
     }
 
     return { success: false, message: 'Bilinmeyen sağlayıcı.' };
