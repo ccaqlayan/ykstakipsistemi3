@@ -454,7 +454,7 @@ async function callCloudflareInferenceApi(apiToken: string, accountId: string, b
 /**
  * Helper to call Cloudflare Workers AI native REST run API (specifically for multimodal/vision models)
  */
-async function callCloudflareRunApi(apiToken: string, accountId: string, modelId: string, body: any, timeoutMs = 25000): Promise<Response> {
+async function callCloudflareRunApi(apiToken: string, accountId: string, modelId: string, body: any, timeoutMs = 45000): Promise<Response> {
   const token = apiToken.trim();
   const accId = accountId.trim();
   if (!accId) throw new Error('Cloudflare Account ID tanımlanmamış.');
@@ -478,15 +478,18 @@ async function callCloudflareRunApi(apiToken: string, accountId: string, modelId
     if (errText.includes("submit the prompt 'agree'") || errText.includes('"code":5016') || errText.includes('Model Agreement')) {
       console.log(`[AI_GATEWAY] Cloudflare model agreement required for ${modelId}. Sending automatic agreement handshake...`);
       try {
-        await fetch(endpoint, {
+        const agreeRes = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           },
-          signal: AbortSignal.timeout(10000),
+          signal: AbortSignal.timeout(30000),
           body: JSON.stringify({ prompt: 'agree' })
         });
+        const agreeText = await agreeRes.text();
+        console.log(`[AI_GATEWAY] Agreement handshake response (${agreeRes.status}): ${agreeText.substring(0, 100)}`);
+
         // Retry the original request after agreement
         res = await fetch(endpoint, {
           method: 'POST',
@@ -550,9 +553,10 @@ export async function callCloudflareWorkersAi(options: UnifiedAiRequestOptions):
           max_tokens: options.maxTokens || 4096
         };
         if (imgDataUrl) {
-          visionBody.image = imgDataUrl;
+          const rawBase64 = imgDataUrl.includes('base64,') ? imgDataUrl.split('base64,')[1] : imgDataUrl;
+          visionBody.image = Array.from(Buffer.from(rawBase64, 'base64'));
         }
-        res = await callCloudflareRunApi(apiToken, accountId, model, visionBody, 25000);
+        res = await callCloudflareRunApi(apiToken, accountId, model, visionBody, 45000);
       } else {
         // Standard OpenAI format for text models (content must be a plain string)
         const messages: any[] = [];
@@ -1089,15 +1093,14 @@ export async function testSingleModel(
           };
         }
 
-        const fullDataUrl = imageBase64.startsWith('data:')
-          ? imageBase64
-          : `data:${imageMimeType || 'image/jpeg'};base64,${imageBase64}`;
+        const rawBase64 = imageBase64.includes('base64,') ? imageBase64.split('base64,')[1] : imageBase64;
+        const imageBytes = Array.from(Buffer.from(rawBase64, 'base64'));
 
         res = await callCloudflareRunApi(apiToken, accountId, modelId, {
           prompt: testPrompt,
-          image: fullDataUrl,
+          image: imageBytes,
           max_tokens: 1024
-        }, 25000);
+        }, 45000);
       } else {
         res = await callCloudflareInferenceApi(apiToken, accountId, {
           model: modelId,
