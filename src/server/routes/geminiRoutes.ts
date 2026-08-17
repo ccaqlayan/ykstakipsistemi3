@@ -1407,6 +1407,70 @@ router.post('/model-settings', async (req, res) => {
   });
 });
 
+// -------------------------------------------------------------
+// AI Model Sırası & Akıllı Failover / Cooldown API Uç Noktaları
+// -------------------------------------------------------------
+router.get('/failover-status', async (req, res) => {
+  try {
+    const { getFailoverStatus } = await import('../services/aiFailoverManager');
+    const status = getFailoverStatus();
+    res.json(status);
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/failover-reset', async (req, res) => {
+  try {
+    const { resetAllFailovers, getFailoverStatus } = await import('../services/aiFailoverManager');
+    await resetAllFailovers();
+    const status = getFailoverStatus();
+    res.json({
+      success: true,
+      message: 'Tüm model limitleri ve bekleme süreleri sıfırlandı. Sıra en başa alındı.',
+      ...status
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/failover-set-active', async (req, res) => {
+  try {
+    const { provider, modelId } = req.body;
+    if (!provider || !modelId) {
+      return res.status(400).json({ success: false, error: 'Sağlayıcı ve model ID zorunludur.' });
+    }
+    const { forceActiveModel, getFailoverStatus } = await import('../services/aiFailoverManager');
+    await forceActiveModel(provider, modelId);
+    const status = getFailoverStatus();
+    res.json({
+      success: true,
+      message: `${modelId} modeli başarıyla aktif önceliğe alındı ve varsa limiti temizlendi.`,
+      ...status
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/failover-set-duration', async (req, res) => {
+  try {
+    const { hours } = req.body;
+    const numHours = Number(hours) || 24;
+    const { setCooldownHours, getFailoverStatus } = await import('../services/aiFailoverManager');
+    await setCooldownHours(numHours);
+    const status = getFailoverStatus();
+    res.json({
+      success: true,
+      message: `Model limit bekleme süresi ${numHours} saat olarak ayarlandı.`,
+      ...status
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 // -------------------------------------------------------------
 // Çalışma Planı Yapay Zeka Görev Önerisi

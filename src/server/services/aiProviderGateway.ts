@@ -130,17 +130,13 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
   const imgDataUrl = getImageDataUrl(options);
   const hasImage = Boolean(imgDataUrl);
 
-  // Active Groq models: qwen/qwen3.6-27b for vision; gpt-oss-120b, 20b etc. for text
-  const candidateModels = hasImage
-    ? [
-        'qwen/qwen3.6-27b'
-      ]
-    : [
-        'openai/gpt-oss-120b',
-        'openai/gpt-oss-20b',
-        'qwen/qwen3.6-27b',
-        'llama-3.3-70b-specdec'
-      ];
+  const rawCandidateModels = hasImage
+    ? ['qwen/qwen3.6-27b']
+    : ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'llama-3.3-70b-specdec'];
+
+  // 🚀 AI Failover & Cooldown Manager: Cooldown'da olmayan aktif Groq modellerini getir
+  const { getActiveSequenceForProvider, recordModelExhaustion, recordModelSuccess } = await import('./aiFailoverManager');
+  const candidateModels = getActiveSequenceForProvider('GROQ', rawCandidateModels);
 
   const messages: any[] = [];
 
@@ -231,6 +227,13 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
           }
           throw new Error('Groq Cloud şu anda sadece metin modellerini desteklemektedir. Fotoğraflı soru çözümü için lütfen Sistem Yönetimi > Model Ayarları bölümünden Google Gemini veya OpenRouter anahtarınızı aktif ediniz.');
         }
+
+        // Check for rate limits / quota issues on Groq
+        if (res.status === 429 || errBody.includes('rate_limit_exceeded') || errBody.includes('tokens per day') || errBody.includes('TPM')) {
+          console.warn(`[AI_FAILOVER] Groq model ${model} rate/TPM limitine ulaştı. Cooldown'a alındı.`);
+          recordModelExhaustion('GROQ', model, errBody);
+        }
+
         throw new Error(`Groq API Hatası (${res.status}): ${errBody.substring(0, 300)}`);
       }
 
@@ -256,6 +259,9 @@ async function callGroq(options: UnifiedAiRequestOptions): Promise<UnifiedAiResp
       if (!text || text.length < 5) {
         throw new Error(`Model ${model} geçerli bir içerik üretmedi.`);
       }
+
+      // Record success in failover manager
+      recordModelSuccess('GROQ', resolvedModel);
 
       return {
         text,
@@ -301,8 +307,7 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
   const imgDataUrl = getImageDataUrl(options);
   const hasImage = Boolean(imgDataUrl);
 
-  // Vision models prioritized for multimodal requests, top-rated text models for text
-  const candidateModels = hasImage
+  const rawCandidateModels = hasImage
     ? [
         'dots-studio/dots-3-note-preview:free',
         'google/gemma-4-26b-a4b-it:free',
@@ -320,6 +325,10 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
         'z-ai/glm-5.2:free',
         'liquid/lfm-2.5-2.6b:free'
       ];
+
+  // 🚀 AI Failover & Cooldown Manager: Cooldown'da olmayan aktif OpenRouter modellerini getir
+  const { getActiveSequenceForProvider, recordModelExhaustion, recordModelSuccess } = await import('./aiFailoverManager');
+  const candidateModels = getActiveSequenceForProvider('OPENROUTER', rawCandidateModels);
 
   const messages: any[] = [];
 
@@ -368,6 +377,11 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
 
       if (!res.ok) {
         const errBody = await res.text();
+        // Cooldown record for failed OpenRouter model
+        if (res.status === 429 || res.status === 402 || errBody.includes('rate_limit') || errBody.includes('quota')) {
+          console.warn(`[AI_FAILOVER] OpenRouter model ${model} rate/limit hatası aldı. Cooldown'a alındı.`);
+          recordModelExhaustion('OPENROUTER', model, errBody);
+        }
         throw new Error(`OpenRouter API Hatası (${res.status}): ${errBody.substring(0, 300)}`);
       }
 
@@ -395,6 +409,9 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
         throw new Error(`Model ${model} geçerli bir içerik üretmedi (boş veya geçersiz çıktı döndü).`);
       }
 
+      // Record success in failover manager
+      recordModelSuccess('OPENROUTER', resolvedModel);
+
       return {
         text,
         providerUsed: 'OPENROUTER',
@@ -413,7 +430,7 @@ async function callOpenRouter(options: UnifiedAiRequestOptions): Promise<Unified
 
 /**
  * Universal Unified Execution Engine with Failover Pipeline
- * Order: Gemini -> Groq -> OpenRouter
+ * Order: Gemini -> Groq -> OpenRouter (with 0ms skip for completely exhausted providers)
  */
 export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions): Promise<UnifiedAiResponse> {
   const mode = getEffectiveProviderMode();
@@ -457,33 +474,55 @@ export async function executeAiUnifiedRequest(options: UnifiedAiRequestOptions):
   }
 
   // Mode 4: AUTO_FALLBACK (Gemini -> Groq -> OpenRouter)
-  // When an image is present, prioritize vision-capable providers (Gemini -> OpenRouter -> Groq)
+  // Check if providers are completely exhausted to skip them instantly in 0ms!
+  const { isProviderCompletelyExhausted } = await import('./aiFailoverManager');
+  const geminiExhausted = isProviderCompletelyExhausted('GEMINI');
+  const groqExhausted = isProviderCompletelyExhausted('GROQ');
+
   const providersToTry: { name: AiProvider; fn: () => Promise<UnifiedAiResponse> }[] = [];
 
   if (hasImage) {
-    if (getEffectiveGeminiApiKey()) {
+    // Multimodal pipeline: Gemini -> OpenRouter -> Groq
+    if (getEffectiveGeminiApiKey() && !geminiExhausted) {
       providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
     }
     if (getEffectiveOpenRouterApiKey()) {
       providersToTry.push({ name: 'OPENROUTER', fn: () => callOpenRouter(options) });
     }
-    if (getEffectiveGroqApiKey()) {
+    if (getEffectiveGroqApiKey() && !groqExhausted) {
       providersToTry.push({ name: 'GROQ', fn: () => callGroq(options) });
+    }
+    // Fallback if all were skipped
+    if (providersToTry.length === 0 && getEffectiveGeminiApiKey()) {
+      providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
     }
   } else {
-    if (getEffectiveGeminiApiKey()) {
+    // Text pipeline: Gemini -> Groq -> OpenRouter
+    if (getEffectiveGeminiApiKey() && !geminiExhausted) {
       providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
+    } else if (geminiExhausted) {
+      console.log('[AI_FAILOVER] ⚡ Gemini is completely exhausted (24h cooldown). Instantly skipping to next provider (0ms latency)...');
     }
-    if (getEffectiveGroqApiKey()) {
+
+    if (getEffectiveGroqApiKey() && !groqExhausted) {
       providersToTry.push({ name: 'GROQ', fn: () => callGroq(options) });
+    } else if (groqExhausted) {
+      console.log('[AI_FAILOVER] ⚡ Groq is completely exhausted (24h cooldown). Instantly skipping to OpenRouter...');
     }
+
     if (getEffectiveOpenRouterApiKey()) {
       providersToTry.push({ name: 'OPENROUTER', fn: () => callOpenRouter(options) });
+    }
+
+    // If all providers were exhausted, try all anyway as last resort
+    if (providersToTry.length === 0) {
+      if (getEffectiveGeminiApiKey()) providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
+      if (getEffectiveGroqApiKey()) providersToTry.push({ name: 'GROQ', fn: () => callGroq(options) });
+      if (getEffectiveOpenRouterApiKey()) providersToTry.push({ name: 'OPENROUTER', fn: () => callOpenRouter(options) });
     }
   }
 
   if (providersToTry.length === 0) {
-    // If no key is set, attempt Gemini so accurate error is returned
     providersToTry.push({ name: 'GEMINI', fn: () => callGemini(options) });
   }
 

@@ -181,6 +181,14 @@ export async function initFirebaseAndLogs() {
       } catch (err) {
         console.warn('Failed to load API usage logs from Firestore (could be quota exceeded):', err);
       }
+
+      // Load AI Failover & Cooldown State from Firestore
+      try {
+        const { initFailoverStateFromFirestore } = await import('./services/aiFailoverManager');
+        await initFailoverStateFromFirestore();
+      } catch (err) {
+        console.warn('Failed to load AI failover state from Firestore:', err);
+      }
     } catch (e) {
       console.error('Error initializing Firebase in server.ts:', e);
     }
@@ -394,13 +402,17 @@ export async function generateContentWithFallback(
     'gemini-3.5-flash-lite': ['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.1-pro']
   };
 
-  const prioritizedSequence = qualitySequenceMap[primaryApiModel] || [
+  const baseSequence = qualitySequenceMap[primaryApiModel] || [
     primaryApiModel,
     'gemini-3.7-flash',
     'gemini-3.6-flash',
     'gemini-3.5-flash-lite',
     'gemini-3.1-pro'
   ];
+
+  // 🚀 AI Failover & Cooldown Manager: Cooldown'da olmayan aktif modelleri getir
+  const { getActiveSequenceForProvider, recordModelExhaustion, recordModelSuccess } = await import('./services/aiFailoverManager');
+  const prioritizedSequence = getActiveSequenceForProvider('GEMINI', baseSequence);
 
   const uniqueList: { requested: string; apiModel: string }[] = [];
   const seenApiModels = new Set<string>();
@@ -415,52 +427,47 @@ export async function generateContentWithFallback(
   let lastError: any = null;
 
   for (const item of uniqueList) {
-    let retries = 1;
-    while (retries >= 0) {
-      try {
-        console.log(`[GEMINI EXEC] Model çağrılıyor: ${item.apiModel} (İstenen Yapılandırma: ${requestedModel})`);
-        const mergedConfig = {
-          maxOutputTokens: 2048,
-          ...(options.config || {})
-        };
-        const response = await ai.models.generateContent({
-          model: item.apiModel,
-          contents: options.contents,
-          config: mergedConfig,
-        });
-        return { response, modelUsed: item.apiModel };
-      } catch (err: any) {
-        lastError = err;
-        const errMsg = err?.message || String(err || '');
-        console.warn(`[GEMINI EXEC] Model ${item.apiModel} hatası (Kalan deneme: ${retries}):`, errMsg);
-        
-        const isAuthError = err.status === 401 || errMsg.includes('401') || errMsg.includes('UNAUTHENTICATED') || errMsg.includes('ACCESS_TOKEN_TYPE_UNSUPPORTED') || errMsg.includes('invalid authentication credentials');
-        if (isAuthError) {
-          // Doğrudan yetkilendirme hatası fırlat
-          throw err;
-        }
+    try {
+      console.log(`[GEMINI EXEC] Model çağrılıyor: ${item.apiModel} (İstenen Yapılandırma: ${requestedModel})`);
+      const mergedConfig = {
+        maxOutputTokens: 2048,
+        ...(options.config || {})
+      };
+      const response = await ai.models.generateContent({
+        model: item.apiModel,
+        contents: options.contents,
+        config: mergedConfig,
+      });
+      // Başarılı olduğunda aktif imleç olarak kaydet
+      recordModelSuccess('GEMINI', item.apiModel);
+      return { response, modelUsed: item.apiModel };
+    } catch (err: any) {
+      lastError = err;
+      const errMsg = err?.message || String(err || '');
+      console.warn(`[GEMINI EXEC] Model ${item.apiModel} hatası:`, errMsg);
+      
+      const isAuthError = err.status === 401 || errMsg.includes('401') || errMsg.includes('UNAUTHENTICATED') || errMsg.includes('ACCESS_TOKEN_TYPE_UNSUPPORTED') || errMsg.includes('invalid authentication credentials');
+      if (isAuthError) {
+        throw err;
+      }
 
-        const isQuotaOrRateLimit = err.status === 429 || errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota') || errMsg.includes('Rate limit') || errMsg.includes('rate limit');
-        if (isQuotaOrRateLimit) {
-          console.warn(`[GEMINI AUTO-FALLBACK] Model ${item.apiModel} kota/hız sınırına ulaştı (429 RESOURCE_EXHAUSTED). Sıradaki yedek modele kesintisiz geçiliyor...`);
-          break; // Kota dolduğunda bekleme yapmadan anında sıradaki modele geç
-        }
+      const isQuotaOrRateLimit = err.status === 429 || errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota') || errMsg.includes('Rate limit') || errMsg.includes('rate limit');
+      if (isQuotaOrRateLimit) {
+        console.warn(`[GEMINI AUTO-FALLBACK] Model ${item.apiModel} kota/hız sınırına ulaştı. 24 saatlik bekleme havuzuna (cooldown) alındı. Sıradaki modele geçiliyor...`);
+        recordModelExhaustion('GEMINI', item.apiModel, errMsg);
+        continue;
+      }
 
-        const isNotFoundOrUnsupported = err.status === 404 || errMsg.includes('not found') || errMsg.includes('no longer available') || errMsg.includes('unsupported') || errMsg.includes('Thinking is not enabled') || errMsg.includes('is not supported');
-        if (isNotFoundOrUnsupported) {
-          console.warn(`[GEMINI AUTO-FALLBACK] Model ${item.apiModel} desteklenmiyor (404). Sıradaki modele geçiliyor...`);
-          break;
-        }
-
-        retries--;
-        if (retries >= 0) {
-          await new Promise((resolve) => setTimeout(resolve, 800));
-        }
+      const isNotFoundOrUnsupported = err.status === 404 || errMsg.includes('not found') || errMsg.includes('no longer available') || errMsg.includes('unsupported') || errMsg.includes('Thinking is not enabled') || errMsg.includes('is not supported');
+      if (isNotFoundOrUnsupported) {
+        console.warn(`[GEMINI AUTO-FALLBACK] Model ${item.apiModel} desteklenmiyor (404). Cooldown'a alındı.`);
+        recordModelExhaustion('GEMINI', item.apiModel, errMsg);
+        continue;
       }
     }
   }
 
-  throw lastError || new Error('Tüm Gemini modellerinin kotaları veya limitleri tükendi.');
+  throw lastError || new Error('Tüm Gemini modelleri sınır/hata nedeniyle tüketildi.');
 }
 
 export function getOAuth2Client(req?: express.Request) {

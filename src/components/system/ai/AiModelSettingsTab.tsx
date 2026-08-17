@@ -17,8 +17,15 @@ import {
   Cpu,
   Layers,
   ArrowRight,
+  Play,
   CheckCircle2,
-  Server
+  Server,
+  Clock,
+  RotateCcw,
+  Compass,
+  Activity,
+  Hourglass,
+  Radio
 } from 'lucide-react';
 import { ModelSettingsData } from '../SystemTypes';
 
@@ -80,6 +87,93 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
       setProviderMode(modelSettings.aiProviderMode);
     }
   }, [modelSettings?.aiProviderMode]);
+
+  // 🚀 Live Failover & Cooldown Management State
+  const [failoverData, setFailoverData] = useState<any>(null);
+  const [loadingFailover, setLoadingFailover] = useState(false);
+  const [isResettingFailover, setIsResettingFailover] = useState(false);
+  const [actionModelKey, setActionModelKey] = useState<string | null>(null);
+  const [failoverFeedback, setFailoverFeedback] = useState<{ text: string; isError?: boolean } | null>(null);
+
+  const fetchFailoverStatus = async () => {
+    try {
+      const res = await fetch('/api/gemini/failover-status');
+      if (res.ok) {
+        const data = await res.json();
+        setFailoverData(data);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch failover status:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchFailoverStatus();
+    const interval = setInterval(fetchFailoverStatus, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleResetAllFailover = async () => {
+    setIsResettingFailover(true);
+    setFailoverFeedback(null);
+    try {
+      const res = await fetch('/api/gemini/failover-reset', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setFailoverData(data);
+        setFailoverFeedback({ text: 'Tüm model limitleri ve bekleme süreleri sıfırlandı. Sıra en baştaki modele alındı.' });
+      } else {
+        setFailoverFeedback({ text: data.error || 'Sıfırlama başarısız oldu.', isError: true });
+      }
+    } catch (err: any) {
+      setFailoverFeedback({ text: err.message || 'Sunucu hatası', isError: true });
+    } finally {
+      setIsResettingFailover(false);
+    }
+  };
+
+  const handleForceActive = async (provider: string, modelId: string) => {
+    setActionModelKey(`${provider}:${modelId}`);
+    setFailoverFeedback(null);
+    try {
+      const res = await fetch('/api/gemini/failover-set-active', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, modelId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFailoverData(data);
+        setFailoverFeedback({ text: `${modelId} modeli başarıyla aktif 1. sıraya çekildi!` });
+      } else {
+        setFailoverFeedback({ text: data.error || 'İşlem başarısız.', isError: true });
+      }
+    } catch (err: any) {
+      setFailoverFeedback({ text: err.message || 'Sunucu hatası', isError: true });
+    } finally {
+      setActionModelKey(null);
+    }
+  };
+
+  const handleSetCooldownDuration = async (hours: number) => {
+    setFailoverFeedback(null);
+    try {
+      const res = await fetch('/api/gemini/failover-set-duration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hours })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setFailoverData(data);
+        setFailoverFeedback({ text: `Model limit bekleme süresi ${hours} saat olarak kaydedildi.` });
+      } else {
+        setFailoverFeedback({ text: data.error || 'Ayar kaydedilemedi', isError: true });
+      }
+    } catch (err: any) {
+      setFailoverFeedback({ text: err.message || 'Ayar kaydedilemedi', isError: true });
+    }
+  };
 
   const verifiedModels = [
     { id: 'SYSTEM_DEFAULT', name: '⚡ Sistem Otomatik (Önerilen Kalite Zinciri: 3.7 ➔ 3.6 ➔ 3.5 ➔ Pro)', badge: 'Varsayılan & Önerilen' },
@@ -400,6 +494,211 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
               <p className="text-[11px] text-slate-300 mt-1">Sadece OpenRouter :free havuzunu kullanır.</p>
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* 🧭 CANLI MODEL SIRASI & AKILLI FAILOVER PANELİ (CIRCUIT BREAKER) */}
+      <div className="bg-slate-900/90 border border-slate-800/80 rounded-3xl p-6 shadow-2xl backdrop-blur-md relative overflow-hidden space-y-5">
+        {/* Glow accent */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-gradient-to-tr from-indigo-600/30 to-purple-600/30 text-indigo-400 rounded-2xl border border-indigo-500/30 shadow-inner">
+              <Compass className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <span>Canlı Model Sırası & Akıllı Failover Durumu</span>
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                    <Radio className="w-2.5 h-2.5 animate-pulse text-emerald-400" />
+                    Canlı Takip
+                  </span>
+                </h3>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Model kotası dolduğunda her seferinde en baştan denemek yerine kalan süre boyunca sıradaki aktif modelden kesintisiz devam edilir.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Cooldown duration selector */}
+            <div className="flex items-center gap-2 bg-slate-950/70 border border-slate-800 px-3 py-1.5 rounded-xl">
+              <Clock className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="text-xs text-slate-300 font-medium">Limit Bekleme Süresi:</span>
+              <select
+                value={failoverData?.cooldownHours || 24}
+                onChange={(e) => handleSetCooldownDuration(Number(e.target.value))}
+                className="bg-slate-900 text-indigo-300 font-bold text-xs border border-slate-700 rounded-lg px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer"
+              >
+                <option value={1}>1 Saat</option>
+                <option value={6}>6 Saat</option>
+                <option value={12}>12 Saat</option>
+                <option value={24}>24 Saat (1 Gün)</option>
+                <option value={48}>48 Saat (2 Gün)</option>
+                <option value={72}>72 Saat (3 Gün)</option>
+              </select>
+            </div>
+
+            {/* Reset All button */}
+            <button
+              type="button"
+              onClick={handleResetAllFailover}
+              disabled={isResettingFailover}
+              className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-white border border-indigo-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 disabled:opacity-50"
+              title="Tüm sağlayıcıların ve modellerin bekleme listesini sıfırlar ve 1. sıraya çeker"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 ${isResettingFailover ? 'animate-spin' : ''}`} />
+              <span>Sırayı Başa Al & Sıfırla</span>
+            </button>
+          </div>
+        </div>
+
+        {failoverFeedback && (
+          <div className={`p-3 rounded-2xl border text-xs flex items-center justify-between animate-in fade-in slide-in-from-top-1 ${
+            failoverFeedback.isError
+              ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
+              : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+          }`}>
+            <div className="flex items-center gap-2">
+              {failoverFeedback.isError ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+              <span>{failoverFeedback.text}</span>
+            </div>
+            <button onClick={() => setFailoverFeedback(null)} className="text-slate-400 hover:text-white text-xs font-bold px-2 py-0.5">✕</button>
+          </div>
+        )}
+
+        {/* 3 Provider Flow Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {(failoverData?.providers || [
+            { name: 'GEMINI', displayName: 'Google Gemini', isActiveProvider: true, isCompletelyExhausted: false, activeModelId: 'gemini-3.7-flash', models: [] },
+            { name: 'GROQ', displayName: 'Groq Cloud', isActiveProvider: false, isCompletelyExhausted: false, activeModelId: 'openai/gpt-oss-120b', models: [] },
+            { name: 'OPENROUTER', displayName: 'OpenRouter :free', isActiveProvider: false, isCompletelyExhausted: false, activeModelId: 'google/gemma-4-31b-it:free', models: [] }
+          ]).map((prov: any) => {
+            const isCurrentActiveProvider = failoverData?.activeProvider === prov.name;
+            const isExhausted = prov.isCompletelyExhausted;
+
+            return (
+              <div
+                key={prov.name}
+                className={`rounded-2xl border p-4 flex flex-col justify-between space-y-3 transition-all ${
+                  isCurrentActiveProvider
+                    ? 'bg-slate-950/90 border-indigo-500/60 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/40'
+                    : isExhausted
+                    ? 'bg-rose-950/10 border-rose-900/40 opacity-75'
+                    : 'bg-slate-950/50 border-slate-800/80'
+                }`}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
+                    <h4 className="font-bold text-white text-xs">{prov.displayName}</h4>
+                  </div>
+                  {isCurrentActiveProvider ? (
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-extrabold px-2 py-0.5 rounded-full border border-emerald-500/40 flex items-center gap-1">
+                      <CheckCircle2 className="w-2.5 h-2.5" />
+                      Aktif Sağlayıcı
+                    </span>
+                  ) : isExhausted ? (
+                    <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-full border border-rose-500/30">
+                      Tüm Modeller Dolu
+                    </span>
+                  ) : (
+                    <span className="text-[10px] bg-slate-800 text-slate-400 font-medium px-2 py-0.5 rounded-full">
+                      Yedek Sırada
+                    </span>
+                  )}
+                </div>
+
+                {/* Model Sequence List */}
+                <div className="space-y-2">
+                  {(prov.models || []).map((mod: any, idx: number) => {
+                    const isModActive = mod.isActive;
+                    const isModInCooldown = mod.isInCooldown;
+                    const isOperating = actionModelKey === `${prov.name}:${mod.id}`;
+
+                    return (
+                      <div
+                        key={mod.id}
+                        className={`p-2.5 rounded-xl border text-xs transition-all flex flex-col gap-1.5 ${
+                          isModActive
+                            ? 'bg-indigo-950/40 border-indigo-500/50 text-white shadow-sm'
+                            : isModInCooldown
+                            ? 'bg-rose-950/20 border-rose-800/40 text-slate-300'
+                            : 'bg-slate-900/60 border-slate-800/60 text-slate-400'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[10px] font-mono text-slate-400 w-3.5 text-center">{idx + 1}.</span>
+                            <span className="font-semibold truncate text-white">{mod.name}</span>
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                              {mod.badge}
+                            </span>
+                          </div>
+
+                          {/* Quick action button */}
+                          <button
+                            type="button"
+                            onClick={() => handleForceActive(prov.name, mod.id)}
+                            disabled={isModActive || isOperating}
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border transition-all flex items-center gap-1 cursor-pointer ${
+                              isModActive
+                                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 cursor-default'
+                                : 'bg-indigo-600/20 hover:bg-indigo-600/40 border-indigo-500/30 text-indigo-300 hover:text-white active:scale-95'
+                            }`}
+                            title="Bu modeli sıranın en başına al ve bekleme süresi varsa temizle"
+                          >
+                            {isOperating ? (
+                              <RotateCcw className="w-2.5 h-2.5 animate-spin" />
+                            ) : isModActive ? (
+                              <>
+                                <Check className="w-2.5 h-2.5" />
+                                <span>Aktif</span>
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-2.5 h-2.5" />
+                                <span>Önceliğe Al</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Status Line */}
+                        <div className="flex items-center justify-between text-[10px] pt-1 border-t border-slate-800/40">
+                          {isModInCooldown ? (
+                            <span className="text-rose-300 flex items-center gap-1 font-medium">
+                              <Hourglass className="w-3 h-3 text-rose-400 animate-pulse" />
+                              <span>Limit Doldu ({mod.remainingFormatted || '24h'} kaldı)</span>
+                            </span>
+                          ) : isModActive ? (
+                            <span className="text-emerald-400 flex items-center gap-1 font-medium">
+                              <Activity className="w-3 h-3 text-emerald-400" />
+                              <span>Şu Anda Kullanılan Model</span>
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 flex items-center gap-1">
+                              <span>⚪ Sırada Bekliyor</span>
+                            </span>
+                          )}
+
+                          {mod.isVisionCapable && (
+                            <span className="text-indigo-400 text-[9px] flex items-center gap-0.5">
+                              <span>📷 Vision</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
