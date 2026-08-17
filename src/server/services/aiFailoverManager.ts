@@ -19,32 +19,45 @@ export interface AiFailoverState {
     GROQ: string;
     OPENROUTER: string;
   };
+  customModelOrder?: {
+    GEMINI?: string[];
+    GROQ?: string[];
+    OPENROUTER?: string[];
+  };
   cooldowns: Record<string, ModelCooldownEntry>; // key: `${provider}:${modelId}`
   updatedAt: string;
 }
 
+export interface ProviderModelMetadata {
+  id: string;
+  name: string;
+  description: string;
+  badge: string;
+  isVisionCapable?: boolean;
+}
+
 // 🎯 Default Quality Sequences for each Provider
-export const PROVIDER_MODEL_SEQUENCES: Record<AiProviderName, { id: string; name: string; badge: string; isVisionCapable?: boolean }[]> = {
+export const PROVIDER_MODEL_SEQUENCES: Record<AiProviderName, ProviderModelMetadata[]> = {
   GEMINI: [
-    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash', badge: 'Akıl Yürütme & Hızlı', isVisionCapable: true },
-    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash', badge: 'Dengeli & Güvenilir', isVisionCapable: true },
-    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite', badge: 'Ekonomik & Hafif', isVisionCapable: true },
-    { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro', badge: 'Derin Analiz & Pro', isVisionCapable: true }
+    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash', description: 'En Gelişmiş Akıl Yürütme & Hızlı Çözüm', badge: 'Gelişmiş & Hızlı', isVisionCapable: true },
+    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash', description: 'Dengeli Hız, Yüksek Kalite & Güvenilirlik', badge: 'Dengeli', isVisionCapable: true },
+    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite', description: 'Ultra Hafif, Düşük Gecikme & Ekonomik Kota', badge: 'Ultra Hafif', isVisionCapable: true },
+    { id: 'gemini-3.1-pro', name: 'Gemini 3.1 Pro', description: 'Derin Analiz, Ağır Strateji & Büyük Bağlam', badge: 'Pro & Derinlik', isVisionCapable: true }
   ],
   GROQ: [
-    { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B', badge: 'Yüksek Zeka', isVisionCapable: false },
-    { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B', badge: 'Ultra Hızlı', isVisionCapable: false },
-    { id: 'qwen/qwen3.6-27b', name: 'Qwen 3.6 27B', badge: 'Dengeli', isVisionCapable: false },
-    { id: 'llama-3.3-70b-specdec', name: 'Llama 3.3 70B Speculative', badge: 'Gelişmiş', isVisionCapable: false }
+    { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B', description: 'En Yüksek Muhakeme & Problem Çözme Kapasitesi', badge: '120B Amiral', isVisionCapable: false },
+    { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B', description: 'Ultra Hızlı Cevap Süresi & Düşük Gecikme', badge: 'Ultra Hızlı', isVisionCapable: false },
+    { id: 'qwen/qwen3.6-27b', name: 'Qwen 3.6 27B', description: 'Matematik ve Kodlamada Dengeli Başarı', badge: '27B Dengeli', isVisionCapable: false },
+    { id: 'llama-3.3-70b-specdec', name: 'Llama 3.3 70B Speculative', description: 'Meta Llama Tabanlı Güçlü Analiz & Hızlı Çıkarım', badge: '70B Güçlü', isVisionCapable: false }
   ],
   OPENROUTER: [
-    { id: 'google/gemma-4-31b-it:free', name: 'Gemma 4 31B Free', badge: 'Ücretsiz Lider', isVisionCapable: true },
-    { id: 'google/gemma-4-26b-a4b-it:free', name: 'Gemma 4 26B Free', badge: 'Dengeli & Hızlı', isVisionCapable: true },
-    { id: 'nvidia/nemotron-3.5-lightning:free', name: 'Nemotron 3.5 Lightning Free', badge: 'Hafif', isVisionCapable: false },
-    { id: 'nvidia/nemotron-3-ultra-550b-a55b:free', name: 'Nemotron 3 Ultra 550B Free', badge: 'Büyük Model', isVisionCapable: false },
-    { id: 'openai/gpt-oss-20b:free', name: 'GPT-OSS 20B Free', badge: 'Açık Kaynak', isVisionCapable: false },
-    { id: 'z-ai/glm-5.2:free', name: 'GLM 5.2 Free', badge: 'Çok Dilli', isVisionCapable: false },
-    { id: 'liquid/lfm-2.5-2.6b:free', name: 'LFM 2.5 Free', badge: 'Yedek', isVisionCapable: false }
+    { id: 'google/gemma-4-31b-it:free', name: 'Gemma 4 31B Free', description: 'Google Gemma Tabanlı Ücretsiz Lider Model', badge: ':free Lider', isVisionCapable: true },
+    { id: 'google/gemma-4-26b-a4b-it:free', name: 'Gemma 4 26B Free', description: 'Hızlı Çıkarım & Dengeli Soru Çözümü', badge: ':free Hızlı', isVisionCapable: true },
+    { id: 'nvidia/nemotron-3.5-lightning:free', name: 'Nemotron 3.5 Lightning Free', description: 'Nvidia Optimize Hızlı Mantık Motoru', badge: ':free Hafif', isVisionCapable: false },
+    { id: 'nvidia/nemotron-3-ultra-550b-a55b:free', name: 'Nemotron 3 Ultra 550B Free', description: '550B Parametre Devasa Akıl Yürütme', badge: ':free 550B', isVisionCapable: false },
+    { id: 'openai/gpt-oss-20b:free', name: 'GPT-OSS 20B Free', description: 'Açık Kaynak Hızlı Yedek Model', badge: ':free Açık', isVisionCapable: false },
+    { id: 'z-ai/glm-5.2:free', name: 'GLM 5.2 Free', description: 'Çok Dilli & Geniş Kapsamlı Yedek', badge: ':free Yedek', isVisionCapable: false },
+    { id: 'liquid/lfm-2.5-2.6b:free', name: 'LFM 2.5 Free', description: 'Temel Görevler İçin Son Savunma Hattı', badge: ':free Son Yedek', isVisionCapable: false }
   ]
 };
 
@@ -56,6 +69,19 @@ let failoverState: AiFailoverState = {
     GEMINI: 'gemini-3.7-flash',
     GROQ: 'openai/gpt-oss-120b',
     OPENROUTER: 'google/gemma-4-31b-it:free'
+  },
+  customModelOrder: {
+    GEMINI: ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-pro'],
+    GROQ: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'llama-3.3-70b-specdec'],
+    OPENROUTER: [
+      'google/gemma-4-31b-it:free',
+      'google/gemma-4-26b-a4b-it:free',
+      'nvidia/nemotron-3.5-lightning:free',
+      'nvidia/nemotron-3-ultra-550b-a55b:free',
+      'openai/gpt-oss-20b:free',
+      'z-ai/glm-5.2:free',
+      'liquid/lfm-2.5-2.6b:free'
+    ]
   },
   cooldowns: {},
   updatedAt: new Date().toISOString()
@@ -84,6 +110,12 @@ export async function initFailoverStateFromFirestore() {
         failoverState.activeModelCursors = {
           ...failoverState.activeModelCursors,
           ...data.activeModelCursors
+        };
+      }
+      if (data.customModelOrder && typeof data.customModelOrder === 'object') {
+        failoverState.customModelOrder = {
+          ...failoverState.customModelOrder,
+          ...data.customModelOrder
         };
       }
       if (data.cooldowns && typeof data.cooldowns === 'object') {
@@ -121,7 +153,7 @@ async function syncToFirestore() {
 }
 
 /**
- * Checks if a specific model is currently in cooldown
+ * Checks if a specific model is currently in cooldown (rate limit/quota exhaustion)
  */
 export function isModelInCooldown(provider: AiProviderName, modelId: string): boolean {
   const key = `${provider}:${modelId}`;
@@ -161,12 +193,25 @@ export function isProviderCompletelyExhausted(provider: AiProviderName): boolean
 }
 
 /**
- * Returns the active available models sequence for a provider, starting from the current cursor and skipping cooled-down models
+ * Returns the active available models sequence for a provider, respecting custom order, starting from the current cursor and skipping cooled-down models
  */
 export function getActiveSequenceForProvider(provider: AiProviderName, baseSequence?: string[]): string[] {
-  const fullList = baseSequence && baseSequence.length > 0
-    ? baseSequence
-    : (PROVIDER_MODEL_SEQUENCES[provider] || []).map(m => m.id);
+  const defaultList = (PROVIDER_MODEL_SEQUENCES[provider] || []).map(m => m.id);
+  const customList = failoverState.customModelOrder?.[provider];
+
+  let fullList: string[] = [];
+  if (customList && customList.length > 0) {
+    fullList = [...customList];
+    for (const mId of defaultList) {
+      if (!fullList.includes(mId)) {
+        fullList.push(mId);
+      }
+    }
+  } else if (baseSequence && baseSequence.length > 0) {
+    fullList = baseSequence;
+  } else {
+    fullList = defaultList;
+  }
 
   const available = fullList.filter(mId => !isModelInCooldown(provider, mId));
   if (available.length === 0) {
@@ -205,8 +250,8 @@ export function recordModelExhaustion(provider: AiProviderName, modelId: string,
   console.warn(`[AI_FAILOVER] ⏳ Model ${provider}:${modelId} entered cooldown until ${new Date(cooldownUntil).toLocaleString()} (${effectiveCooldownHours} hours). Reason: ${errorReason || 'Rate limit'}`);
 
   // Advance cursor to next model
-  const seq = (PROVIDER_MODEL_SEQUENCES[provider] || []).map(m => m.id);
-  const nextAvailable = seq.find(mId => mId !== modelId && !isModelInCooldown(provider, mId));
+  const customSeq = failoverState.customModelOrder?.[provider] || (PROVIDER_MODEL_SEQUENCES[provider] || []).map(m => m.id);
+  const nextAvailable = customSeq.find(mId => mId !== modelId && !isModelInCooldown(provider, mId));
   if (nextAvailable) {
     failoverState.activeModelCursors[provider] = nextAvailable;
     console.log(`[AI_FAILOVER] ➡️ Advanced ${provider} active model cursor to: ${nextAvailable}`);
@@ -236,10 +281,14 @@ export function recordModelSuccess(provider: AiProviderName, modelId: string) {
 export async function resetAllFailovers(): Promise<AiFailoverState> {
   failoverState.cooldowns = {};
   failoverState.activeProvider = 'GEMINI';
+  const geminiFirst = failoverState.customModelOrder?.GEMINI?.[0] || 'gemini-3.7-flash';
+  const groqFirst = failoverState.customModelOrder?.GROQ?.[0] || 'openai/gpt-oss-120b';
+  const openRouterFirst = failoverState.customModelOrder?.OPENROUTER?.[0] || 'google/gemma-4-31b-it:free';
+
   failoverState.activeModelCursors = {
-    GEMINI: 'gemini-3.7-flash',
-    GROQ: 'openai/gpt-oss-120b',
-    OPENROUTER: 'google/gemma-4-31b-it:free'
+    GEMINI: geminiFirst,
+    GROQ: groqFirst,
+    OPENROUTER: openRouterFirst
   };
   await syncToFirestore();
   console.log('[AI_FAILOVER] 🔄 All cooldowns have been reset by admin.');
@@ -258,6 +307,37 @@ export async function forceActiveModel(provider: AiProviderName, modelId: string
   failoverState.activeModelCursors[provider] = modelId;
   await syncToFirestore();
   console.log(`[AI_FAILOVER] 🎯 Admin forced active model: ${provider}:${modelId}`);
+  return failoverState;
+}
+
+/**
+ * Reorders a model inside a provider sequence (moves up or down)
+ */
+export async function reorderModel(provider: AiProviderName, modelId: string, direction: 'UP' | 'DOWN'): Promise<AiFailoverState> {
+  const defaultSeq = (PROVIDER_MODEL_SEQUENCES[provider] || []).map(m => m.id);
+  const currentOrder = failoverState.customModelOrder?.[provider] && failoverState.customModelOrder[provider]!.length > 0
+    ? [...failoverState.customModelOrder[provider]!]
+    : [...defaultSeq];
+
+  const idx = currentOrder.indexOf(modelId);
+  if (idx !== -1) {
+    if (direction === 'UP' && idx > 0) {
+      const temp = currentOrder[idx];
+      currentOrder[idx] = currentOrder[idx - 1];
+      currentOrder[idx - 1] = temp;
+    } else if (direction === 'DOWN' && idx < currentOrder.length - 1) {
+      const temp = currentOrder[idx];
+      currentOrder[idx] = currentOrder[idx + 1];
+      currentOrder[idx + 1] = temp;
+    }
+
+    if (!failoverState.customModelOrder) {
+      failoverState.customModelOrder = {};
+    }
+    failoverState.customModelOrder[provider] = currentOrder;
+    await syncToFirestore();
+    console.log(`[AI_FAILOVER] 🔀 Reordered models for ${provider}:`, currentOrder);
+  }
   return failoverState;
 }
 
@@ -285,6 +365,7 @@ export function getFailoverStatus() {
     models: Array<{
       id: string;
       name: string;
+      description: string;
       badge: string;
       isVisionCapable?: boolean;
       isActive: boolean;
@@ -305,7 +386,21 @@ export function getFailoverStatus() {
   const now = Date.now();
 
   for (const p of providerNames) {
-    const seq = PROVIDER_MODEL_SEQUENCES[p] || [];
+    const defaultSeq = PROVIDER_MODEL_SEQUENCES[p] || [];
+    const customOrder = failoverState.customModelOrder?.[p];
+    
+    // Sort default models according to customOrder
+    let seq = [...defaultSeq];
+    if (customOrder && customOrder.length > 0) {
+      seq.sort((a, b) => {
+        const idxA = customOrder.indexOf(a.id);
+        const idxB = customOrder.indexOf(b.id);
+        const posA = idxA === -1 ? 999 : idxA;
+        const posB = idxB === -1 ? 999 : idxB;
+        return posA - posB;
+      });
+    }
+
     const activeModelId = failoverState.activeModelCursors[p] || seq[0]?.id || '';
     const isExhausted = seq.length > 0 && seq.every(m => isModelInCooldown(p, m.id));
 
@@ -330,6 +425,7 @@ export function getFailoverStatus() {
       return {
         id: m.id,
         name: m.name,
+        description: m.description,
         badge: m.badge,
         isVisionCapable: m.isVisionCapable,
         isActive: m.id === activeModelId && !isInCooldown,

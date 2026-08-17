@@ -1471,6 +1471,25 @@ router.post('/failover-set-duration', async (req, res) => {
   }
 });
 
+router.post('/failover-reorder-models', async (req, res) => {
+  try {
+    const { provider, modelId, direction } = req.body;
+    if (!provider || !modelId || !direction || !['UP', 'DOWN'].includes(direction)) {
+      return res.status(400).json({ success: false, error: 'Sağlayıcı, model ID ve yön (UP/DOWN) zorunludur.' });
+    }
+    const { reorderModel, getFailoverStatus } = await import('../services/aiFailoverManager');
+    await reorderModel(provider, modelId, direction);
+    const status = getFailoverStatus();
+    res.json({
+      success: true,
+      message: `Model sırası başarıyla güncellendi.`,
+      ...status
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 // -------------------------------------------------------------
 // Çalışma Planı Yapay Zeka Görev Önerisi
