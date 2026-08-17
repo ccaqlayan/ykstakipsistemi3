@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Server, 
   Database, 
@@ -10,9 +10,17 @@ import {
   RefreshCcw, 
   ShieldCheck, 
   CheckCircle2, 
-  X 
+  X,
+  Cloud,
+  Zap,
+  HardDrive,
+  Sparkles,
+  Radio
 } from 'lucide-react';
 import { StorageStatsResponse } from './SystemTypes';
+import { getStorageDeliveryMode, setStorageDeliveryMode, StorageDeliveryMode } from '../../services/storageUpload';
+import { db } from '../../services/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface SystemStorageTabProps {
   storageStats: StorageStatsResponse | null;
@@ -27,8 +35,45 @@ export const SystemStorageTab: React.FC<SystemStorageTabProps> = ({
   setStorageMaintenanceMsg,
   handleRunStorageMaintenance,
 }) => {
+  const [deliveryMode, setDeliveryMode] = useState<StorageDeliveryMode>(() => getStorageDeliveryMode());
+  const [deliveryModeSaveMsg, setDeliveryModeSaveMsg] = useState<string | null>(null);
+
+  const handleToggleDeliveryMode = (newMode: StorageDeliveryMode) => {
+    setDeliveryMode(newMode);
+    setStorageDeliveryMode(newMode);
+    try {
+      setDoc(doc(db, 'settings', 'school_config'), { storageDeliveryMode: newMode }, { merge: true })
+        .catch(err => console.warn('Could not save storage delivery mode to Firestore:', err));
+    } catch (e) {}
+
+    setDeliveryModeSaveMsg(
+      newMode === 'FIREBASE_DIRECT'
+        ? '⚡ Doğrudan Firebase Storage (Cloud CDN) modu aktif edildi. Fotoğraflar doğrudan bulut linkleriyle açılacak, sunucu indirme kotası harcanmayacak.'
+        : '🔄 Yerel Sunucu Önbelleği & Ayna modu aktif edildi. Fotoğraflar sunucu diskinde saklanacak ve /uploads/ üzerinden sunulacak.'
+    );
+    setTimeout(() => {
+      setDeliveryModeSaveMsg(null);
+    }, 4500);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Toast Messages */}
+      {deliveryModeSaveMsg && (
+        <div className="p-4 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-200 text-xs font-bold flex items-center justify-between shadow-lg shadow-indigo-500/10">
+          <div className="flex items-center space-x-2">
+            <CheckCircle2 className="w-5 h-5 text-indigo-400 shrink-0" />
+            <span>{deliveryModeSaveMsg}</span>
+          </div>
+          <button
+            onClick={() => setDeliveryModeSaveMsg(null)}
+            className="text-slate-400 hover:text-white"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {storageMaintenanceMsg && (
         <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -43,6 +88,137 @@ export const SystemStorageTab: React.FC<SystemStorageTabProps> = ({
           </button>
         </div>
       )}
+
+      {/* FEATURED: MEDIA STORAGE & DELIVERY MODE SWITCHER */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/80 to-slate-900 border border-indigo-500/30 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-5 relative overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-indigo-500/20 pb-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-2xl shadow-lg shadow-indigo-500/30 border border-indigo-400/40 shrink-0">
+              <Cloud className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-white text-base">Medya & Fotoğraf Dağıtım Modu</h3>
+                <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                  Storage Proxy / CDN Ayarı
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Fotoğrafların doğrudan Google Cloud / Firebase CDN üzerinden mi yoksa yerel sunucu diskinden mi açılacağını seçin.
+              </p>
+            </div>
+          </div>
+
+          <div className="shrink-0 flex items-center gap-2">
+            <span className={`text-xs font-black px-3 py-1 rounded-xl border flex items-center gap-1.5 ${
+              deliveryMode === 'FIREBASE_DIRECT' 
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm shadow-emerald-500/20' 
+                : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+            }`}>
+              <Radio className="w-3.5 h-3.5 animate-pulse" />
+              {deliveryMode === 'FIREBASE_DIRECT' ? 'Doğrudan Firebase CDN Aktif' : 'Yerel Sunucu Ayna Modu Aktif'}
+            </span>
+          </div>
+        </div>
+
+        {/* 2 Selective Option Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Option 1: Direct Firebase Storage CDN */}
+          <div 
+            onClick={() => handleToggleDeliveryMode('FIREBASE_DIRECT')}
+            className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between space-y-3 ${
+              deliveryMode === 'FIREBASE_DIRECT'
+                ? 'bg-gradient-to-br from-indigo-900/60 via-slate-900/90 to-indigo-950/80 border-indigo-500 shadow-xl shadow-indigo-500/20 ring-1 ring-indigo-400'
+                : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50 opacity-75'
+            }`}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex items-center space-x-3">
+                <div className={`p-2.5 rounded-xl border ${
+                  deliveryMode === 'FIREBASE_DIRECT'
+                    ? 'bg-indigo-500 text-white border-indigo-300 shadow-md shadow-indigo-500/30'
+                    : 'bg-slate-800 text-slate-400 border-slate-700'
+                }`}>
+                  <Zap className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    Doğrudan Firebase Storage (Bulut CDN)
+                  </h4>
+                  <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1 mt-0.5">
+                    <Sparkles className="w-3 h-3" /> Önerilen • Sıfır Sunucu Yükü & Kalıcı
+                  </span>
+                </div>
+              </div>
+              <input 
+                type="radio" 
+                name="storageDeliveryMode"
+                checked={deliveryMode === 'FIREBASE_DIRECT'} 
+                onChange={() => handleToggleDeliveryMode('FIREBASE_DIRECT')}
+                className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 cursor-pointer mt-1" 
+              />
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Fotoğraflar doğrudan <strong>Firebase Storage</strong> üzerinde saklanır ve Google Cloud CDN bağlantıları kullanılır. 
+              Sunucu uyku moduna geçse veya yeniden başlasa bile fotoğraflar <strong>asla kaybolmaz ve anında açılır</strong>. 
+              Sunucu indirme kotasını tüketmez.
+            </p>
+
+            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+              <span className="text-indigo-300 font-semibold">Tarayıcı Önbellekleme: <strong>Aktif (Cache-Control)</strong></span>
+              <span className="text-emerald-400 font-mono font-bold">0 ms Sunucu İndirmesi</span>
+            </div>
+          </div>
+
+          {/* Option 2: Local Mirror / Server Proxy */}
+          <div 
+            onClick={() => handleToggleDeliveryMode('LOCAL_MIRROR')}
+            className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between space-y-3 ${
+              deliveryMode === 'LOCAL_MIRROR'
+                ? 'bg-gradient-to-br from-amber-950/40 via-slate-900/90 to-amber-950/30 border-amber-500 shadow-xl shadow-amber-500/20 ring-1 ring-amber-400'
+                : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/50 opacity-75'
+            }`}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex items-center space-x-3">
+                <div className={`p-2.5 rounded-xl border ${
+                  deliveryMode === 'LOCAL_MIRROR'
+                    ? 'bg-amber-600 text-white border-amber-300 shadow-md shadow-amber-600/30'
+                    : 'bg-slate-800 text-slate-400 border-slate-700'
+                }`}>
+                  <HardDrive className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    Yerel Sunucu Önbelleği & Ayna Modu
+                  </h4>
+                  <span className="text-[10px] font-bold text-amber-400 mt-0.5 block">
+                    Klasik Mod • /uploads/* Yerel Sunucu Yolu
+                  </span>
+                </div>
+              </div>
+              <input 
+                type="radio" 
+                name="storageDeliveryMode"
+                checked={deliveryMode === 'LOCAL_MIRROR'} 
+                onChange={() => handleToggleDeliveryMode('LOCAL_MIRROR')}
+                className="w-4 h-4 text-amber-600 focus:ring-amber-500 cursor-pointer mt-1" 
+              />
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Fotoğraflar web sunucusunun diskine kopyalanır ve <code>/uploads/...</code> üzerinden açılır. 
+              Sunucu konteyneri sıfırlandığında eksik dosyalar Firebase'den sunucuya yeniden indirilir.
+            </p>
+
+            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+              <span className="text-slate-400">Sunucu Depolaması: <strong>Konteyner Diski</strong></span>
+              <span className="text-amber-300 font-mono font-bold">Yerel /uploads/ Yolu</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* DUAL STORAGE OVERVIEW CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

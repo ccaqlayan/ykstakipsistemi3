@@ -26,7 +26,7 @@ const app = express();
 
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(uploadsDir, { maxAge: '1d' }));
 
 // Mount Modular API Routers
 app.use('/api/auth', authRoutes);
@@ -74,6 +74,7 @@ app.get('/uploads/*', async (req, res, next) => {
             if (metadata && metadata.contentType) {
               res.setHeader('Content-Type', metadata.contentType);
             }
+            res.setHeader('Cache-Control', 'public, max-age=86400');
             return res.send(buffer);
           }
         }
