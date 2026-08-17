@@ -686,7 +686,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
         )}
 
         {/* 3 Provider Flow Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
           {(failoverData?.providers || [
             { name: 'GEMINI', displayName: 'Google Gemini', isActiveProvider: true, isCompletelyExhausted: false, activeModelId: 'gemini-3.7-flash', models: [] },
             { name: 'GROQ', displayName: 'Groq Cloud', isActiveProvider: false, isCompletelyExhausted: false, activeModelId: 'openai/gpt-oss-120b', models: [] },
@@ -698,7 +698,7 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             return (
               <div
                 key={prov.name}
-                className={`rounded-2xl border p-4 flex flex-col justify-between space-y-3 transition-all ${
+                className={`rounded-2xl border p-4 flex flex-col justify-start space-y-3 transition-all ${
                   isCurrentActiveProvider
                     ? 'bg-slate-950/90 border-indigo-500/60 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/40'
                     : isExhausted
