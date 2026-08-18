@@ -23,6 +23,7 @@ import {
 import { BranchExam, TopicErrorItem, ErrorReason, GeneralMockExam, ResourceItem } from '../../types';
 import { ConfirmDeleteModal } from '../ConfirmDeleteModal';
 import { formatDisplayDate, formatShortDisplayDate } from '../../utils/dateUtils';
+import { getRepetitionStageInfo } from '../../services/spacedRepetition';
 
 interface BranchModalsProps {
   // Error Modal
@@ -1214,15 +1215,23 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                   <h3 className="text-xs sm:text-sm md:text-base font-bold text-white truncate" title={previewImage.title}>
                     {previewImage.title}
                   </h3>
-                  <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-slate-400">
+                  <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-slate-400 flex-wrap">
                     {(() => {
                       const mErr = getMatchingErrorItem();
-                      if (mErr && mErr.date) {
+                      if (mErr) {
+                        const repInfo = getRepetitionStageInfo(mErr);
                         return (
-                          <span className="text-indigo-300 font-semibold flex items-center gap-1 shrink-0">
-                            <Calendar className="w-3 h-3 text-indigo-400" />
-                            <span>{formatShortDisplayDate(mErr.date)}</span>
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {mErr.date && (
+                              <span className="text-indigo-300 font-semibold flex items-center gap-1 shrink-0">
+                                <Calendar className="w-3 h-3 text-indigo-400" />
+                                <span>{formatShortDisplayDate(mErr.date)}</span>
+                              </span>
+                            )}
+                            <span className={`text-[9.5px] px-2 py-0.5 rounded-lg border font-bold flex items-center space-x-1 shrink-0 ${repInfo.badgeClass}`}>
+                              <span>{repInfo.shortLabel}</span>
+                            </span>
+                          </div>
                         );
                       }
                       return null;

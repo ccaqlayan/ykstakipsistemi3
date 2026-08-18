@@ -232,3 +232,88 @@ export const recordRepetitionAttempt = (
 
   return { updatedError, isCorrect, message };
 };
+
+export interface RepetitionStageInfo {
+  stage: number;
+  totalStages: number;
+  isDue: boolean;
+  isCompleted: boolean;
+  label: string;
+  shortLabel: string;
+  badgeClass: string;
+  nextReviewDate?: string;
+  isTomorrow?: boolean;
+}
+
+/**
+ * Bir sorunun mevcut tekrar aşamasını, etiketini ve stil sınıfını döner.
+ */
+export const getRepetitionStageInfo = (
+  item: TopicErrorItem,
+  intervals: number[] = getUserRepetitionIntervals(),
+  todayStr: string = getTodayDateString()
+): RepetitionStageInfo => {
+  const stage = item.repetitionStage ?? (item.repetitionHistory ? item.repetitionHistory.length : 0);
+  const totalStages = intervals.length;
+  const isCompleted = !!item.revised || stage >= totalStages;
+  const isDue = isQuestionDue(item, intervals, todayStr);
+  const tomorrowStr = addDaysToDate(todayStr, 1);
+
+  if (isCompleted) {
+    return {
+      stage,
+      totalStages,
+      isDue: false,
+      isCompleted: true,
+      label: `🌟 Pekiştirildi (${stage}/${totalStages})`,
+      shortLabel: `🌟 Pekiştirildi (${stage}/${totalStages})`,
+      badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+      isTomorrow: false,
+    };
+  }
+
+  if (isDue) {
+    return {
+      stage,
+      totalStages,
+      isDue: true,
+      isCompleted: false,
+      label: `⏳ ${stage + 1}. Tekrar Zamanı Geldi`,
+      shortLabel: `⏳ ${stage + 1}. Tekrar Zamanı`,
+      badgeClass: 'bg-purple-500/25 text-purple-300 border-purple-500/50 animate-pulse font-bold',
+      isTomorrow: false,
+    };
+  }
+
+  if (stage > 0) {
+    const nextReview = item.nextReviewDate || calculateNextReviewDate(item.lastReviewDate || todayStr, stage, intervals);
+    const isTomorrow = nextReview === tomorrowStr;
+    const resultIcon = item.lastReviewResult === 'CORRECT' ? ' (✅)' : item.lastReviewResult === 'WRONG' ? ' (❌)' : '';
+    return {
+      stage,
+      totalStages,
+      isDue: false,
+      isCompleted: false,
+      label: `🔁 ${stage}. Tekrar Yapıldı${resultIcon} • ${isTomorrow ? 'Yarın' : nextReview}`,
+      shortLabel: `🔁 ${stage}. Tekrar Yapıldı`,
+      badgeClass: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30 font-bold',
+      nextReviewDate: nextReview,
+      isTomorrow,
+    };
+  }
+
+  // stage === 0
+  const nextReview = item.nextReviewDate || calculateNextReviewDate(item.date || todayStr, 0, intervals);
+  const isTomorrow = nextReview === tomorrowStr;
+  return {
+    stage: 0,
+    totalStages,
+    isDue: false,
+    isCompleted: false,
+    label: `⏳ 1. Tekrar: ${isTomorrow ? 'Yarın' : nextReview} (0/${totalStages})`,
+    shortLabel: `⏳ 0/${totalStages} Tekrar`,
+    badgeClass: 'bg-slate-800 text-slate-400 border-slate-700',
+    nextReviewDate: nextReview,
+    isTomorrow,
+  };
+};

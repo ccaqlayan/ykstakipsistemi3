@@ -38,7 +38,8 @@ import {
   getUserRepetitionIntervals,
   getTodayDateString,
   calculateNextReviewDate,
-  addDaysToDate
+  addDaysToDate,
+  getRepetitionStageInfo
 } from '../../services/spacedRepetition';
 import { formatDisplayDate } from '../../utils/dateUtils';
 
@@ -1090,28 +1091,40 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
 
                       {/* 6. Tekrar Durumu */}
                       <td className="py-3.5 px-4 text-center">
-                        <button
-                          type="button"
-                          disabled={revisingIds[item.id]}
-                          onClick={() => handleToggleErrorRevision(item.id)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all inline-flex items-center space-x-1.5 cursor-pointer shadow-sm ${
-                            isRevised
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
-                              : 'bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25'
-                          }`}
-                        >
-                          {isRevised ? (
-                            <>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>Pekiştirildi</span>
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="w-3.5 h-3.5 text-rose-400" />
-                              <span>Bekliyor</span>
-                            </>
-                          )}
-                        </button>
+                        <div className="flex flex-col items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={revisingIds[item.id]}
+                            onClick={() => handleToggleErrorRevision(item.id)}
+                            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all inline-flex items-center space-x-1.5 cursor-pointer shadow-sm ${
+                              isRevised
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
+                                : 'bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25'
+                            }`}
+                          >
+                            {isRevised ? (
+                              <>
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>Pekiştirildi</span>
+                              </>
+                            ) : (
+                              <>
+                                <Clock className="w-3.5 h-3.5 text-rose-400" />
+                                <span>Bekliyor</span>
+                              </>
+                            )}
+                          </button>
+
+                          {/* Aşama / Tekrar Sayısı Rozeti */}
+                          {(() => {
+                            const info = getRepetitionStageInfo(item);
+                            return (
+                              <span className={`text-[9px] px-2 py-0.5 rounded-md border font-bold ${info.badgeClass}`}>
+                                {info.shortLabel}
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </td>
 
                       {/* 7. İşlemler */}
@@ -1267,6 +1280,18 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                     >
                       {reasonLabel}
                     </span>
+                  </div>
+
+                  {/* Sol Alt: Aralıklı Tekrar Sayısı / Aşama Rozeti */}
+                  <div className="absolute bottom-2.5 left-2.5 z-10 pointer-events-none">
+                    {(() => {
+                      const info = getRepetitionStageInfo(item);
+                      return (
+                        <span className={`text-[9.5px] px-2 py-0.5 rounded-lg border backdrop-blur-md shadow-md flex items-center space-x-1 font-bold ${info.badgeClass}`}>
+                          <span>{info.shortLabel}</span>
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   {/* Sağ Alt: Tekrar Durumu Rozeti */}
@@ -1440,46 +1465,14 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                         </span>
                       )}
 
-                      {/* Aralıklı Tekrar Durum Rozeti (Yalnızca Fotoğraflı Sorularda) */}
-                      {item.imageUrl && (() => {
-                        const intervals = getUserRepetitionIntervals();
-                        const todayStr = getTodayDateString();
-                        const isDue = isQuestionDue(item, intervals, todayStr);
-                        const stage = item.repetitionStage ?? 0;
-                        const tomorrowStr = addDaysToDate(todayStr, 1);
-
-                        if (isDue) {
-                          return (
-                            <span className="text-[10px] px-2 py-0.5 bg-purple-500/25 text-purple-300 border border-purple-500/50 rounded-lg font-bold flex items-center space-x-1 animate-pulse">
-                              <Clock className="w-3 h-3 text-purple-400" />
-                              <span>⏳ {stage + 1}. Tekrar Zamanı Geldi</span>
-                            </span>
-                          );
-                        } else if (stage >= intervals.length) {
-                          return (
-                            <span className="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-lg font-bold flex items-center space-x-1">
-                              <span>🌟 Pekiştirildi ({stage}/{intervals.length})</span>
-                            </span>
-                          );
-                        } else if (stage > 0) {
-                          const nextReview = item.nextReviewDate || calculateNextReviewDate(item.lastReviewDate || todayStr, stage, intervals);
-                          const isTomorrow = nextReview === tomorrowStr;
-                          return (
-                            <span className="text-[10px] px-2 py-0.5 bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 rounded-lg font-bold flex items-center space-x-1">
-                              <span>🔁 {stage}. Tekrar Yapıldı {item.lastReviewResult === 'CORRECT' ? '(✅)' : '(❌)'} • {isTomorrow ? 'Yarın' : nextReview}</span>
-                            </span>
-                          );
-                        } else {
-                          // Henüz 1. tekrar yapılmadı (Beklemede)
-                          const nextReview = item.nextReviewDate || calculateNextReviewDate(item.date || todayStr, 0, intervals);
-                          const isTomorrow = nextReview === tomorrowStr;
-                          return (
-                            <span className="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 rounded-lg font-semibold flex items-center space-x-1" title={`1. Tekrar Planı: ${nextReview}`}>
-                              <Clock className="w-3 h-3 text-slate-500" />
-                              <span>1. Tekrar: {isTomorrow ? 'Yarın' : nextReview}</span>
-                            </span>
-                          );
-                        }
+                      {/* Aralıklı Tekrar Durum Rozeti (Tüm Sorularda) */}
+                      {(() => {
+                        const info = getRepetitionStageInfo(item);
+                        return (
+                          <span className={`text-[10px] px-2 py-0.5 rounded-lg border font-bold flex items-center space-x-1 shadow-sm ${info.badgeClass}`}>
+                            <span>{info.label}</span>
+                          </span>
+                        );
                       })()}
                     </div>
                     <h3 className="text-base font-extrabold text-white leading-snug tracking-tight">
