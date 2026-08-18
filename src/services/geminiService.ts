@@ -124,11 +124,18 @@ export async function sendAICoachChatMessage(
   });
 
   if (!res.ok) {
-    let errorMsg = 'Yapay zeka koç yanıtı alınamadı, lütfen daha sonra tekrar deneyiniz.';
+    let errorMsg = `Sunucu hatası (${res.status}): Yapay zeka koç yanıtı alınamadı.`;
     try {
-      const errData = await res.json();
-      if (errData && errData.error) {
-        errorMsg = errData.error;
+      const rawText = await res.text();
+      try {
+        const errData = JSON.parse(rawText);
+        if (errData && errData.error) {
+          errorMsg = errData.error;
+        }
+      } catch {
+        if (rawText && rawText.length < 200) {
+          errorMsg = rawText;
+        }
       }
     } catch {
       // Fallback

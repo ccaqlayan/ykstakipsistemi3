@@ -100,10 +100,24 @@ const RECOMMENDED_CHANNELS = [
   { subject: 'Coğrafya', channels: ['Bayram Meral', 'Yavuz Tuna', 'Coğrafyanın Kodları'] }
 ];
 
-const formatDuration = (totalMinutes: number): string => {
-  if (!totalMinutes || totalMinutes <= 0) return '0 dk';
-  const hours = Math.floor(totalMinutes / 60);
-  const mins = Math.round(totalMinutes % 60);
+export const getVideoItemDuration = (vid: YouTubeVideoItem): number => {
+  if (Array.isArray(vid.playlistVideos) && vid.playlistVideos.length > 0) {
+    const total = vid.playlistVideos.reduce((acc, sub) => acc + (Number(sub.durationMinutes) || 0), 0);
+    if (total > 0) return total;
+  }
+  if (vid.durationMinutes && Number(vid.durationMinutes) > 0) {
+    return Number(vid.durationMinutes);
+  }
+  const parsed = parseInt(String((vid as any).duration || (vid as any).minutes || ''), 10);
+  if (!isNaN(parsed) && parsed > 0) return parsed;
+  return 25;
+};
+
+export const formatDuration = (totalMinutes: any): string => {
+  const num = typeof totalMinutes === 'number' ? totalMinutes : parseInt(String(totalMinutes || ''), 10);
+  if (!num || isNaN(num) || num <= 0) return '25 dk';
+  const hours = Math.floor(num / 60);
+  const mins = Math.round(num % 60);
   if (hours > 0) {
     if (mins > 0) {
       return `${hours}sa ${mins}dk`;
@@ -607,15 +621,14 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
     }
   };
 
-  const isPlaylistItem = (v: YouTubeVideoItem) => {
-    if (v.playlistVideos && v.playlistVideos.length === 1) {
-      return false;
+  const isPlaylistItem = (v: YouTubeVideoItem): boolean => {
+    if (Array.isArray(v.playlistVideos) && v.playlistVideos.length > 1) {
+      return true;
     }
-    return Boolean(
-      v.isPlaylist || 
-      (v.playlistVideos && v.playlistVideos.length > 1) || 
-      (v.playlistTitle && v.playlistTitle.trim().length > 0)
-    );
+    if (v.isPlaylist && Array.isArray(v.playlistVideos) && v.playlistVideos.length > 0) {
+      return true;
+    }
+    return false;
   };
 
   // Aggregated KPI Stats
@@ -1142,7 +1155,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                           ) : (
                             <>
                               <Clock className="w-3 h-3 text-red-400" />
-                              <span>{vid.durationMinutes && vid.durationMinutes > 0 ? formatDuration(vid.durationMinutes) : (totalDuration > 0 ? formatDuration(totalDuration) : '25 dk')}</span>
+                              <span>{formatDuration(getVideoItemDuration(vid))}</span>
                             </>
                           )}
                         </div>
@@ -1183,7 +1196,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                             ) : (
                               <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
                                 <Clock className="w-3 h-3 text-red-400 inline" />
-                                <span>{vid.durationMinutes && vid.durationMinutes > 0 ? formatDuration(vid.durationMinutes) : (totalDuration > 0 ? formatDuration(totalDuration) : '25 dk')}</span>
+                                <span>{formatDuration(getVideoItemDuration(vid))}</span>
                               </span>
                             )}
                           </div>
@@ -1409,7 +1422,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                             ) : (
                               <>
                                 <Clock className="w-3 h-3 text-red-400" />
-                                <span>{vid.durationMinutes && vid.durationMinutes > 0 ? formatDuration(vid.durationMinutes) : (totalDuration > 0 ? formatDuration(totalDuration) : '25 dk')}</span>
+                                <span>{formatDuration(getVideoItemDuration(vid))}</span>
                               </>
                             )}
                           </div>
