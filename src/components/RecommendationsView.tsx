@@ -943,7 +943,11 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
           >
             <BookOpen className="w-4 h-4" />
             <span>Kaynak Kitap Önerileri</span>
-            <span className="text-[10px] bg-indigo-950/80 text-indigo-200 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono font-bold">
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold border transition-all ${
+              activeTab === 'books'
+                ? 'bg-white/20 text-white border-white/30'
+                : 'bg-slate-800 text-slate-200 border-slate-700'
+            }`}>
               {allBooks.length}
             </span>
           </button>
@@ -961,7 +965,11 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
           >
             <Youtube className="w-4 h-4" />
             <span>YouTube Kanalları</span>
-            <span className="text-[10px] bg-red-950/80 text-red-200 border border-red-500/30 px-2 py-0.5 rounded-full font-mono font-bold">
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold border transition-all ${
+              activeTab === 'youtube'
+                ? 'bg-white/20 text-white border-white/30'
+                : 'bg-slate-800 text-slate-200 border-slate-700'
+            }`}>
               {allChannels.length}
             </span>
           </button>
@@ -1094,8 +1102,8 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                     <span className="shrink-0 text-sm">{sub.emoji}</span>
                     <span className="truncate">{sub.label}</span>
                   </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono shrink-0 font-bold ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-900 text-slate-400 border border-slate-800'
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono shrink-0 font-bold border transition-all ${
+                    isSelected ? 'bg-white/25 text-white border-white/30' : 'bg-slate-800 text-slate-200 border-slate-700'
                   }`}>
                     {subCount}
                   </span>
