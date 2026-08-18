@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   AlertTriangle, 
   BookOpen, 
@@ -23,7 +23,13 @@ import {
   Clock,
   Play,
   Camera,
-  Calendar
+  Calendar,
+  Folder,
+  FolderOpen,
+  Table,
+  Layers,
+  LayoutGrid,
+  Check
 } from 'lucide-react';
 import { TopicErrorItem, BranchExam, ResourceItem, GeneralMockExam, UserAccount } from '../../types';
 import { 
@@ -35,6 +41,31 @@ import {
   addDaysToDate
 } from '../../services/spacedRepetition';
 import { formatDisplayDate } from '../../utils/dateUtils';
+
+const SUBJECT_COLORS: Record<string, string> = {
+  'TYT Türkçe': '#3b82f6',
+  'TYT Matematik': '#10b981',
+  'TYT Geometri': '#f97316',
+  'TYT Fizik': '#ef4444',
+  'TYT Kimya': '#06b6d4',
+  'TYT Biyoloji': '#84cc16',
+  'TYT Tarih': '#b45309',
+  'TYT Coğrafya': '#0284c7',
+  'TYT Felsefe': '#64748b',
+  'TYT Din Kültürü': '#14b8a6',
+  'Paragraf': '#ec4899',
+  'AYT Matematik': '#6366f1',
+  'AYT Geometri': '#eab308',
+  'AYT Fizik': '#dc2626',
+  'AYT Kimya': '#0d9488',
+  'AYT Biyoloji': '#22c55e',
+  'AYT Edebiyat': '#f43f5e',
+  'AYT Tarih-1': '#8b5cf6',
+  'AYT Tarih-2': '#a855f7',
+  'AYT Coğrafya-1': '#0284c7',
+  'AYT Coğrafya-2': '#0284c7',
+  'AYT Felsefe Grubu': '#d946ef',
+};
 
 interface BranchErrorsTabProps {
   topicErrors: TopicErrorItem[];
@@ -110,6 +141,100 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   const [analysisErrorMsg, setAnalysisErrorMsg] = useState<string | null>(null);
   const [inlineEditingErrorId, setInlineEditingErrorId] = useState<string | null>(null);
   const [inlineNotesText, setInlineNotesText] = useState<string>('');
+
+  // 🔀 Görünüm Modu State (Liste vs Tablo)
+  const [viewMode, setViewMode] = useState<'list' | 'table'>(() => {
+    try {
+      return (localStorage.getItem('yks_error_notebook_view_mode') as 'list' | 'table') || 'list';
+    } catch {
+      return 'list';
+    }
+  });
+
+  const handleSetViewMode = (mode: 'list' | 'table') => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('yks_error_notebook_view_mode', mode);
+    } catch {}
+  };
+
+  // 📁 Ders Klasörleri Hesaplama (Subject Folders Data)
+  const subjectFolders = useMemo(() => {
+    const subSet = Array.from(new Set(topicErrors.map(e => e.subject)))
+      .filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+      .sort((a, b) => a.localeCompare(b, 'tr'));
+
+    const list: Array<{
+      subject: string;
+      isAll: boolean;
+      total: number;
+      pending: number;
+      revised: number;
+      rate: number;
+      color: string;
+      topTopics: Array<{ topic: string; count: number }>;
+    }> = [];
+
+    // 1. Tüm Dersler Ana Klasörü (Master Folder)
+    const allTotal = topicErrors.length;
+    const allPending = topicErrors.filter(e => !e.revised).length;
+    const allRevised = topicErrors.filter(e => e.revised).length;
+    const allRate = allTotal > 0 ? Math.round((allRevised / allTotal) * 100) : 0;
+    
+    const allTopicCounts: Record<string, number> = {};
+    topicErrors.forEach(e => {
+      const t = e.topicName?.trim() || 'Genel';
+      allTopicCounts[t] = (allTopicCounts[t] || 0) + 1;
+    });
+    const allTopTopics = Object.entries(allTopicCounts)
+      .map(([topic, count]) => ({ topic, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3);
+
+    list.push({
+      subject: 'ALL',
+      isAll: true,
+      total: allTotal,
+      pending: allPending,
+      revised: allRevised,
+      rate: allRate,
+      color: '#6366f1',
+      topTopics: allTopTopics,
+    });
+
+    // 2. Her Bir Ders İçin Ayrı Klasör (Subject Folder)
+    subSet.forEach(sub => {
+      const subErrors = topicErrors.filter(e => e.subject === sub);
+      const total = subErrors.length;
+      const pending = subErrors.filter(e => !e.revised).length;
+      const revised = subErrors.filter(e => e.revised).length;
+      const rate = total > 0 ? Math.round((revised / total) * 100) : 0;
+      const color = SUBJECT_COLORS[sub] || '#8b5cf6';
+
+      const topicCounts: Record<string, number> = {};
+      subErrors.forEach(e => {
+        const t = e.topicName?.trim() || 'Genel';
+        topicCounts[t] = (topicCounts[t] || 0) + 1;
+      });
+      const topTopics = Object.entries(topicCounts)
+        .map(([topic, count]) => ({ topic, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3);
+
+      list.push({
+        subject: sub,
+        isAll: false,
+        total,
+        pending,
+        revised,
+        rate,
+        color,
+        topTopics,
+      });
+    });
+
+    return list;
+  }, [topicErrors]);
 
   const handleSaveInlineNote = (errItem: TopicErrorItem) => {
     if (!onUpdateTopicError) return;
@@ -457,11 +582,157 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
         </div>
       </div>
 
+      {/* ── 📁 DERS KLASÖRLERİ (INTERACTIVE FOLDER BROWSER) ── */}
+      {topicErrors.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="p-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                <Folder className="w-4 h-4" />
+              </div>
+              <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <span>Ders Klasörleri</span>
+                <span className="text-[10px] font-mono font-bold text-indigo-300 bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded-full">
+                  {subjectFolders.length > 1 ? `${subjectFolders.length - 1} Ders Klasörü` : '1 Klasör'}
+                </span>
+              </h3>
+            </div>
+            <span className="text-[11px] text-slate-400 hidden sm:inline font-medium">
+              Ders klasörüne tıklayarak o derse ait hataları hızlıca inceleyin
+            </span>
+          </div>
+
+          {/* Horizontal scrollable folder shelf */}
+          <div className="flex items-stretch gap-3.5 overflow-x-auto pb-2.5 pt-1 scrollbar-none snap-x -mx-1 px-1">
+            {subjectFolders.map((folder) => {
+              const isSelected = (folder.isAll && (filterSubject === 'ALL' || !filterSubject)) || (!folder.isAll && filterSubject === folder.subject);
+              const folderColor = folder.color;
+
+              return (
+                <div
+                  key={folder.subject}
+                  onClick={() => {
+                    setFilterSubject(folder.isAll ? 'ALL' : folder.subject);
+                    setFilterExamId(null);
+                  }}
+                  className={`min-w-[240px] sm:min-w-[270px] max-w-[290px] rounded-3xl p-4 transition-all duration-300 cursor-pointer snap-start relative overflow-hidden flex flex-col justify-between select-none group border ${
+                    isSelected
+                      ? 'bg-slate-900/95 shadow-2xl scale-[1.02]'
+                      : 'bg-slate-900/70 hover:bg-slate-900/90 border-slate-800 hover:border-slate-700 shadow-lg hover:scale-[1.01]'
+                  }`}
+                  style={{
+                    borderColor: isSelected ? folderColor : undefined,
+                    boxShadow: isSelected ? `0 10px 30px -10px ${folderColor}50` : undefined,
+                  }}
+                >
+                  {/* Top Glowing Ambient Light */}
+                  {isSelected && (
+                    <div
+                      className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-25 pointer-events-none"
+                      style={{ backgroundColor: folderColor }}
+                    />
+                  )}
+
+                  <div>
+                    {/* Folder Tab Header */}
+                    <div className="flex items-center justify-between pb-2.5 border-b border-white/5">
+                      <div className="flex items-center space-x-2.5 min-w-0">
+                        <div
+                          className="w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 border transition-all duration-300 shadow-sm"
+                          style={{
+                            backgroundColor: `${folderColor}20`,
+                            color: folderColor,
+                            borderColor: `${folderColor}40`,
+                          }}
+                        >
+                          {isSelected ? (
+                            <FolderOpen className="w-5 h-5 animate-pulse" />
+                          ) : (
+                            <Folder className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-xs font-extrabold text-white truncate block">
+                            {folder.isAll ? '🗂️ Tüm Dersler (Arşiv)' : folder.subject}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {folder.total} Hata Kaydı
+                          </span>
+                        </div>
+                      </div>
+
+                      {isSelected && (
+                        <span
+                          className="text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider border shrink-0 animate-fade-in"
+                          style={{
+                            backgroundColor: `${folderColor}25`,
+                            color: folderColor,
+                            borderColor: `${folderColor}50`,
+                          }}
+                        >
+                          Seçili
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Folder Metrics & Progress */}
+                    <div className="mt-3 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-mono">
+                        <span className="text-slate-300 flex items-center gap-1.5 font-semibold">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                          <span>{folder.pending} Bekliyor</span>
+                        </span>
+                        <span className="text-slate-300 flex items-center gap-1.5 font-semibold">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                          <span>%{folder.rate} Pekiştirildi</span>
+                        </span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="w-full bg-slate-950/80 h-2 rounded-full overflow-hidden border border-white/5 p-0.5">
+                        <div
+                          className="h-full rounded-full transition-all duration-500 shadow-sm"
+                          style={{
+                            width: `${folder.rate}%`,
+                            backgroundColor: folderColor,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 🔥 En Çok Hata Yapılan Alt Konular (Mini Chips) */}
+                  {folder.topTopics.length > 0 && (
+                    <div className="mt-3 pt-2.5 border-t border-white/5 space-y-1.5">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-amber-400" />
+                        <span>En Çok Hata:</span>
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {folder.topTopics.map((t, idx) => (
+                          <span
+                            key={idx}
+                            className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-950/90 text-slate-300 border border-white/10 font-medium truncate max-w-[170px]"
+                            title={`${t.topic}: ${t.count} Soru`}
+                          >
+                            {t.topic}: <strong className="text-rose-400 font-bold font-mono">{t.count}</strong>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* ── FILTER & SORT HUB ── */}
       <div className="bg-slate-900 p-5 rounded-3xl border border-slate-800 shadow-xl space-y-4">
         
-        {/* Top Line: Status Filter Pills */}
-        <div className="space-y-3">
+        {/* Top Line: Status Filter Pills + View Mode Toggle */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center space-x-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 w-fit overflow-x-auto">
             <button
               type="button"
@@ -498,13 +769,43 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
             </button>
           </div>
 
-          {/* Info Tip Note (Placed under status tabs) */}
-          <div className="flex items-center space-x-2 text-[11px] text-slate-400 bg-slate-950/70 border border-slate-800/80 px-3.5 py-2 rounded-2xl w-full">
-            <Info className="w-4 h-4 text-indigo-400 shrink-0" />
-            <span>
-              <strong>Hızlı Filtreleme:</strong> Kartlardaki <span className="text-emerald-300 font-bold">📖 Kitap</span> veya <span className="text-indigo-300 font-bold">🎯 Deneme</span> simgesine tıklayarak yalnızca o kaynağa ait yanlışlarınızı filtreleyebilirsiniz.
-            </span>
+          {/* 🔀 Görünüm Değiştirici Switch (Liste vs Tablo) */}
+          <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800 shadow-inner shrink-0 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => handleSetViewMode('list')}
+              className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                viewMode === 'list'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
+              }`}
+              title="Zengin Kart Liste Görünümü"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Liste</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetViewMode('table')}
+              className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
+              }`}
+              title="Kompakt Veri Tablosu Görünümü"
+            >
+              <Table className="w-3.5 h-3.5" />
+              <span>Tablo</span>
+            </button>
           </div>
+        </div>
+
+        {/* Info Tip Note (Placed under status tabs) */}
+        <div className="flex items-center space-x-2 text-[11px] text-slate-400 bg-slate-950/70 border border-slate-800/80 px-3.5 py-2 rounded-2xl w-full">
+          <Info className="w-4 h-4 text-indigo-400 shrink-0" />
+          <span>
+            <strong>Hızlı Filtreleme:</strong> Kartlardaki <span className="text-emerald-300 font-bold">📖 Kitap</span> veya <span className="text-indigo-300 font-bold">🎯 Deneme</span> simgesine tıklayarak yalnızca o kaynağa ait yanlışlarınızı filtreleyebilirsiniz.
+          </span>
         </div>
 
         {/* Bottom Line: Select Dropdowns (Ders, Eşleşme, Sırala Yanyana) */}
@@ -631,7 +932,237 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
             <span>+ İlk Hata Kaydını Ekle</span>
           </button>
         </div>
+      ) : viewMode === 'table' ? (
+        /* ── 📊 TABLO GÖRÜNÜMÜ (DATA GRID) ── */
+        <div className="bg-slate-900/90 border border-slate-800 rounded-3xl shadow-xl backdrop-blur-md overflow-hidden animate-fade-in">
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left text-xs text-slate-300 min-w-[880px]">
+              <thead className="bg-slate-950/90 text-slate-400 uppercase text-[10px] font-black tracking-wider border-b border-slate-800">
+                <tr>
+                  <th scope="col" className="py-4 px-4 w-16 text-center">Görsel</th>
+                  <th scope="col" className="py-4 px-4 min-w-[220px]">Ders & Konu</th>
+                  <th scope="col" className="py-4 px-4 min-w-[160px]">Kaynak / Yayın</th>
+                  <th scope="col" className="py-4 px-4 min-w-[140px]">Hata Sebebi</th>
+                  <th scope="col" className="py-4 px-4 min-w-[130px]">Öncelik & Tarih</th>
+                  <th scope="col" className="py-4 px-4 text-center min-w-[130px]">Tekrar Durumu</th>
+                  <th scope="col" className="py-4 px-4 text-right min-w-[160px]">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {filteredErrors.map((item) => {
+                  const isRevised = !!item.revised;
+                  const reasonColor = ERROR_REASON_COLORS[item.errorReason] || '#ef4444';
+                  const reasonLabel = ERROR_REASON_LABELS[item.errorReason] || item.errorReason;
+                  const isFading = !!fadingOutIds[item.id];
+                  const subColor = SUBJECT_COLORS[item.subject] || '#6366f1';
+
+                  return (
+                    <tr
+                      key={item.id}
+                      className={`hover:bg-indigo-500/5 transition-colors group ${
+                        isRevised ? 'bg-emerald-950/10' : ''
+                      } ${isFading ? 'opacity-30 filter blur-[1px]' : ''}`}
+                    >
+                      {/* 1. Görsel */}
+                      <td className="py-3.5 px-4 text-center">
+                        {item.imageUrl ? (
+                          <div
+                            onClick={() => openImagePreview(item.imageUrl!, `${item.subject} - ${item.topicName}`)}
+                            className="w-11 h-11 rounded-2xl overflow-hidden border border-slate-700/80 bg-slate-950 mx-auto cursor-pointer relative group/img shadow-md hover:border-indigo-400 transition-all hover:scale-110"
+                            title="Büyük görseli görüntüle"
+                          >
+                            <img
+                              src={item.imageUrl}
+                              alt={item.topicName}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-slate-950/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                              <Maximize2 className="w-3.5 h-3.5 text-white" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => openAddErrorModal(item)}
+                            className="w-11 h-11 rounded-2xl border border-dashed border-slate-800 hover:border-indigo-500/50 bg-slate-950/60 mx-auto flex items-center justify-center text-slate-500 hover:text-indigo-400 cursor-pointer transition-colors shadow-inner"
+                            title="Fotoğraf ekle"
+                          >
+                            <Camera className="w-4 h-4" />
+                          </div>
+                        )}
+                      </td>
+
+                      {/* 2. Ders & Konu */}
+                      <td className="py-3.5 px-4">
+                        <div className="space-y-1 min-w-0">
+                          <span
+                            className="text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider inline-block border"
+                            style={{
+                              backgroundColor: `${subColor}15`,
+                              color: subColor,
+                              borderColor: `${subColor}35`,
+                            }}
+                          >
+                            {item.subject}
+                          </span>
+                          <p className="font-extrabold text-white text-xs leading-snug">
+                            {item.topicName}
+                          </p>
+                          {item.solutionNotes && (
+                            <p className="text-[11px] text-slate-400 line-clamp-1 italic">
+                              "{item.solutionNotes}"
+                            </p>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* 3. Kaynak / Yayın */}
+                      <td className="py-3.5 px-4">
+                        {item.publisher ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="font-semibold text-slate-200 text-xs flex items-center gap-1.5">
+                              {isBookMatch(item) ? (
+                                <BookOpen className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              ) : isExamMatch(item) ? (
+                                <Target className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                              ) : null}
+                              <span className="truncate max-w-[180px]">{item.publisher}</span>
+                            </span>
+                            {(isBookMatch(item) || isExamMatch(item)) && (
+                              <button
+                                type="button"
+                                onClick={() => setFilterExamId(item.examId || item.publisher || null)}
+                                className="text-[9.5px] text-indigo-400 hover:text-indigo-300 font-bold underline text-left cursor-pointer"
+                              >
+                                Bu Kaynağı Filtrele
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-500 text-[11px] italic">-</span>
+                        )}
+                      </td>
+
+                      {/* 4. Hata Sebebi */}
+                      <td className="py-3.5 px-4">
+                        <span
+                          className="text-[10px] px-2.5 py-1 rounded-xl font-bold uppercase tracking-wider inline-block shadow-sm"
+                          style={{
+                            backgroundColor: `${reasonColor}20`,
+                            color: reasonColor,
+                            border: `1px solid ${reasonColor}40`,
+                          }}
+                        >
+                          {reasonLabel}
+                        </span>
+                      </td>
+
+                      {/* 5. Öncelik & Tarih */}
+                      <td className="py-3.5 px-4">
+                        <div className="space-y-1.5">
+                          {item.priority !== undefined ? (
+                            renderPriorityBar(item.priority)
+                          ) : (
+                            <span className="text-slate-500 text-[10px] font-mono">-</span>
+                          )}
+                          {item.date && (
+                            <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-slate-500 shrink-0" />
+                              <span>{formatDisplayDate(item.date)}</span>
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* 6. Tekrar Durumu */}
+                      <td className="py-3.5 px-4 text-center">
+                        <button
+                          type="button"
+                          disabled={revisingIds[item.id]}
+                          onClick={() => handleToggleErrorRevision(item.id)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all inline-flex items-center space-x-1.5 cursor-pointer shadow-sm ${
+                            isRevised
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
+                              : 'bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/25'
+                          }`}
+                        >
+                          {isRevised ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Pekiştirildi</span>
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3.5 h-3.5 text-rose-400" />
+                              <span>Bekliyor</span>
+                            </>
+                          )}
+                        </button>
+                      </td>
+
+                      {/* 7. İşlemler */}
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end space-x-1.5">
+                          {item.imageUrl && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenSolveModal(item)}
+                                className="p-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 rounded-xl transition-all cursor-pointer shadow-sm hover:scale-105"
+                                title="Yapay Zeka Çözüm Rehberi"
+                              >
+                                <Brain className="w-3.5 h-3.5 text-purple-400" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenSimilarModal(item)}
+                                className="p-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 rounded-xl transition-all cursor-pointer shadow-sm hover:scale-105"
+                                title="Benzer Soru Üret"
+                              >
+                                <HelpCircle className="w-3.5 h-3.5 text-cyan-400" />
+                              </button>
+                            </>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveAiErrorItem(item);
+                              setAnalysisErrorMsg(null);
+                            }}
+                            className="p-2 bg-slate-800 hover:bg-purple-950/40 text-slate-300 hover:text-purple-300 border border-slate-700/80 hover:border-purple-500/40 rounded-xl transition-all cursor-pointer shadow-sm hover:scale-105"
+                            title="Hata Analizi"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => openAddErrorModal(item)}
+                            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 rounded-xl transition-all cursor-pointer shadow-sm hover:scale-105"
+                            title="Düzenle"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setDeletingItem({ type: 'error', id: item.id, title: `${item.subject} - ${item.topicName}` })}
+                            className="p-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl transition-all cursor-pointer shadow-sm hover:scale-105"
+                            title="Sil"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
+        /* ── 📑 LİSTE GÖRÜNÜMÜ (ZENGİN KART AKIŞI) ── */
         <div className="space-y-4">
           {filteredErrors.map((item) => {
             const isRevised = !!item.revised;
