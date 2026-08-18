@@ -15,6 +15,8 @@ import {
   anomalyLimitTRY,
   aiFeaturesEnabled,
   setAiFeaturesEnabled,
+  aiCoachChatEnabled,
+  setAiCoachChatEnabled,
   setAnomalyLimitTRY,
   setCoachDataSettings,
   setFeatureModelConfig,
@@ -428,14 +430,41 @@ Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) derece derece hazırlık
     }
 
     prompt += `
-Lütfen bu verileri detaylıca analiz et ve öğrenciye özel Türkçe YKS Koçluk Raporu üret.
+Lütfen bu verileri detaylıca analiz et ve öğrenciye özel Türkçe YKS Koçluk Raporu ve Haftalık Çalışma Reçetesi üret.
 Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
 {
   "generalEvaluation": "Öğrencinin genel performans ve gidişat değerlendirmesi (2-3 cümle)",
   "strengths": ["Güçlü olunan 3 alan veya ders"],
   "weakAreas": ["Acil geliştirilmesi gereken 2-3 zayıf alan veya soru türü"],
   "actionPlan": ["Bu hafta için 3-4 somut, uygulanabilir ve net odaklı aksiyon önerisi"],
-  "motivationalQuote": "İlham verici, güçlü bir YKS motivasyon sözü"
+  "motivationalQuote": "İlham verici, güçlü bir YKS motivasyon sözü",
+  "weeklyPrescription": [
+    {
+      "subject": "Ders Adı (Örn: Matematik, Fizik, Türkçe, Biyoloji vb.)",
+      "targetQuestions": 200,
+      "focusTopics": ["Konu 1", "Konu 2"],
+      "actionType": "question_solving",
+      "description": "Bu hafta bu derste neye odaklanmalı, kaç soru çözmeli, hangi taktik uygulanmalı?",
+      "priority": "high"
+    }
+  ],
+  "targetGapAnalysis": {
+    "currentTytNet": 75.5,
+    "targetTytNet": 95.0,
+    "tytGap": 19.5,
+    "currentAytNet": 45.0,
+    "targetAytNet": 65.0,
+    "aytGap": 20.0,
+    "highYieldTopics": [
+      {
+        "subject": "Ders Adı",
+        "topic": "Konu Adı",
+        "estimatedNetGain": 2.5,
+        "examQuestionCount": 3,
+        "reason": "ÖSYM'de düzenli soru çıkan ve öğrencinin hata defterinde eksik görünen bu konunun toparlanması en hızlı net getirecektir."
+      }
+    ]
+  }
 }
     `;
 
@@ -551,6 +580,125 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
   } catch (err: any) {
     console.error('Unified Class AI Coach error:', err);
     res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay Zeka sınıf koçluk tavsiyesi üretilemedi.') });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// INTERACTIVE AI COACH MENTOR CHAT ENDPOINT
+// ─────────────────────────────────────────────────────────────
+router.post('/coach-chat', async (req, res) => {
+  if (!isAiEnabledOrRespond(res)) return;
+  if (!aiCoachChatEnabled) {
+    return res.status(403).json({ error: 'Yapay Zeka Koç Canlı Sohbet özelliği sistem yöneticisi tarafından geçici olarak devre dışı bırakılmıştır.' });
+  }
+  if (!hasAnyAiApiKey()) {
+    return res.status(400).json({ error: 'Yapay zeka API anahtarı tanımlı değil. Lütfen Sistem Yönetimi > Yapay Zeka sayfasından bir API anahtarı tanımlayınız.' });
+  }
+
+  const {
+    message,
+    chatHistory = [],
+    profile,
+    questionLogs,
+    generalMocks,
+    topicErrors,
+    routines,
+    branchExams
+  } = req.body;
+
+  if (!message || !message.trim()) {
+    return res.status(400).json({ error: 'Mesaj boş olamaz.' });
+  }
+
+  try {
+    let studentContext = `
+ÖĞRENCİ PROFİLİ & HEDEFLERİ:
+- İsim: ${profile?.name || 'Öğrenci'}
+- Alan: ${profile?.targetField || 'SAY'}
+- Hedef: ${profile?.targetUniversity || ''} ${profile?.targetDepartment || ''} (Hedef Sıralama: ${profile?.targetRank || 5000})
+- Hedef Netler: TYT ${profile?.targetTYTNet || 100} Net, AYT ${profile?.targetAYTNet || 70} Net
+`;
+
+    if (generalMocks && generalMocks.length > 0) {
+      const recentMocks = generalMocks.slice(-3);
+      studentContext += `\nSON GENEL DENEMELER:\n${JSON.stringify(recentMocks.map((m: any) => ({
+        name: m.examName,
+        tytTotalNet: m.tyt?.totalNet,
+        aytTotalNet: m.ayt?.totalNet,
+        date: m.date
+      })))}\n`;
+    }
+
+    if (topicErrors && topicErrors.length > 0) {
+      const unrevised = topicErrors.filter((e: any) => !e.revised).slice(-6);
+      studentContext += `\nHATA DEFTERİNDEKİ KRİTİK EKSİK KONULAR:\n${JSON.stringify(unrevised.map((e: any) => ({
+        subject: e.subject,
+        topic: e.topicName || e.topic,
+        errorReason: e.errorReason
+      })))}\n`;
+    }
+
+    if (questionLogs && questionLogs.length > 0) {
+      const totalSolved = questionLogs.reduce((acc: number, q: any) => acc + (q.solvedCount || 0), 0);
+      studentContext += `\nTOPLAM ÇÖZÜLEN SORU SAYISI: ${totalSolved}\n`;
+    }
+
+    // Format chat history
+    let formattedHistory = '';
+    if (Array.isArray(chatHistory) && chatHistory.length > 0) {
+      formattedHistory = '\nÖNCEKİ SOHBET GEÇMİŞİ:\n' + chatHistory.slice(-6).map((msg: any) => {
+        return `${msg.sender === 'user' ? 'Öğrenci' : 'YKS Koçu'}: ${msg.text}`;
+      }).join('\n') + '\n';
+    }
+
+    const prompt = `
+Sen Türkiye YKS (TYT ve AYT) sınavına hazırlanan öğrencilere rehberlik eden, cana yakın, son derece motive edici, analitik, taktiksel ve tecrübeli bir Yapay Zeka YKS Öğrenci Koçusun.
+
+${studentContext}
+${formattedHistory}
+ÖĞRENCİNİN YENİ MESAJI:
+"${message}"
+
+TALİMATLAR:
+1. Öğrenciye doğrudan bir YKS koçu olarak samimi, enerjik, yapıcı ve profesyonel bir dille hitap et (Örn: "Harika bir soru!", "Hemen stratejini belirleyelim").
+2. Öğrencinin profilindeki hedef üniversitesini, son deneme netlerini ve eksik konularını göz önünde bulundurarak nokta atışı taktikler ve öneriler sun.
+3. Çok uzun paragraflar yerine net maddeler, uygulanabilir çalışma önerileri ve pratik stratejiler kullan.
+4. Türkçe yanıt ver. Cevabın doğrudan öğrenciye mesaj olarak dönecektir (JSON değil, zengin Markdown formatında metin).
+    `;
+
+    const targetModel = featureModelConfig['AI_COACH_CHAT'] || featureModelConfig['AI_COACH_STUDENT'] || 'SYSTEM_DEFAULT';
+    const unifiedResult = await executeAiUnifiedRequest({
+      prompt,
+      requireJson: false,
+      featureKey: 'AI_COACH_CHAT',
+      modelOverride: targetModel
+    });
+
+    const { userName, userRole, userId } = resolveUserInfo(req.body);
+
+    const usageRecord = recordApiUsage({
+      featureKey: 'AI_COACH_CHAT',
+      featureName: 'Yapay Zeka Koç Canlı Sohbet',
+      category: 'AI_COACH',
+      provider: unifiedResult.providerUsed,
+      modelUsed: unifiedResult.modelUsed,
+      promptTokens: unifiedResult.promptTokens || Math.ceil(prompt.length / 4),
+      candidatesTokens: unifiedResult.candidatesTokens || Math.ceil(unifiedResult.text.length / 4),
+      promptText: prompt,
+      responseText: unifiedResult.text,
+      userId,
+      userName,
+      userRole
+    });
+
+    res.json({
+      success: true,
+      reply: unifiedResult.text,
+      aiUsage: usageRecord
+    });
+  } catch (err: any) {
+    console.error('AI Coach Chat error:', err);
+    res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay Zeka Koç yanıtı oluşturulamadı.') });
   }
 });
 
@@ -1280,6 +1428,7 @@ router.get('/model-settings', async (req, res) => {
   res.json({
     success: true,
     aiFeaturesEnabled,
+    aiCoachChatEnabled,
     savePromptLogs,
     config: featureModelConfig,
     anomalyLimitTRY,
@@ -1298,6 +1447,7 @@ router.get('/model-settings', async (req, res) => {
     availableModels: liveModels,
     features: [
       { key: 'AI_COACH_STUDENT', name: 'Öğrenci Bireysel Yapay Zeka Koç Tavsiyesi', category: 'Yapay Zeka Koçluğu', description: 'Öğrencinin haftalık çalışma tavsiyelerini ve net analizlerini hazırlar.' },
+      { key: 'AI_COACH_CHAT', name: 'Yapay Zeka Koç Canlı Sohbet', category: 'Yapay Zeka Koçluğu', description: 'Öğrencinin YKS koçu ile interaktif ve anlık rehberlik sohbeti yapmasını sağlar.' },
       { key: 'AI_COACH_CLASS', name: 'Sınıf / Okul Genel Koç Analizi', category: 'Yapay Zeka Koçluğu', description: 'Okul rehber öğretmeni için sınıf geneli etüt ve koçluk raporları üretir.' },
       { key: 'SOLVE_QUESTION', name: 'Hata Defteri Soru Çözümü', category: 'Soru Analiz Engine', description: 'Soru fotoğraflarından adım adım detaylı matematik/fen/türkçe çözümü sunar.' },
       { key: 'QUESTION_ANALYSIS', name: 'Detaylı Soru & Çeldirici Analizi', category: 'Soru Analiz Engine', description: 'Kazanım, zorluk derecesi, süre ve çeldirici şık analiz tablosu üretir.' },
@@ -1338,6 +1488,7 @@ router.post('/model-settings', async (req, res) => {
   const { 
     config, 
     aiFeaturesEnabled: newEnabledState, 
+    aiCoachChatEnabled: newCoachChatEnabled,
     savePromptLogs: newSavePromptLogs, 
     anomalyLimitTRY: newAnomalyLimit, 
     coachDataSettings: newCoachDataSettings, 
@@ -1375,6 +1526,9 @@ router.post('/model-settings', async (req, res) => {
 
   if (typeof newEnabledState === 'boolean') {
     setAiFeaturesEnabled(newEnabledState);
+  }
+  if (typeof newCoachChatEnabled === 'boolean') {
+    setAiCoachChatEnabled(newCoachChatEnabled);
   }
   if (typeof newSavePromptLogs === 'boolean') {
     setSavePromptLogs(newSavePromptLogs);

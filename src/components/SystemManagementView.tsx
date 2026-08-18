@@ -531,6 +531,34 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
     }
   };
 
+  const handleToggleAiCoachChat = async (enabled: boolean) => {
+    if (!modelSettings) return;
+    setModelSettings({ ...modelSettings, aiCoachChatEnabled: enabled });
+
+    setSavingModels(true);
+    setModelSaveMessage(null);
+    try {
+      const res = await fetch('/api/gemini/model-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aiCoachChatEnabled: enabled })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setModelSaveMessage(
+          enabled 
+            ? 'Yapay Zeka Koç Canlı Sohbet özelliği başarıyla AKTİF EDİLDİ.' 
+            : 'Yapay Zeka Koç Canlı Sohbet özelliği başarıyla KAPATILDI.'
+        );
+        setTimeout(() => setModelSaveMessage(null), 4000);
+      }
+    } catch (err) {
+      console.error('Failed to toggle AI Coach chat:', err);
+    } finally {
+      setSavingModels(false);
+    }
+  };
+
   const [isSavingApiKey, setIsSavingApiKey] = useState(false);
   const [apiKeySaveMessage, setApiKeySaveMessage] = useState<{ text: string; isError?: boolean } | null>(null);
 
@@ -925,6 +953,7 @@ export const SystemManagementView: React.FC<SystemManagementViewProps> = ({
           isSavingLimit={isSavingLimit}
           handleSaveAnomalyLimit={handleSaveAnomalyLimit}
           handleToggleAiFeatures={handleToggleAiFeatures}
+          handleToggleAiCoachChat={handleToggleAiCoachChat}
           savingModels={savingModels}
           modelSaveMessage={modelSaveMessage}
           showModelSelection={showModelSelection}

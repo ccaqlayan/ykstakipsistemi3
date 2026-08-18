@@ -403,6 +403,40 @@ export interface YouTubeVideoItem {
   createdAt?: string;
 }
 
+export interface AICoachPrescriptionItem {
+  subject: string;
+  targetQuestions: number;
+  focusTopics: string[];
+  actionType?: 'question_solving' | 'topic_review' | 'mock_exam' | 'routine';
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+export interface AICoachHighYieldTopic {
+  subject: string;
+  topic: string;
+  estimatedNetGain: number;
+  examQuestionCount?: number;
+  reason: string;
+}
+
+export interface AICoachTargetGap {
+  currentTytNet: number;
+  targetTytNet: number;
+  tytGap: number;
+  currentAytNet: number;
+  targetAytNet: number;
+  aytGap: number;
+  highYieldTopics: AICoachHighYieldTopic[];
+}
+
+export interface AICoachChatMessage {
+  id: string;
+  sender: 'user' | 'ai';
+  text: string;
+  timestamp: string;
+}
+
 export interface AICoachAdvice {
   id?: string;
   timestamp: string;
@@ -411,6 +445,8 @@ export interface AICoachAdvice {
   weakAreas: string[];
   actionPlan: string[];
   motivationalQuote: string;
+  weeklyPrescription?: AICoachPrescriptionItem[];
+  targetGapAnalysis?: AICoachTargetGap;
 }
 
 export interface ClassAICoachAdvice {
@@ -426,6 +462,7 @@ export interface ClassAICoachAdvice {
   weakAreas: string[];
   actionPlan: string[];
   motivationalQuote: string;
+  weeklyPrescription?: AICoachPrescriptionItem[];
 }
 
 export interface GoogleSheetsStatus {

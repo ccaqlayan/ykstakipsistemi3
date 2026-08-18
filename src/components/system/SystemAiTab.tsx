@@ -32,6 +32,7 @@ interface SystemAiTabProps {
   isSavingLimit: boolean;
   handleSaveAnomalyLimit: () => Promise<void>;
   handleToggleAiFeatures: (enabled: boolean) => Promise<void>;
+  handleToggleAiCoachChat?: (enabled: boolean) => Promise<void>;
   savingModels: boolean;
   modelSaveMessage: string | null;
   showModelSelection: boolean;
@@ -69,6 +70,7 @@ export const SystemAiTab: React.FC<SystemAiTabProps> = ({
   isSavingLimit,
   handleSaveAnomalyLimit,
   handleToggleAiFeatures,
+  handleToggleAiCoachChat,
   savingModels,
   modelSaveMessage,
   showModelSelection,
@@ -166,6 +168,7 @@ export const SystemAiTab: React.FC<SystemAiTabProps> = ({
         <AiModelSettingsTab
           modelSettings={modelSettings}
           handleToggleAiFeatures={handleToggleAiFeatures}
+          handleToggleAiCoachChat={handleToggleAiCoachChat}
           savingModels={savingModels}
           modelSaveMessage={modelSaveMessage}
           showModelSelection={showModelSelection}

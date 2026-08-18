@@ -97,3 +97,48 @@ export async function fetchClassAICoachAdvice(
   }
   return { advice: data.advice, aiUsage: data.aiUsage };
 }
+
+export async function sendAICoachChatMessage(
+  message: string,
+  chatHistory: { sender: 'user' | 'ai'; text: string }[],
+  state: YKSDataState,
+  currentUser?: UserAccount | null
+): Promise<{ reply: string; aiUsage?: any }> {
+  const res = await fetch('/api/gemini/coach-chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message,
+      chatHistory,
+      userName: currentUser?.name || state.profile?.name || 'Öğrenci',
+      userEmail: currentUser?.email || (state.profile as any)?.email || '',
+      userRole: currentUser?.role || (state.profile as any)?.role || 'student',
+      userId: currentUser?.id || (state.profile as any)?.id || '',
+      profile: state.profile,
+      questionLogs: state.questionLogs,
+      generalMocks: state.generalMocks,
+      topicErrors: state.topicErrors,
+      routines: state.routines,
+      branchExams: state.branchExams
+    })
+  });
+
+  if (!res.ok) {
+    let errorMsg = 'Yapay zeka koç yanıtı alınamadı, lütfen daha sonra tekrar deneyiniz.';
+    try {
+      const errData = await res.json();
+      if (errData && errData.error) {
+        errorMsg = errData.error;
+      }
+    } catch {
+      // Fallback
+    }
+    throw new Error(errorMsg);
+  }
+
+  const data = await res.json();
+  if (data.error) {
+    throw new Error(data.error);
+  }
+  return { reply: data.reply, aiUsage: data.aiUsage };
+}

@@ -96,6 +96,7 @@ export type CoachDataSettingsMap = Record<string, CoachDataItemConfig>;
 export interface ModelSettingsData {
   success: boolean;
   aiFeaturesEnabled?: boolean;
+  aiCoachChatEnabled?: boolean;
   savePromptLogs?: boolean;
   config: Record<string, string>;
   availableModels: { id: string; name: string; badge: string }[];

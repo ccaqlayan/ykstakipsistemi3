@@ -63,10 +63,15 @@ export function getEffectiveProviderMode(): AiProviderMode { return aiProviderMo
 export let aiFeaturesEnabled: boolean = true;
 export function setAiFeaturesEnabled(val: boolean) { aiFeaturesEnabled = val; }
 
+// Global switch to enable or disable AI Coach interactive chat specifically
+export let aiCoachChatEnabled: boolean = true;
+export function setAiCoachChatEnabled(val: boolean) { aiCoachChatEnabled = val; }
+
 // Global configurable model mapping for each AI feature
 export let featureModelConfig: Record<string, string> = {
   AI_COACH_STUDENT: 'SYSTEM_DEFAULT',
   AI_COACH_CLASS: 'SYSTEM_DEFAULT',
+  AI_COACH_CHAT: 'SYSTEM_DEFAULT',
   SOLVE_QUESTION: 'SYSTEM_DEFAULT',
   QUESTION_ANALYSIS: 'SYSTEM_DEFAULT',
   SIMILAR_QUESTION: 'SYSTEM_DEFAULT',
@@ -157,6 +162,9 @@ export async function initFirebaseAndLogs() {
           }
           if (typeof sData.aiFeaturesEnabled === 'boolean') {
             aiFeaturesEnabled = sData.aiFeaturesEnabled;
+          }
+          if (typeof sData.aiCoachChatEnabled === 'boolean') {
+            aiCoachChatEnabled = sData.aiCoachChatEnabled;
           }
           if (typeof sData.savePromptLogs === 'boolean') {
             savePromptLogs = sData.savePromptLogs;

@@ -51,6 +51,7 @@ import { ModelSettingsData } from '../SystemTypes';
 interface AiModelSettingsTabProps {
   modelSettings: ModelSettingsData | null;
   handleToggleAiFeatures: (enabled: boolean) => Promise<void>;
+  handleToggleAiCoachChat?: (enabled: boolean) => Promise<void>;
   savingModels: boolean;
   modelSaveMessage: string | null;
   showModelSelection: boolean;
@@ -66,6 +67,7 @@ interface AiModelSettingsTabProps {
 export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
   modelSettings,
   handleToggleAiFeatures,
+  handleToggleAiCoachChat,
   savingModels,
   modelSaveMessage,
   showModelSelection,
@@ -1725,6 +1727,56 @@ export const AiModelSettingsTab: React.FC<AiModelSettingsTabProps> = ({
             <Zap className="w-4 h-4" />
             <span>{modelSettings?.aiFeaturesEnabled !== false ? 'Yapay Zeka Özelliklerini Kapat' : 'Yapay Zeka Özelliklerini Aç'}</span>
           </button>
+        </div>
+
+        {/* AI Coach Chat Specific Switch Bar */}
+        <div className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row items-center justify-between gap-4 ${
+          modelSettings?.aiCoachChatEnabled !== false
+            ? 'bg-purple-950/30 border-purple-500/40 text-purple-200'
+            : 'bg-slate-950/40 border-slate-700 text-slate-400'
+        }`}>
+          <div className="flex items-center space-x-3">
+            <div className={`p-2.5 rounded-xl border shrink-0 ${
+              modelSettings?.aiCoachChatEnabled !== false
+                ? 'bg-purple-500/20 border-purple-500/30 text-purple-400'
+                : 'bg-slate-800 border-slate-700 text-slate-500'
+            }`}>
+              <Bot className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h4 className="font-bold text-sm text-white">YKS Koç Canlı Sohbet (Interactive Mentor Chat)</h4>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase border ${
+                  modelSettings?.aiCoachChatEnabled !== false
+                    ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                    : 'bg-slate-800 text-slate-400 border-slate-700'
+                }`}>
+                  {modelSettings?.aiCoachChatEnabled !== false ? 'SOHBET AKTİF' : 'SOHBET KAPALI'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">
+                {modelSettings?.aiCoachChatEnabled !== false
+                  ? 'Öğrenciler Yapay Zeka Koçluk sayfasındaki canlı sohbet sekmesinden koçları ile anlık soru-cevap ve taktiksel rehberlik yapabilir.'
+                  : '⚠️ YKS Koç Canlı Sohbet özelliği yönetici tarafından geçici olarak kapatılmıştır (Öğrenciye bilgi mesajı gösterilir).'}
+              </p>
+            </div>
+          </div>
+
+          {handleToggleAiCoachChat && (
+            <button
+              type="button"
+              onClick={() => handleToggleAiCoachChat(modelSettings?.aiCoachChatEnabled === false ? true : false)}
+              disabled={savingModels}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 shrink-0 cursor-pointer shadow-lg ${
+                modelSettings?.aiCoachChatEnabled !== false
+                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                  : 'bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/20'
+              }`}
+            >
+              <Bot className="w-4 h-4" />
+              <span>{modelSettings?.aiCoachChatEnabled !== false ? 'Koç Sohbetini Kapat' : 'Koç Sohbetini Aç'}</span>
+            </button>
+          )}
         </div>
 
         {/* Toggle Configuration Button */}
