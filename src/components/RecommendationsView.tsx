@@ -785,7 +785,19 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
 
   const renderDifficultyBadge = (difficultyValue: number, text?: string) => {
     let colorClass = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
-    let label = text || 'Orta Seviye';
+
+    // Strip star characters and extract only clean level text (e.g. "Kolay", "Orta", etc.)
+    let cleanLabel = '';
+    if (text) {
+      cleanLabel = text.replace(/[⭐☆★*]/g, '').replace(/[()]/g, '').trim();
+    }
+    if (!cleanLabel) {
+      if (difficultyValue <= 1) cleanLabel = 'Kolay';
+      else if (difficultyValue === 2) cleanLabel = 'Kolay-Orta';
+      else if (difficultyValue === 3) cleanLabel = 'Orta';
+      else if (difficultyValue === 4) cleanLabel = 'Orta-Zor';
+      else cleanLabel = 'Zor';
+    }
 
     if (difficultyValue <= 1) {
       colorClass = 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
@@ -800,16 +812,16 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
     }
 
     return (
-      <div className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border ${colorClass}`}>
+      <div className={`inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border ${colorClass}`}>
         <div className="flex items-center space-x-0.5">
           {[1, 2, 3, 4, 5].map((star) => (
             <Star
               key={star}
-              className={`w-3 h-3 ${star <= difficultyValue ? 'fill-current' : 'opacity-20'}`}
+              className={`w-3.5 h-3.5 ${star <= difficultyValue ? 'fill-current' : 'opacity-20'}`}
             />
           ))}
         </div>
-        <span className="ml-1 text-[10px]">{label}</span>
+        <span className="text-[11px] font-bold">({cleanLabel})</span>
       </div>
     );
   };
