@@ -882,49 +882,6 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
             </div>
           )}
         </div>
-
-        {/* KPI COUNTERS BAR */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-800/80">
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5 flex items-center space-x-3 hover:border-slate-700 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-400 font-medium block">Katalogdaki Kitaplar</span>
-              <span className="text-lg font-black text-white font-mono">{allBooks.length} <span className="text-xs font-normal text-slate-500">Kitap</span></span>
-            </div>
-          </div>
-
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5 flex items-center space-x-3 hover:border-slate-700 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 shrink-0">
-              <Youtube className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-400 font-medium block">Önerilen Kanallar</span>
-              <span className="text-lg font-black text-white font-mono">{allChannels.length} <span className="text-xs font-normal text-slate-500">Kanal</span></span>
-            </div>
-          </div>
-
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5 flex items-center space-x-3 hover:border-slate-700 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
-              <Heart className="w-5 h-5 fill-rose-500/20" />
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-400 font-medium block">Favori Kitaplarım</span>
-              <span className="text-lg font-black text-white font-mono">{totalFavoriteBooks} <span className="text-xs font-normal text-slate-500">Favori</span></span>
-            </div>
-          </div>
-
-          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5 flex items-center space-x-3 hover:border-slate-700 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-              <Bookmark className="w-5 h-5 fill-emerald-500/20" />
-            </div>
-            <div>
-              <span className="text-[10px] text-slate-400 font-medium block">Takip Ettiğim</span>
-              <span className="text-lg font-black text-white font-mono">{totalFollowedBooks + totalFollowedChannels} <span className="text-xs font-normal text-slate-500">İçerik</span></span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* SEGMENT CONTROL (Top Tab Selector) */}
