@@ -176,21 +176,17 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
               )}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            <div className={`grid gap-2 ${targetField === 'DİL' || (targetField as string) === 'DIL' ? 'grid-cols-3' : 'grid-cols-3'}`}>
               {(targetField === 'DİL' || (targetField as string) === 'DIL'
                 ? [
+                    { id: 'TYT_DIL' as MockExamType, label: 'TYT + DİL', sub: 'TYT & YDT', color: 'cyan' },
                     { id: 'DIL' as MockExamType, label: 'DİL (YDT)', sub: '80 Soru', color: 'sky' },
                     { id: 'TYT' as MockExamType, label: 'TYT', sub: '120 Soru', color: 'indigo' },
-                    { id: 'TYT_DIL' as MockExamType, label: 'TYT + DİL', sub: 'TYT & YDT', color: 'cyan' },
-                    { id: 'AYT' as MockExamType, label: 'AYT', sub: '80 Soru', color: 'emerald' },
-                    { id: 'TYT_AYT' as MockExamType, label: 'TYT + AYT', sub: 'Tam YKS', color: 'purple' },
                   ]
                 : [
                     { id: 'TYT' as MockExamType, label: 'TYT', sub: '120 Soru', color: 'indigo' },
                     { id: 'AYT' as MockExamType, label: 'AYT', sub: '80 Soru', color: 'emerald' },
                     { id: 'TYT_AYT' as MockExamType, label: 'TYT + AYT', sub: 'Tam YKS', color: 'purple' },
-                    { id: 'DIL' as MockExamType, label: 'DİL (YDT)', sub: '80 Soru', color: 'sky' },
-                    { id: 'TYT_DIL' as MockExamType, label: 'TYT + DİL', sub: 'TYT & YDT', color: 'cyan' },
                   ]
               ).map(opt => {
                 const isActive = addExamType === opt.id;

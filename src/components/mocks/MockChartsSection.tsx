@@ -381,35 +381,41 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
                 {showTytLine ? <Eye className="w-3 h-3 text-indigo-400" /> : <EyeOff className="w-3 h-3 text-slate-500" />}
               </button>
 
-              <button
-                type="button"
-                onClick={() => setShowAytLine(prev => !prev)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-bold ${
-                  showAytLine
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-md shadow-emerald-950/40'
-                    : 'bg-slate-950/60 text-slate-500 border-slate-800 opacity-60 hover:opacity-100 hover:text-slate-300'
-                }`}
-                title={showAytLine ? 'AYT Net çizgisini gizle' : 'AYT Net çizgisini göster'}
-              >
-                <span className={`w-2.5 h-2.5 rounded-full ${showAytLine ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'} inline-block`} />
-                <span>AYT Net</span>
-                {showAytLine ? <Eye className="w-3 h-3 text-emerald-400" /> : <EyeOff className="w-3 h-3 text-slate-500" />}
-              </button>
+              {/* AYT Net (DİL öğrencisi olmayanlar için) */}
+              {(profile?.targetField !== 'DİL' && (profile?.targetField as string) !== 'DIL') && (
+                <button
+                  type="button"
+                  onClick={() => setShowAytLine(prev => !prev)}
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-bold ${
+                    showAytLine
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-md shadow-emerald-950/40'
+                      : 'bg-slate-950/60 text-slate-500 border-slate-800 opacity-60 hover:opacity-100 hover:text-slate-300'
+                  }`}
+                  title={showAytLine ? 'AYT Net çizgisini gizle' : 'AYT Net çizgisini göster'}
+                >
+                  <span className={`w-2.5 h-2.5 rounded-full ${showAytLine ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'} inline-block`} />
+                  <span>AYT Net</span>
+                  {showAytLine ? <Eye className="w-3 h-3 text-emerald-400" /> : <EyeOff className="w-3 h-3 text-slate-500" />}
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setShowDilLine(prev => !prev)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-bold ${
-                  showDilLine
-                    ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-md shadow-sky-950/40'
-                    : 'bg-slate-950/60 text-slate-500 border-slate-800 opacity-60 hover:opacity-100 hover:text-slate-300'
-                }`}
-                title={showDilLine ? 'DİL (YDT) Net çizgisini gizle' : 'DİL (YDT) Net çizgisini göster'}
-              >
-                <span className={`w-2.5 h-2.5 rounded-full ${showDilLine ? 'bg-sky-400 animate-pulse' : 'bg-slate-600'} inline-block`} />
-                <span>DİL Net</span>
-                {showDilLine ? <Eye className="w-3 h-3 text-sky-400" /> : <EyeOff className="w-3 h-3 text-slate-500" />}
-              </button>
+              {/* DİL Net (Sadece DİL öğrencileri için) */}
+              {(profile?.targetField === 'DİL' || (profile?.targetField as string) === 'DIL' || generalMocks.some(m => (m.ydt?.net ?? 0) > 0)) && (
+                <button
+                  type="button"
+                  onClick={() => setShowDilLine(prev => !prev)}
+                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-bold ${
+                    showDilLine
+                      ? 'bg-sky-500/20 text-sky-300 border-sky-500/50 shadow-md shadow-sky-950/40'
+                      : 'bg-slate-950/60 text-slate-500 border-slate-800 opacity-60 hover:opacity-100 hover:text-slate-300'
+                  }`}
+                  title={showDilLine ? 'DİL (YDT) Net çizgisini gizle' : 'DİL (YDT) Net çizgisini göster'}
+                >
+                  <span className={`w-2.5 h-2.5 rounded-full ${showDilLine ? 'bg-sky-400 animate-pulse' : 'bg-slate-600'} inline-block`} />
+                  <span>DİL (YDT) Net</span>
+                  {showDilLine ? <Eye className="w-3 h-3 text-sky-400" /> : <EyeOff className="w-3 h-3 text-slate-500" />}
+                </button>
+              )}
             </div>
           </div>
 

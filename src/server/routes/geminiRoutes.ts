@@ -195,13 +195,13 @@ function resolveUserInfo(reqBody: any) {
   return { userName, userRole, userId };
 }
 
-// Helper summarizers for AI prompts
 function summarizeMocksForPrompt(mocks: any[], limit: number = 3) {
   return (mocks || []).slice(-limit).map(m => ({
     title: m.title || 'Genel Deneme',
     date: m.date,
     tytNet: m.tyt?.totalNet,
-    aytNet: m.ayt?.totalNet
+    aytNet: m.ayt?.totalNet,
+    ydtNet: m.ydt?.net
   }));
 }
 
@@ -318,12 +318,7 @@ function cleanAndParseJson(raw: string): any {
       return JSON.parse(cleaned.substring(firstBracket, lastBracket + 1));
     } catch {}
   }
-  try {
-    return JSON.parse(cleaned || '{}');
-  } catch (err) {
-    console.warn('cleanAndParseJson fallback parse failed:', err);
-    return {};
-  }
+  return JSON.parse(cleaned);
 }
 
 function hasAnyAiApiKey(): boolean {
@@ -358,18 +353,20 @@ router.post('/coach-advice', async (req, res) => {
   } = req.body;
 
   const settings = customSettings || coachDataSettings;
+  const isDilField = profile?.targetField === 'DİL' || profile?.targetField === 'DIL';
 
   try {
     let prompt = `
 Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) derece derece hazırlık konusunda uzman, motivasyonu yüksek ve analitik bir Rehberlik ve YKS Öğrenci Koçusun.
+${isDilField ? 'NOT: Bu öğrenci YKS DİL (YDT) alanındadır. Haftalık reçete ve analizlerinde YDT 80 soru (Reading, Vocabulary/Phrasal Verbs, Çeviri, Paragraf Tamamlama, Gramer) ile TYT Türkçe & Matematik dengesine özel odaklan.' : ''}
 
 ÖĞRENCİ BİLGİLERİ:
 - Öğrenci Adı: ${profile?.name || 'Öğrenci'}
 - Okul: ${profile?.highSchool || 'Anadolu Lisesi'}
-- Alanı: ${profile?.targetField || 'SAY'}
+- Alanı: ${profile?.targetField || 'SAY'} ${isDilField ? `(Yabancı Dil: ${profile?.targetLanguage || 'İngilizce'})` : ''}
 - Hedef Üniversite & Bölüm: ${profile?.targetUniversity || ''} ${profile?.targetDepartment || ''}
 - Hedef Sıralama: ${profile?.targetRank || 5000}
-- Hedef Netler: TYT ${profile?.targetTYTNet || 100} Net, AYT ${profile?.targetAYTNet || 70} Net
+- Hedef Netler: TYT ${profile?.targetTYTNet || 100} Net, ${isDilField ? `YDT (${profile?.targetLanguage || 'İngilizce'}) ${profile?.targetYDTNet || 75} Net` : `AYT ${profile?.targetAYTNet || 70} Net`}
 `;
 
     if (settings.generalMocks?.enabled !== false) {
@@ -611,20 +608,22 @@ router.post('/coach-chat', async (req, res) => {
   }
 
   try {
+    const isDilField = profile?.targetField === 'DİL' || profile?.targetField === 'DIL';
     let studentContext = `
 ÖĞRENCİ PROFİLİ & HEDEFLERİ:
 - İsim: ${profile?.name || 'Öğrenci'}
-- Alan: ${profile?.targetField || 'SAY'}
+- Alan: ${profile?.targetField || 'SAY'} ${isDilField ? `(Yabancı Dil: ${profile?.targetLanguage || 'İngilizce'})` : ''}
 - Hedef: ${profile?.targetUniversity || ''} ${profile?.targetDepartment || ''} (Hedef Sıralama: ${profile?.targetRank || 5000})
-- Hedef Netler: TYT ${profile?.targetTYTNet || 100} Net, AYT ${profile?.targetAYTNet || 70} Net
+- Hedef Netler: TYT ${profile?.targetTYTNet || 100} Net, ${isDilField ? `YDT (${profile?.targetLanguage || 'İngilizce'}) ${profile?.targetYDTNet || 75} Net` : `AYT ${profile?.targetAYTNet || 70} Net`}
 `;
 
     if (generalMocks && generalMocks.length > 0) {
       const recentMocks = generalMocks.slice(-3);
       studentContext += `\nSON GENEL DENEMELER:\n${JSON.stringify(recentMocks.map((m: any) => ({
-        name: m.examName,
+        name: m.examName || m.title,
         tytTotalNet: m.tyt?.totalNet,
-        aytTotalNet: m.ayt?.totalNet,
+        aytTotalNet: isDilField ? undefined : m.ayt?.totalNet,
+        ydtNet: isDilField ? (m.ydt?.net ?? 0) : undefined,
         date: m.date
       })))}\n`;
     }
@@ -652,7 +651,8 @@ router.post('/coach-chat', async (req, res) => {
     }
 
     const prompt = `
-Sen Türkiye YKS (TYT ve AYT) sınavına hazırlanan öğrencilere rehberlik eden, cana yakın, son derece motive edici, analitik, taktiksel ve tecrübeli bir Yapay Zeka YKS Öğrenci Koçusun.
+Sen Türkiye YKS (${isDilField ? 'TYT ve YDT Yabancı Dil' : 'TYT ve AYT'}) sınavına hazırlanan öğrencilere rehberlik eden, cana yakın, son derece motive edici, analitik, taktiksel ve tecrübeli bir Yapay Zeka YKS Öğrenci Koçusun.
+${isDilField ? 'NOT: Bu öğrenci YKS DİL (YDT) alanındadır. Önerilerinde YDT 80 soru (Reading parçaları, Vocabulary/Phrasal Verbs, Çeviri, Paragraf Tamamlama) ile TYT Türkçe & Matematik dengesine özel önem ver.' : ''}
 
 ${studentContext}
 ${formattedHistory}

@@ -34,6 +34,12 @@ export const TargetModal: React.FC<TargetModalProps> = ({
   const [targetAYTNet, setTargetAYTNet] = useState<string>(
     profile?.targetAYTNet === 0 || !profile?.targetAYTNet ? '' : profile.targetAYTNet.toString()
   );
+  const [targetYDTNet, setTargetYDTNet] = useState<string>(
+    profile?.targetYDTNet === 0 || !profile?.targetYDTNet 
+      ? (profile?.targetAYTNet?.toString() || '') 
+      : profile.targetYDTNet.toString()
+  );
+  const [targetLanguage, setTargetLanguage] = useState<string>(profile?.targetLanguage || 'İngilizce');
   const [highSchoolGpa, setHighSchoolGpa] = useState<string>(
     profile?.highSchoolGpa === undefined || profile?.highSchoolGpa === null ? '85' : profile.highSchoolGpa.toString()
   );
@@ -54,18 +60,29 @@ export const TargetModal: React.FC<TargetModalProps> = ({
 
     const rankNum = parseInt(targetRank) || 0;
     const tytNum = parseFloat(targetTYTNet) || 0;
-    const aytNum = parseFloat(targetAYTNet) || 0;
+    const aytNum = targetField === 'DİL' 
+      ? (parseFloat(targetYDTNet) || parseFloat(targetAYTNet) || 0)
+      : (parseFloat(targetAYTNet) || 0);
+    const ydtNum = targetField === 'DİL' 
+      ? (parseFloat(targetYDTNet) || parseFloat(targetAYTNet) || 0)
+      : undefined;
     const obpNum = parseFloat(highSchoolGpa) || 0;
 
     const updatedProfile: StudentProfile = {
       ...profile,
+      name: profile?.name || 'Öğrenci',
+      highSchool: profile?.highSchool || 'Anadolu Lisesi',
       targetField,
       targetUniversity: targetUniversity.trim(),
       targetDepartment: targetDepartment.trim(),
       targetRank: rankNum,
       targetTYTNet: tytNum,
       targetAYTNet: aytNum,
-      highSchoolGpa: obpNum
+      targetYDTNet: ydtNum,
+      targetLanguage: targetField === 'DİL' ? targetLanguage : undefined,
+      coachName: profile?.coachName || 'Rehberlik Servisi',
+      coachNotes: profile?.coachNotes || '',
+      highSchoolGpa: obpNum > 0 ? obpNum : (profile?.highSchoolGpa || 85)
     };
 
     onSave(updatedProfile);
@@ -255,7 +272,7 @@ export const TargetModal: React.FC<TargetModalProps> = ({
             </div>
           </div>
 
-          {/* Target TYT & AYT Net */}
+          {/* Target TYT & AYT/YDT Net */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
             <div>
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center space-x-1.5">
@@ -274,23 +291,69 @@ export const TargetModal: React.FC<TargetModalProps> = ({
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center space-x-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Hedef AYT Net</span>
-              </label>
-              <input
-                type="number"
-                step="0.25"
-                min="0"
-                max="80"
-                value={targetAYTNet}
-                onChange={(e) => setTargetAYTNet(e.target.value.replace(/^0+(?=\d)/, ''))}
-                placeholder="Örn: 68"
-                className="w-full bg-slate-950/80 border border-white/15 rounded-xl px-4 py-3 text-sm text-white font-mono font-bold placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all"
-              />
-            </div>
+            {targetField === 'DİL' ? (
+              <div>
+                <label className="block text-xs font-bold text-sky-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                  <span className="flex items-center space-x-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Hedef YDT Net</span>
+                  </span>
+                  <span className="text-[10px] text-sky-500 font-mono">/ 80</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.25"
+                  min="0"
+                  max="80"
+                  value={targetYDTNet}
+                  onChange={(e) => setTargetYDTNet(e.target.value.replace(/^0+(?=\d)/, ''))}
+                  placeholder="Örn: 75"
+                  className="w-full bg-sky-950/30 border border-sky-500/40 rounded-xl px-4 py-3 text-sm text-sky-300 font-mono font-bold placeholder-sky-600 focus:outline-none focus:border-sky-400 transition-all"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center space-x-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Hedef AYT Net</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.25"
+                  min="0"
+                  max="80"
+                  value={targetAYTNet}
+                  onChange={(e) => setTargetAYTNet(e.target.value.replace(/^0+(?=\d)/, ''))}
+                  placeholder="Örn: 68"
+                  className="w-full bg-slate-950/80 border border-white/15 rounded-xl px-4 py-3 text-sm text-white font-mono font-bold placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all"
+                />
+              </div>
+            )}
           </div>
+
+          {/* DİL Öğrencisine Özel Sınav Dili Seçimi */}
+          {targetField === 'DİL' && (
+            <div className="bg-sky-950/30 border border-sky-500/25 rounded-2xl p-3.5 flex items-center justify-between gap-3 animate-fade-in">
+              <div className="flex items-center space-x-2.5">
+                <span className="text-xl">🌐</span>
+                <div>
+                  <div className="text-xs font-bold text-sky-200">YDT Sınav Yabancı Dili</div>
+                  <div className="text-[10px] text-sky-400/80">YKS YDT oturumunda gireceğiniz dil</div>
+                </div>
+              </div>
+              <select
+                value={targetLanguage}
+                onChange={(e) => setTargetLanguage(e.target.value)}
+                className="bg-slate-950 border border-sky-500/40 text-sky-300 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 cursor-pointer"
+              >
+                <option value="İngilizce">İngilizce</option>
+                <option value="Almanca">Almanca</option>
+                <option value="Fransızca">Fransızca</option>
+                <option value="Arapça">Arapça</option>
+                <option value="Rusça">Rusça</option>
+              </select>
+            </div>
+          )}
 
           {/* Separate Full Profile Edit Note/Link */}
           {onOpenFullProfile && (

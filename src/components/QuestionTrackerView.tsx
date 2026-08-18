@@ -48,7 +48,7 @@ import {
   ReferenceLine,
   LabelList
 } from 'recharts';
-import { QuestionLog } from '../types';
+import { QuestionLog, FieldType } from '../types';
 import { YKS_SUBJECTS } from '../data/initialData';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
@@ -252,6 +252,7 @@ const PRESET_KEYS = ['ALL', 'TYT_ALL', 'AYT_ALL', 'TYT_FEN', 'TYT_SOSYAL', 'AYT_
 
 interface QuestionTrackerViewProps {
   questionLogs: QuestionLog[];
+  targetField?: FieldType;
   onAddLog: (log: Omit<QuestionLog, 'id'>) => void;
   onUpdateLog: (log: QuestionLog) => void;
   onDeleteLog: (id: string) => void;
@@ -260,6 +261,7 @@ interface QuestionTrackerViewProps {
 
 export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
   questionLogs,
+  targetField,
   onAddLog,
   onUpdateLog,
   onDeleteLog,
@@ -271,7 +273,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
 
   // Form states
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [examType, setExamType] = useState<'TYT' | 'AYT'>('TYT');
+  const [examType, setExamType] = useState<'TYT' | 'AYT' | 'YDT'>('TYT');
   const [subject, setSubject] = useState(YKS_SUBJECTS.TYT[0]);
   const [targetCount, setTargetCount] = useState<number | ''>('');
   const [solvedCount, setSolvedCount] = useState<number | ''>('');
@@ -1758,14 +1760,18 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                   <select
                     value={examType}
                     onChange={(e) => {
-                      const val = e.target.value as 'TYT' | 'AYT';
+                      const val = e.target.value as 'TYT' | 'AYT' | 'YDT';
                       setExamType(val);
                       setSubject(YKS_SUBJECTS[val][0]);
                     }}
                     className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 sm:py-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500 transition-all cursor-pointer min-h-[48px] sm:min-h-0"
                   >
                     <option value="TYT">TYT</option>
-                    <option value="AYT">AYT</option>
+                    {targetField === 'DİL' || (targetField as string) === 'DIL' ? (
+                      <option value="YDT">YDT (Yabancı Dil)</option>
+                    ) : (
+                      <option value="AYT">AYT</option>
+                    )}
                   </select>
                 </div>
               </div>

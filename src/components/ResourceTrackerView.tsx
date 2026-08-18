@@ -22,7 +22,7 @@ import {
   LayoutGrid,
   Table
 } from 'lucide-react';
-import { ResourceItem, PastExamItem } from '../types';
+import { ResourceItem, PastExamItem, FieldType } from '../types';
 import { YKS_SUBJECTS, YKS_CURRICULUM_TOPICS } from '../data/initialData';
 import { RECOMMENDED_BOOKS, RecommendedBook } from '../data/books';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
@@ -30,12 +30,15 @@ import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 interface ResourceTrackerViewProps {
   resources: ResourceItem[];
   pastExams: PastExamItem[];
+  targetField?: FieldType;
   onAddResource: (res: Omit<ResourceItem, 'id'>) => void;
   onUpdateResource: (res: ResourceItem) => void;
   onDeleteResource: (id: string) => void;
-  onUpdatePastExam: (pe: PastExamItem) => void;
-  topicStatuses: Record<string, 'Çalışmadım' | 'Erteledim' | 'Zor Geldi' | 'Çalıştım' | 'Uzmanlaştım'>;
-  onUpdateTopicStatus: (topicName: string, status: 'Çalışmadım' | 'Erteledim' | 'Zor Geldi' | 'Çalıştım' | 'Uzmanlaştım', isManual?: boolean) => void;
+  onTogglePastExamSolved?: (id: string) => void;
+  onTogglePastExamAnalyzed?: (id: string) => void;
+  onUpdatePastExam?: (pe: PastExamItem) => void;
+  topicStatuses?: Record<string, 'Çalışmadım' | 'Erteledim' | 'Zor Geldi' | 'Çalıştım' | 'Uzmanlaştım'>;
+  onUpdateTopicStatus?: (topicName: string, status: 'Çalışmadım' | 'Erteledim' | 'Zor Geldi' | 'Çalıştım' | 'Uzmanlaştım', isManual?: boolean) => void;
   manuallyChangedTopicStatuses?: string[];
   initialTrackerTab?: 'resources' | 'topics';
   initialDersFilter?: string;
@@ -165,11 +168,14 @@ const QUICK_COURSES = [
 export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   resources,
   pastExams,
+  targetField,
   onAddResource,
   onUpdateResource,
   onDeleteResource,
+  onTogglePastExamSolved,
+  onTogglePastExamAnalyzed,
   onUpdatePastExam,
-  topicStatuses,
+  topicStatuses = {},
   onUpdateTopicStatus,
   manuallyChangedTopicStatuses = [],
   initialTrackerTab,
@@ -1876,7 +1882,11 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                     >
                       <option value="">Sınav Türü Seçiniz...</option>
                       <option value="TYT">TYT (Temel Yeterlilik Testi)</option>
-                      <option value="AYT">AYT (Alan Yeterlilik Testi)</option>
+                      {targetField === 'DİL' || (targetField as string) === 'DIL' ? (
+                        <option value="AYT">YDT (Yabancı Dil Testi)</option>
+                      ) : (
+                        <option value="AYT">AYT (Alan Yeterlilik Testi)</option>
+                      )}
                     </select>
                   </div>
 

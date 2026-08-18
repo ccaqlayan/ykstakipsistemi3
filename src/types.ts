@@ -46,6 +46,8 @@ export interface StudentProfile {
   targetRank: number;
   targetTYTNet: number;
   targetAYTNet: number;
+  targetYDTNet?: number;
+  targetLanguage?: string;
   coachName: string;
   coachNotes: string;
   avatarUrl?: string;
@@ -107,7 +109,7 @@ export interface QuestionLog {
   id: string;
   date: string;
   subject: string;
-  examType: 'TYT' | 'AYT';
+  examType: 'TYT' | 'AYT' | 'YDT';
   targetCount: number;
   solvedCount: number;
   correctCount: number;
@@ -127,7 +129,7 @@ export interface ResourceItem {
   totalUnits: number; // Toplam Test veya Konu sayısı
   completedUnits: number; // Çözülen Test veya Konu sayısı
   status: 'not_started' | 'in_progress' | 'completed';
-  examType: 'TYT' | 'AYT';
+  examType: 'TYT' | 'AYT' | 'YDT';
   completedTopics?: string[]; // Çözülen konuların listesi
   notes?: string;
 }
@@ -135,7 +137,7 @@ export interface ResourceItem {
 export interface PastExamItem {
   id: string;
   year: number; // 2018 - 2025
-  examType: 'TYT' | 'AYT';
+  examType: 'TYT' | 'AYT' | 'YDT';
   subject: string;
   solved: boolean;
   correctCount?: number;
@@ -164,7 +166,7 @@ export interface TopicErrorItem {
   id: string;
   date: string;
   subject: string;
-  examType: 'TYT' | 'AYT';
+  examType: 'TYT' | 'AYT' | 'YDT';
   topicName: string;
   publisher?: string;
   errorReason: ErrorReason;
@@ -194,7 +196,7 @@ export interface BranchExam {
   id: string;
   date: string;
   subject: string;
-  examType: 'TYT' | 'AYT';
+  examType: 'TYT' | 'AYT' | 'YDT';
   publisher: string;
   correct: number;
   wrong: number;

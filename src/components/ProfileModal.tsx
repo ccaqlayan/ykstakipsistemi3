@@ -113,6 +113,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [targetRank, setTargetRank] = useState<string>(profile?.targetRank === 0 ? '' : (profile?.targetRank?.toString() || ''));
   const [targetTYTNet, setTargetTYTNet] = useState<string>(profile?.targetTYTNet === 0 ? '' : (profile?.targetTYTNet?.toString() || ''));
   const [targetAYTNet, setTargetAYTNet] = useState<string>(profile?.targetAYTNet === 0 ? '' : (profile?.targetAYTNet?.toString() || ''));
+  const [targetYDTNet, setTargetYDTNet] = useState<string>(profile?.targetYDTNet === 0 ? '' : (profile?.targetYDTNet?.toString() || profile?.targetAYTNet?.toString() || ''));
+  const [targetLanguage, setTargetLanguage] = useState<string>(profile?.targetLanguage || 'İngilizce');
   const [highSchoolGpa, setHighSchoolGpa] = useState<string>(profile?.highSchoolGpa?.toString() || '85');
 
   // Password change state
@@ -265,7 +267,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         targetDepartment: (targetDepartment || '').trim(),
         targetRank: Number(targetRank) || 0,
         targetTYTNet: Number(targetTYTNet) || 0,
-        targetAYTNet: Number(targetAYTNet) || 0,
+        targetAYTNet: targetField === 'DİL' ? (Number(targetYDTNet) || Number(targetAYTNet) || 0) : (Number(targetAYTNet) || 0),
+        targetYDTNet: targetField === 'DİL' ? (Number(targetYDTNet) || Number(targetAYTNet) || 0) : undefined,
+        targetLanguage: targetField === 'DİL' ? targetLanguage : undefined,
         coachName: profile?.coachName || 'Rehberlik Servisi',
         coachNotes: profile?.coachNotes || '',
         avatarUrl: avatarUrl.trim(),
@@ -726,16 +730,33 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
                   />
                 </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">Hedef AYT Net</label>
-                  <input
-                    type="number"
-                    placeholder="Ör: 70"
-                    value={targetAYTNet}
-                    onChange={(e) => setTargetAYTNet(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
-                  />
-                </div>
+                {targetField === 'DİL' ? (
+                  <div>
+                    <label className="block text-[11px] font-semibold text-sky-400 mb-1 flex items-center justify-between">
+                      <span>Hedef YDT Net</span>
+                      <span className="text-[9px] text-sky-500 font-mono">/ 80</span>
+                    </label>
+                    <input
+                      type="number"
+                      max="80"
+                      placeholder="Ör: 75"
+                      value={targetYDTNet}
+                      onChange={(e) => setTargetYDTNet(e.target.value)}
+                      className="w-full bg-sky-950/20 border border-sky-500/40 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-sky-300 focus:outline-none focus:border-sky-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">Hedef AYT Net</label>
+                    <input
+                      type="number"
+                      placeholder="Ör: 70"
+                      value={targetAYTNet}
+                      onChange={(e) => setTargetAYTNet(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-400 mb-1">OBP (Lise Ort.)</label>
                   <input
@@ -748,6 +769,30 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   />
                 </div>
               </div>
+
+              {/* DİL Öğrencisine Özel Sınav Dili Seçimi (Diğer alanlarda tamamen gizli) */}
+              {targetField === 'DİL' && (
+                <div className="bg-sky-950/30 border border-sky-500/25 rounded-2xl p-3 flex items-center justify-between gap-3 animate-fade-in">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base">🌐</span>
+                    <div>
+                      <div className="text-xs font-bold text-sky-200">YDT Sınav Yabancı Dili</div>
+                      <div className="text-[10px] text-sky-400/80">YKS Yabancı Dil Testinde gireceğiniz dil</div>
+                    </div>
+                  </div>
+                  <select
+                    value={targetLanguage}
+                    onChange={(e) => setTargetLanguage(e.target.value)}
+                    className="bg-slate-950 border border-sky-500/40 text-sky-300 text-xs font-bold rounded-xl px-3 py-1.5 focus:outline-none focus:border-sky-400 cursor-pointer"
+                  >
+                    <option value="İngilizce">İngilizce</option>
+                    <option value="Almanca">Almanca</option>
+                    <option value="Fransızca">Fransızca</option>
+                    <option value="Arapça">Arapça</option>
+                    <option value="Rusça">Rusça</option>
+                  </select>
+                </div>
+              )}
             </div>
           )}
 

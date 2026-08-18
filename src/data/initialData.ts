@@ -72,6 +72,9 @@ export const YKS_SUBJECTS = {
     'AYT Coğrafya-2',
     'AYT Felsefe Grubu',
     'AYT Yabancı Dil'
+  ],
+  YDT: [
+    'AYT Yabancı Dil'
   ]
 };
 
@@ -380,12 +383,17 @@ export const YKS_CURRICULUM_TOPICS: Record<string, string[]> = {
     'Klasik ve Sembolik Mantık'
   ],
   'AYT Yabancı Dil': [
-    'Grammar & Tenses',
-    'Vocabulary & Phrasal Verbs',
-    'Reading Comprehension & Paragraphs',
-    'Sentence Completion & Restatement',
-'Translation (English - Turkish)',
-    'Irrelevant Sentence & Paragraph Completion'
+    'Vocabulary (Kelime Bilgisi & Phrasal Verbs)',
+    'Grammar (Dilbilgisi, Tenses, Modals & Clauses)',
+    'Cloze Test (Parça İçi Dilbilgisi & Kelime)',
+    'Sentence Completion (Cümle Tamamlama)',
+    'Translation (İngilizce-Türkçe / Türkçe-İngilizce Çeviri)',
+    'Reading Comprehension (Okuma Parçaları)',
+    'Dialogue Completion (Diyalog Tamamlama)',
+    'Restatement (Anlamca En Yakın Cümle)',
+    'Situation (Duruma Uygun Düşen İfade)',
+    'Paragraph Completion (Paragraf Tamamlama)',
+    'Irrelevant Sentence (Anlam Bütünlüğünü Bozan Cümle)'
   ]
 };
 

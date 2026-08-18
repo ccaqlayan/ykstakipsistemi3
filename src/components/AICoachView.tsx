@@ -61,11 +61,18 @@ interface AICoachViewProps {
   ) => void;
 }
 
-const QUICK_PROMPTS = [
+const DEFAULT_QUICK_PROMPTS = [
   '⚡ Bu haftaki en kritik çalışma eksiğim ne?',
   '🎯 Hedef sıralamama ulaşmak için hangi derslere ağırlık vermeliyim?',
   '⏱️ Denemelerde süre yetiştiremiyorum, bana taktik verir misin?',
   '📐 Matematik netlerimi +10 artırmak için hangi konulara odaklanmalıyım?'
+];
+
+const DIL_QUICK_PROMPTS = [
+  '⚡ YDT Reading (Okuma) parçalarında hızlanmak için ne yapmalıyım?',
+  '🎯 YDT Vocabulary ve Phrasal Verbs ezberini nasıl kalıcı hale getirebilirim?',
+  '⏱️ YDT 80 soruluk denemede zaman yönetimini nasıl yapmalıyım?',
+  '📐 TYT Türkçe ve Matematik ile DİL sıralamamı ilk 5.000\'e nasıl taşırım?'
 ];
 
 export const AICoachView: React.FC<AICoachViewProps> = ({
@@ -202,16 +209,18 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
 
   const targetGapData = useMemo(() => {
     const profile = state.profile;
+    const isDil = profile?.targetField === 'DİL' || (profile?.targetField as string) === 'DIL';
     const targetTyt = profile?.targetTYTNet || 100;
-    const targetAyt = profile?.targetAYTNet || 70;
+    const targetAyt = isDil ? (profile?.targetYDTNet || 75) : (profile?.targetAYTNet || 70);
     let currentTyt = 0;
     let currentAyt = 0;
     if (state.generalMocks && state.generalMocks.length > 0) {
       const lastMock = state.generalMocks[state.generalMocks.length - 1];
       currentTyt = lastMock.tyt?.totalNet || 0;
-      currentAyt = lastMock.ayt?.totalNet || 0;
+      currentAyt = isDil ? (lastMock.ydt?.net || 0) : (lastMock.ayt?.totalNet || 0);
     }
     return { 
+      isDil,
       currentTyt, 
       targetTyt, 
       tytGap: Math.max(0, Number((targetTyt - currentTyt).toFixed(2))), 
@@ -761,7 +770,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                   <span>Hızlı Taktik Soruları:</span>
                 </span>
                 <div className="flex flex-wrap gap-2">
-                  {QUICK_PROMPTS.map((promptText, idx) => (
+                  {((state.profile?.targetField === 'DİL' || (state.profile?.targetField as string) === 'DIL') ? DIL_QUICK_PROMPTS : DEFAULT_QUICK_PROMPTS).map((promptText, idx) => (
                     <button
                       key={idx}
                       type="button"
@@ -890,15 +899,15 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
             <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl shadow-xl space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${targetGapData.isDil ? 'bg-sky-500/10 border border-sky-500/20 text-sky-400' : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'}`}>
                     <Target className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-xs font-bold text-white">AYT Hedef Net Açığı</h3>
-                    <span className="text-[10px] text-slate-400">Son Deneme vs Hedef</span>
+                    <h3 className="text-xs font-bold text-white">{targetGapData.isDil ? 'YDT Hedef Net Açığı' : 'AYT Hedef Net Açığı'}</h3>
+                    <span className="text-[10px] text-slate-400">{targetGapData.isDil ? 'Yabancı Dil (80 Soru) vs Hedef' : 'Son Deneme vs Hedef'}</span>
                   </div>
                 </div>
-                <span className="text-xs font-bold font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+                <span className={`text-xs font-bold font-mono px-2.5 py-1 rounded-full ${targetGapData.isDil ? 'text-sky-400 bg-sky-500/10 border border-sky-500/20' : 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20'}`}>
                   Hedef: {targetGapData.targetAyt} Net
                 </span>
               </div>
@@ -918,7 +927,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
 
               <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
                 <div 
-                  className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all duration-500"
+                  className={`h-full rounded-full transition-all duration-500 ${targetGapData.isDil ? 'bg-gradient-to-r from-sky-500 to-cyan-500' : 'bg-gradient-to-r from-emerald-500 to-teal-500'}`}
                   style={{ width: `${Math.min(100, Math.round((targetGapData.currentAyt / targetGapData.targetAyt) * 100))}%` }}
                 />
               </div>
