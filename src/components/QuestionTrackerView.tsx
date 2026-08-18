@@ -900,83 +900,82 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
         </div>
       </div>
 
-      {/* ── 2. KPI CARDS GRID (4 MODERN GLASS CARDS) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── 2. KPI CARDS GRID (KOMPAKT MİNİ İSTATİSTİK ŞERİDİ) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         {/* Card 1: Total Solved Questions */}
-        <div className="bg-slate-900/80 border border-slate-800/90 hover:border-emerald-500/40 p-5 rounded-2xl shadow-xl backdrop-blur-md transition-all hover:translate-y-[-2px]">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Toplam Soru</span>
-            <div className="p-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl">
-              <CheckSquare className="w-5 h-5" />
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-emerald-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+              <CheckSquare className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Toplam Soru</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-white font-mono">{totalSolved.toLocaleString('tr-TR')}</span>
+                <span className="text-[10px] text-slate-500">Soru</span>
+              </div>
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-3xl font-extrabold text-white font-mono tracking-tight">{totalSolved.toLocaleString('tr-TR')}</div>
-            <div className="flex items-center space-x-2 mt-2 text-[11px] font-semibold text-slate-400">
-              <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-mono">TYT: {tytSolved}</span>
-              <span className="bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md font-mono">AYT: {aytSolved}</span>
-            </div>
-          </div>
+          <span className="text-[9px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline" title={`TYT: ${tytSolved} • AYT: ${aytSolved}`}>
+            TYT: {tytSolved} • AYT: {aytSolved}
+          </span>
         </div>
 
         {/* Card 2: Total Study Duration & Speed */}
-        <div className="bg-slate-900/80 border border-slate-800/90 hover:border-amber-500/40 p-5 rounded-2xl shadow-xl backdrop-blur-md transition-all hover:translate-y-[-2px]">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Çözüm Süresi & Hız</span>
-            <div className="p-2 bg-amber-500/20 border border-amber-500/30 text-amber-400 rounded-xl">
-              <Clock className="w-5 h-5" />
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-amber-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4 text-amber-400" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Çözüm Süresi</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-amber-300 font-mono">{formatMinutesToHours(totalDurationMinutes)}</span>
+              </div>
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-3xl font-extrabold text-amber-300 font-mono tracking-tight">
-              {formatMinutesToHours(totalDurationMinutes)}
-            </div>
-            <div className="flex items-center space-x-2 mt-2 text-[11px]">
-              <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-0.5 rounded-md font-semibold font-mono inline-flex items-center space-x-1">
-                <Zap className="w-3 h-3 inline text-amber-400" />
-                <span>{avgSpeedPerQuestion ? `${avgSpeedPerQuestion} dk/soru` : 'Süre girilmedi'}</span>
-              </span>
-            </div>
-          </div>
+          {avgSpeedPerQuestion && (
+            <span className="text-[9px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+              {avgSpeedPerQuestion} dk/soru
+            </span>
+          )}
         </div>
 
         {/* Card 3: Accuracy & Breakdown */}
-        <div className="bg-slate-900/80 border border-slate-800/90 hover:border-indigo-500/40 p-5 rounded-2xl shadow-xl backdrop-blur-md transition-all hover:translate-y-[-2px]">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Doğruluk Oranı</span>
-            <div className="p-2 bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 rounded-xl">
-              <Award className="w-5 h-5" />
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-indigo-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
+              <Award className="w-4 h-4 text-indigo-400" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Doğruluk Oranı</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-indigo-300 font-mono">%{overallAccuracy}</span>
+              </div>
             </div>
           </div>
-          <div className="mt-3">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-extrabold text-indigo-300 font-mono tracking-tight">%{overallAccuracy}</span>
-              <span className="text-xs text-slate-400 font-medium">doğruluk</span>
-            </div>
-            <div className="flex items-center space-x-1.5 mt-2 text-[11px] font-mono font-semibold">
-              <span className="text-emerald-400">{totalCorrect} D</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-rose-400">{totalWrong} Y</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-slate-400">{totalEmpty} B</span>
-            </div>
-          </div>
+          <span className="text-[9px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline" title={`${totalCorrect} Doğru • ${totalWrong} Yanlış • ${totalEmpty} Boş`}>
+            {totalCorrect} D • {totalWrong} Y
+          </span>
         </div>
 
         {/* Card 4: Net Score */}
-        <div className="bg-slate-900/80 border border-slate-800/90 hover:border-cyan-500/40 p-5 rounded-2xl shadow-xl backdrop-blur-md transition-all hover:translate-y-[-2px]">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Toplam Net Skoru</span>
-            <div className="p-2 bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-xl">
-              <TrendingUp className="w-5 h-5" />
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-cyan-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
+              <TrendingUp className="w-4 h-4 text-cyan-400" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Toplam Net</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-cyan-300 font-mono">{totalNet.toFixed(2)}</span>
+                <span className="text-[10px] text-slate-500">Net</span>
+              </div>
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-3xl font-extrabold text-cyan-300 font-mono tracking-tight">{totalNet.toFixed(2)} Net</div>
-            <div className="mt-2 text-[11px] text-slate-400 font-medium truncate">
-              {questionLogs.length > 0 ? `Ortalama oturum: ${(totalNet / (questionLogs.length || 1)).toFixed(1)} net` : 'Henüz net kaydı yok'}
-            </div>
-          </div>
+          <span className="text-[9px] bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline" title={questionLogs.length > 0 ? `Ortalama oturum: ${(totalNet / (questionLogs.length || 1)).toFixed(1)} net` : ''}>
+            {questionLogs.length > 0 ? `Ort. ${(totalNet / (questionLogs.length || 1)).toFixed(1)} net` : 'Net Skoru'}
+          </span>
         </div>
       </div>
 

@@ -654,105 +654,82 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
         </div>
       </div>
 
-      {/* ── 4 TOP KPI METRIC CARDS ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── 4 TOP KPI METRIC CARDS (KOMPAKT MİNİ İSTATİSTİK ŞERİDİ) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         {/* Card 1: Kayıtlı Kaynak Kitaplar */}
-        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Kayıtlı Kaynak Kitaplar</span>
-            <div className="w-8 h-8 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-indigo-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
               <BookOpen className="w-4 h-4 text-indigo-400" />
             </div>
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-black text-white font-mono">{totalBooks}</span>
-              <span className="text-xs text-slate-400 font-medium">Kitap</span>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Kaynak Kitap</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-white font-mono">{totalBooks}</span>
+                <span className="text-[10px] text-slate-500">Kitap</span>
+              </div>
             </div>
-            <span className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
-              {completedBooks} Bitirildi
-            </span>
           </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Devam Eden: <strong className="text-indigo-300 font-mono">{inProgressBooks}</strong></span>
-            <span>Başlanmamış: <strong className="text-slate-400 font-mono">{totalBooks - completedBooks - inProgressBooks}</strong></span>
-          </div>
+          <span className="text-[9px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline" title={`Devam Eden: ${inProgressBooks}, Başlanmamış: ${totalBooks - completedBooks - inProgressBooks}`}>
+            {completedBooks} Bitirildi
+          </span>
         </div>
 
         {/* Card 2: Toplam Çözülen Konular */}
-        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Çözülen Müfredat Konuları</span>
-            <div className="w-8 h-8 rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center">
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-fuchsia-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center shrink-0">
               <ListChecks className="w-4 h-4 text-fuchsia-400" />
             </div>
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-black text-fuchsia-400 font-mono">{grandCompletedTopics}</span>
-              <span className="text-xs text-slate-400 font-medium">/ {grandTotalTopics} Konu</span>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Konu İlerlemesi</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-fuchsia-400 font-mono">{grandCompletedTopics}</span>
+                <span className="text-[10px] text-slate-500">/ {grandTotalTopics}</span>
+              </div>
             </div>
-            <span className="text-[10px] bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
-              %{overallPercent} Tamamlandı
-            </span>
           </div>
-          {/* Progress bar */}
-          <div className="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-            <div 
-              className="bg-gradient-to-r from-indigo-500 to-fuchsia-500 h-full rounded-full transition-all duration-500" 
-              style={{ width: `${overallPercent}%` }} 
-            />
-          </div>
+          <span className="text-[9px] bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+            %{overallPercent} Tamamlandı
+          </span>
         </div>
 
         {/* Card 3: TYT Kitap Sayısı */}
-        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">TYT Kaynak Kitapları</span>
-            <div className="w-8 h-8 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-sky-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
               <Layers className="w-4 h-4 text-sky-400" />
             </div>
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-black text-sky-400 font-mono">{getExamTypeBookCount('TYT')}</span>
-              <span className="text-xs text-slate-400 font-medium">Kitap</span>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">TYT Kaynakları</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-sky-400 font-mono">{getExamTypeBookCount('TYT')}</span>
+                <span className="text-[10px] text-slate-500">Kitap</span>
+              </div>
             </div>
-            <span className="text-[10px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
-              TYT Müfredatı
-            </span>
           </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Aktif Kaynak Oranı:</span>
-            <span className="text-sky-300 font-bold font-mono">
-              %{totalBooks > 0 ? Math.round((getExamTypeBookCount('TYT') / totalBooks) * 100) : 0}
-            </span>
-          </div>
+          <span className="text-[9px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+            TYT Müfredatı
+          </span>
         </div>
 
         {/* Card 4: AYT Kitap Sayısı */}
-        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">AYT Kaynak Kitapları</span>
-            <div className="w-8 h-8 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-amber-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
               <Award className="w-4 h-4 text-amber-400" />
             </div>
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-black text-amber-400 font-mono">{getExamTypeBookCount('AYT')}</span>
-              <span className="text-xs text-slate-400 font-medium">Kitap</span>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">AYT Kaynakları</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-amber-400 font-mono">{getExamTypeBookCount('AYT')}</span>
+                <span className="text-[10px] text-slate-500">Kitap</span>
+              </div>
             </div>
-            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
-              AYT Müfredatı
-            </span>
           </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Aktif Kaynak Oranı:</span>
-            <span className="text-amber-300 font-bold font-mono">
-              %{totalBooks > 0 ? Math.round((getExamTypeBookCount('AYT') / totalBooks) * 100) : 0}
-            </span>
-          </div>
+          <span className="text-[9px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+            AYT Müfredatı
+          </span>
         </div>
       </div>
 

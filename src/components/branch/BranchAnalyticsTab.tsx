@@ -168,104 +168,84 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
   return (
     <div className="space-y-6 animate-fade-in">
       
-      {/* ── 1. TOP KPI DASHBOARD CARDS ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        
+      {/* ── 1. TOP KPI DASHBOARD CARDS (KOMPAKT MİNİ İSTATİSTİK ŞERİDİ) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         {/* Card 1: Toplam Branş Denemesi */}
-        <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Toplam Branş Denemesi</span>
-            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-indigo-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
               <Target className="w-4 h-4 text-indigo-400" />
             </div>
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-black text-white font-mono">{totalBranchExamsCount}</span>
-              <span className="text-xs text-slate-400 font-medium">Deneme</span>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Branş Denemesi</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-white font-mono">{totalBranchExamsCount}</span>
+                <span className="text-[10px] text-slate-500">Deneme</span>
+              </div>
             </div>
-            <span className="text-[10px] bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
-              %{analyzedBranchExamsPercentage} Analiz Edildi
-            </span>
           </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>TYT: <strong className="text-indigo-300 font-mono">{tytExamCount}</strong></span>
-            <span>AYT: <strong className="text-purple-300 font-mono">{aytExamCount}</strong></span>
-          </div>
+          <span className="text-[9px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline" title={`TYT: ${tytExamCount}, AYT: ${aytExamCount}`}>
+            %{analyzedBranchExamsPercentage} Analiz
+          </span>
         </div>
 
         {/* Card 2: Net Ortalaması & Rekor */}
-        <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Genel Net Ortalaması</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-emerald-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
               <TrendingUp className="w-4 h-4 text-emerald-400" />
             </div>
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <div className="flex items-baseline space-x-1">
-              <span className="text-3xl font-black text-emerald-400 font-mono">{avgNetOverall}</span>
-              <span className="text-xs text-slate-400 font-medium">Net</span>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Net Ortalaması</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-emerald-400 font-mono">{avgNetOverall}</span>
+                <span className="text-[10px] text-slate-500">Net</span>
+              </div>
             </div>
-            <span className="text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
+          </div>
+          {maxNetRecord > 0 && (
+            <span className="text-[9px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
               Rekor: {maxNetRecord} Net
             </span>
-          </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Ders Başına Ort:</span>
-            <span className="text-white font-mono font-bold">
-              {branchSubjectStats.length > 0 ? (branchSubjectStats.reduce((acc, s) => acc + (Number(s.avgNet) || 0), 0) / branchSubjectStats.length).toFixed(1).replace('.', ',') : 0} Net
-            </span>
-          </div>
+          )}
         </div>
 
         {/* Card 3: Toplam Çözüm Süresi & Hız */}
-        <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Toplam Çözüm Süresi</span>
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-amber-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
               <Clock className="w-4 h-4 text-amber-400" />
             </div>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Toplam Süre</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-amber-300 font-mono">{formatHoursAndMinutes(totalDurationMinutes)}</span>
+              </div>
+            </div>
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-black text-amber-300 font-mono">
-              {formatHoursAndMinutes(totalDurationMinutes)}
-            </span>
-            <span className="text-[10px] text-slate-400 font-mono">
-              Ort. <strong className="text-amber-300">{avgDurationMinutes}</strong> dk/deneme
-            </span>
-          </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Toplam Soru Pratiği:</span>
-            <span className="text-amber-400 font-bold font-mono">
-              {branchSubjectStats.reduce((acc, s) => acc + (s.count || 0), 0)} Oturum
-            </span>
-          </div>
+          <span className="text-[9px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+            Ort. {avgDurationMinutes} dk/deneme
+          </span>
         </div>
 
         {/* Card 4: Hata Defteri & Tekrar Oranı */}
-        <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Hata Defteri Durumu</span>
-            <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-rose-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
               <AlertTriangle className="w-4 h-4 text-rose-400" />
             </div>
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <div className="flex items-baseline space-x-1.5">
-              <span className="text-3xl font-black text-rose-400 font-mono">{unrevisedErrorsCount}</span>
-              <span className="text-xs text-slate-400 font-medium">Bekleyen Hata</span>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Hata Defteri</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-rose-400 font-mono">{unrevisedErrorsCount}</span>
+                <span className="text-[10px] text-slate-500">Bekleyen</span>
+              </div>
             </div>
-            <span className="text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
-              %{revisionPercentage} Tekrar
-            </span>
           </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Tekrar Edilen:</span>
-            <span className="text-emerald-400 font-bold font-mono">{revisedErrorsCount} Soru</span>
-          </div>
+          <span className="text-[9px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+            %{revisionPercentage} Tekrar
+          </span>
         </div>
-
       </div>
 
       {/* ── 2. INTERACTIVE GRAPH ANALYTICS DASHBOARD ── */}
