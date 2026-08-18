@@ -208,6 +208,7 @@ const PlaylistSubVideosList: React.FC<PlaylistSubVideosListProps> = ({
                 href={subVid.videoUrl || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
+                title={subVid.title}
                 className={`text-xs font-semibold truncate transition-colors ${
                   subVid.isWatched 
                     ? 'text-slate-500 line-through' 
@@ -982,8 +983,8 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                 </p>
               </div>
             ) : viewMode === 'gallery' ? (
-              /* ── 🎬 YOUTUBE GALERİ GÖRÜNÜMÜ (16:9 VIDEO & PLAYLIST GRID) ── */
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4.5 animate-fade-in">
+              /* ── 🎬 YOUTUBE GALERİ GÖRÜNÜMÜ (16:9 VIDEO & PLAYLIST GRID - MAX 3 SÜTUN) ── */
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 animate-fade-in">
                 {filteredVideos.map((vid) => {
                   const isPlaylist = isPlaylistItem(vid);
                   const firstSubUrl = vid.playlistVideos?.[0]?.videoUrl;
