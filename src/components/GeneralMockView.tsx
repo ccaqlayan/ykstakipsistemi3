@@ -1211,7 +1211,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
             <span>Genel Deneme Analizi & Net Yükseliş Grafiği</span>
           </h1>
           <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-            Türkiye geneli ve kurum içi <strong className="text-indigo-400 font-mono">TYT</strong> & <strong className="text-emerald-400 font-mono">AYT</strong> genel deneme sonuçlarınızı girin, net ivmenizi ve tahmini YKS sıralamanızı adım adım takip edin.
+            Türkiye geneli ve kurum içi TYT & AYT genel deneme sonuçlarınızı girin, net ivmenizi ve tahmini YKS sıralamanızı adım adım takip edin.
           </p>
         </div>
       </div>

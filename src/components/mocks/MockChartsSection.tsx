@@ -359,9 +359,7 @@ export const MockChartsSection: React.FC<MockChartsSectionProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800">
             <h2 className="text-sm font-bold text-white flex items-center space-x-2">
               <BarChart2 className="w-4 h-4 text-emerald-400" />
-              <span>
-                <span className="text-indigo-400 font-bold">TYT</span>, <span className="text-emerald-400 font-bold">AYT</span> & <span className="text-sky-400 font-bold">DİL</span> Net Gelişim Trendi
-              </span>
+              <span>TYT, AYT & DİL Net Gelişim Trendi</span>
             </h2>
 
             {/* Interactive Toggle Buttons for TYT, AYT & DİL Net Lines */}
