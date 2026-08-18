@@ -1055,7 +1055,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1.5 w-full">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 w-full">
             {SUBJECTS.map((sub) => {
               const isSelected = selectedSubject === sub.value && !showOnlyFollowed;
               const subCount = activeTab === 'books' 
@@ -1069,19 +1069,21 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                     setSelectedSubject(sub.value);
                     setShowOnlyFollowed(false);
                   }}
-                  className={`w-full py-2 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all border cursor-pointer flex items-center justify-center space-x-1 truncate ${
+                  className={`w-full py-2.5 px-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer flex items-center justify-between space-x-2 ${
                     isSelected
                       ? activeTab === 'youtube'
-                        ? 'bg-gradient-to-r from-red-600 to-rose-600 border-red-400 text-white shadow-md shadow-red-600/30 scale-[1.02]'
-                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-md shadow-indigo-600/30 scale-[1.02]'
-                      : 'bg-slate-950 border-slate-800/80 text-slate-400 hover:text-white hover:border-slate-700'
+                        ? 'bg-gradient-to-r from-red-600 to-rose-600 border-red-400 text-white shadow-lg shadow-red-600/30 scale-[1.02]'
+                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30 scale-[1.02]'
+                      : 'bg-slate-950 border-slate-800/80 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-900'
                   }`}
                   title={`${sub.label} (${subCount} kaynak)`}
                 >
-                  <span className="shrink-0 text-xs">{sub.emoji}</span>
-                  <span className="truncate">{sub.label}</span>
-                  <span className={`text-[9px] px-1 py-0.2 rounded-full font-mono shrink-0 ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                  <div className="flex items-center space-x-2 truncate">
+                    <span className="shrink-0 text-sm">{sub.emoji}</span>
+                    <span className="truncate">{sub.label}</span>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono shrink-0 font-bold ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-900 text-slate-400 border border-slate-800'
                   }`}>
                     {subCount}
                   </span>
