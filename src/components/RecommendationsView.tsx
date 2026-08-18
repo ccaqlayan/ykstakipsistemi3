@@ -1,20 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Sparkles, 
   Youtube, 
   Plus, 
   Check, 
-  ExternalLink,
-  Award,
-  Heart,
-  TrendingUp,
-  Trash2,
-  BookOpen,
-  Bookmark,
-  Pencil,
-  Upload,
-  Loader2,
-  Globe
+  ExternalLink, 
+  Award, 
+  Heart, 
+  TrendingUp, 
+  Trash2, 
+  BookOpen, 
+  Bookmark, 
+  Pencil, 
+  Upload, 
+  Loader2, 
+  Globe,
+  Search,
+  LayoutGrid,
+  List,
+  Star,
+  Flame,
+  X,
+  Filter,
+  SlidersHorizontal,
+  Layers,
+  ArrowUpDown,
+  BookMarked
 } from 'lucide-react';
 import { YouTubeVideoItem, ResourceItem, UserAccount, RecommendedChannel, RecommendedBook } from '../types';
 import { RECOMMENDED_BOOKS } from '../data/books';
@@ -158,29 +169,29 @@ const defaultBooksWithIds: RecommendedBook[] = RECOMMENDED_BOOKS.map(bk => ({
 }));
 
 const SUBJECTS = [
-  { value: 'Matematik', label: 'Matematik' },
-  { value: 'Geometri', label: 'Geometri' },
-  { value: 'Türkçe', label: 'Türkçe' },
-  { value: 'Fizik', label: 'Fizik' },
-  { value: 'Kimya', label: 'Kimya' },
-  { value: 'Biyoloji', label: 'Biyoloji' },
-  { value: 'Tarih', label: 'Tarih' },
-  { value: 'Coğrafya', label: 'Coğrafya' },
-  { value: 'Felsefe', label: 'Felsefe' },
-  { value: 'Dil', label: 'Dil' }
+  { value: 'Matematik', label: 'Matematik', emoji: '📐' },
+  { value: 'Geometri', label: 'Geometri', emoji: '📏' },
+  { value: 'Türkçe', label: 'Türkçe', emoji: '📖' },
+  { value: 'Fizik', label: 'Fizik', emoji: '⚡' },
+  { value: 'Kimya', label: 'Kimya', emoji: '🧪' },
+  { value: 'Biyoloji', label: 'Biyoloji', emoji: '🧬' },
+  { value: 'Tarih', label: 'Tarih', emoji: '🏛️' },
+  { value: 'Coğrafya', label: 'Coğrafya', emoji: '🌍' },
+  { value: 'Felsefe', label: 'Felsefe', emoji: '🧠' },
+  { value: 'Dil', label: 'Dil (YDT)', emoji: '🌐' }
 ];
 
-const SUBJECT_COLORS: Record<string, { bg: string, text: string, border: string }> = {
-  'Matematik': { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20' },
-  'Geometri': { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/20' },
-  'Türkçe': { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' },
-  'Fizik': { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/20' },
-  'Kimya': { bg: 'bg-teal-500/10', text: 'text-teal-400', border: 'border-teal-500/20' },
-  'Biyoloji': { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20' },
-  'Tarih': { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/20' },
-  'Coğrafya': { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/20' },
-  'Felsefe': { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/20' },
-  'Dil': { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20' },
+const SUBJECT_COLORS: Record<string, { bg: string, text: string, border: string, glow: string }> = {
+  'Matematik': { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30', glow: 'shadow-blue-500/10' },
+  'Geometri': { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30', glow: 'shadow-emerald-500/10' },
+  'Türkçe': { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30', glow: 'shadow-amber-500/10' },
+  'Fizik': { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/30', glow: 'shadow-indigo-500/10' },
+  'Kimya': { bg: 'bg-teal-500/10', text: 'text-teal-400', border: 'border-teal-500/30', glow: 'shadow-teal-500/10' },
+  'Biyoloji': { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/30', glow: 'shadow-rose-500/10' },
+  'Tarih': { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/30', glow: 'shadow-orange-500/10' },
+  'Coğrafya': { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30', glow: 'shadow-cyan-500/10' },
+  'Felsefe': { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/30', glow: 'shadow-violet-500/10' },
+  'Dil': { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/30', glow: 'shadow-purple-500/10' },
 };
 
 const getChannelAvatar = (channel: RecommendedChannel): string => {
@@ -211,12 +222,18 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   customRecommendations = { channels: [], books: [] },
   onAddAuditLog
 }) => {
-  const [activeTab, setActiveTab] = useState<'youtube' | 'books'>('youtube');
+  const [activeTab, setActiveTab] = useState<'youtube' | 'books'>('books');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [selectedSubject, setSelectedSubject] = useState<string>('Matematik');
   const [selectedExamType, setSelectedExamType] = useState<'Tümü' | 'TYT' | 'AYT'>('Tümü');
+  const [selectedCategory, setSelectedCategory] = useState<string>('Tümü');
+  const [difficultyFilter, setDifficultyFilter] = useState<number | 'all'>('all');
+  const [showOnlyPopular, setShowOnlyPopular] = useState<boolean>(false);
   const [showOnlyFollowed, setShowOnlyFollowed] = useState<boolean>(false);
   const [showOnlyFavorites, setShowOnlyFavorites] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [channelSortOrder, setChannelSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [bookSortOrder, setBookSortOrder] = useState<'difficulty_asc' | 'difficulty_desc' | 'popular' | 'publisher'>('difficulty_asc');
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
   React.useEffect(() => {
@@ -289,7 +306,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
       let data: any = {};
       try {
         data = JSON.parse(responseText);
-      } catch (parseErr) {
+      } catch {
         throw new Error(`Sunucudan geçersiz yanıt alındı (Status: ${res.status}).`);
       }
 
@@ -318,7 +335,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         originalKb: compressed.originalKb,
         compressedKb: compressed.compressedKb
       });
-    } catch (err) {
+    } catch {
       alert('Görsel sıkıştırılırken bir hata oluştu.');
     }
   };
@@ -458,13 +475,11 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
 
   const handleBookSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Explicitly preserve or reconstruct the ID to prevent editing from creating duplicates
     let bookId = editingBook?.id;
     const isEdit = !!editingBook;
     const oldState = editingBook ? { ...editingBook } : null;
 
     if (editingBook && !bookId) {
-      // Reconstruct ID for default book if it is somehow missing
       const safeCategory = (editingBook.category || 'Konu Anlatımı').toLowerCase().replace(/[^a-z0-9]/g, '-');
       const safePublisher = (editingBook.publisher || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
       const safeName = (editingBook.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -590,7 +605,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         totalUnits: 10,
         completedUnits: 0,
         status: 'not_started',
-        examType: book.category.includes('AYT') ? 'AYT' : 'TYT',
+        examType: (book.category.includes('AYT') || book.category.includes('YDT') || book.subject === 'Dil') ? (book.subject === 'Dil' ? 'YDT' : 'AYT') : 'TYT',
         notes: `Tavsiyelerden eklendi: Seviye: ${book.difficulty}. ${book.reason}`
       });
       setSuccessToast(`"${book.publisher} - ${book.name}" kaynağı başarıyla kaynaklarınıza eklendi!`);
@@ -598,7 +613,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
     }
   };
 
-  // --- Filtering & Sorting ---
+  // --- Master Lists Composition ---
   const customChannelMap = new Map((customRecommendations?.channels || []).map(ch => [ch.id, ch]));
   const allChannels = [
     ...defaultChannelsWithIds.map(ch => {
@@ -641,365 +656,548 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
     return num * multiplier;
   };
 
-  const displayedChannels = allChannels.filter(channel => {
-    if (showOnlyFollowed) {
-      return isChannelAdded(channel.name);
-    } else {
-      return channel.subject === selectedSubject;
-    }
-  }).sort((a, b) => {
-    const valA = parseSubscriberTextToNumber(a.subscribersText);
-    const valB = parseSubscriberTextToNumber(b.subscribersText);
-    return channelSortOrder === 'desc' ? valB - valA : valA - valB;
-  });
+  // --- Dynamic Sub-Categories for the active subject ---
+  const availableCategoriesForSubject = useMemo(() => {
+    const cats = new Set<string>();
+    allBooks
+      .filter(b => b.subject === selectedSubject)
+      .forEach(b => {
+        if (b.category && b.category.trim()) cats.add(b.category.trim());
+      });
+    return Array.from(cats);
+  }, [allBooks, selectedSubject]);
 
-  const displayedBooks = allBooks.filter(book => {
-    const bookKey = `${book.publisher} - ${book.name}`;
-    const isFav = favoriteBooks.includes(bookKey);
+  // Reset category filter when subject changes
+  React.useEffect(() => {
+    setSelectedCategory('Tümü');
+  }, [selectedSubject]);
 
-    if (showOnlyFavorites) {
-      if (!isFav) return false;
-      const matchesSubject = book.subject === selectedSubject;
-      if (!matchesSubject) return false;
-      if (selectedExamType === 'TYT') {
-        return book.category.includes('TYT');
+  // --- Filtered Display Lists ---
+  const displayedChannels = useMemo(() => {
+    return allChannels.filter(channel => {
+      const isAdded = isChannelAdded(channel.name);
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const matchName = channel.name.toLowerCase().includes(q);
+        const matchSub = channel.subject.toLowerCase().includes(q);
+        if (!matchName && !matchSub) return false;
       }
-      if (selectedExamType === 'AYT') {
-        return book.category.includes('AYT') || book.category.includes('YDT') || book.subject === 'Dil';
+
+      if (showOnlyFollowed) {
+        return isAdded;
       }
+
+      if (!searchQuery.trim()) {
+        if (channel.subject !== selectedSubject) return false;
+      }
+
       return true;
-    }
+    }).sort((a, b) => {
+      const valA = parseSubscriberTextToNumber(a.subscribersText);
+      const valB = parseSubscriberTextToNumber(b.subscribersText);
+      return channelSortOrder === 'desc' ? valB - valA : valA - valB;
+    });
+  }, [allChannels, selectedSubject, showOnlyFollowed, searchQuery, channelSortOrder, trackedVideos]);
 
-    if (showOnlyFollowed) {
-      return isBookAdded(book.publisher, book.name);
-    } else {
-      const matchesSubject = book.subject === selectedSubject;
-      if (!matchesSubject) return false;
+  const displayedBooks = useMemo(() => {
+    return allBooks.filter(book => {
+      const bookKey = `${book.publisher} - ${book.name}`;
+      const isFav = favoriteBooks.includes(bookKey);
+      const isAdded = isBookAdded(book.publisher, book.name);
+
+      // Search Query
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const matchName = book.name.toLowerCase().includes(q);
+        const matchPub = book.publisher.toLowerCase().includes(q);
+        const matchSub = book.subject.toLowerCase().includes(q);
+        const matchCat = (book.category || '').toLowerCase().includes(q);
+        const matchReason = (book.reason || '').toLowerCase().includes(q);
+        if (!matchName && !matchPub && !matchSub && !matchCat && !matchReason) {
+          return false;
+        }
+      }
+
+      // Quick views
+      if (showOnlyFavorites && !isFav) return false;
+      if (showOnlyFollowed && !isAdded) return false;
+
+      // Subject Filter (only enforced if not searching globally or when showOnlyFollowed is inactive)
+      if (!showOnlyFollowed && !showOnlyFavorites && !searchQuery.trim()) {
+        if (book.subject !== selectedSubject) return false;
+      } else if (!searchQuery.trim() && (showOnlyFollowed || showOnlyFavorites)) {
+        if (selectedSubject && book.subject !== selectedSubject) return false;
+      }
+
+      // Category / Type filter
+      if (selectedCategory !== 'Tümü' && book.category !== selectedCategory) {
+        return false;
+      }
+
+      // Exam Type filter (TYT vs AYT/YDT)
       if (selectedExamType === 'TYT') {
-        return book.category.includes('TYT');
+        const isTyt = book.category.includes('TYT') || ['Kelime', 'Gramer', 'Skills', 'Okuma'].includes(book.category);
+        if (!isTyt) return false;
+      } else if (selectedExamType === 'AYT') {
+        const isAytOrDil = book.category.includes('AYT') || book.category.includes('YDT') || book.subject === 'Dil';
+        if (!isAytOrDil) return false;
       }
-      if (selectedExamType === 'AYT') {
-        return book.category.includes('AYT') || book.category.includes('YDT') || book.subject === 'Dil';
+
+      // Difficulty level filter
+      if (difficultyFilter !== 'all') {
+        if (difficultyFilter === 1 && book.difficultyValue > 2) return false;
+        if (difficultyFilter === 3 && book.difficultyValue !== 3) return false;
+        if (difficultyFilter === 5 && book.difficultyValue < 4) return false;
       }
+
+      // Popular filter
+      if (showOnlyPopular && !book.isPopular) {
+        return false;
+      }
+
       return true;
-    }
-  }).sort((a, b) => a.difficultyValue - b.difficultyValue);
+    }).sort((a, b) => {
+      if (bookSortOrder === 'difficulty_asc') return a.difficultyValue - b.difficultyValue;
+      if (bookSortOrder === 'difficulty_desc') return b.difficultyValue - a.difficultyValue;
+      if (bookSortOrder === 'popular') return (b.isPopular ? 1 : 0) - (a.isPopular ? 1 : 0);
+      if (bookSortOrder === 'publisher') return a.publisher.localeCompare(b.publisher, 'tr');
+      return a.difficultyValue - b.difficultyValue;
+    });
+  }, [
+    allBooks, 
+    selectedSubject, 
+    selectedCategory, 
+    selectedExamType, 
+    difficultyFilter, 
+    showOnlyPopular, 
+    showOnlyFollowed, 
+    showOnlyFavorites, 
+    searchQuery, 
+    bookSortOrder, 
+    favoriteBooks, 
+    trackedResources
+  ]);
 
   const totalFollowedChannels = allChannels.filter(c => isChannelAdded(c.name)).length;
   const totalFollowedBooks = allBooks.filter(b => isBookAdded(b.publisher, b.name)).length;
   const totalFavoriteBooks = allBooks.filter(b => favoriteBooks.includes(`${b.publisher} - ${b.name}`)).length;
 
+  const renderDifficultyBadge = (difficultyValue: number, text?: string) => {
+    let colorClass = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+    let label = text || 'Orta Seviye';
+
+    if (difficultyValue <= 1) {
+      colorClass = 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+    } else if (difficultyValue === 2) {
+      colorClass = 'bg-teal-500/15 text-teal-300 border-teal-500/30';
+    } else if (difficultyValue === 3) {
+      colorClass = 'bg-amber-500/15 text-amber-300 border-amber-500/30';
+    } else if (difficultyValue === 4) {
+      colorClass = 'bg-orange-500/15 text-orange-400 border-orange-500/30';
+    } else if (difficultyValue >= 5) {
+      colorClass = 'bg-rose-500/15 text-rose-400 border-rose-500/30';
+    }
+
+    return (
+      <div className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border ${colorClass}`}>
+        <div className="flex items-center space-x-0.5">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              className={`w-3 h-3 ${star <= difficultyValue ? 'fill-current' : 'opacity-20'}`}
+            />
+          ))}
+        </div>
+        <span className="ml-1 text-[10px]">{label}</span>
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in pb-10">
       
       {/* Toast Alert */}
       {successToast && (
-        <div className="fixed top-20 right-6 z-50 animate-fade-in bg-indigo-950/90 border border-indigo-500/40 text-indigo-100 px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2 text-xs font-semibold backdrop-blur-md">
-          <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
+        <div className="fixed top-20 right-6 z-50 animate-fade-in bg-slate-900/95 border border-purple-500/50 text-purple-100 px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-2.5 text-xs font-semibold backdrop-blur-xl ring-1 ring-purple-500/20">
+          <Sparkles className="w-4 h-4 text-amber-400 animate-pulse shrink-0" />
           <span>{successToast}</span>
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800/80 animate-fade-in">
-        <div className="flex-1">
-          <h1 id="recommendations-title" className="text-xl sm:text-2xl font-black text-white flex items-center space-x-2">
-            <Sparkles className="w-6 h-6 text-amber-400" />
-            <span>YKS Kaynak & Eğitim Tavsiyeleri</span>
-          </h1>
-          <p className="text-xs text-slate-400 mt-1 flex flex-col md:flex-row md:items-center justify-between gap-2">
-            <span>YKS yolculuğunda hedefine en uygun ders kanallarını ve en çok tercih edilen, seviyelendirilmiş kaynak kitap önerilerini incele.</span>
-            <span className="text-[10px] text-slate-500 italic shrink-0">Abone Sayısı Güncelleme: 30 Temmuz 2026</span>
-          </p>
-        </div>
-        {isTeacher && (
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => {
-                resetChannelForm();
-                setShowAddChannelModal(true);
-              }}
-              className="inline-flex items-center space-x-1.5 px-3 py-2 bg-red-600 hover:bg-red-500 text-xs font-bold text-white rounded-xl shadow-lg shadow-red-600/15 transition-all border border-red-500/40"
-            >
-              <Youtube className="w-4 h-4" />
-              <span>YouTube Kaynağı Ekle</span>
-            </button>
-            <button
-              onClick={() => {
-                resetBookForm();
-                setShowAddBookModal(true);
-              }}
-              className="inline-flex items-center space-x-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white rounded-xl shadow-lg shadow-indigo-600/15 transition-all border border-indigo-500/40"
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>Kitap Kaynağı Ekle</span>
-            </button>
+      {/* HERO HEADER & QUICK KPI STATS */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900/95 to-slate-950 border border-slate-800 p-6 sm:p-7 shadow-2xl">
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-8 w-48 h-48 bg-indigo-600/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-[11px] font-bold">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>YKS Derece Tavsiyeleri & İçerik Rehberi</span>
+            </div>
+            <h1 id="recommendations-title" className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2.5">
+              <span>YKS Kaynak & Eğitim Tavsiyeleri</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              Hedefine en uygun YouTube eğitim kanallarını ve seviyelendirilmiş, popüler YKS kaynak kitap önerilerini keşfet; tek tıkla çalışma listene ekle.
+            </p>
           </div>
-        )}
+
+          {/* Quick Action Buttons for Teachers */}
+          {isTeacher && (
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              <button
+                onClick={() => {
+                  resetChannelForm();
+                  setShowAddChannelModal(true);
+                }}
+                className="inline-flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-xs font-bold text-white rounded-xl shadow-lg shadow-red-600/20 transition-all border border-red-500/40 cursor-pointer"
+              >
+                <Youtube className="w-4 h-4" />
+                <span>YouTube Kanalı Ekle</span>
+              </button>
+              <button
+                onClick={() => {
+                  resetBookForm();
+                  setShowAddBookModal(true);
+                }}
+                className="inline-flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-xs font-bold text-white rounded-xl shadow-lg shadow-indigo-600/20 transition-all border border-indigo-500/40 cursor-pointer"
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>Kaynak Kitap Ekle</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* KPI COUNTERS BAR */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-800/80">
+          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5 flex items-center space-x-3 hover:border-slate-700 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] text-slate-400 font-medium block">Katalogdaki Kitaplar</span>
+              <span className="text-lg font-black text-white font-mono">{allBooks.length} <span className="text-xs font-normal text-slate-500">Kitap</span></span>
+            </div>
+          </div>
+
+          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5 flex items-center space-x-3 hover:border-slate-700 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 shrink-0">
+              <Youtube className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] text-slate-400 font-medium block">Önerilen Kanallar</span>
+              <span className="text-lg font-black text-white font-mono">{allChannels.length} <span className="text-xs font-normal text-slate-500">Kanal</span></span>
+            </div>
+          </div>
+
+          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5 flex items-center space-x-3 hover:border-slate-700 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+              <Heart className="w-5 h-5 fill-rose-500/20" />
+            </div>
+            <div>
+              <span className="text-[10px] text-slate-400 font-medium block">Favori Kitaplarım</span>
+              <span className="text-lg font-black text-white font-mono">{totalFavoriteBooks} <span className="text-xs font-normal text-slate-500">Favori</span></span>
+            </div>
+          </div>
+
+          <div className="bg-slate-950/60 border border-slate-800/80 rounded-2xl p-3.5 flex items-center space-x-3 hover:border-slate-700 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+              <Bookmark className="w-5 h-5 fill-emerald-500/20" />
+            </div>
+            <div>
+              <span className="text-[10px] text-slate-400 font-medium block">Takip Ettiğim</span>
+              <span className="text-lg font-black text-white font-mono">{totalFollowedBooks + totalFollowedChannels} <span className="text-xs font-normal text-slate-500">İçerik</span></span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* SEGMENT CONTROL (Top Tab Selector) */}
-      <div className="grid grid-cols-2 p-1.5 bg-slate-950 rounded-2xl border border-slate-800">
-        <button
-          onClick={() => {
-            setActiveTab('youtube');
-            setShowOnlyFollowed(false);
-          }}
-          className={`flex items-center justify-center space-x-2 py-3 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'youtube'
-              ? 'bg-red-600 border border-red-500 text-white shadow-lg shadow-red-600/10'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <Youtube className={`w-4 h-4 ${activeTab === 'youtube' ? 'animate-pulse' : ''}`} />
-          <span>YouTube Kanalları</span>
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab('books');
-            setShowOnlyFollowed(false);
-          }}
-          className={`flex items-center justify-center space-x-2 py-3 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'books'
-              ? 'bg-indigo-600 border border-indigo-500 text-white shadow-lg shadow-indigo-600/10'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <BookOpen className="w-4 h-4" />
-          <span>Kaynak Kitap Önerileri</span>
-        </button>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-1.5 bg-slate-950 rounded-2xl border border-slate-800 shadow-xl">
+        <div className="flex w-full sm:w-auto gap-1.5 p-0.5 bg-slate-900/60 rounded-xl border border-slate-800/80">
+          <button
+            onClick={() => {
+              setActiveTab('books');
+              setShowOnlyFollowed(false);
+            }}
+            className={`flex-1 sm:flex-initial flex items-center justify-center space-x-2 py-2.5 px-5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'books'
+                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Kaynak Kitap Önerileri</span>
+            <span className="text-[10px] bg-indigo-950/80 text-indigo-200 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono font-bold">
+              {allBooks.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('youtube');
+              setShowOnlyFollowed(false);
+            }}
+            className={`flex-1 sm:flex-initial flex items-center justify-center space-x-2 py-2.5 px-5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'youtube'
+                ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            }`}
+          >
+            <Youtube className="w-4 h-4" />
+            <span>YouTube Kanalları</span>
+            <span className="text-[10px] bg-red-950/80 text-red-200 border border-red-500/30 px-2 py-0.5 rounded-full font-mono font-bold">
+              {allChannels.length}
+            </span>
+          </button>
+        </div>
+
+        {/* View Switcher: Grid vs Table */}
+        <div className="flex items-center gap-1 self-end sm:self-center bg-slate-900/60 p-1 rounded-xl border border-slate-800/80">
+          <button
+            onClick={() => setViewMode('grid')}
+            title="Kart (Grid) Görünümü"
+            className={`p-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+              viewMode === 'grid'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+            <span className="hidden sm:inline">Kartlar</span>
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            title="Tablo (Liste) Görünümü"
+            className={`p-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+              viewMode === 'table'
+                ? 'bg-purple-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            <List className="w-4 h-4" />
+            <span className="hidden sm:inline">Tablo</span>
+          </button>
+        </div>
       </div>
 
-      {/* Filter and Switch Row */}
-      <div className="flex flex-col gap-4 bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-2xl shadow-xl backdrop-blur-md">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <label className="block text-[10px] uppercase tracking-widest font-extrabold text-slate-400">
-              Ders Seçimi
-            </label>
-            <span className="text-[10px] text-slate-500 font-medium">Seçili Ders: <strong className="text-white font-bold">{selectedSubject}</strong></span>
+      {/* FILTER & SEARCH CONTROL STATION */}
+      <div className="bg-slate-900/90 border border-slate-800 p-5 rounded-3xl shadow-xl backdrop-blur-md space-y-4">
+        
+        {/* Search Bar & Primary Toggles */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="relative w-full md:flex-1">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={activeTab === 'books' ? "Kitap adı, yayınevi veya konu ara (Örn: Reader at Work, Bilgi Sarmal, Dil)..." : "YouTube kanal adı veya ders ara..."}
+              className="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-2xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white rounded-md"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-          <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+            {activeTab === 'books' && (
+              <button
+                onClick={() => {
+                  setShowOnlyFavorites(!showOnlyFavorites);
+                  if (!showOnlyFavorites) setShowOnlyFollowed(false);
+                }}
+                className={`flex items-center space-x-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                  showOnlyFavorites
+                    ? 'bg-rose-600 border-rose-500 text-white shadow-md shadow-rose-600/20'
+                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                }`}
+              >
+                <Heart className={`w-3.5 h-3.5 ${showOnlyFavorites ? 'fill-current text-white' : 'text-rose-400'}`} />
+                <span>Favorilerim ({totalFavoriteBooks})</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                setShowOnlyFollowed(!showOnlyFollowed);
+                if (!showOnlyFollowed) setShowOnlyFavorites(false);
+              }}
+              className={`flex items-center space-x-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                showOnlyFollowed
+                  ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+              }`}
+            >
+              <Bookmark className={`w-3.5 h-3.5 ${showOnlyFollowed ? 'fill-current text-white' : 'text-indigo-400'}`} />
+              <span>Takip Listem ({activeTab === 'youtube' ? totalFollowedChannels : totalFollowedBooks})</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Horizontal Subject Picker Chips */}
+        <div className="space-y-1.5 pt-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 flex items-center gap-1.5">
+              <Layers className="w-3 h-3 text-purple-400" />
+              <span>Ders Seçimi</span>
+            </span>
+            <span className="text-[11px] text-purple-300 font-bold">
+              {selectedSubject} ({activeTab === 'books' ? allBooks.filter(b => b.subject === selectedSubject).length : allChannels.filter(c => c.subject === selectedSubject).length} Kaynak)
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-1">
             {SUBJECTS.map((sub) => {
               const isSelected = selectedSubject === sub.value && !showOnlyFollowed;
+              const subCount = activeTab === 'books' 
+                ? allBooks.filter(b => b.subject === sub.value).length 
+                : allChannels.filter(c => c.subject === sub.value).length;
+
               return (
                 <button
                   key={sub.value}
-                  disabled={showOnlyFollowed}
                   onClick={() => {
                     setSelectedSubject(sub.value);
                     setShowOnlyFollowed(false);
                   }}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border cursor-pointer shrink-0 ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border cursor-pointer shrink-0 flex items-center space-x-1.5 ${
                     isSelected
                       ? activeTab === 'youtube'
-                        ? 'bg-red-600 border-red-400 text-white shadow-lg shadow-red-600/30 scale-[1.02]'
-                        : 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30 scale-[1.02]'
-                      : showOnlyFollowed
-                      ? 'bg-slate-950/40 border-slate-850 text-slate-600 cursor-not-allowed'
-                      : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                        ? 'bg-gradient-to-r from-red-600 to-rose-600 border-red-400 text-white shadow-lg shadow-red-600/30 scale-[1.02]'
+                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30 scale-[1.02]'
+                      : 'bg-slate-950 border-slate-800/80 text-slate-400 hover:text-white hover:border-slate-700'
                   }`}
                 >
-                  {sub.label}
+                  <span>{sub.emoji}</span>
+                  <span>{sub.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    {subCount}
+                  </span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-slate-800/80">
-          <div className="flex items-center space-x-3 w-full sm:w-auto">
-            <label className="text-[10px] uppercase tracking-widest font-extrabold text-slate-400 shrink-0">
-              Sınav Türü:
-            </label>
-            <div className="grid grid-cols-3 p-1 bg-slate-950 rounded-xl border border-slate-800/80 w-full sm:w-56">
-              {(['Tümü', 'TYT', 'AYT'] as const).map((type) => (
+        {/* Sub-Filters for Books & Sort Options */}
+        {activeTab === 'books' && (
+          <div className="pt-3 border-t border-slate-800/80 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            
+            {/* Dynamic Sub-Category Tabs (e.g. Kelime, Gramer, Skills, Okuma, Deneme for Dil) */}
+            <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-0.5">
+              <span className="text-[10px] uppercase font-extrabold text-slate-400 shrink-0 flex items-center gap-1">
+                <Filter className="w-3 h-3 text-indigo-400" />
+                <span>Kategori:</span>
+              </span>
+              <button
+                onClick={() => setSelectedCategory('Tümü')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 cursor-pointer border ${
+                  selectedCategory === 'Tümü'
+                    ? 'bg-purple-600 border-purple-500 text-white'
+                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                Tümü
+              </button>
+              {availableCategoriesForSubject.map((cat) => (
                 <button
-                  key={type}
-                  id={`exam-type-${type.toLowerCase()}-btn`}
-                  disabled={showOnlyFollowed}
-                  onClick={() => setSelectedExamType(type)}
-                  className={`py-1.5 px-3 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                    showOnlyFollowed
-                      ? 'text-slate-600 cursor-not-allowed'
-                      : selectedExamType === type
-                        ? activeTab === 'youtube'
-                          ? 'bg-red-600 text-white shadow-md shadow-red-600/10'
-                          : 'bg-indigo-600 text-white shadow-md shadow-indigo-600/10'
-                        : 'text-slate-400 hover:text-slate-200'
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 cursor-pointer border ${
+                    selectedCategory === cat
+                      ? 'bg-purple-600 border-purple-500 text-white shadow-md'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
                   }`}
                 >
-                  {type}
+                  {cat}
                 </button>
               ))}
             </div>
+
+            {/* Level, Popularity and Sort Filters */}
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                onClick={() => setShowOnlyPopular(!showOnlyPopular)}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border cursor-pointer flex items-center space-x-1 ${
+                  showOnlyPopular
+                    ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-md shadow-amber-500/10'
+                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <Flame className="w-3 h-3 text-amber-400" />
+                <span>En Çok Tercih Edilenler</span>
+              </button>
+
+              <select
+                value={difficultyFilter}
+                onChange={(e) => setDifficultyFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                className="bg-slate-950 border border-slate-800 text-slate-300 text-[11px] font-bold rounded-lg px-2.5 py-1 focus:outline-none focus:border-purple-500"
+              >
+                <option value="all">Tüm Zorluk Seviyeleri</option>
+                <option value="1">⭐ Kolay (Seviye 1-2)</option>
+                <option value="3">⭐⭐⭐ Orta (Seviye 3)</option>
+                <option value="5">⭐⭐⭐⭐⭐ Zor (Seviye 4-5)</option>
+              </select>
+
+              <select
+                value={bookSortOrder}
+                onChange={(e) => setBookSortOrder(e.target.value as any)}
+                className="bg-slate-950 border border-slate-800 text-slate-300 text-[11px] font-bold rounded-lg px-2.5 py-1 focus:outline-none focus:border-purple-500"
+              >
+                <option value="difficulty_asc">Sırala: Kolaydan Zora</option>
+                <option value="difficulty_desc">Sırala: Zordan Kolaya</option>
+                <option value="popular">Sırala: Popülerlik</option>
+                <option value="publisher">Sırala: Yayınevi (A-Z)</option>
+              </select>
+            </div>
+
           </div>
-
-        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto justify-end">
-          {activeTab === 'books' && (
-            <button
-              onClick={() => {
-                setShowOnlyFavorites(!showOnlyFavorites);
-                if (!showOnlyFavorites) {
-                  setShowOnlyFollowed(false);
-                }
-              }}
-              className={`flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
-                showOnlyFavorites
-                  ? 'bg-rose-600 border-rose-500 text-white font-semibold shadow-md shadow-rose-600/20'
-                  : 'bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-white hover:border-slate-600'
-              }`}
-            >
-              <Heart className={`w-4 h-4 ${showOnlyFavorites ? 'fill-current text-white animate-pulse' : 'text-rose-400'}`} />
-              <span>
-                Favori Listem ({totalFavoriteBooks})
-              </span>
-            </button>
-          )}
-
-          <button
-            onClick={() => {
-              setShowOnlyFollowed(!showOnlyFollowed);
-              if (!showOnlyFollowed) {
-                setShowOnlyFavorites(false);
-              }
-            }}
-            className={`flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all border ${
-              showOnlyFollowed
-                ? activeTab === 'youtube'
-                  ? 'bg-rose-600 border-rose-500 text-white font-semibold shadow-md shadow-rose-600/20'
-                  : 'bg-indigo-600 border-indigo-500 text-white font-semibold shadow-md shadow-indigo-600/20'
-                : 'bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-white hover:border-slate-600'
-            }`}
-          >
-            <Bookmark className={`w-4 h-4 ${showOnlyFollowed ? 'fill-current' : 'text-slate-400'}`} />
-            <span>
-              Sadece Takip Listem ({activeTab === 'youtube' ? totalFollowedChannels : totalFollowedBooks})
-            </span>
-          </button>
-        </div>
+        )}
       </div>
-    </div>
 
-      {/* Main Content Area */}
+      {/* MAIN CONTENT AREA */}
       <div className="space-y-4">
         {activeTab === 'youtube' ? (
-          // YOUTUBE CHANNELS LIST
+          // ==================== YOUTUBE CHANNELS ====================
           displayedChannels.length > 0 ? (
-            <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/40">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-800 bg-slate-900/80 text-xs font-semibold text-slate-400">
-                    <th className="py-4 px-4 w-12 text-center">#</th>
-                    <th className="py-4 px-4">Ders</th>
-                    <th className="py-4 px-4">Kanal Adı</th>
-                    <th 
-                      onClick={() => setChannelSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-                      className="py-4 px-4 text-right cursor-pointer hover:text-white transition-colors select-none"
-                    >
-                      <div className="inline-flex items-center space-x-1 justify-end">
-                        <span>Abone Sayısı</span>
-                        <span className="text-[10px] text-indigo-400 font-bold">{channelSortOrder === 'desc' ? '▼' : '▲'}</span>
-                      </div>
-                    </th>
-                    <th className="py-4 px-4 text-center">Yönlendir</th>
-                    <th className="py-4 px-4 text-right">İşlem</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 text-xs text-slate-300">
-                  {displayedChannels.map((channel, index) => {
-                    const isAdded = isChannelAdded(channel.name);
-                    const color = SUBJECT_COLORS[channel.subject] || { bg: 'bg-slate-800', text: 'text-slate-300', border: 'border-slate-700' };
+            viewMode === 'grid' ? (
+              // GRID CARD VIEW (YOUTUBE)
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {displayedChannels.map((channel, idx) => {
+                  const isAdded = isChannelAdded(channel.name);
+                  const color = SUBJECT_COLORS[channel.subject] || { bg: 'bg-slate-800', text: 'text-slate-300', border: 'border-slate-700', glow: '' };
+                  const avatarSrc = getChannelAvatar(channel);
 
-                    return (
-                      <tr 
-                        key={`${channel.id || channel.name}-${channel.avatarUrl || ''}`}
-                        className="hover:bg-slate-900/60 transition-colors group"
-                      >
-                        <td className="py-3.5 px-4 text-center font-bold text-slate-500">
-                          {index + 1}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${color.bg} ${color.text} ${color.border}`}>
+                  return (
+                    <div
+                      key={`${channel.id || channel.name}-${idx}`}
+                      className="group relative bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-red-500/40 rounded-3xl p-5 shadow-xl transition-all duration-300 hover:shadow-2xl hover:shadow-red-500/10 flex flex-col justify-between space-y-4"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-[10px] font-bold border ${color.bg} ${color.text} ${color.border}`}>
                             {channel.subject}
                           </span>
-                        </td>
-                        <td className="py-3.5 px-4 font-semibold text-white group-hover:text-red-400 transition-colors">
-                          <div className="flex items-center space-x-3">
-                            <a
-                              href={channel.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-9 h-9 rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shrink-0 relative flex items-center justify-center shadow-md group-hover:scale-105 transition-transform"
-                              title={`${channel.name} kanalına git`}
-                            >
-                              {(() => {
-                                const avatarSrc = getChannelAvatar(channel);
-                                return (
-                                  <div className="w-full h-full relative flex items-center justify-center">
-                                    {avatarSrc ? (
-                                      <img
-                                        key={avatarSrc}
-                                        src={avatarSrc}
-                                        alt={channel.name}
-                                        loading="lazy"
-                                        className="w-full h-full object-cover absolute inset-0 z-10 rounded-xl"
-                                        onError={(e) => {
-                                          const target = e.currentTarget as HTMLImageElement;
-                                          const urlPath = target.src.split('?')[0];
-                                          if (urlPath.endsWith('.jpg')) {
-                                            target.src = urlPath.replace('.jpg', '.svg') + '?t=' + Date.now();
-                                          } else if (!target.src.includes('/api/youtube/avatar')) {
-                                            target.src = `/api/youtube/avatar?url=${encodeURIComponent(channel.url)}&name=${encodeURIComponent(channel.name)}&t=${Date.now()}`;
-                                          } else {
-                                            target.style.display = 'none';
-                                          }
-                                        }}
-                                      />
-                                    ) : null}
-                                    <div className="w-full h-full bg-gradient-to-br from-red-900/80 to-rose-950/90 flex items-center justify-center text-red-400 font-bold text-xs z-0">
-                                      <Youtube className="w-4 h-4 text-red-500" />
-                                    </div>
-                                  </div>
-                                );
-                              })()}
-                            </a>
-                            <a
-                              href={channel.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-bold text-xs text-white hover:text-red-400 transition-colors truncate"
-                            >
-                              {channel.name}
-                            </a>
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-4 text-right font-medium text-slate-200">
-                          <div className="inline-flex items-center space-x-1 justify-end">
-                            <TrendingUp className="w-3.5 h-3.5 text-slate-500" />
-                            <span>{channel.subscribersText}</span>
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-4 text-center">
-                          <a 
-                            href={channel.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center justify-center p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all border border-slate-700/50"
-                            title="Kanala Git"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        </td>
-                        <td className="py-3.5 px-4 text-right">
-                          <div className="flex items-center justify-end space-x-2">
+
+                          <div className="flex items-center space-x-1">
                             {isTeacher && (
                               <button
                                 onClick={() => handleStartEditChannel(channel)}
-                                className="p-2 bg-slate-800 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 border border-slate-700/60 hover:border-amber-500/30 rounded-xl transition-all"
+                                className="p-1.5 bg-slate-950 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 border border-slate-800 rounded-lg transition-all"
                                 title="Kanalı Düzenle"
                               >
-                                <Pencil className="w-3.5 h-3.5" />
+                                <Pencil className="w-3 h-3" />
                               </button>
                             )}
                             {isTeacher && (
@@ -1009,152 +1207,271 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                                     setDeletingItem({ id: channel.id, name: channel.name, type: 'channel' });
                                   }
                                 }}
-                                className="p-2 bg-slate-800 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-slate-700/60 hover:border-rose-500/30 rounded-xl transition-all"
-                                title="Kanalı Tamamen Sil"
+                                className="p-1.5 bg-slate-950 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-slate-800 rounded-lg transition-all"
+                                title="Kanalı Sil"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-3 h-3" />
                               </button>
                             )}
-                            <button
-                              onClick={() => handleToggleChannelFollow(channel)}
-                              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
-                                isAdded
-                                  ? 'bg-emerald-500/10 hover:bg-rose-500/10 border-emerald-500/30 hover:border-rose-500/30 text-emerald-400 hover:text-rose-400'
-                                  : 'bg-slate-800 hover:bg-red-600/10 hover:border-red-600/30 border-slate-700/60 text-slate-300 hover:text-red-400'
-                              }`}
-                            >
-                              {isAdded ? (
-                                <span className="flex items-center justify-end space-x-1">
-                                  <Check className="w-3 h-3 group-hover:hidden" />
-                                  <Trash2 className="w-3 h-3 hidden group-hover:inline text-rose-400" />
-                                  <span className="group-hover:hidden">Takip Ediliyor</span>
-                                  <span className="hidden group-hover:inline">Takipten Çıkar</span>
-                                </span>
-                              ) : (
-                                <span className="flex items-center justify-end space-x-1">
-                                  <Plus className="w-3 h-3" />
-                                  <span>Takip Et</span>
-                                </span>
-                              )}
-                            </button>
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+
+                        {/* Channel Avatar & Info */}
+                        <div className="flex items-center space-x-3.5">
+                          <a
+                            href={channel.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-14 h-14 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shrink-0 relative flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform"
+                          >
+                            {avatarSrc ? (
+                              <img
+                                src={avatarSrc}
+                                alt={channel.name}
+                                loading="lazy"
+                                className="w-full h-full object-cover absolute inset-0 z-10 rounded-2xl"
+                                onError={(e) => {
+                                  const target = e.currentTarget as HTMLImageElement;
+                                  const urlPath = target.src.split('?')[0];
+                                  if (urlPath.endsWith('.jpg')) {
+                                    target.src = urlPath.replace('.jpg', '.svg') + '?t=' + Date.now();
+                                  } else if (!target.src.includes('/api/youtube/avatar')) {
+                                    target.src = `/api/youtube/avatar?url=${encodeURIComponent(channel.url)}&name=${encodeURIComponent(channel.name)}&t=${Date.now()}`;
+                                  } else {
+                                    target.style.display = 'none';
+                                  }
+                                }}
+                              />
+                            ) : null}
+                            <div className="w-full h-full bg-gradient-to-br from-red-950 to-slate-950 flex items-center justify-center text-red-500 z-0">
+                              <Youtube className="w-6 h-6" />
+                            </div>
+                          </a>
+
+                          <div className="min-w-0 flex-1">
+                            <a
+                              href={channel.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-bold text-sm text-white hover:text-red-400 transition-colors block truncate"
+                            >
+                              {channel.name}
+                            </a>
+                            <div className="inline-flex items-center space-x-1 text-slate-400 text-xs font-semibold mt-1">
+                              <TrendingUp className="w-3.5 h-3.5 text-red-400" />
+                              <span>{channel.subscribersText} Abone</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Bar */}
+                      <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                        <a
+                          href={channel.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center space-x-1 px-3 py-2 bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-bold border border-slate-800 transition-all cursor-pointer"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 text-red-400" />
+                          <span>Kanala Git</span>
+                        </a>
+
+                        <button
+                          onClick={() => handleToggleChannelFollow(channel)}
+                          className={`flex-1 flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                            isAdded
+                              ? 'bg-emerald-500/10 hover:bg-rose-500/15 border-emerald-500/30 hover:border-rose-500/40 text-emerald-400 hover:text-rose-400'
+                              : 'bg-red-600 hover:bg-red-500 border-red-500 text-white shadow-md shadow-red-600/20'
+                          }`}
+                        >
+                          {isAdded ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 group-hover:hidden" />
+                              <Trash2 className="w-3.5 h-3.5 hidden group-hover:inline text-rose-400" />
+                              <span className="group-hover:hidden">Takip Ediliyor</span>
+                              <span className="hidden group-hover:inline">Takipten Çıkar</span>
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Takip Listeme Ekle</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              // TABLE VIEW (YOUTUBE)
+              <div className="overflow-x-auto rounded-3xl border border-slate-800 bg-slate-900/60 shadow-xl">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 bg-slate-950/80 text-xs font-bold text-slate-400">
+                      <th className="py-4 px-4 w-12 text-center">#</th>
+                      <th className="py-4 px-4">Ders</th>
+                      <th className="py-4 px-4">Kanal Adı</th>
+                      <th 
+                        onClick={() => setChannelSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                        className="py-4 px-4 text-right cursor-pointer hover:text-white transition-colors select-none"
+                      >
+                        <div className="inline-flex items-center space-x-1 justify-end">
+                          <span>Abone Sayısı</span>
+                          <ArrowUpDown className="w-3 h-3 text-red-400" />
+                        </div>
+                      </th>
+                      <th className="py-4 px-4 text-center">Yönlendir</th>
+                      <th className="py-4 px-4 text-right">İşlem</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-xs text-slate-300">
+                    {displayedChannels.map((channel, index) => {
+                      const isAdded = isChannelAdded(channel.name);
+                      const color = SUBJECT_COLORS[channel.subject] || { bg: 'bg-slate-800', text: 'text-slate-300', border: 'border-slate-700', glow: '' };
+                      const avatarSrc = getChannelAvatar(channel);
+
+                      return (
+                        <tr key={`${channel.id || channel.name}-${index}`} className="hover:bg-slate-900 transition-colors group">
+                          <td className="py-3.5 px-4 text-center font-bold text-slate-500">{index + 1}</td>
+                          <td className="py-3.5 px-4">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${color.bg} ${color.text} ${color.border}`}>
+                              {channel.subject}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 font-semibold text-white">
+                            <div className="flex items-center space-x-3">
+                              <a href={channel.url} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shrink-0 relative flex items-center justify-center">
+                                {avatarSrc && <img src={avatarSrc} alt={channel.name} className="w-full h-full object-cover" />}
+                              </a>
+                              <a href={channel.url} target="_blank" rel="noopener noreferrer" className="font-bold text-xs text-white hover:text-red-400 transition-colors">
+                                {channel.name}
+                              </a>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 text-right font-medium text-slate-200">
+                            <div className="inline-flex items-center space-x-1">
+                              <TrendingUp className="w-3.5 h-3.5 text-red-400" />
+                              <span>{channel.subscribersText}</span>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            <a href={channel.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white transition-all border border-slate-800">
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              {isTeacher && (
+                                <button onClick={() => handleStartEditChannel(channel)} className="p-1.5 bg-slate-950 hover:bg-amber-500/20 text-amber-400 border border-slate-800 rounded-lg">
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              )}
+                              {isTeacher && (
+                                <button onClick={() => { if (channel.id) setDeletingItem({ id: channel.id, name: channel.name, type: 'channel' }); }} className="p-1.5 bg-slate-950 hover:bg-rose-500/20 text-rose-400 border border-slate-800 rounded-lg">
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleToggleChannelFollow(channel)}
+                                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border cursor-pointer ${
+                                  isAdded
+                                    ? 'bg-emerald-500/10 hover:bg-rose-500/10 border-emerald-500/30 text-emerald-400 hover:text-rose-400'
+                                    : 'bg-red-600 hover:bg-red-500 text-white border-red-500'
+                                }`}
+                              >
+                                {isAdded ? 'Takip Ediliyor' : 'Takip Et'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )
           ) : (
-            <div className="text-center py-16 border border-dashed border-slate-800 rounded-2xl bg-slate-900/20">
-              <Heart className="w-8 h-8 text-slate-600 mx-auto mb-3 animate-pulse" />
-              <p className="text-sm font-semibold text-slate-400">
-                {showOnlyFollowed 
-                  ? 'Takip listenizde henüz tavsiye edilen kanal bulunmuyor.' 
-                  : 'Seçili derste henüz kanal bulunmuyor.'}
-              </p>
-              {showOnlyFollowed && (
-                <button 
-                  onClick={() => setShowOnlyFollowed(false)}
-                  className="mt-4 inline-flex items-center space-x-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 hover:text-white font-bold rounded-xl transition-all border border-slate-700/50"
-                >
-                  <span>Tüm Kanalları Göster</span>
-                </button>
-              )}
+            <div className="text-center py-16 border border-dashed border-slate-800 rounded-3xl bg-slate-900/30 space-y-3">
+              <Youtube className="w-10 h-10 text-slate-600 mx-auto animate-pulse" />
+              <p className="text-sm font-bold text-slate-300">Aramanıza veya filtrelerinize uygun kanal bulunamadı.</p>
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setShowOnlyFollowed(false);
+                }}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs text-white font-bold rounded-xl transition-all cursor-pointer"
+              >
+                Filtreleri Temizle
+              </button>
             </div>
           )
         ) : (
-          // BOOKS RECOMMENDATIONS LIST
+          // ==================== BOOKS RECOMMENDATIONS ====================
           displayedBooks.length > 0 ? (
-            <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/40">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-800 bg-slate-900/80 text-xs font-semibold text-slate-400">
-                    <th className="py-4 px-4 w-12 text-center">#</th>
-                    <th className="py-4 px-4">Ders / Tür</th>
-                    <th className="py-4 px-4">Yayınevi</th>
-                    <th className="py-4 px-4">Kaynak Adı</th>
-                    <th className="py-4 px-4">Zorluk Seviyesi</th>
-                    <th className="py-4 px-4">İçerik & Tercih Nedeni</th>
-                    <th className="py-4 px-4 text-center">Popüler</th>
-                    <th className="py-4 px-4 text-center">Favori</th>
-                    <th className="py-4 px-4 text-right">Takip</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 text-xs text-slate-300">
-                  {displayedBooks.map((book, index) => {
-                    const isAdded = isBookAdded(book.publisher, book.name);
-                    const bookKey = `${book.publisher} - ${book.name}`;
-                    const isFav = favoriteBooks.includes(bookKey);
-                    const color = SUBJECT_COLORS[book.subject] || { bg: 'bg-slate-800', text: 'text-slate-300', border: 'border-slate-700' };
+            viewMode === 'grid' ? (
+              // GRID CARD VIEW (BOOKS)
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {displayedBooks.map((book, index) => {
+                  const isAdded = isBookAdded(book.publisher, book.name);
+                  const bookKey = `${book.publisher} - ${book.name}`;
+                  const isFav = favoriteBooks.includes(bookKey);
+                  const color = SUBJECT_COLORS[book.subject] || { bg: 'bg-slate-800', text: 'text-slate-300', border: 'border-slate-700', glow: '' };
 
-                    return (
-                      <tr 
-                        key={`${book.publisher}-${book.name}-${index}`}
-                        className="hover:bg-slate-900/60 transition-colors group"
-                      >
-                        <td className="py-3.5 px-4 text-center font-bold text-slate-500">
-                          {index + 1}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <div className="flex flex-col space-y-1">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border w-max ${color.bg} ${color.text} ${color.border}`}>
+                  return (
+                    <div
+                      key={`${book.publisher}-${book.name}-${index}`}
+                      className="group relative bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-indigo-500/40 rounded-3xl p-5 shadow-xl transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10 flex flex-col justify-between space-y-4"
+                    >
+                      <div className="space-y-3">
+                        {/* Badges Row */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-[10px] font-bold border ${color.bg} ${color.text} ${color.border}`}>
                               {book.subject}
                             </span>
-                            <span className="text-[10px] text-slate-500 font-medium">
+                            <span className="text-[10px] bg-slate-950 text-slate-300 border border-slate-800 px-2 py-0.5 rounded-lg font-semibold">
                               {book.category}
                             </span>
+                            {book.isPopular && (
+                              <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-black animate-pulse">
+                                <Flame className="w-3 h-3 text-amber-400" />
+                                <span>Popüler</span>
+                              </span>
+                            )}
                           </div>
-                        </td>
-                        <td className="py-3.5 px-4 font-bold text-white">
-                          {book.publisher}
-                        </td>
-                        <td className="py-3.5 px-4 font-semibold text-slate-100">
-                          {book.name}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <span className="text-amber-400 font-medium whitespace-nowrap">
-                            {book.difficulty}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-400 max-w-xs leading-relaxed text-[11px]">
-                          {book.reason}
-                        </td>
-                        <td className="py-3.5 px-4 text-center">
-                          {book.isPopular ? (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-black tracking-wider animate-pulse">
-                              En Çok Tercih Edilen ⭐
-                            </span>
-                          ) : (
-                            <span className="text-slate-600">-</span>
-                          )}
-                        </td>
-                        <td className="py-3.5 px-4 text-center">
-                          <button
-                            onClick={() => {
-                              if (onToggleFavoriteBook) {
-                                onToggleFavoriteBook(bookKey);
-                                setSuccessToast(isFav ? `"${book.publisher} - ${book.name}" favorilerden çıkarıldı.` : `"${book.publisher} - ${book.name}" favorilere eklendi!`);
-                                setTimeout(() => setSuccessToast(null), 3000);
-                              }
-                            }}
-                            className="p-1.5 rounded-xl bg-slate-800/60 hover:bg-rose-500/10 border border-slate-700/50 hover:border-rose-500/30 text-slate-400 hover:text-rose-500 transition-all inline-flex items-center justify-center"
-                            title={isFav ? "Favorilerden Kaldır" : "Favorilere Ekle"}
-                          >
-                            <Heart className={`w-4 h-4 ${isFav ? "fill-rose-500 text-rose-500" : ""}`} />
-                          </button>
-                        </td>
-                        <td className="py-3.5 px-4 text-right">
-                          <div className="flex items-center justify-end space-x-2">
+
+                          {/* Top Action Heart & Admin Tools */}
+                          <div className="flex items-center space-x-1">
+                            <button
+                              onClick={() => {
+                                if (onToggleFavoriteBook) {
+                                  onToggleFavoriteBook(bookKey);
+                                  setSuccessToast(isFav ? `"${book.publisher} - ${book.name}" favorilerden çıkarıldı.` : `"${book.publisher} - ${book.name}" favorilere eklendi!`);
+                                  setTimeout(() => setSuccessToast(null), 3000);
+                                }
+                              }}
+                              className={`p-2 rounded-xl transition-all cursor-pointer border ${
+                                isFav
+                                  ? 'bg-rose-500/20 border-rose-500/40 text-rose-400'
+                                  : 'bg-slate-950 border-slate-800 text-slate-500 hover:text-rose-400 hover:border-rose-500/30'
+                              }`}
+                              title={isFav ? "Favorilerden Çıkar" : "Favorilere Ekle"}
+                            >
+                              <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-current' : ''}`} />
+                            </button>
+
                             {isTeacher && (
                               <button
                                 onClick={() => handleStartEditBook(book)}
-                                className="p-2 bg-slate-800 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 border border-slate-700/60 hover:border-amber-500/30 rounded-xl transition-all"
+                                className="p-2 bg-slate-950 hover:bg-amber-500/20 text-amber-400 border border-slate-800 rounded-xl transition-all"
                                 title="Kitabı Düzenle"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
                               </button>
                             )}
+
                             {isTeacher && (
                               <button
                                 onClick={() => {
@@ -1162,82 +1479,204 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                                     setDeletingItem({ id: book.id, name: `${book.publisher} - ${book.name}`, type: 'book' });
                                   }
                                 }}
-                                className="p-2 bg-slate-800 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-slate-700/60 hover:border-rose-500/30 rounded-xl transition-all"
-                                title="Kitabı Tamamen Sil"
+                                className="p-2 bg-slate-950 hover:bg-rose-500/20 text-rose-400 border border-slate-800 rounded-xl transition-all"
+                                title="Kitabı Sil"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             )}
+                          </div>
+                        </div>
+
+                        {/* Publisher & Book Name */}
+                        <div>
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-400 font-mono block">
+                            {book.publisher}
+                          </span>
+                          <h3 className="text-base font-black text-white group-hover:text-indigo-300 transition-colors mt-0.5">
+                            {book.name}
+                          </h3>
+                        </div>
+
+                        {/* Difficulty Level Bar */}
+                        <div className="space-y-1 bg-slate-950/70 p-2.5 rounded-2xl border border-slate-800/80">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-slate-400 font-medium">Zorluk Seviyesi:</span>
+                            {renderDifficultyBadge(book.difficultyValue, book.difficulty)}
+                          </div>
+                        </div>
+
+                        {/* Reason / Advice Notes */}
+                        {book.reason && (
+                          <p className="text-xs text-slate-300/90 leading-relaxed bg-slate-950/40 p-3 rounded-2xl border border-slate-800/50 line-clamp-3">
+                            "{book.reason}"
+                          </p>
+                        )}
+                      </div>
+
+                      {/* CTA Button: Add to Resource Tracker */}
+                      <div className="pt-3 border-t border-slate-800/80">
+                        <button
+                          onClick={() => handleToggleBookFollow(book)}
+                          className={`w-full flex items-center justify-center space-x-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                            isAdded
+                              ? 'bg-emerald-500/15 hover:bg-rose-500/15 border-emerald-500/40 hover:border-rose-500/40 text-emerald-300 hover:text-rose-300'
+                              : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white border-indigo-500/50 shadow-lg shadow-indigo-600/20'
+                          }`}
+                        >
+                          {isAdded ? (
+                            <>
+                              <Check className="w-4 h-4" />
+                              <span>Kaynaklarımda Ekli (Kaldır)</span>
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-4 h-4" />
+                              <span>Kaynaklarıma Ekle</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              // TABLE VIEW (BOOKS)
+              <div className="overflow-x-auto rounded-3xl border border-slate-800 bg-slate-900/60 shadow-xl">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 bg-slate-950/80 text-xs font-bold text-slate-400">
+                      <th className="py-4 px-4 w-12 text-center">#</th>
+                      <th className="py-4 px-4">Ders / Tür</th>
+                      <th className="py-4 px-4">Yayınevi</th>
+                      <th className="py-4 px-4">Kaynak Adı</th>
+                      <th className="py-4 px-4">Zorluk</th>
+                      <th className="py-4 px-4">İçerik & Tavsiye</th>
+                      <th className="py-4 px-4 text-center">Popüler</th>
+                      <th className="py-4 px-4 text-center">Favori</th>
+                      <th className="py-4 px-4 text-right">İşlem</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 text-xs text-slate-300">
+                    {displayedBooks.map((book, index) => {
+                      const isAdded = isBookAdded(book.publisher, book.name);
+                      const bookKey = `${book.publisher} - ${book.name}`;
+                      const isFav = favoriteBooks.includes(bookKey);
+                      const color = SUBJECT_COLORS[book.subject] || { bg: 'bg-slate-800', text: 'text-slate-300', border: 'border-slate-700', glow: '' };
+
+                      return (
+                        <tr key={`${book.publisher}-${book.name}-${index}`} className="hover:bg-slate-900 transition-colors group">
+                          <td className="py-3.5 px-4 text-center font-bold text-slate-500">{index + 1}</td>
+                          <td className="py-3.5 px-4">
+                            <div className="flex flex-col space-y-1">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border w-max ${color.bg} ${color.text} ${color.border}`}>
+                                {book.subject}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-medium">{book.category}</span>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-white">{book.publisher}</td>
+                          <td className="py-3.5 px-4 font-semibold text-slate-100">{book.name}</td>
+                          <td className="py-3.5 px-4">{renderDifficultyBadge(book.difficultyValue, book.difficulty)}</td>
+                          <td className="py-3.5 px-4 text-slate-400 max-w-xs leading-relaxed text-[11px]">{book.reason}</td>
+                          <td className="py-3.5 px-4 text-center">
+                            {book.isPopular ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[9px] font-black animate-pulse">
+                                ⭐ Popüler
+                              </span>
+                            ) : (
+                              <span className="text-slate-600">-</span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
                             <button
-                              onClick={() => handleToggleBookFollow(book)}
-                              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
-                                isAdded
-                                  ? 'bg-emerald-500/10 hover:bg-rose-500/10 border-emerald-500/30 hover:border-rose-500/30 text-emerald-400 hover:text-rose-400'
-                                  : 'bg-slate-800 hover:bg-indigo-600/10 hover:border-indigo-600/30 border-slate-700/60 text-slate-300 hover:text-indigo-400'
+                              onClick={() => {
+                                if (onToggleFavoriteBook) {
+                                  onToggleFavoriteBook(bookKey);
+                                  setSuccessToast(isFav ? `"${book.publisher} - ${book.name}" favorilerden çıkarıldı.` : `"${book.publisher} - ${book.name}" favorilere eklendi!`);
+                                  setTimeout(() => setSuccessToast(null), 3000);
+                                }
+                              }}
+                              className={`p-1.5 rounded-xl transition-all cursor-pointer border ${
+                                isFav ? 'bg-rose-500/20 border-rose-500/40 text-rose-400' : 'bg-slate-950 border-slate-800 text-slate-500 hover:text-rose-400'
                               }`}
                             >
-                              {isAdded ? (
-                                <span className="flex items-center justify-end space-x-1">
-                                  <Check className="w-3 h-3 group-hover:hidden" />
-                                  <Trash2 className="w-3 h-3 hidden group-hover:inline text-rose-400" />
-                                  <span className="group-hover:hidden">Kaynaklarımda</span>
-                                  <span className="hidden group-hover:inline">Kaynaktan Kaldır</span>
-                                </span>
-                              ) : (
-                                <span className="flex items-center justify-end space-x-1">
-                                  <Plus className="w-3 h-3" />
-                                  <span>Kaynağa Ekle</span>
-                                </span>
-                              )}
+                              <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-current' : ''}`} />
                             </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              {isTeacher && (
+                                <button onClick={() => handleStartEditBook(book)} className="p-1.5 bg-slate-950 hover:bg-amber-500/20 text-amber-400 border border-slate-800 rounded-lg">
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                              )}
+                              {isTeacher && (
+                                <button onClick={() => { if (book.id) setDeletingItem({ id: book.id, name: `${book.publisher} - ${book.name}`, type: 'book' }); }} className="p-1.5 bg-slate-950 hover:bg-rose-500/20 text-rose-400 border border-slate-800 rounded-lg">
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleToggleBookFollow(book)}
+                                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border cursor-pointer ${
+                                  isAdded
+                                    ? 'bg-emerald-500/10 hover:bg-rose-500/10 border-emerald-500/30 text-emerald-400 hover:text-rose-400'
+                                    : 'bg-indigo-600 hover:bg-indigo-500 text-white border-indigo-500'
+                                }`}
+                              >
+                                {isAdded ? 'Kaynaklarımda' : 'Kaynağa Ekle'}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )
           ) : (
-            <div className="text-center py-16 border border-dashed border-slate-800 rounded-2xl bg-slate-900/20">
-              <Bookmark className="w-8 h-8 text-slate-600 mx-auto mb-3 animate-pulse" />
-              <p className="text-sm font-semibold text-slate-400">
-                {showOnlyFollowed 
-                  ? 'Takip listenizde henüz tavsiye edilen kaynak kitap bulunmuyor.' 
-                  : 'Seçili derste henüz kaynak kitap önerisi bulunmuyor.'}
-              </p>
-              {showOnlyFollowed && (
-                <button 
-                  onClick={() => setShowOnlyFollowed(false)}
-                  className="mt-4 inline-flex items-center space-x-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 hover:text-white font-bold rounded-xl transition-all border border-slate-700/50"
-                >
-                  <span>Tüm Kitapları Göster</span>
-                </button>
-              )}
+            <div className="text-center py-16 border border-dashed border-slate-800 rounded-3xl bg-slate-900/30 space-y-3">
+              <BookMarked className="w-10 h-10 text-slate-600 mx-auto animate-pulse" />
+              <p className="text-sm font-bold text-slate-300">Aramanıza veya filtrelerinize uygun kaynak kitap bulunamadı.</p>
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategory('Tümü');
+                  setDifficultyFilter('all');
+                  setShowOnlyPopular(false);
+                  setShowOnlyFollowed(false);
+                  setShowOnlyFavorites(false);
+                }}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs text-white font-bold rounded-xl transition-all cursor-pointer"
+              >
+                Tüm Filtreleri Temizle
+              </button>
             </div>
           )
         )}
       </div>
 
-      {/* Smart Study Tips Card */}
-      <div className="bg-gradient-to-r from-indigo-950/20 via-slate-900 to-indigo-950/20 border border-slate-800/80 p-5 rounded-2xl flex flex-col md:flex-row items-center gap-4">
-        <div className={`w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 ${
+      {/* SMART STUDY TIPS CARD */}
+      <div className="bg-gradient-to-r from-purple-950/20 via-slate-900 to-indigo-950/20 border border-slate-800 p-5 sm:p-6 rounded-3xl flex flex-col md:flex-row items-center gap-4 shadow-xl">
+        <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 ${
           activeTab === 'youtube' 
             ? 'bg-red-500/10 border-red-500/30 text-red-400' 
             : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400'
         }`}>
           <Award className="w-6 h-6" />
         </div>
-        <div className="space-y-1">
-          <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-yellow-500 animate-pulse" />
-            <span>{activeTab === 'youtube' ? 'Kanal Seçim Stratejisi' : 'Kaynak Kitap Seçim Stratejisi'}</span>
+        <div className="space-y-1 text-center md:text-left">
+          <h4 className="text-sm font-bold text-white flex items-center justify-center md:justify-start gap-1.5">
+            <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
+            <span>{activeTab === 'youtube' ? 'YouTube Kanal Takip Stratejisi' : 'Kaynak Kitap ve Çalışma Takip Entegrasyonu'}</span>
           </h4>
           <p className="text-xs text-slate-400 leading-relaxed">
             {activeTab === 'youtube' ? (
-              <span>Takip listesine eklediğiniz kanallar otomatik olarak <strong>YouTube Takip Listenize</strong> eklenir ve kamplarını, ders videolarını, oynatma listelerini izleme durumunuzla birlikte oradan takip edebilirsiniz!</span>
+              <span>Takip listesine eklediğiniz kanallar otomatik olarak <strong>YouTube Takip Listenize</strong> eklenir; kampları ve ders videolarını izleme durumunuzla birlikte oradan takip edebilirsiniz.</span>
             ) : (
-              <span>Önerilen kaynaklardan beğendiklerinizi <strong>"Kaynağa Ekle"</strong> butonuyla doğrudan <strong>Kaynak Takip Listesi</strong> sayfanıza ekleyebilir, ünite/test sayılarını belirleyip günlük çalışma programınızda çözüldü olarak işaretleyebilirsiniz!</span>
+              <span>Önerilen kaynakları <strong>"Kaynaklarıma Ekle"</strong> butonuyla doğrudan <strong>Kaynak Takip Listesi</strong> sayfanıza aktarabilir, ünite/test sayılarını belirleyip günlük çalışma programınızda çözüldü olarak işaretleyebilirsiniz.</span>
             )}
           </p>
         </div>
@@ -1249,9 +1688,9 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) { setShowAddChannelModal(false); setEditingChannel(null); } }}
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
-              <h3 className="font-bold text-white flex items-center space-x-2">
+              <h3 className="font-bold text-white flex items-center space-x-2 text-sm">
                 <Youtube className="w-5 h-5 text-red-500" />
                 <span>{editingChannel ? 'YouTube Kanalını Düzenle' : 'Yeni YouTube Kanal Önerisi Ekle'}</span>
               </h3>
@@ -1260,7 +1699,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                   setShowAddChannelModal(false);
                   resetChannelForm();
                 }}
-                className="text-slate-400 hover:text-white transition-colors text-xl font-bold"
+                className="text-slate-400 hover:text-white transition-colors text-xl font-bold cursor-pointer"
               >
                 &times;
               </button>
@@ -1272,7 +1711,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                 <select
                   value={channelSubject}
                   onChange={(e) => setChannelSubject(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500 animate-none"
+                  className="w-full bg-slate-800 border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500"
                 >
                   {SUBJECTS.map(sub => (
                     <option key={sub.value} value={sub.value}>{sub.label}</option>
@@ -1318,7 +1757,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kanal Logosu / Fotoğrafı (Opsiyonel)</label>
-                <div className="flex items-center space-x-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <div className="flex items-center space-x-3 bg-slate-950 p-3 rounded-2xl border border-slate-800">
                   <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 shrink-0 flex items-center justify-center relative">
                     {avatarPreviewUrl ? (
                       <img 
@@ -1354,7 +1793,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                         type="button"
                         disabled={isFetchingApiAvatar}
                         onClick={handleFetchAvatarFromApi}
-                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-red-950/60 hover:bg-red-900/80 text-red-300 hover:text-white rounded-lg text-xs font-bold transition-all border border-red-800/60"
+                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-red-950/60 hover:bg-red-900/80 text-red-300 hover:text-white rounded-lg text-xs font-bold transition-all border border-red-800/60 cursor-pointer"
                         title="YouTube kanal sayfasından / API servisinden resmi profil resmini çeker"
                       >
                         {isFetchingApiAvatar ? (
@@ -1386,19 +1825,19 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                     setShowAddChannelModal(false);
                     resetChannelForm();
                   }}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
                   disabled={isUploadingAvatar}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-red-600/10 flex items-center space-x-1.5"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-red-600/10 flex items-center space-x-1.5 cursor-pointer"
                 >
                   {isUploadingAvatar ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Sıkıştırılıyor & Yükleniyor...</span>
+                      <span>Yükleniyor...</span>
                     </>
                   ) : (
                     <span>{editingChannel ? 'Değişiklikleri Kaydet' : 'Kanalı Ekle'}</span>
@@ -1416,9 +1855,9 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) { setShowAddBookModal(false); setEditingBook(null); } }}
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
-              <h3 className="font-bold text-white flex items-center space-x-2">
+              <h3 className="font-bold text-white flex items-center space-x-2 text-sm">
                 <BookOpen className="w-5 h-5 text-indigo-500" />
                 <span>{editingBook ? 'Kaynak Kitap Önerisini Düzenle' : 'Yeni Kaynak Kitap Önerisi Ekle'}</span>
               </h3>
@@ -1427,7 +1866,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                   setShowAddBookModal(false);
                   resetBookForm();
                 }}
-                className="text-slate-400 hover:text-white transition-colors text-xl font-bold"
+                className="text-slate-400 hover:text-white transition-colors text-xl font-bold cursor-pointer"
               >
                 &times;
               </button>
@@ -1548,13 +1987,13 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                     setShowAddBookModal(false);
                     resetBookForm();
                   }}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/10"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/10 cursor-pointer"
                 >
                   {editingBook ? 'Değişiklikleri Kaydet' : 'Kitabı Ekle'}
                 </button>
