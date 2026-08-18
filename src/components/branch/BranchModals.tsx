@@ -322,7 +322,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
     }
   };
 
-  const formatSolutionText = (text: string) => {
+  const formatSolutionText = (text: string, showTopAnswerBadge: boolean = true) => {
     if (!text) return null;
 
     // Handle literal \n and insert double line breaks before section headers if missing
@@ -383,7 +383,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
     return (
       <div className="space-y-2">
         {/* Top Green Correct Answer Badge (matching Benzer Sorular style) */}
-        {extractedCorrectAnswer && (
+        {showTopAnswerBadge && extractedCorrectAnswer && (
           <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-xl space-y-1 mb-2">
             <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Çözüm & Doğru Cevap</span>
             <div className="inline-block bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-lg text-xs font-bold mt-1">
@@ -398,8 +398,8 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
 
           if (trimmed === '') return <div key={idx} className="h-1.5" />;
 
-          // Skip rendering the original "Doğru Cevap:" line if we rendered the top badge
-          if (extractedCorrectAnswer && (trimmed.toLowerCase().startsWith('doğru cevap') || trimmed.toLowerCase().startsWith('cevap:'))) {
+          // Skip rendering the original "Doğru Cevap:" line if we rendered the top badge or if already handled
+          if (trimmed.toLowerCase().startsWith('doğru cevap') || trimmed.toLowerCase().startsWith('cevap:')) {
             return null;
           }
 
@@ -1459,13 +1459,13 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
 
                               {isSolutionVisible ? (
                                 <div className="space-y-2 pt-1 animate-fade-in border-t border-slate-800/80">
-                                  {activeQ.correctAnswer && (
+                                  {activeQ.correctAnswer ? (
                                     <div className="inline-block bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-lg text-xs font-bold">
                                       ✅ {activeQ.correctAnswer}
                                     </div>
-                                  )}
+                                  ) : null}
                                   <div className="text-xs text-slate-300 leading-relaxed pt-1">
-                                    {formatSolutionText(activeQ.solution)}
+                                    {formatSolutionText(activeQ.solution, !activeQ.correctAnswer)}
                                   </div>
                                 </div>
                               ) : (
