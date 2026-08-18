@@ -198,7 +198,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       id="mobile-bottom-navbar"
       aria-label="Mobil Alt Navigasyon"
       className={`mobile-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-35 bg-slate-950/95 backdrop-blur-2xl border-t border-white/10 shadow-[0_-10px_30px_rgba(0,0,0,0.6)] px-2 pt-1.5 pb-[max(env(safe-area-inset-bottom,0px),0.5rem)] transition-all duration-300 ease-in-out select-none ${
-        isAnyModalOpen ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+        (isAnyModalOpen || isMobileMenuOpen) ? 'translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
       }`}
     >
       <div className="max-w-md mx-auto grid grid-cols-5 gap-1 items-center">

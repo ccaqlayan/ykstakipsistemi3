@@ -125,13 +125,13 @@ export const AppToastBanner: React.FC<AppToastBannerProps> = ({
       {activeTab !== 'pomodoro' && !isZenMode && (
         <button
           onClick={handleToggleFullscreen}
-          className="fixed bottom-6 left-6 z-40 p-3.5 bg-slate-950/80 hover:bg-indigo-600 border border-white/10 text-white rounded-full shadow-2xl transition-all duration-300 flex items-center justify-center hover:scale-110 active:scale-95 group focus:outline-none"
+          className="fixed bottom-[calc(max(env(safe-area-inset-bottom,0px),0.5rem)+4.75rem)] left-4 md:bottom-6 md:left-6 z-30 p-2.5 sm:p-3.5 bg-slate-950/90 hover:bg-indigo-600 border border-white/15 text-white rounded-full shadow-2xl backdrop-blur-md transition-all duration-300 flex items-center justify-center hover:scale-110 active:scale-95 group focus:outline-none"
           title={isFullscreen || isVirtualFullscreen ? "Tam Ekrandan Çık" : "Tam Ekran Yap"}
         >
           {isFullscreen || isVirtualFullscreen ? (
-            <Minimize className="w-5 h-5 text-indigo-300 group-hover:text-white transition-colors" />
+            <Minimize className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-300 group-hover:text-white transition-colors" />
           ) : (
-            <Maximize className="w-5 h-5 text-indigo-300 group-hover:text-white transition-colors" />
+            <Maximize className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-300 group-hover:text-white transition-colors" />
           )}
         </button>
       )}

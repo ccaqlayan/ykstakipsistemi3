@@ -257,10 +257,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Logout button */}
-      <div className="pt-3 border-t border-white/10 mt-2 space-y-2">
+      <div className="pt-3 border-t border-white/10 mt-2 space-y-2 shrink-0">
         <button
           onClick={handleLogout}
-          className="flex items-center space-x-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-rose-300 hover:text-white bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 w-full transition-all"
+          className="flex items-center space-x-2.5 px-3.5 py-3 sm:py-2.5 rounded-2xl text-xs font-bold text-rose-300 hover:text-white bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 w-full transition-all min-h-[44px] cursor-pointer active:scale-95"
         >
           <LogOut className="w-4 h-4" />
           <span>Çıkış Yap / Giriş Ekranı</span>
@@ -270,7 +270,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={onAddToHomeScreen}
             id="sidebar-add-to-homescreen-bottom"
-            className="flex items-center space-x-2.5 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 w-full transition-all"
+            className="flex items-center space-x-2.5 px-3.5 py-3 sm:py-2.5 rounded-2xl text-xs font-bold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 w-full transition-all min-h-[44px] cursor-pointer active:scale-95"
           >
             <YildizLisesiLogo className="w-4 h-4 shrink-0" />
             <span>Ana Ekrana Ekle</span>
@@ -294,25 +294,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div 
           id="mobile-sidebar-backdrop"
           onClick={onCloseMobile} 
-          className={`sidebar-backdrop fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 transition-opacity ${
+          className={`sidebar-backdrop fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[60] transition-opacity ${
             isHideDesktopSidebar ? '' : 'md:hidden'
           }`} 
         />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-slate-900 border-r border-white/10 p-4 shadow-2xl flex flex-col justify-between transform transition-transform duration-300 ease-in-out ${
+      <aside className={`fixed inset-y-0 left-0 z-[70] w-72 max-w-[85vw] bg-slate-900 border-r border-white/10 p-4 pb-[max(calc(env(safe-area-inset-bottom,0px)+1.25rem),1.75rem)] shadow-2xl flex flex-col justify-between transform transition-transform duration-300 ease-in-out ${
         isHideDesktopSidebar ? '' : 'md:hidden'
       } ${
         isOpenMobile ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/10">
+        <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/10 shrink-0">
           <div className="flex items-center space-x-2">
             <YildizLisesiLogo className="w-7 h-7 shrink-0 drop-shadow-md" />
             <span className="font-bold text-sm text-white">Menü</span>
           </div>
           <button
             onClick={onCloseMobile}
-            className="p-1.5 rounded-xl bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+            className="p-1.5 rounded-xl bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
