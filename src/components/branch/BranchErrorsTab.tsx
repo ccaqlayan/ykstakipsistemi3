@@ -483,7 +483,7 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
       {/* ── 4 KPI SUMMARY METRIC CARDS (KOMPAKT MİNİ İSTATİSTİK ŞERİDİ) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         {/* Card 1: Toplam Yanlış */}
-        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-rose-500/40 transition-all">
+        <div className="bg-slate-900/90 border border-slate-800 p-3 sm:p-3.5 rounded-2xl shadow-md backdrop-blur-md relative overflow-hidden group hover:border-rose-500/40 transition-all min-h-[80px]">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
               <AlertTriangle className="w-4 h-4 text-rose-400" />
@@ -492,17 +492,17 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
               <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Toplam Yanlış</span>
               <div className="flex items-baseline space-x-1.5">
                 <span className="text-base sm:text-lg font-black text-white font-mono">{topicErrors.length}</span>
-                <span className="text-[10px] text-slate-500">Soru</span>
+                <span className="text-[10px] text-slate-500 font-medium">Soru</span>
               </div>
             </div>
           </div>
-          <span className="text-[9px] bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+          <span className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 text-[9px] sm:text-[9.5px] bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0">
             Havuz
           </span>
         </div>
 
         {/* Card 2: Bekleyen Tekrarlar */}
-        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-amber-500/40 transition-all">
+        <div className="bg-slate-900/90 border border-slate-800 p-3 sm:p-3.5 rounded-2xl shadow-md backdrop-blur-md relative overflow-hidden group hover:border-amber-500/40 transition-all min-h-[80px]">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
               <BookOpen className="w-4 h-4 text-amber-400" />
@@ -511,17 +511,17 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
               <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Bekleyen Tekrar</span>
               <div className="flex items-baseline space-x-1.5">
                 <span className="text-base sm:text-lg font-black text-amber-400 font-mono">{topicErrors.filter(e => !e.revised).length}</span>
-                <span className="text-[10px] text-slate-500">Soru</span>
+                <span className="text-[10px] text-slate-500 font-medium">Soru</span>
               </div>
             </div>
           </div>
-          <span className="text-[9px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+          <span className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 text-[9px] sm:text-[9.5px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0">
             %{topicErrors.length > 0 ? Math.round((topicErrors.filter(e => e.revised).length / topicErrors.length) * 100) : 0} Oran
           </span>
         </div>
 
         {/* Card 3: Tekrar Edilenler */}
-        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-emerald-500/40 transition-all">
+        <div className="bg-slate-900/90 border border-slate-800 p-3 sm:p-3.5 rounded-2xl shadow-md backdrop-blur-md relative overflow-hidden group hover:border-emerald-500/40 transition-all min-h-[80px]">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -530,17 +530,17 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
               <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Pekiştirilen</span>
               <div className="flex items-baseline space-x-1.5">
                 <span className="text-base sm:text-lg font-black text-emerald-400 font-mono">{topicErrors.filter(e => e.revised).length}</span>
-                <span className="text-[10px] text-slate-500">Soru</span>
+                <span className="text-[10px] text-slate-500 font-medium">Soru</span>
               </div>
             </div>
           </div>
-          <span className="text-[9px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+          <span className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 text-[9px] sm:text-[9.5px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0">
             Tamamlandı
           </span>
         </div>
 
         {/* Card 4: AI & Görselli */}
-        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-purple-500/40 transition-all">
+        <div className="bg-slate-900/90 border border-slate-800 p-3 sm:p-3.5 rounded-2xl shadow-md backdrop-blur-md relative overflow-hidden group hover:border-purple-500/40 transition-all min-h-[80px]">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
               <Brain className="w-4 h-4 text-purple-400" />
@@ -549,11 +549,11 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
               <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Görselli & AI</span>
               <div className="flex items-baseline space-x-1.5">
                 <span className="text-base sm:text-lg font-black text-purple-400 font-mono">{topicErrors.filter(e => e.imageUrl || e.aiAnalysis || e.aiFeedback).length}</span>
-                <span className="text-[10px] text-slate-500">Soru</span>
+                <span className="text-[10px] text-slate-500 font-medium">Soru</span>
               </div>
             </div>
           </div>
-          <span className="text-[9px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+          <span className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 text-[9px] sm:text-[9.5px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0">
             AI Destekli
           </span>
         </div>

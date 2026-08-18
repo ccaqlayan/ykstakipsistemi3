@@ -659,7 +659,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
       {/* ── 4 TOP KPI METRIC CARDS (KOMPAKT MİNİ İSTATİSTİK ŞERİDİ) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         {/* Card 1: Kayıtlı Kaynak Kitaplar */}
-        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-indigo-500/40 transition-all">
+        <div className="bg-slate-900/90 border border-slate-800 p-3 sm:p-3.5 rounded-2xl shadow-md backdrop-blur-md relative overflow-hidden group hover:border-indigo-500/40 transition-all min-h-[80px]">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
               <BookOpen className="w-4 h-4 text-indigo-400" />
@@ -668,17 +668,17 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
               <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Kaynak Kitap</span>
               <div className="flex items-baseline space-x-1.5">
                 <span className="text-base sm:text-lg font-black text-white font-mono">{totalBooks}</span>
-                <span className="text-[10px] text-slate-500">Kitap</span>
+                <span className="text-[10px] text-slate-500 font-medium">Kitap</span>
               </div>
             </div>
           </div>
-          <span className="text-[9px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline" title={`Devam Eden: ${inProgressBooks}, Başlanmamış: ${totalBooks - completedBooks - inProgressBooks}`}>
+          <span className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 text-[9px] sm:text-[9.5px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0" title={`Devam Eden: ${inProgressBooks}, Başlanmamış: ${totalBooks - completedBooks - inProgressBooks}`}>
             {completedBooks} Bitirildi
           </span>
         </div>
 
         {/* Card 2: Toplam Çözülen Konular */}
-        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-fuchsia-500/40 transition-all">
+        <div className="bg-slate-900/90 border border-slate-800 p-3 sm:p-3.5 rounded-2xl shadow-md backdrop-blur-md relative overflow-hidden group hover:border-fuchsia-500/40 transition-all min-h-[80px]">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/20 flex items-center justify-center shrink-0">
               <ListChecks className="w-4 h-4 text-fuchsia-400" />
@@ -687,17 +687,17 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
               <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Konu İlerlemesi</span>
               <div className="flex items-baseline space-x-1.5">
                 <span className="text-base sm:text-lg font-black text-fuchsia-400 font-mono">{grandCompletedTopics}</span>
-                <span className="text-[10px] text-slate-500">/ {grandTotalTopics}</span>
+                <span className="text-[10px] text-slate-500 font-medium">/ {grandTotalTopics}</span>
               </div>
             </div>
           </div>
-          <span className="text-[9px] bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+          <span className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 text-[9px] sm:text-[9.5px] bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0">
             %{overallPercent} Tamamlandı
           </span>
         </div>
 
         {/* Card 3: TYT Kitap Sayısı */}
-        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-sky-500/40 transition-all">
+        <div className="bg-slate-900/90 border border-slate-800 p-3 sm:p-3.5 rounded-2xl shadow-md backdrop-blur-md relative overflow-hidden group hover:border-sky-500/40 transition-all min-h-[80px]">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
               <Layers className="w-4 h-4 text-sky-400" />
@@ -706,17 +706,17 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
               <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">TYT Kaynakları</span>
               <div className="flex items-baseline space-x-1.5">
                 <span className="text-base sm:text-lg font-black text-sky-400 font-mono">{getExamTypeBookCount('TYT')}</span>
-                <span className="text-[10px] text-slate-500">Kitap</span>
+                <span className="text-[10px] text-slate-500 font-medium">Kitap</span>
               </div>
             </div>
           </div>
-          <span className="text-[9px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+          <span className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 text-[9px] sm:text-[9.5px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0">
             TYT Müfredatı
           </span>
         </div>
 
         {/* Card 4: AYT Kitap Sayısı */}
-        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-amber-500/40 transition-all">
+        <div className="bg-slate-900/90 border border-slate-800 p-3 sm:p-3.5 rounded-2xl shadow-md backdrop-blur-md relative overflow-hidden group hover:border-amber-500/40 transition-all min-h-[80px]">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
               <Award className="w-4 h-4 text-amber-400" />
@@ -725,11 +725,11 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
               <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">AYT Kaynakları</span>
               <div className="flex items-baseline space-x-1.5">
                 <span className="text-base sm:text-lg font-black text-amber-400 font-mono">{getExamTypeBookCount('AYT')}</span>
-                <span className="text-[10px] text-slate-500">Kitap</span>
+                <span className="text-[10px] text-slate-500 font-medium">Kitap</span>
               </div>
             </div>
           </div>
-          <span className="text-[9px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+          <span className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 text-[9px] sm:text-[9.5px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0">
             AYT Müfredatı
           </span>
         </div>

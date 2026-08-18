@@ -171,7 +171,7 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
       {/* ── 1. TOP KPI DASHBOARD CARDS (KOMPAKT MİNİ İSTATİSTİK ŞERİDİ) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
         {/* Card 1: Toplam Branş Denemesi */}
-        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-indigo-500/40 transition-all">
+        <div className="bg-slate-900/90 border border-slate-800 p-3 sm:p-3.5 rounded-2xl shadow-md backdrop-blur-md relative overflow-hidden group hover:border-indigo-500/40 transition-all min-h-[80px]">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
               <Target className="w-4 h-4 text-indigo-400" />
@@ -180,17 +180,17 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
               <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Branş Denemesi</span>
               <div className="flex items-baseline space-x-1.5">
                 <span className="text-base sm:text-lg font-black text-white font-mono">{totalBranchExamsCount}</span>
-                <span className="text-[10px] text-slate-500">Deneme</span>
+                <span className="text-[10px] text-slate-500 font-medium">Deneme</span>
               </div>
             </div>
           </div>
-          <span className="text-[9px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline" title={`TYT: ${tytExamCount}, AYT: ${aytExamCount}`}>
+          <span className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 text-[9px] sm:text-[9.5px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0" title={`TYT: ${tytExamCount}, AYT: ${aytExamCount}`}>
             %{analyzedBranchExamsPercentage} Analiz
           </span>
         </div>
 
         {/* Card 2: Net Ortalaması & Rekor */}
-        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-emerald-500/40 transition-all">
+        <div className="bg-slate-900/90 border border-slate-800 p-3 sm:p-3.5 rounded-2xl shadow-md backdrop-blur-md relative overflow-hidden group hover:border-emerald-500/40 transition-all min-h-[80px]">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
               <TrendingUp className="w-4 h-4 text-emerald-400" />
@@ -199,19 +199,19 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
               <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Net Ortalaması</span>
               <div className="flex items-baseline space-x-1.5">
                 <span className="text-base sm:text-lg font-black text-emerald-400 font-mono">{avgNetOverall}</span>
-                <span className="text-[10px] text-slate-500">Net</span>
+                <span className="text-[10px] text-slate-500 font-medium">Net</span>
               </div>
             </div>
           </div>
           {maxNetRecord > 0 && (
-            <span className="text-[9px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+            <span className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 text-[9px] sm:text-[9.5px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0">
               Rekor: {maxNetRecord} Net
             </span>
           )}
         </div>
 
         {/* Card 3: Toplam Çözüm Süresi & Hız */}
-        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-amber-500/40 transition-all">
+        <div className="bg-slate-900/90 border border-slate-800 p-3 sm:p-3.5 rounded-2xl shadow-md backdrop-blur-md relative overflow-hidden group hover:border-amber-500/40 transition-all min-h-[80px]">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
               <Clock className="w-4 h-4 text-amber-400" />
@@ -223,13 +223,13 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
               </div>
             </div>
           </div>
-          <span className="text-[9px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+          <span className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 text-[9px] sm:text-[9.5px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0">
             Ort. {avgDurationMinutes} dk/deneme
           </span>
         </div>
 
         {/* Card 4: Hata Defteri & Tekrar Oranı */}
-        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-rose-500/40 transition-all">
+        <div className="bg-slate-900/90 border border-slate-800 p-3 sm:p-3.5 rounded-2xl shadow-md backdrop-blur-md relative overflow-hidden group hover:border-rose-500/40 transition-all min-h-[80px]">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
               <AlertTriangle className="w-4 h-4 text-rose-400" />
@@ -238,11 +238,11 @@ export const BranchAnalyticsTab: React.FC<BranchAnalyticsTabProps> = ({
               <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Hata Defteri</span>
               <div className="flex items-baseline space-x-1.5">
                 <span className="text-base sm:text-lg font-black text-rose-400 font-mono">{unrevisedErrorsCount}</span>
-                <span className="text-[10px] text-slate-500">Bekleyen</span>
+                <span className="text-[10px] text-slate-500 font-medium">Bekleyen</span>
               </div>
             </div>
           </div>
-          <span className="text-[9px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+          <span className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 text-[9px] sm:text-[9.5px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0">
             %{revisionPercentage} Tekrar
           </span>
         </div>
