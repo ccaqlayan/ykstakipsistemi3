@@ -453,7 +453,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   // Branch Exam Form
   const [examDate, setExamDate] = useState(new Date().toISOString().split('T')[0]);
   const [examSubject, setExamSubject] = useState(YKS_SUBJECTS.AYT[0]);
-  const [examType, setExamType] = useState<'TYT' | 'AYT'>('AYT');
+  const [examType, setExamType] = useState<'TYT' | 'AYT' | 'YDT'>('AYT');
   const [publisher, setPublisher] = useState('');
   const [correct, setCorrect] = useState<number | string>('');
   const [wrong, setWrong] = useState<number | string>('');
@@ -1459,7 +1459,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       }
     }
 
-    let inferredExamType: 'TYT' | 'AYT' = 'TYT';
+    let inferredExamType: 'TYT' | 'AYT' | 'YDT' = 'TYT';
     if (YKS_SUBJECTS.AYT.includes(errorSubject)) {
       inferredExamType = 'AYT';
     } else if (YKS_SUBJECTS.TYT.includes(errorSubject)) {

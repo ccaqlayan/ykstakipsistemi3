@@ -2538,145 +2538,754 @@ export const RECOMMENDED_BOOKS: RecommendedBook[] = [
     isPopular: true
   },
 
-  // --- YDT YABANCI DİL / İNGİLİZCE (Subject: Dil) ---
+  // --- DİL / YDT (Subject: Dil) ---
+  // [KELİME]
   {
     subject: 'Dil',
-    category: 'YDT İngilizce',
-    publisher: 'Benim Hocam',
-    name: 'YDT İngilizce Video Destekli Soru Bankası',
-    difficulty: '⭐⭐☆☆☆ (Kolay-Orta)',
+    category: 'Kelime',
+    publisher: 'Modadil Yayınları',
+    name: 'Passagework YDS-YÖKDİL Ön Hazırlık Kelime Canavarı',
+    difficulty: '⭐⭐☆☆☆ (Kolay)',
     difficultyValue: 2,
-    reason: 'Video ders anlatımlarıyla tam uyumlu, dil temeli oluşturmak isteyenler için ideal başlangıç.',
-    isPopular: false
-  },
-  {
-    subject: 'Dil',
-    category: 'YDT İngilizce',
-    publisher: 'Karekök',
-    name: 'YDT İngilizce MPS Soru Bankası',
-    difficulty: '⭐⭐⭐☆☆ (Orta)',
-    difficultyValue: 3,
-    reason: 'Modüler piramit sistemiyle soru tiplerini tek tek kavratan öğretici kaynak.',
-    isPopular: false
-  },
-  {
-    subject: 'Dil',
-    category: 'YDT İngilizce',
-    publisher: 'MODADİL',
-    name: 'YDT 60 Günde Kelime & Soru Bankası',
-    difficulty: '⭐⭐⭐☆☆ (Orta)',
-    difficultyValue: 3,
-    reason: 'Suat Gürcan & Rıdvan Gürbüz imzalı, ÖSYM kelime sıklığına göre hazırlanan başucu kaynağı.',
+    reason: 'Sürece yeni başlayan adaylar için temel akademik kelimeleri, göz korkutmayan bir tasarımla ve basit okuma parçalarıyla bağdaştırarak sunar.',
     isPopular: true
   },
   {
     subject: 'Dil',
-    category: 'YDT İngilizce',
-    publisher: 'MODADİL',
-    name: 'YDT İngilizce Soru Bankası',
-    difficulty: '⭐⭐⭐☆☆ (Orta)',
-    difficultyValue: 3,
-    reason: '11 ÖSYM soru tipini detaylı taktiklerle ele alan en popüler genel soru bankalarından biri.',
-    isPopular: true
-  },
-  {
-    subject: 'Dil',
-    category: 'YDT İngilizce',
-    publisher: 'Akın Dil',
-    name: '100 Günde 1000 Kelime & Reading Passages',
-    difficulty: '⭐⭐⭐☆☆ (Orta)',
-    difficultyValue: 3,
-    reason: 'Ahmet Akın rehberliğinde günlük okuma ve kelime disiplini sağlayan çok popüler kaynak.',
-    isPopular: true
-  },
-  {
-    subject: 'Dil',
-    category: 'YDT İngilizce',
-    publisher: 'Akın Dil',
-    name: 'YDT İngilizce Soru Bankası',
-    difficulty: '⭐⭐⭐⭐☆ (Orta-Zor)',
-    difficultyValue: 4,
-    reason: 'ÖSYM formatında özgün ve seçici sorular içeren, netleri yukarı taşıyan güçlü soru bankası.',
-    isPopular: true
-  },
-  {
-    subject: 'Dil',
-    category: 'YDT İngilizce',
-    publisher: 'Pelikan',
-    name: 'English Grammar Inside Out',
-    difficulty: '⭐⭐⭐⭐☆ (Orta-Zor)',
-    difficultyValue: 4,
-    reason: 'Türkiye\'de dilcilerin gramer konusunda en çok başvurduğu, detaylı ve kapsamlı başvuru kitabı.',
-    isPopular: true
-  },
-  {
-    subject: 'Dil',
-    category: 'YDT İngilizce',
-    publisher: 'Pelikan',
-    name: 'Reading Words (Okuma Parçaları)',
-    difficulty: '⭐⭐⭐⭐☆ (Orta-Zor)',
-    difficultyValue: 4,
-    reason: 'Farklı disiplinlerden metinlerle okuduğunu anlama hızını ve kelime dağarcığını geliştiren eser.',
-    isPopular: false
-  },
-  {
-    subject: 'Dil',
-    category: 'YDT İngilizce',
+    category: 'Kelime',
     publisher: 'YDS Publishing',
-    name: 'Road to Success YDT Soru Bankası',
-    difficulty: '⭐⭐⭐☆☆ (Orta)',
-    difficultyValue: 3,
-    reason: 'Klasikleşmiş YDS Publishing kalitesiyle YDT sınavına eksiksiz hazırlık sunan kapsamlı SB.',
+    name: 'Yks Dil Vocabulary Topic Based',
+    difficulty: '⭐⭐☆☆☆ (Kolay)',
+    difficultyValue: 2,
+    reason: 'Kelimeleri sağlık, bilim, sosyal yaşam gibi tematik başlıklara ayırarak zihinsel gruplandırmayı kolaylaştırır.',
     isPopular: false
   },
   {
     subject: 'Dil',
-    category: 'YDT İngilizce',
-    publisher: 'YDS Publishing',
-    name: 'YDT Marathon Vocabulary & Reading',
-    difficulty: '⭐⭐⭐⭐☆ (Orta-Zor)',
-    difficultyValue: 4,
-    reason: 'Zorlu okuma parçaları ve phrasal verbs ağırlıklı maraton hazırlık kitabı.',
+    category: 'Kelime',
+    publisher: 'Benim Hocam',
+    name: 'Kelimesiz Asla',
+    difficulty: '⭐⭐☆☆☆ (Kolay - Orta)',
+    difficultyValue: 2,
+    reason: 'Kelimelerin kök, önek (prefix) ve sonek (suffix) analizlerini yaparak morfolojik farkındalık yaratır. Görsel hafıza tekniklerini destekler.',
     isPopular: true
   },
   {
     subject: 'Dil',
-    category: 'YDT İngilizce',
-    publisher: 'Dilko',
-    name: 'YDT Grammar & Vocabulary Soru Bankası',
-    difficulty: '⭐⭐⭐⭐☆ (Orta-Zor)',
-    difficultyValue: 4,
-    reason: 'Yılların dil uzmanı Dilko Yayıncılık\'tan konu konu ayrılmış titiz soru bankası.',
+    category: 'Kelime',
+    publisher: 'Pelikan Yayınları',
+    name: 'Vocabulary Blasting',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Eşdizimlilik (collocations) üzerine yoğunlaşır. Hangi sıfatın hangi isimle, hangi fiilin hangi edatla kullanıldığına dair yoğun pratik içerir.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Kelime',
+    publisher: 'The Originals',
+    name: 'Vocabulary',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'YDT müfredatına tam uyumlu, orta karar bir kelime soru bankasıdır. Sınav formatındaki kelime sorularına aşinalık kazandırır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Kelime',
+    publisher: 'Akındil Eğitim',
+    name: '100 Reading Passages',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Aslen bir okuma kitabı olmasına rağmen, her metnin sonunda yer alan yoğun kelime testleri sayesinde en etkili bağlamsal kelime öğrenim araçlarından biridir.',
     isPopular: true
   },
   {
     subject: 'Dil',
-    category: 'YDT İngilizce',
-    publisher: 'Dilko',
-    name: 'YDT 10\'lu Özgün Branş Denemesi',
+    category: 'Kelime',
+    publisher: 'Modadil Yayınları',
+    name: 'Kelime ve Edat Soru Bankası',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Özellikle ilk bölümdeki edat (preposition) ve kelime birleşimleri soruları için spesifik ve nokta atışı bir soru havuzu sunar.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Kelime',
+    publisher: 'Modadil Yayınları',
+    name: 'YKS Dil Sınav Stratejileri 5 Kelime Yaprak Test',
+    difficulty: '⭐⭐⭐⭐☆ (Orta - Zor)',
+    difficultyValue: 4,
+    reason: 'Sürecin ortalarında, öğrenilen kelimelerin hızlı bir şekilde test edilmesi ve atıl zamanların (yolculuk vb.) değerlendirilmesi için idealdir.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Kelime',
+    publisher: 'Modadil Yayınları',
+    name: 'Vocabulary Fighter',
+    difficulty: '⭐⭐⭐⭐☆ (Orta - Zor)',
+    difficultyValue: 4,
+    reason: 'İleri düzey çeldiriciler içeren, adayları YDS seviyesine yaklaştıran akademik kelime alıştırmaları ve yoğun test bataryaları barındırır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Kelime',
+    publisher: 'Akındil Eğitim',
+    name: 'Reading Words',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Metin odaklı kelime çalışmasının temelini oluşturur, adayların metin içindeki anlamsal ipuçlarını (context clues) kullanarak kelime tahmini yapmasını sağlar.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Kelime',
+    publisher: 'RH Pozitif Yayınları',
+    name: 'Yds-yökdil Kelime Soru Bankası',
+    difficulty: '⭐⭐⭐⭐☆ (Orta - Zor)',
+    difficultyValue: 4,
+    reason: 'YDT\'nin zorluk derecesinin üzerine çıkarak, adayları akademik makalelerde geçen spesifik terimlerle tanıştırır. Derece hedefleyenlere yöneliktir.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Kelime',
+    publisher: 'Modadil Yayınları',
+    name: 'YDS Tamamı Çözümlü Soru Bankası 1 Vocabulary',
     difficulty: '⭐⭐⭐⭐⭐ (Zor)',
     difficultyValue: 5,
-    reason: 'Gerçek sınav provası niteliğinde, süre yönetimini ve çeldiricileri test eden zor deneme seti.',
+    reason: 'Tamamen çözümlü olması sayesinde adayın kendi kendine öğrenmesini destekler, yanlış şıkların neden yanlış olduğunu analiz eder.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Kelime',
+    publisher: 'Modadil Yayınları',
+    name: '60 Günde Ezberbozan YDS Kelimeleri',
+    difficulty: '⭐⭐⭐⭐☆ (Orta - İleri)',
+    difficultyValue: 4,
+    reason: 'Zaman çizelgesine oturtulmuş bir disiplin sunar. Dijital platformlardaki kampanyalarla desteklenen ve oldukça popüler olan sistematik bir kaynaktır.',
     isPopular: true
   },
   {
     subject: 'Dil',
-    category: 'YDT İngilizce',
-    publisher: 'İrem Yayıncılık',
-    name: 'YDT Soru Tipleri ve Çözüm Taktikleri',
-    difficulty: '⭐⭐⭐☆☆ (Orta)',
-    difficultyValue: 3,
-    reason: '11 farklı soru tipine yaklaşım stratejilerini ve pratik ipuçlarını öğreten taktik kitabı.',
+    category: 'Kelime',
+    publisher: 'Akın Dil Eğitim',
+    name: 'YÖKDİL Sağlık Bilimleri Kelime Okuma Kitabı',
+    difficulty: '⭐⭐⭐⭐⭐ (İleri - Spesifik)',
+    difficultyValue: 5,
+    reason: 'YDT için doğrudan birincil kaynak olmasa da, bilimsel makalelere aşinalık kazanmak isteyen üst düzey öğrenciler için farklı bir alternatif sunar.',
+    isPopular: false
+  },
+
+  // [GRAMER]
+  {
+    subject: 'Dil',
+    category: 'Gramer',
+    publisher: 'Road to Success',
+    name: 'Grammar Test Book',
+    difficulty: '⭐⭐☆☆☆ (Kolay)',
+    difficultyValue: 2,
+    reason: 'Gramer kurallarının en temel hatlarıyla pekiştirildiği, özgüven artırıcı ve mekanik tekrara dayalı başlangıç seviyesi soru bankasıdır.',
     isPopular: false
   },
   {
     subject: 'Dil',
-    category: 'YDT İngilizce',
-    publisher: 'Özgün Yayınları',
-    name: 'ELS English Grammar & Practice',
-    difficulty: '⭐⭐⭐⭐☆ (Orta-Zor)',
-    difficultyValue: 4,
-    reason: 'Dil sınıflarının köklü klasiği ELS yayınlarından gramer ve kelime pekiştirme kaynağı.',
+    category: 'Gramer',
+    publisher: 'Dilko',
+    name: 'Yds Grammar Question Bank',
+    difficulty: '⭐⭐☆☆☆ (Kolay)',
+    difficultyValue: 2,
+    reason: 'Dilko\'nun pedagojik sadelik ilkesini yansıtan, karmaşık çeldiricilerden arındırılmış, temel yapıları öğretmeyi hedefleyen bir eserdir.',
     isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Gramer',
+    publisher: 'Modadil Yayınları',
+    name: 'Gramer Canavarı Soru Bankası',
+    difficulty: '⭐⭐☆☆☆ (Kolay - Orta)',
+    difficultyValue: 2,
+    reason: 'Kuralları eğlenceli ve akılda kalıcı bir tasarımla sunan, öğrencilerin gramer fobisinden kurtulmalarına yardımcı olan geçiş kaynağıdır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Gramer',
+    publisher: 'Modadil Yayınları',
+    name: 'YKS İngilizce Soru Bankası',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'YDT formatına tam uyumlu, tüm gramer konularını homojen bir şekilde tarayan, müfredatın ana omurgasını oluşturan standart bir test kitabıdır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Gramer',
+    publisher: 'Benim Hocam',
+    name: 'Grammar Overdose',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Video derslerle senkronize ilerleyen, gramer konularını aşırı dozda (overdose) pratikle zihne kazımayı hedefleyen popüler bir eserdir.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Gramer',
+    publisher: 'Modadil Yayınları',
+    name: 'Gramer Yaprak Test - 3',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Konu anlatımları bittikten sonra, unutmayı engellemek ve sarmal tekrar (spiral review) yapmak amacıyla tasarlanmış kısa soluklu testlerdir.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Gramer',
+    publisher: 'Benim Hocam',
+    name: '2024 YDT İngilizce Grammar Soru Bankası',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Güncel ÖSYM soru havuzunun eğilimlerine göre revize edilmiş, bağlaç ve eylemsi ağırlıklı yeni nesil sorular içeren temel soru bankasıdır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Gramer',
+    publisher: 'Remzi Hoca',
+    name: 'YDS-YÖKDİL Gramer Soru Bankası',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Geleneksel YDS çizgisini koruyan, özellikle YDT\'de zorlanılan karmaşık cümle yapılarının çözümlemesinde akademik bir perspektif sunan kaynaktır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Gramer',
+    publisher: 'Hocawebde',
+    name: 'YKSDİL Master Grammar',
+    difficulty: '⭐⭐☆☆☆ (Kolaydan Zora)',
+    difficultyValue: 2,
+    reason: 'Öğrenciyi temelden alıp basamak basamak zorlaştıran, kademeli ilerleme (scaffolding) prensibiyle tasarlanmış hibrit bir soru bankasıdır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Gramer',
+    publisher: 'Modadil Yayınları',
+    name: 'YDS Tamamı Çözümlü Soru Bankası 2 Tüm Gramer Konuları',
+    difficulty: '⭐⭐⭐⭐⭐ (Zor)',
+    difficultyValue: 5,
+    reason: 'Tüm soruların neden-sonuç ilişkisiyle açıklandığı, yanlış şıkların analiz edildiği, bağımsız öğrenenler için hazırlanmış üst düzey bir kaynaktır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Gramer',
+    publisher: 'Yargı Yayınları',
+    name: '2024 YDS Gramer Soru Bankası',
+    difficulty: '⭐⭐⭐⭐⭐ (Zor)',
+    difficultyValue: 5,
+    reason: 'Yargı\'nın standart test zorluğunu yansıtan, çeldiricileri güçlü ve öğrenciyi ince düşünmeye sevk eden zorlayıcı gramer bataryaları içerir.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Gramer',
+    publisher: 'Yayın Yok (Jenerik)',
+    name: 'YDT Test Attack',
+    difficulty: '⭐⭐⭐⭐⭐ (Zor)',
+    difficultyValue: 5,
+    reason: 'Sınavın zorluk seviyesinin üstüne çıkarak, öğrencinin karşılaşabileceği en karmaşık sentaktik yapılara karşı bir nevi bağışıklık kazandırır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Gramer',
+    publisher: 'Akındil Eğitim',
+    name: 'The Last Touch',
+    difficulty: '⭐⭐⭐⭐☆ (Orta - Zor)',
+    difficultyValue: 4,
+    reason: 'Sürecin sonlarına doğru tüm gramer eksikliklerini "son bir dokunuşla" tarayan, ince ayar ve hata ayıklama (troubleshooting) kitabıdır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Gramer',
+    publisher: 'Berk Hoca',
+    name: 'YDT & YDS & YÖKDİL Grammar Soru Bankası Tekil Ürün',
+    difficulty: '⭐⭐☆☆☆ (Başlangıç - Orta)',
+    difficultyValue: 2,
+    reason: 'İnternet perakendeciliğinde yüksek satış ivmesi yakalayan, tekil ürün olarak 300 TL bandında erişilebilir, pratik odaklı bir çalışmadır.',
+    isPopular: true
+  },
+
+  // [SKILLS]
+  {
+    subject: 'Dil',
+    category: 'Skills',
+    publisher: 'Dilko',
+    name: 'Basic Skills',
+    difficulty: '⭐⭐☆☆☆ (Kolay)',
+    difficultyValue: 2,
+    reason: 'Soru tipleriyle ilk defa karşılaşan öğrenciler için çözüm yollarını en basite indirgeyen, tekniklerin mantığını kavratan giriş kitabıdır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Skills',
+    publisher: 'Dilko',
+    name: 'YDS Question Bank',
+    difficulty: '⭐⭐☆☆☆ (Kolay)',
+    difficultyValue: 2,
+    reason: 'Dilko\'nun temel seviye beceri pratiklerini içeren, moral verici ve mekanik kazanımları önceleyen genel soru bankasıdır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Skills',
+    publisher: 'Modadil Yayınları',
+    name: 'YKS-DİL Thumbs Up - All Skills',
+    difficulty: '⭐⭐☆☆☆ (Kolay - Orta)',
+    difficultyValue: 2,
+    reason: 'Tüm beceri sorularını tek bir kapakta toplayan, sınav formatına yumuşak bir geçiş sağlayan ve yapılandırılmış pratik sunan temel kaynaktır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Skills',
+    publisher: 'Modadil Yayınları',
+    name: 'Soru Canavarı 4 - Skills Yaprak Test',
+    difficulty: '⭐⭐☆☆☆ (Kolaydan Zora)',
+    difficultyValue: 2,
+    reason: 'Farklı beceri sorularını karışık bir şekilde sunarak adayın soru tipi değiştirme (task switching) reflekslerini hızlandıran testlerdir.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Skills',
+    publisher: 'Akındil Eğitim',
+    name: 'Skills Özgün Soru Bankası',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Akındil\'in akademik derinliğini yansıtan, özellikle anlamı bozan cümle ve paragraf tamamlama kısımlarında güçlü metinler kullanan kaynaktır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Skills',
+    publisher: 'Akındil Eğitim',
+    name: 'Voga Test',
+    difficulty: '⭐⭐⭐⭐⭐ (İleri)',
+    difficultyValue: 5,
+    reason: 'YDS, YÖKDİL ve YKS-DİL formatlarını harmanlayan, derece öğrencilerinin sınırlarını zorlamak için tasarlanmış hibrit ve oldukça kompleks bir bataryadır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Skills',
+    publisher: 'Modadil Yayınları',
+    name: 'YKS İngilizce Soru Tipleri Soru Bankası',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Sınavın tam ağırlık merkezinde yer alan, her soru tipi için yeterli hacimde pratik imkanı sunan standart referans kitabıdır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Skills',
+    publisher: 'Modadil Yayınları',
+    name: 'YKS-DİL İngilizce Sınav Stratejileri 2 - Skills Konu + Soru',
+    difficulty: '⭐⭐⭐⭐☆ (Orta - İleri)',
+    difficultyValue: 4,
+    reason: 'Soru çözüm algoritmalarını adım adım öğreten, "hangi bağlaç nasıl elenir, referans kelimeler nasıl takip edilir" gibi doğrudan taktik veren başyapıttır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Skills',
+    publisher: 'Yargı Yayınları',
+    name: 'Advance Your Test Skills',
+    difficulty: '⭐⭐⭐⭐⭐ (Zor)',
+    difficultyValue: 5,
+    reason: 'Çeldiricileri kasıtlı olarak birbirine çok yakın tutarak, adayı sınavdaki en kötü senaryoya (yakın şıklı zor diyaloglar vb.) karşı eğiten kitaptır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Skills',
+    publisher: 'Modadil Yayınları',
+    name: 'YDS Tamamı Çözümlü Soru Bankası 3 ve 4',
+    difficulty: '⭐⭐⭐⭐⭐ (Zor)',
+    difficultyValue: 5,
+    reason: 'Becerileri ölçen en zorlu metin ve diyalogların detaylı açıklamalarla çözümlendiği, hata oranını minimize etmeyi hedefleyen analitik kaynaktır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Skills',
+    publisher: 'Modadil Yayınları',
+    name: 'YDS Sınav Stratejileri Özgün Soru Bankası 3',
+    difficulty: '⭐⭐⭐⭐⭐ (Zor)',
+    difficultyValue: 5,
+    reason: 'Strateji serisinin en ileri seviye kitabıdır, öğrencinin kazandığı tüm taktikleri çürütmeye çalışan güçlü çeldiricilerle doludur.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Skills',
+    publisher: 'Benim Hocam',
+    name: '2026 YDT Skills Lab Soru Bankası',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'En güncel soru tarzlarını yakalayan, erişilebilir fiyatı (246,50 TL) ve video entegrasyonuyla piyasada hızla popülerleşen modern beceri laboratuvarıdır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Skills',
+    publisher: 'Benim Hocam',
+    name: '2024 YDT Taktiklerle İngilizce Skills Soru Bankası',
+    difficulty: '⭐⭐☆☆☆ (Başlangıç - Orta)',
+    difficultyValue: 2,
+    reason: 'Dilin bütününden ziyade soru tiplerinin "taktiksel anatomisini" inceleyerek adayın hız kazanmasını sağlayan fonksiyonel bir çalışmadır.',
+    isPopular: true
+  },
+
+  // [OKUMA]
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'ODTÜ Yayıncılık',
+    name: 'Reader At Work 1',
+    difficulty: '⭐⭐☆☆☆ (Kolaydan Zora)',
+    difficultyValue: 2,
+    reason: 'Aslen üniversitelerin hazırlık atlama (proficiency) sınavları için yazılmış olan bu klasikleşmiş eser, düzenli okuma alışkanlığının temelini atar.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'ODTÜ Yayıncılık',
+    name: 'Reader At Work 2',
+    difficulty: '⭐⭐⭐☆☆ (Ortadan Zora)',
+    difficultyValue: 3,
+    reason: 'Birinci kitabın devamı niteliğinde olup, metinlerin leksikal yoğunluğunu ve akademik dilini artırarak öğrenciyi ileri düzeye taşır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'ODTÜ Yayıncılık',
+    name: 'More to Read 1 & 2',
+    difficulty: '⭐⭐⭐☆☆ (Ortadan Zora)',
+    difficultyValue: 3,
+    reason: 'Reader at Work serisine alternatif ve tamamlayıcı olarak kurgulanan, modern temalara odaklanan bir diğer kült akademik okuma bataryasıdır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'Akındil Eğitim',
+    name: 'Read for Speed 1 ve 2 Set',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Okuma hızını ve kavramayı eş zamanlı geliştirmeyi vadeden, 829,90 TL\'lik hacimli yapısıyla piyasanın en kapsamlı setlerinden biridir.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'Dilko',
+    name: 'Reading Activity Book',
+    difficulty: '⭐⭐☆☆☆ (Kolaydan Zora)',
+    difficultyValue: 2,
+    reason: 'Paragrafları bütün olarak sormadan önce eşleştirme, boşluk doldurma gibi aktivitelerle metni parçalayarak öğreten didaktik bir çalışmadır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'Dilko',
+    name: 'YDS Reading Question Bank',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Doğrudan çoktan seçmeli paragraf sorularına odaklanan, YDT okuma bölümünün mantığını basit ve anlaşılır bir çerçevede sunan soru bankasıdır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'Akındil Eğitim',
+    name: '100 Reading Passages',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Zengin içerikli 100 farklı metin üzerinden okuma becerisini ve kelime bilgisini entegre bir biçimde test eden, yüksek verimli bir kaynaktır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'Modadil Yayınları',
+    name: 'Passage Work 4, 5, 6',
+    difficulty: '⭐⭐⭐☆☆ (Ortadan Zora)',
+    difficultyValue: 3,
+    reason: 'Modadil\'in kademeli zorluk mimarisinin en belirgin örneğidir. Paragrafların uzunluğu ve soru çeldiricileri her bir seviyede sistematik olarak artar.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'Modadil Yayınları',
+    name: 'Makalelerle YKSDİL',
+    difficulty: '⭐⭐⭐⭐☆ (Orta - Zor)',
+    difficultyValue: 4,
+    reason: 'Güncel gazete ve bilimsel makalelerinden devşirilmiş metinlerle, adayın genel kültürünü ve akademik okuryazarlığını destekleyen prestijli bir kitaptır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'ELS',
+    name: 'English Through Reading',
+    difficulty: '⭐⭐⭐⭐☆ (Orta - İleri)',
+    difficultyValue: 4,
+    reason: 'İçerisinde müzeler, gıda, teknoloji, spor gibi çeşitli bilimsel ve sosyal alanlardan 25 ayrı yoğun okuma parçası barındıran efsanevi referans kaynağıdır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'Yayın Yok (Jenerik)',
+    name: 'Road to Success Reading',
+    difficulty: '⭐⭐☆☆☆ (Kolaydan Zora)',
+    difficultyValue: 2,
+    reason: 'Öğrenciyi yormadan, hikaye tadındaki basit metinlerden makalelere doğru evrilen, motivasyonu yüksek tutmayı hedefleyen bir geçiş kaynağıdır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'The Originals',
+    name: 'Reading (Eyüp Gündüz vb.)',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Farklı yazar perspektifleri görmek isteyen adaylar için, YDT standardında yazılmış, dengeli metin dağılımına sahip özgün bir paragraf kitabıdır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'Pelikan Yayınları',
+    name: 'Get Reading Soru Bankası',
+    difficulty: '⭐⭐⭐⭐⭐ (Zor)',
+    difficultyValue: 5,
+    reason: 'Özellikle çeldirici tasarımı konusunda iddialı olan, detaylı ve uzun metinlerle adayın zaman yönetimini test eden ağır bir soru bankasıdır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'Dilko',
+    name: 'YDS Reading',
+    difficulty: '⭐⭐⭐⭐☆ (Orta - Zor)',
+    difficultyValue: 4,
+    reason: 'Dilko ekosisteminde daha üst basamakları hedefleyen öğrencilere hitap eden, ileri düzey kavramsal analiz gerektiren paragraflar içerir.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'Modadil Yayınları',
+    name: 'YDS Reader',
+    difficulty: '⭐⭐⭐⭐⭐ (Zor)',
+    difficultyValue: 5,
+    reason: 'Paragraf okumalarında zirveyi temsil eder; karmaşık referans kelimeleri, çift katmanlı soruları ve akademik kelime yoğunluğuyla üstün bir antrenman sahasıdır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'Pelikan (Çeşitli)',
+    name: 'A Comprehensive Guide to Academic Writing',
+    difficulty: '⭐⭐⭐⭐⭐ (Çok İleri)',
+    difficultyValue: 5,
+    reason: 'En çok satanlar listesinde %30 indirimle yer alan eser, okuma-yazma entegrasyonu sunarak paragraf kurgusunu yazarlık perspektifinden öğretir.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Okuma',
+    publisher: 'Pelikan (Çeşitli)',
+    name: 'Building Skills For Proficiency',
+    difficulty: '⭐⭐⭐⭐⭐ (Çok İleri)',
+    difficultyValue: 5,
+    reason: 'Sadece okumayı değil, genel dil becerilerini YDT\'nin fersah fersah ötesinde akademik bir düzlemde ele alan klasikleşmiş hazırlık atlama kılavuzudur.',
+    isPopular: false
+  },
+
+  // [DENEME]
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'KR Akademi',
+    name: 'YDT Çıkmış Sorular Son 5 Yıl Tıpkı Basım Fasikülleri',
+    difficulty: '⭐⭐⭐⭐⭐ (Gerçek)',
+    difficultyValue: 5,
+    reason: 'Mizanpajı, yazı tipi ve font boşluklarıyla birebir ÖSYM formatında basılan, sınava girmeden son 1 ay kala mutlaka çözülmesi gereken nihai gerçeklik testidir.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'Modadil Yayınları',
+    name: 'IntroPack Deneme Canavarı',
+    difficulty: '⭐⭐☆☆☆ (Kolay - Orta)',
+    difficultyValue: 2,
+    reason: 'Deneme çözmeye yeni başlayanlar için şevk kırıcı olmayan, nispeten daha kısa ve anlaşılır metinlerden oluşan ısındırma simülasyonudur.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'Modadil Yayınları',
+    name: 'YKS İngilizce 5+5 Deneme',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Sürecin ilk yarısında gelişimi gözlemlemek, net dalgalanmalarını analiz etmek için kurgulanmış dengeli ve kompakt bir deneme setidir.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'Modadil Yayınları',
+    name: '10, 15 ve 20 Özgün Deneme Setleri',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Modadil\'in standart YDT mantığını yansıtan, piyasanın en çok tüketilen ve öğrencinin kendi performans ortalamasını net görmesini sağlayan omurga serileridir.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'Modadil Yayınları',
+    name: 'YKS-DİL (YDT) Deneme Setleri (40 ve 60 Deneme)',
+    difficulty: '⭐-⭐⭐⭐⭐⭐ (Tüm Seviyeler)',
+    difficultyValue: 3,
+    reason: 'Sırasıyla 1390 TL ve 2229 TL fiyat etiketlerine sahip olan bu devasa setler, sınav yılı boyunca adayın kümülatif yorgunluğu yenmesini sağlayan endüstriyel çözümlerdir.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'Modadil Yayınları',
+    name: 'YKS-DİL YDT Joker Deneme Seti - 11 Deneme',
+    difficulty: '⭐⭐⭐⭐☆ (Orta - İleri)',
+    difficultyValue: 4,
+    reason: 'Sürecin son düzlüğünde nokta atışı eksiklik tespiti yapmak üzere tasarlanmış, 479 TL\'lik özel karmalardan oluşan prestijli deneme bataryasıdır.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'Akındil Eğitim',
+    name: '8\'li Çözümlü Deneme',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Hatalı yapılan soruların çözüm algoritmalarının detaylı verildiği, öğrenciyi yalnız bırakmayan kendi kendini besleyen (self-sustaining) bir denemedir.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'Akındil Eğitim',
+    name: '14 YDT Deneme',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Yıl geneline yayılacak düzenli pratik imkanı sunan, ÖSYM çeldirici mantığını başarıyla replike eden klasik bir deneme bataryasıdır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'Akındil Eğitim',
+    name: '7+7 Deneme',
+    difficulty: '⭐⭐⭐⭐☆ (Orta - Zor)',
+    difficultyValue: 4,
+    reason: 'Öğrenciyi konfor alanından çıkarıp, akademik metin yoğunluğu ve karmaşık sentaktik yapılarla yüzleştiren zorlayıcı bir seridir.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'Akındil Eğitim',
+    name: 'Özgün 5 YDT Deneme Sınavı (Video Çözümlü)',
+    difficulty: '⭐⭐⭐⭐⭐ (İleri)',
+    difficultyValue: 5,
+    reason: 'Zorluk derecesi ÖSYM ortalamasının üzerinde olan, derece öğrencilerinin sınırlarını test eden ve 389 TL\'lik fiyatıyla piyasada yer edinen zorlu bir simülasyondur.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'YDS Publishing',
+    name: 'Sınav Stratejileri 5 - Özgün Denemeler 5',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'YDS yayıncılığının test dinamiğini YDT ortamına aktaran, dengeleyici ve farklı bir yazar dili görmek isteyenler için alternatif bir seçenektir.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'AKIN Publishing',
+    name: 'YKS Dil 12. Sınıf 15 Mini YDT Deneme',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Uzun deneme çözmeye vakti olmayan 12. sınıf öğrencileri için okul temposuna uygun tasarlanmış, becerileri paslandırmayan mini simülasyonlardır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'Yargı Yayınları',
+    name: 'Mastering YDT 10 Deneme Sınavı',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Farklı bir test okulu ve yaklaşımı arayanlar için, piyasanın baskın yayınlarına alternatif oluşturan, standart sapma ölçümü güçlü bir kaynaktır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'The Originals',
+    name: 'YDT Deneme Sınavları',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Çeşitli yayıncıların tekelini kırmak adına, özgün soru havuzlarıyla farklı düşünme pratikleri geliştirmeyi amaçlayan bir alternatiftir.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'Yediiklim',
+    name: 'YDT 7 Deneme Sınavı (Fatih Çömez)',
+    difficulty: '⭐⭐⭐⭐☆ (Orta - İleri)',
+    difficultyValue: 4,
+    reason: '248 TL\'lik fiyat etiketiyle satılan, yazarın kendi tarzını yansıtan ve çeldirici kurgularıyla sınav ciddiyetini hissettiren bir çalışmadır.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'Deneme',
+    publisher: 'Benim Hocam',
+    name: '2024-2025 YDT İngilizce 5 Deneme Sınavı (Ens)',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Ens Yayıncılık işbirliğiyle hazırlanan, hap niteliğindeki bu set, 259 TL\'lik erişilebilir fiyatıyla süreç başında seviye ölçümü için sıklıkla kullanılmaktadır.',
+    isPopular: true
   }
 ];

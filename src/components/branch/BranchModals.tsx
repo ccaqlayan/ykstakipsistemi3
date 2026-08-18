@@ -78,8 +78,8 @@ interface BranchModalsProps {
   setEditingExam: (exam: BranchExam | null) => void;
   examDate: string;
   setExamDate: (date: string) => void;
-  examType: 'TYT' | 'AYT';
-  setExamType: (type: 'TYT' | 'AYT') => void;
+  examType: 'TYT' | 'AYT' | 'YDT';
+  setExamType: (type: 'TYT' | 'AYT' | 'YDT') => void;
   examSubject: string;
   setExamSubject: (sub: string) => void;
   publisher: string;

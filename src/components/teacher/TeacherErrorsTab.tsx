@@ -131,7 +131,7 @@ export const TeacherErrorsTab: React.FC<TeacherErrorsTabProps> = ({
   // Form State for Add / Edit Modal
   const [formSubject, setFormSubject] = useState<string>('TYT Matematik');
   const [formTopicName, setFormTopicName] = useState<string>('');
-  const [formExamType, setFormExamType] = useState<'TYT' | 'AYT'>('TYT');
+  const [formExamType, setFormExamType] = useState<'TYT' | 'AYT' | 'YDT'>('TYT');
   const [formPublisher, setFormPublisher] = useState<string>('');
   const [formErrorReason, setFormErrorReason] = useState<ErrorReason>('bilgi_eksigi');
   const [formPriority, setFormPriority] = useState<'high' | 'medium' | 'low'>('medium');

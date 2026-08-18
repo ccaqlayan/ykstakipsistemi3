@@ -109,12 +109,14 @@ export interface QuestionLog {
   id: string;
   date: string;
   subject: string;
+  topic?: string;
   examType: 'TYT' | 'AYT' | 'YDT';
   targetCount: number;
   solvedCount: number;
   correctCount: number;
   wrongCount: number;
   emptyCount: number;
+  blankCount?: number;
   netScore: number;
   durationMinutes?: number;
   notes?: string;
@@ -475,34 +477,6 @@ export interface GoogleSheetsStatus {
   lastSyncedAt?: string;
 }
 
-export interface QuestionLog {
-  id: string;
-  date: string;
-  subject: string;
-  topic?: string;
-  examType: 'TYT' | 'AYT';
-  targetCount: number;
-  solvedCount: number;
-  correctCount: number;
-  wrongCount: number;
-  emptyCount: number;
-  blankCount?: number;
-  netScore: number;
-  notes?: string;
-  studyPlanId?: string;
-}
-
-export interface ResourceItem {
-  id: string;
-  subject: string;
-  bookTitle: string;
-  publisher: string;
-  totalUnits: number; // Toplam Test veya Konu sayısı
-  completedUnits: number; // Çözülen Test veya Konu sayısı
-  status: 'not_started' | 'in_progress' | 'completed';
-  examType: 'TYT' | 'AYT';
-  notes?: string;
-}
 
 export interface RoutineHistoryEntry {
   weekLabel: string; // e.g., '20-26 Temmuz'

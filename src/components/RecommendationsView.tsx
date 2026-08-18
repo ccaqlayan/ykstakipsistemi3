@@ -324,8 +324,15 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   };
 
   const resetBookForm = () => {
-    setBookSubject('Matematik');
-    setBookCategory('TYT Matematik');
+    const defaultSub = selectedSubject || 'Matematik';
+    setBookSubject(defaultSub);
+    if (defaultSub === 'Dil') {
+      setBookCategory('Kelime');
+    } else if (defaultSub === 'Türkçe') {
+      setBookCategory('TYT Türkçe');
+    } else {
+      setBookCategory(`TYT ${defaultSub}`);
+    }
     setBookPublisher('');
     setBookName('');
     setBookDifficulty('⭐⭐⭐☆☆ (Orta)');
@@ -658,7 +665,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         return book.category.includes('TYT');
       }
       if (selectedExamType === 'AYT') {
-        return book.category.includes('AYT') || book.category.includes('YDT');
+        return book.category.includes('AYT') || book.category.includes('YDT') || book.subject === 'Dil';
       }
       return true;
     }
@@ -672,7 +679,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         return book.category.includes('TYT');
       }
       if (selectedExamType === 'AYT') {
-        return book.category.includes('AYT') || book.category.includes('YDT');
+        return book.category.includes('AYT') || book.category.includes('YDT') || book.subject === 'Dil';
       }
       return true;
     }
@@ -1432,7 +1439,15 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Ders</label>
                   <select
                     value={bookSubject}
-                    onChange={(e) => setBookSubject(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setBookSubject(val);
+                      if (!editingBook) {
+                        if (val === 'Dil') setBookCategory('Kelime');
+                        else if (val === 'Türkçe') setBookCategory('TYT Türkçe');
+                        else setBookCategory(`TYT ${val}`);
+                      }
+                    }}
                     className="w-full bg-slate-800 border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                   >
                     {SUBJECTS.map(sub => (
@@ -1447,7 +1462,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                     required
                     value={bookCategory}
                     onChange={(e) => setBookCategory(e.target.value)}
-                    placeholder="Örn: TYT Matematik"
+                    placeholder="Örn: Kelime, Gramer, Skills, Okuma, Deneme, TYT vb."
                     className="w-full bg-slate-800 border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>

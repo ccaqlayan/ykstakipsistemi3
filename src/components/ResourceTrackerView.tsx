@@ -52,7 +52,7 @@ const RECOMMENDED_RESOURCES = [
   { subject: 'Tarih / Coğrafya', books: ['Benim Hocam', 'Bilgi Sarmal', 'Limit El Kitapları', 'Yavuz Tuna Haritalarla Coğrafya'] }
 ];
 
-const getTopicsForResource = (subject: string, examType: 'TYT' | 'AYT'): string[] => {
+const getTopicsForResource = (subject: string, examType?: 'TYT' | 'AYT' | 'YDT'): string[] => {
   if (!subject) return [];
   if (YKS_CURRICULUM_TOPICS[subject]) {
     return YKS_CURRICULUM_TOPICS[subject];
@@ -235,7 +235,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   const [editBookTitle, setEditBookTitle] = useState('');
   const [editPublisher, setEditPublisher] = useState('');
   const [editNotes, setEditNotes] = useState('');
-  const [editExamType, setEditExamType] = useState<'TYT' | 'AYT'>('AYT');
+  const [editExamType, setEditExamType] = useState<'TYT' | 'AYT' | 'YDT'>('AYT');
   const [editSubject, setEditSubject] = useState('');
   const [editCompletedTopics, setEditCompletedTopics] = useState<string[]>([]);
 
@@ -277,9 +277,9 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
     setEditCompletedTopics(res.completedTopics || []);
   };
 
-  const handleEditExamTypeChange = (type: 'TYT' | 'AYT') => {
+  const handleEditExamTypeChange = (type: 'TYT' | 'AYT' | 'YDT') => {
     setEditExamType(type);
-    setEditSubject(YKS_SUBJECTS[type][0]);
+    setEditSubject(YKS_SUBJECTS[type] ? YKS_SUBJECTS[type][0] : 'TYT Türkçe');
     setEditCompletedTopics([]);
   };
 
