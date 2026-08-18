@@ -1575,11 +1575,11 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                   <thead>
                     <tr className="border-b border-slate-800 bg-slate-950/80 text-xs font-bold text-slate-400">
                       <th className="py-4 px-3 w-10 text-center">#</th>
-                      <th className="py-4 px-3 whitespace-nowrap">Ders / Tür</th>
-                      <th className="py-4 px-3 whitespace-nowrap">Yayınevi & Kaynak</th>
-                      <th className="py-4 px-3 whitespace-nowrap">Zorluk & Popülerlik</th>
-                      <th className="py-4 px-4 min-w-[200px]">İçerik & Tavsiye</th>
-                      <th className="py-4 px-3 text-right whitespace-nowrap">İşlemler</th>
+                      <th className="py-4 px-3 w-28 whitespace-nowrap">Ders / Tür</th>
+                      <th className="py-4 px-3 w-52 max-w-[210px]">Yayınevi & Kaynak</th>
+                      <th className="py-4 px-3 w-36 whitespace-nowrap">Zorluk & Popülerlik</th>
+                      <th className="py-4 px-4 w-full">İçerik & Tavsiye</th>
+                      <th className="py-4 px-3 w-28 text-right whitespace-nowrap">İşlemler</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60 text-xs text-slate-300">
@@ -1592,7 +1592,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                       return (
                         <tr key={`${book.publisher}-${book.name}-${index}`} className="hover:bg-slate-900 transition-colors group">
                           <td className="py-3 px-3 text-center font-bold text-slate-500">{index + 1}</td>
-                          <td className="py-3 px-3 whitespace-nowrap">
+                          <td className="py-3 px-3 w-28 whitespace-nowrap">
                             <div className="flex flex-col space-y-1">
                               <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border w-max ${color.bg} ${color.text} ${color.border}`}>
                                 {book.subject}
@@ -1600,21 +1600,21 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                               <span className="text-[10px] text-slate-400 font-medium">{book.category}</span>
                             </div>
                           </td>
-                          <td className="py-3 px-3">
+                          <td className="py-3 px-3 w-52 max-w-[210px]">
                             <div className="flex flex-col space-y-1">
                               <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 text-[10px] font-extrabold uppercase tracking-wide w-max">
                                 {book.publisher}
                               </span>
-                              <span className="font-bold text-xs text-white whitespace-nowrap">
+                              <span className="font-bold text-xs text-white leading-snug break-words">
                                 {book.name}
                               </span>
                             </div>
                           </td>
-                          <td className="py-3 px-3 whitespace-nowrap">
-                            <div className="flex items-center space-x-2">
+                          <td className="py-3 px-3 w-36 whitespace-nowrap">
+                            <div className="flex flex-col items-start space-y-1.5">
                               {renderDifficultyBadge(book.difficultyValue, book.difficulty)}
                               {book.isPopular && (
-                                <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-extrabold animate-pulse shadow-sm shadow-amber-500/10">
+                                <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[9px] font-extrabold animate-pulse shadow-sm shadow-amber-500/10">
                                   <Flame className="w-3 h-3 text-amber-400 animate-bounce shrink-0" />
                                   <span>Popüler</span>
                                 </span>
@@ -1624,7 +1624,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                           <td className="py-3 px-4 text-slate-300 leading-relaxed text-xs">
                             {book.reason ? `"${book.reason}"` : '-'}
                           </td>
-                          <td className="py-3 px-3 text-right whitespace-nowrap">
+                          <td className="py-3 px-3 w-28 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end space-x-1.5">
                               {/* Favori Kalp Butonu */}
                               <button
