@@ -298,6 +298,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
   const [editingChannelName, setEditingChannelName] = useState<string>('');
   const [editingSubject, setEditingSubject] = useState<string>('');
   const [editingNotesText, setEditingNotesText] = useState<string>('');
+  const [editingDurationMinutes, setEditingDurationMinutes] = useState<string>('');
 
   // Inline Note Only Editing State
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
@@ -345,15 +346,18 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
     setEditingChannelName(vid.channelName || '');
     setEditingSubject(vid.subject || YKS_SUBJECTS.AYT[0]);
     setEditingNotesText(vid.notes || '');
+    setEditingDurationMinutes(vid.durationMinutes ? String(vid.durationMinutes) : '');
   };
 
   const handleSaveCard = (vid: YouTubeVideoItem) => {
+    const parsedDuration = Number(editingDurationMinutes);
     onUpdateVideo({
       ...vid,
       subject: editingSubject || vid.subject,
       topicName: editingTopicName.trim() || vid.topicName,
       channelName: editingChannelName.trim() || vid.channelName,
-      notes: editingNotesText.trim()
+      notes: editingNotesText.trim(),
+      durationMinutes: !isNaN(parsedDuration) && parsedDuration > 0 ? parsedDuration : vid.durationMinutes
     });
     setEditingCardId(null);
   };
@@ -369,6 +373,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
   const [playlistTitle, setPlaylistTitle] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [notes, setNotes] = useState('');
+  const [durationMinutes, setDurationMinutes] = useState<string>('');
 
   const resetForm = () => {
     setSubject('');
@@ -377,6 +382,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
     setPlaylistTitle('');
     setVideoUrl('');
     setNotes('');
+    setDurationMinutes('');
     setShowAddModal(false);
   };
 
@@ -454,6 +460,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
       if (data.success) {
         if (data.channelName) setChannelName(data.channelName);
         if (data.title) setTopicName(data.title);
+        if (data.durationMinutes) setDurationMinutes(String(data.durationMinutes));
         
         const predictedSubject = predictSubjectClient(data.title || '', data.channelName || '', videoUrl.trim() + ' ' + (data.subject || ''));
         setSubject(predictedSubject);
@@ -466,6 +473,48 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
       setIsLoadingInfo(false);
     }
   };
+
+  // 🔄 Mevcut eksik süreli tek videoların sürelerini otomatik tamamlayıcı (Auto-Healer / Backfill)
+  const backfilledIdsRef = React.useRef<Set<string>>(new Set());
+  React.useEffect(() => {
+    const missingDurationVideos = videos.filter(
+      v => !isPlaylistItem(v) && (!v.durationMinutes || v.durationMinutes <= 0) && v.videoUrl && !backfilledIdsRef.current.has(v.id)
+    );
+
+    if (missingDurationVideos.length === 0) return;
+
+    let isMounted = true;
+    const fetchDurations = async () => {
+      for (const v of missingDurationVideos) {
+        if (!isMounted) break;
+        backfilledIdsRef.current.add(v.id);
+        try {
+          const res = await fetch('/api/youtube/video-info', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: v.videoUrl, subject: v.subject })
+          });
+          const data = await res.json();
+          if (data.success && data.durationMinutes && isMounted) {
+            onUpdateVideo({
+              ...v,
+              durationMinutes: Number(data.durationMinutes),
+              channelName: v.channelName || data.channelName,
+              topicName: v.topicName || data.title
+            });
+          }
+        } catch (e) {
+          console.log('Auto backfill duration error:', e);
+        }
+      }
+    };
+
+    fetchDurations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [videos, onUpdateVideo]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -515,8 +564,9 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
        let finalChannel = channelName.trim();
        let finalTopic = topicName.trim();
        let finalNotes = notes.trim();
+       let finalDurationMinutes = Number(durationMinutes) > 0 ? Number(durationMinutes) : undefined;
 
-       if (trimmedUrl && (!finalChannel || !finalTopic)) {
+       if (trimmedUrl && (!finalChannel || !finalTopic || !finalDurationMinutes)) {
          setIsLoadingInfo(true);
          try {
            const res = await fetch('/api/youtube/video-info', {
@@ -528,6 +578,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
            if (data.success) {
              if (!finalChannel && data.channelName) finalChannel = data.channelName;
              if (!finalTopic && data.title) finalTopic = data.title;
+             if (!finalDurationMinutes && data.durationMinutes) finalDurationMinutes = Number(data.durationMinutes);
            }
          } catch (err) {
            console.error('Auto video info fetch error:', err);
@@ -545,6 +596,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
          topicName: finalTopic,
          playlistTitle,
          videoUrl: trimmedUrl,
+         durationMinutes: finalDurationMinutes || 25,
          isWatched: false,
          notes: finalNotes
        });
@@ -1090,7 +1142,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                           ) : (
                             <>
                               <Clock className="w-3 h-3 text-red-400" />
-                              <span>{totalDuration > 0 ? formatDuration(totalDuration) : (vid.durationMinutes ? formatDuration(vid.durationMinutes) : 'Video')}</span>
+                              <span>{vid.durationMinutes && vid.durationMinutes > 0 ? formatDuration(vid.durationMinutes) : (totalDuration > 0 ? formatDuration(totalDuration) : '25 dk')}</span>
                             </>
                           )}
                         </div>
@@ -1128,11 +1180,10 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                                 {watchedVideosCount}/{totalVideosCount} Video
                               </span>
                             ) : (
-                              vid.durationMinutes ? (
-                                <span className="text-[10px] text-slate-400 font-mono">
-                                  {formatDuration(vid.durationMinutes)}
-                                </span>
-                              ) : null
+                              <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-red-400 inline" />
+                                <span>{vid.durationMinutes && vid.durationMinutes > 0 ? formatDuration(vid.durationMinutes) : (totalDuration > 0 ? formatDuration(totalDuration) : '25 dk')}</span>
+                              </span>
                             )}
                           </div>
 
@@ -1348,7 +1399,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                             ) : (
                               <>
                                 <Clock className="w-3 h-3 text-red-400" />
-                                <span>{totalDuration > 0 ? formatDuration(totalDuration) : 'Video'}</span>
+                                <span>{vid.durationMinutes && vid.durationMinutes > 0 ? formatDuration(vid.durationMinutes) : (totalDuration > 0 ? formatDuration(totalDuration) : '25 dk')}</span>
                               </>
                             )}
                           </div>
@@ -1445,7 +1496,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                                 />
                               </div>
 
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                                 <div>
                                   <label className="block text-xs font-bold text-amber-300 mb-1">İlişkili Ders</label>
                                   <select
@@ -1465,6 +1516,18 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                                     type="text"
                                     value={editingChannelName}
                                     onChange={(e) => setEditingChannelName(e.target.value)}
+                                    className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-xs rounded-xl px-3 py-2 outline-none font-medium"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="block text-xs font-bold text-amber-300 mb-1">Süre (Dakika)</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    placeholder="Ör: 30"
+                                    value={editingDurationMinutes}
+                                    onChange={(e) => setEditingDurationMinutes(e.target.value)}
                                     className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 text-white text-xs rounded-xl px-3 py-2 outline-none font-medium"
                                   />
                                 </div>
@@ -1927,7 +1990,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
               </div>
 
               {/* Optional Fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1.5">Kanal / Hoca Adı</label>
                   <input
@@ -1946,6 +2009,18 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                     placeholder="Ör: Türev Kampı 1. Video"
                     value={topicName}
                     onChange={(e) => setTopicName(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 font-medium shadow-inner"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5">Süre (Dk - Tek Video)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Ör: 35"
+                    value={durationMinutes}
+                    onChange={(e) => setDurationMinutes(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500 font-medium shadow-inner"
                   />
                 </div>

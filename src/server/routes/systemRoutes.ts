@@ -560,6 +560,7 @@ router.post('/youtube/video-info', async (req, res) => {
     let title = '';
     let channelName = '';
     let detectedSubject = subject || '';
+    let durationMinutes = 0;
 
     let extractedVideoId = '';
     try {
@@ -624,6 +625,46 @@ router.post('/youtube/video-info', async (req, res) => {
         const matchChannel = html.match(/<link itemprop="name" content="([^"]+)"/i) || html.match(/"author":"([^"]+)"/i);
         if (matchChannel) channelName = matchChannel[1].trim();
       }
+
+      // Extract duration from HTML
+      const matchIsoDuration = html.match(/<meta itemprop="duration" content="([^"]+)"/i) || html.match(/"duration":"([^"]+)"/i);
+      if (matchIsoDuration) {
+        const iso = matchIsoDuration[1];
+        const matchIso = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+        if (matchIso) {
+          const hours = parseInt(matchIso[1] || '0', 10);
+          const minutes = parseInt(matchIso[2] || '0', 10);
+          const seconds = parseInt(matchIso[3] || '0', 10);
+          durationMinutes = hours * 60 + minutes + Math.round(seconds / 60);
+        }
+      }
+
+      if (!durationMinutes) {
+        const matchLengthSec = html.match(/"lengthSeconds":"(\d+)"/i) || html.match(/"approxDurationMs":"(\d+)"/i);
+        if (matchLengthSec) {
+          const num = parseInt(matchLengthSec[1], 10);
+          if (!isNaN(num) && num > 0) {
+            // approxDurationMs vs lengthSeconds
+            if (num > 100000) {
+              durationMinutes = Math.round(num / 60000);
+            } else {
+              durationMinutes = Math.round(num / 60);
+            }
+          }
+        }
+      }
+
+      if (!durationMinutes) {
+        const matchSimpleText = html.match(/"lengthText":\{"simpleText":"([^"]+)"\}/i);
+        if (matchSimpleText) {
+          const parts = matchSimpleText[1].split(':').map(Number);
+          if (parts.length === 3) {
+            durationMinutes = parts[0] * 60 + parts[1] + Math.round(parts[2] / 60);
+          } else if (parts.length === 2) {
+            durationMinutes = parts[0] + Math.round(parts[1] / 60);
+          }
+        }
+      }
     } catch (scrapeErr) {
       console.log('HTML scrape error in video-info:', scrapeErr);
     }
@@ -638,7 +679,7 @@ router.post('/youtube/video-info', async (req, res) => {
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
-    if (apiKey && (!title || !channelName || !detectedSubject)) {
+    if (apiKey && (!title || !channelName || !detectedSubject || !durationMinutes)) {
       try {
         const ai = new GoogleGenAI({ 
           apiKey,
@@ -655,12 +696,14 @@ router.post('/youtube/video-info', async (req, res) => {
 
         CRITICAL REQUIREMENT:
         - Identify the exact YKS Subject from this list ONLY: ["TYT Türkçe", "TYT Matematik", "TYT Geometri", "TYT Fizik", "TYT Kimya", "TYT Biyoloji", "TYT Tarih", "TYT Coğrafya", "TYT Felsefe", "TYT Din Kültürü", "Paragraf", "AYT Matematik", "AYT Geometri", "AYT Fizik", "AYT Kimya", "AYT Biyoloji", "AYT Edebiyat", "AYT Tarih-1", "AYT Coğrafya-1", "AYT Tarih-2", "AYT Coğrafya-2", "AYT Felsefe Grubu", "AYT Yabancı Dil"]
+        - Estimate a realistic lesson duration in minutes (e.g. between 15 and 60 minutes).
         
         Output MUST be ONLY a valid JSON object matching this schema:
         {
           "title": "Clean, realistic Turkish video lesson title or playlist title",
           "channelName": "Channel name or hoca name",
-          "subject": "Exact YKS Subject name from the list"
+          "subject": "Exact YKS Subject name from the list",
+          "durationMinutes": 30
         }
         `;
 
@@ -675,9 +718,14 @@ router.post('/youtube/video-info', async (req, res) => {
         if (!title && parsed.title) title = parsed.title;
         if (!channelName && parsed.channelName) channelName = parsed.channelName;
         if (parsed.subject) detectedSubject = parsed.subject;
+        if (!durationMinutes && parsed.durationMinutes) durationMinutes = Number(parsed.durationMinutes);
       } catch (geminiErr) {
         console.error('Gemini video-info fallback error:', geminiErr);
       }
+    }
+
+    if (durationMinutes === 0) {
+      durationMinutes = 25; // Sensible default educational video duration fallback
     }
 
     const finalSubject = predictYKSSubject(title, channelName, targetUrl + ' ' + (detectedSubject || ''));
@@ -686,6 +734,7 @@ router.post('/youtube/video-info', async (req, res) => {
       success: true,
       title: title || 'YouTube Ders Videosu',
       channelName: channelName || 'YouTube',
+      durationMinutes,
       notes: '',
       subject: finalSubject
     });
