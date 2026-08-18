@@ -102,7 +102,15 @@ export async function sendAICoachChatMessage(
   message: string,
   chatHistory: { sender: 'user' | 'ai'; text: string }[],
   state: YKSDataState,
-  currentUser?: UserAccount | null
+  currentUser?: UserAccount | null,
+  classContext?: {
+    className: string;
+    studentCount: number;
+    averageTYTNet: number;
+    averageAYTNet: number;
+    topStrugglingTopics: string[];
+    studentsSummary?: { name: string; tytNet: number; aytNet: number; topWeakTopic: string }[];
+  }
 ): Promise<{ reply: string; aiUsage?: any }> {
   const res = await fetch('/api/gemini/coach-chat', {
     method: 'POST',
@@ -119,7 +127,8 @@ export async function sendAICoachChatMessage(
       generalMocks: state.generalMocks,
       topicErrors: state.topicErrors,
       routines: state.routines,
-      branchExams: state.branchExams
+      branchExams: state.branchExams,
+      classContext
     })
   });
 
