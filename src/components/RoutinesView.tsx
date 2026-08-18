@@ -1221,7 +1221,7 @@ export const RoutinesView: React.FC<RoutinesViewProps> = ({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50"
+                className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 z-50 animate-fade-in"
                 onClick={handleCancelReset}
               >
                 <motion.div
@@ -1229,7 +1229,7 @@ export const RoutinesView: React.FC<RoutinesViewProps> = ({
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.95, opacity: 0 }}
                   transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-                  className="bg-slate-900 border border-purple-500/30 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 relative overflow-hidden"
+                  className="bg-slate-900 border border-purple-500/30 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-5 relative overflow-hidden modal-dialog-card my-auto max-h-[92vh] overflow-y-auto custom-scrollbar"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Glow accent */}

@@ -109,10 +109,10 @@ export const MockEditModal: React.FC<MockEditModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) setEditingMock(null); }}
     >
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto custom-scrollbar">
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto custom-scrollbar modal-dialog-card">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <h3 className="text-base font-bold text-white flex items-center gap-2">
             <Pencil className="w-4 h-4 text-indigo-400" />
@@ -768,17 +768,17 @@ export const MockEditModal: React.FC<MockEditModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800">
+          <div className="flex items-center justify-end space-x-2 pt-3 pb-1 border-t border-slate-800">
             <button
               type="button"
               onClick={() => setEditingMock(null)}
-              className="px-4 py-2 text-xs text-slate-400 hover:text-white"
+              className="px-5 py-3 sm:py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center"
             >
               İptal
             </button>
             <button
               type="submit"
-              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-5 py-2 rounded-xl transition-all shadow-md"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-6 py-3.5 sm:py-2.5 rounded-2xl transition-all shadow-md shadow-indigo-600/30 cursor-pointer min-h-[48px] sm:min-h-0 flex items-center justify-center active:scale-95"
             >
               Değişiklikleri Kaydet
             </button>

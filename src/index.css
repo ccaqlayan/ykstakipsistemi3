@@ -658,3 +658,61 @@ html, body {
   }
 }
 
+/* ========================================================================== */
+/* 🪟 MOBİL MODAL (AÇILIR PENCERE) & NAVBAR ÇAKIŞMA ÖNLEME STANDARTLARI       */
+/* ========================================================================== */
+
+/* 1. Modal açıkken alt navigasyon çubuğunu otomatik gizle */
+body:has(.fixed.inset-0.z-50):not(:has(.fixed.inset-0.z-50.sidebar-backdrop)) .mobile-bottom-nav,
+body:has(.fixed.inset-0.z-\[60\]) .mobile-bottom-nav,
+body:has(.fixed.inset-0.z-\[70\]) .mobile-bottom-nav,
+body:has(.fixed.inset-0.z-\[100\]) .mobile-bottom-nav,
+body:has(.fixed.inset-0.z-\[100000\]) .mobile-bottom-nav,
+body:has(.fixed.inset-0.z-\[99999\]) .mobile-bottom-nav,
+body:has(.fixed.inset-0.z-\[999999\]) .mobile-bottom-nav,
+body:has([role="dialog"]) .mobile-bottom-nav,
+body.modal-open .mobile-bottom-nav {
+  transform: translateY(150%) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 2. Mobil ekranda (<768px) tüm modalların üst ve alt navbara girmesini engelle */
+@media (max-width: 768px) {
+  /* Modal Overlay Backdrop */
+  .fixed.inset-0.z-50:not(#mobile-sidebar-backdrop),
+  .fixed.inset-0.z-\[60\],
+  .fixed.inset-0.z-\[70\],
+  .fixed.inset-0.z-\[100\],
+  .fixed.inset-0.z-\[100000\],
+  .fixed.inset-0.z-\[99999\],
+  .fixed.inset-0.z-\[999999\],
+  [role="dialog"],
+  [aria-modal="true"] {
+    z-index: 70 !important;
+    padding-top: max(env(safe-area-inset-top, 0px) + 0.5rem, 0.75rem) !important;
+    padding-bottom: max(env(safe-area-inset-bottom, 0px) + 0.75rem, 1rem) !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Modal Dialog Card (İç Kart) */
+  .fixed.inset-0.z-50:not(#mobile-sidebar-backdrop) > div:not(.absolute),
+  .fixed.inset-0.z-\[60\] > div:not(.absolute),
+  .fixed.inset-0.z-\[70\] > div:not(.absolute),
+  .fixed.inset-0.z-\[100\] > div:not(.absolute),
+  .fixed.inset-0.z-\[100000\] > div:not(.absolute),
+  .fixed.inset-0.z-\[99999\] > div:not(.absolute),
+  .fixed.inset-0.z-\[999999\] > div:not(.absolute),
+  .modal-dialog-card {
+    max-height: calc(100dvh - max(env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px) + 1.5rem, 2.25rem)) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin-top: auto !important;
+    margin-bottom: auto !important;
+  }
+}

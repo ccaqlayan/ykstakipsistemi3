@@ -446,7 +446,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
       {/* Modal: Add/Edit Topic Error */}
       {showAddErrorModal && (
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) { setShowAddErrorModal(false); setEditingError(null); } }}
         >
           {(() => {
@@ -463,7 +463,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
               .slice(0, 3);
 
             return (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 md:p-6 shadow-2xl space-y-3 max-h-[90vh] overflow-y-auto animate-fade-in">
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-5 md:p-6 shadow-2xl space-y-3 max-h-[90vh] overflow-y-auto animate-fade-in modal-dialog-card">
                 <div className="flex items-center justify-between pb-1 border-b border-slate-800">
                   <h3 className="text-sm md:text-base font-bold text-white flex items-center space-x-1.5">
                     <BookOpen className="w-4 h-4 text-rose-400" />
@@ -868,10 +868,10 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
       {/* Modal: Add/Edit Branch Exam */}
       {showAddExamModal && (
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) { setShowAddExamModal(false); setEditingExam(null); } }}
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-fade-in my-8 relative overflow-hidden">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-fade-in my-auto max-h-[92vh] overflow-y-auto custom-scrollbar relative overflow-hidden modal-dialog-card">
             
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -1204,7 +1204,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
       {/* ── MODAL 2: GÖRSEL SAKLAMA & YAPAY ZEKA ÇÖZÜM MODALI ── */}
       {previewImage && (
         <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 z-50 overflow-y-auto animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto relative max-h-[92vh] flex flex-col">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto relative max-h-[92vh] flex flex-col modal-dialog-card">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
               <div className="flex items-center space-x-2">
                 <div className="p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400">

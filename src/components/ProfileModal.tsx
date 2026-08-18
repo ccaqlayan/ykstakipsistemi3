@@ -282,10 +282,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-slate-900/95 backdrop-blur-2xl border border-indigo-500/30 rounded-3xl max-w-2xl w-full p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto">
+      <div className="bg-slate-900/95 backdrop-blur-2xl border border-indigo-500/30 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto custom-scrollbar modal-dialog-card">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-4">

@@ -292,8 +292,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* OVERLAY & DRAWER SIDEBAR */}
       {isOpenMobile && (
         <div 
+          id="mobile-sidebar-backdrop"
           onClick={onCloseMobile} 
-          className={`fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 transition-opacity ${
+          className={`sidebar-backdrop fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 transition-opacity ${
             isHideDesktopSidebar ? '' : 'md:hidden'
           }`} 
         />
