@@ -284,7 +284,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               setIsDevMode(false);
               setEnteredCode('');
             }}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 py-3 sm:py-2 rounded-xl text-xs font-bold transition-all min-h-[44px] sm:min-h-0 flex items-center justify-center ${
               activeTab === 'login' || activeTab === 'forgot'
                 ? 'bg-indigo-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-white'
@@ -302,7 +302,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               setIsDevMode(false);
               setEnteredCode('');
             }}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-1 py-3 sm:py-2 rounded-xl text-xs font-bold transition-all min-h-[44px] sm:min-h-0 flex items-center justify-center ${
               activeTab === 'register'
                 ? 'bg-indigo-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-white'
@@ -336,14 +336,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 E-Posta Adresi
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3.5 sm:top-3" />
                 <input
                   type="email"
                   required
                   placeholder="ahmet@okul.edu.tr veya elif.hoca@okul.edu.tr"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-3 sm:py-2.5 text-sm sm:text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
                 />
               </div>
             </div>
@@ -353,18 +353,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 Şifre
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3.5 sm:top-3" />
                 <input
                   type="password"
                   required
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-3 sm:py-2.5 text-sm sm:text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
                 />
               </div>
-              <div className="flex items-center justify-between mt-1 text-[10px]">
-                <span className="text-slate-400">Demo hesapların şifresi: <strong className="text-indigo-300">123</strong></span>
+              <div className="flex items-center justify-between mt-1.5 text-[11px] sm:text-[10px]">
+                <span className="text-slate-400">Demo şifre: <strong className="text-indigo-300">123</strong></span>
                 <button
                   type="button"
                   onClick={() => {
@@ -378,20 +378,20 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     setIsDevMode(false);
                     setEnteredCode('');
                   }}
-                  className="text-indigo-400 hover:text-indigo-300 font-bold hover:underline cursor-pointer"
+                  className="text-indigo-400 hover:text-indigo-300 font-bold hover:underline cursor-pointer py-1"
                 >
                   Şifremi Unuttum?
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 py-1">
+            <div className="flex items-center space-x-2.5 py-1">
               <input
                 type="checkbox"
                 id="rememberMe"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-700 bg-white/5 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-slate-950 cursor-pointer"
+                className="w-5 h-5 sm:w-4 sm:h-4 rounded border-slate-700 bg-white/5 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-slate-950 cursor-pointer"
               />
               <label htmlFor="rememberMe" className="text-xs text-slate-300 select-none cursor-pointer">
                 Oturumu açık tut (Beni hatırla)
@@ -401,10 +401,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <button
               type="submit"
               disabled={isRegistering || cooldownSeconds > 0 || lockoutCountdownSeconds > 0}
-              className={`w-full py-3 font-bold text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 border ${
+              className={`w-full py-3.5 sm:py-3 font-bold text-sm sm:text-xs rounded-xl transition-all shadow-lg flex items-center justify-center space-x-2 border min-h-[48px] active:scale-[0.98] ${
                 cooldownSeconds > 0 || lockoutCountdownSeconds > 0
                   ? 'bg-slate-800 text-slate-400 border-slate-700 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 border-indigo-400/40'
+                  : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 border-indigo-400/40 cursor-pointer'
               }`}
             >
               {cooldownSeconds > 0 ? (
@@ -698,7 +698,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 placeholder="Ör: Selin Yılmaz"
                 value={regName}
                 onChange={(e) => setRegName(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
               />
             </div>
 
@@ -710,7 +710,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 placeholder="selin@okul.edu.tr"
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
               />
             </div>
 
@@ -722,7 +722,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 placeholder="••••••••"
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
               />
             </div>
 
@@ -733,7 +733,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               <select
                 value={regClassName}
                 onChange={(e) => setRegClassName(e.target.value)}
-                className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-semibold text-indigo-300"
+                className="w-full bg-slate-900 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none font-semibold text-indigo-300 min-h-[48px] sm:min-h-0 cursor-pointer"
               >
                 {classes.map((c) => (
                   <option key={c.id} value={c.name}>{c.name}</option>
@@ -744,7 +744,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <button
               type="submit"
               disabled={isRegistering}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 text-white font-bold text-xs rounded-xl transition-all shadow-lg shadow-indigo-600/30 border border-indigo-400/40 flex items-center justify-center space-x-2"
+              className="w-full py-3.5 sm:py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 text-white font-bold text-sm sm:text-xs rounded-xl transition-all shadow-lg shadow-indigo-600/30 border border-indigo-400/40 flex items-center justify-center space-x-2 min-h-[48px] cursor-pointer active:scale-[0.98]"
             >
               {isRegistering ? <span>Başvuru Gönderiliyor...</span> : <span>Öğrenci Kayıt Başvurusunu Gönder</span>}
             </button>

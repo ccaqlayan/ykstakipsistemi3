@@ -146,7 +146,7 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
                 placeholder="Ör: ÖZDEBİR Türkiye Geneli #4"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all shadow-sm"
+                className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 sm:py-2.5 text-sm sm:text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all shadow-sm min-h-[48px] sm:min-h-0"
               />
             </div>
 
@@ -157,7 +157,7 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
                 required
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all shadow-sm"
+                className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 sm:py-2.5 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-500 transition-all shadow-sm min-h-[48px] sm:min-h-0"
               />
             </div>
           </div>
@@ -199,7 +199,7 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
                     key={opt.id}
                     type="button"
                     onClick={() => setAddExamType(opt.id)}
-                    className={`py-2.5 px-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-0.5 ${
+                    className={`py-3 sm:py-2.5 px-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-0.5 min-h-[52px] sm:min-h-0 active:scale-95 ${
                       isActive
                         ? opt.color === 'sky'
                           ? 'bg-sky-600 text-white border-sky-400 shadow-md shadow-sky-600/30'
@@ -310,7 +310,7 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
                         placeholder="0"
                         value={tytTurkce}
                         onChange={(e) => setTytTurkce(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500 min-h-[48px] sm:min-h-0"
                       />
                     </div>
                     <div>
@@ -321,7 +321,7 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
                         placeholder="0"
                         value={tytMat}
                         onChange={(e) => setTytMat(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500 min-h-[48px] sm:min-h-0"
                       />
                     </div>
                     <div>
@@ -332,7 +332,7 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
                         placeholder="0"
                         value={tytSosyal}
                         onChange={(e) => setTytSosyal(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500 min-h-[48px] sm:min-h-0"
                       />
                     </div>
                     <div>
@@ -343,7 +343,7 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
                         placeholder="0"
                         value={tytFen}
                         onChange={(e) => setTytFen(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500 min-h-[48px] sm:min-h-0"
                       />
                     </div>
                   </div>
@@ -377,7 +377,7 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
                         placeholder="0"
                         value={aytMat}
                         onChange={(e) => setAytMat(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500 min-h-[48px] sm:min-h-0"
                       />
                     </div>
                     <div className={targetField === 'SAY' ? 'ring-1 ring-emerald-500/30 rounded-xl p-1.5 bg-emerald-500/5' : ''}>
@@ -391,7 +391,7 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
                         placeholder="0"
                         value={aytFen}
                         onChange={(e) => setAytFen(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500 min-h-[48px] sm:min-h-0"
                       />
                     </div>
                     <div className={targetField === 'EA' || targetField === 'SÖZ' || (targetField as string) === 'SOZ' ? 'ring-1 ring-emerald-500/30 rounded-xl p-1.5 bg-emerald-500/5' : ''}>
@@ -405,7 +405,7 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
                         placeholder="0"
                         value={aytEdebiyatSos1}
                         onChange={(e) => setAytEdebiyatSos1(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500 min-h-[48px] sm:min-h-0"
                       />
                     </div>
                     <div className={targetField === 'SÖZ' || (targetField as string) === 'SOZ' ? 'ring-1 ring-emerald-500/30 rounded-xl p-1.5 bg-emerald-500/5' : ''}>
@@ -419,7 +419,7 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
                         placeholder="0"
                         value={aytSos2}
                         onChange={(e) => setAytSos2(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500 min-h-[48px] sm:min-h-0"
                       />
                     </div>
                   </div>

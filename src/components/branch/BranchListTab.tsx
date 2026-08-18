@@ -145,16 +145,16 @@ export const BranchListTab: React.FC<BranchListTabProps> = ({
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
           {/* Live Search */}
           <div className="relative flex-1 sm:flex-initial min-w-[200px]">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 sm:top-2.5" />
             <input
               type="text"
               placeholder="Yayın, ders veya not ara..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-2xl pl-9 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
+              className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-2xl pl-9 pr-8 py-2.5 sm:py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all min-h-[44px] sm:min-h-0"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2.5 text-slate-500 hover:text-white">
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-3 sm:top-2.5 text-slate-500 hover:text-white p-0.5">
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
@@ -164,7 +164,7 @@ export const BranchListTab: React.FC<BranchListTabProps> = ({
           <select
             value={filterExamType}
             onChange={(e) => setFilterExamType(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3 py-1.5 focus:outline-none cursor-pointer"
+            className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3.5 py-2.5 sm:py-1.5 focus:outline-none cursor-pointer min-h-[44px] sm:min-h-0"
           >
             <option value="ALL">Tüm Sınavlar</option>
             <option value="TYT">Sadece TYT</option>
@@ -175,7 +175,7 @@ export const BranchListTab: React.FC<BranchListTabProps> = ({
           <select
             value={listSubjectFilter}
             onChange={(e) => setListSubjectFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3 py-1.5 focus:outline-none cursor-pointer"
+            className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3.5 py-2.5 sm:py-1.5 focus:outline-none cursor-pointer min-h-[44px] sm:min-h-0 max-w-[210px] truncate"
           >
             <option value="ALL">Tüm Dersler ({branchExams.length})</option>
             {enteredSubjects.map((sub) => {
@@ -190,7 +190,7 @@ export const BranchListTab: React.FC<BranchListTabProps> = ({
           <select
             value={pageSize}
             onChange={(e) => setPageSize(Number(e.target.value))}
-            className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3 py-1.5 focus:outline-none cursor-pointer"
+            className="bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200 rounded-2xl px-3.5 py-2.5 sm:py-1.5 focus:outline-none cursor-pointer min-h-[44px] sm:min-h-0"
           >
             <option value={10}>10 Kayıt</option>
             <option value={20}>20 Kayıt</option>

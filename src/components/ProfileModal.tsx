@@ -522,7 +522,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
                   />
                 </div>
               </div>
@@ -530,13 +530,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">E-posta Adresi</label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3.5 sm:top-2.5" />
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
                   />
                 </div>
               </div>
@@ -545,13 +545,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Telefon Numarası</label>
                 <div className="relative">
-                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3.5 sm:top-2.5" />
                   <input
                     type="tel"
                     placeholder="05xx xxx xx xx"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
                   />
                 </div>
               </div>
@@ -560,13 +560,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">Dershane / Özel Kurs (Varsa)</label>
                 <div className="relative">
-                  <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <Building2 className="w-4 h-4 text-slate-400 absolute left-3 top-3.5 sm:top-2.5" />
                   <input
                     type="text"
                     placeholder="Ör: Final Akademi / Birey / Yok"
                     value={prepSchool}
                     onChange={(e) => setPrepSchool(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
                   />
                 </div>
               </div>
@@ -578,14 +578,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             <div className="pt-2 border-t border-white/10">
               <label className="block text-xs font-semibold text-slate-300 mb-1">Öğretmen / Rehberlik Unvanı</label>
               <div className="relative">
-                <Shield className="w-4 h-4 text-fuchsia-400 absolute left-3 top-2.5" />
+                <Shield className="w-4 h-4 text-fuchsia-400 absolute left-3 top-3.5 sm:top-2.5" />
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Ör: YKS Rehber Öğretmeni, Psikolojik Danışman"
-                  className="w-full bg-white/5 border border-fuchsia-500/30 rounded-xl pl-9 pr-3 py-2 text-xs text-white focus:outline-none focus:border-fuchsia-400"
+                  className="w-full bg-white/5 border border-fuchsia-500/30 rounded-xl pl-9 pr-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-fuchsia-400 min-h-[48px] sm:min-h-0"
                 />
               </div>
             </div>
@@ -607,7 +607,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     placeholder="Ör: 528"
                     value={schoolNumber}
                     onChange={(e) => setSchoolNumber(e.target.value)}
-                    className="w-full bg-white/5 border border-indigo-500/30 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400 font-mono font-bold"
+                    className="w-full bg-white/5 border border-indigo-500/30 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 font-mono font-bold min-h-[48px] sm:min-h-0"
                   />
                 </div>
 
@@ -617,7 +617,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     type="text"
                     value={highSchool}
                     onChange={(e) => setHighSchool(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
                   />
                 </div>
 
@@ -626,7 +626,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   <select
                     value={targetField}
                     onChange={(e) => setTargetField(e.target.value as FieldType)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-bold text-indigo-400"
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none font-bold text-indigo-400 min-h-[48px] sm:min-h-0 cursor-pointer"
                   >
                     <option value="SAY">Sayısal (SAY)</option>
                     <option value="EA">Eşit Ağırlık (EA)</option>
@@ -648,7 +648,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     onFocus={() => setShowUniSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowUniSuggestions(false), 200)}
                     placeholder="Ör: İstanbul Teknik Üniversitesi"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
                   />
                   {showUniSuggestions && filteredUniversities.length > 0 && (
                     <div className="absolute z-20 left-0 right-0 mt-1 bg-slate-900 border border-indigo-500/30 rounded-xl shadow-2xl max-h-40 overflow-y-auto">
@@ -660,7 +660,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                             setTargetUniversity(uni);
                             setShowUniSuggestions(false);
                           }}
-                          className="w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-indigo-600/30 hover:text-white transition-colors border-b border-white/5 last:border-0"
+                          className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-indigo-600/30 hover:text-white transition-colors border-b border-white/5 last:border-0"
                         >
                           {uni}
                         </button>
@@ -682,7 +682,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     onFocus={() => setShowDeptSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowDeptSuggestions(false), 200)}
                     placeholder="Ör: Bilgisayar Mühendisliği"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
                   />
                   {showDeptSuggestions && filteredDepartments.length > 0 && (
                     <div className="absolute z-20 left-0 right-0 mt-1 bg-slate-900 border border-indigo-500/30 rounded-xl shadow-2xl max-h-40 overflow-y-auto">
@@ -694,7 +694,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                             setTargetDepartment(dept);
                             setShowDeptSuggestions(false);
                           }}
-                          className="w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-indigo-600/30 hover:text-white transition-colors border-b border-white/5 last:border-0"
+                          className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-indigo-600/30 hover:text-white transition-colors border-b border-white/5 last:border-0"
                         >
                           {dept}
                         </button>
@@ -713,7 +713,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     placeholder="Ör: 5000"
                     value={targetRank}
                     onChange={(e) => setTargetRank(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-400"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
                   />
                 </div>
                 <div>
@@ -723,7 +723,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     placeholder="Ör: 100"
                     value={targetTYTNet}
                     onChange={(e) => setTargetTYTNet(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-400"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
                   />
                 </div>
                 <div>
@@ -733,7 +733,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     placeholder="Ör: 70"
                     value={targetAYTNet}
                     onChange={(e) => setTargetAYTNet(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-400"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
                   />
                 </div>
                 <div>
@@ -744,7 +744,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     placeholder="Ör: 88.5"
                     value={highSchoolGpa}
                     onChange={(e) => setHighSchoolGpa(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-400"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
                   />
                 </div>
               </div>
@@ -979,13 +979,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+              className="px-4 py-3 sm:py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors min-h-[44px] sm:min-h-0 flex items-center justify-center cursor-pointer"
             >
               İptal
             </button>
             <button
               type="submit"
-              className={`text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg ${
+              className={`text-white text-xs font-bold px-6 py-3.5 sm:py-2.5 rounded-xl transition-all shadow-lg min-h-[48px] sm:min-h-0 flex items-center justify-center cursor-pointer active:scale-[0.98] ${
                 isTeacher 
                   ? 'bg-fuchsia-600 hover:bg-fuchsia-500 shadow-fuchsia-600/30 border border-fuchsia-400/40' 
                   : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30 border border-indigo-400/40'

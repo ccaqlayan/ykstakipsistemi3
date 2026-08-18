@@ -65,21 +65,21 @@ export const SubjectTopicsTab: React.FC<SubjectTopicsTabProps> = ({
 
         {/* Search, Status Filter & Navigation Button */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+          <div className="relative flex-1 sm:flex-initial">
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-3 sm:top-2.5" />
             <input
               type="text"
               placeholder="Konu başlığı ara..."
               value={topicSearchQuery}
               onChange={(e) => setTopicSearchQuery(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-white text-xs rounded-xl pl-8 pr-3 py-1.5 w-36 sm:w-44 focus:outline-none focus:border-indigo-500"
+              className="bg-slate-950 border border-slate-800 text-white text-xs rounded-xl pl-9 pr-3 py-2.5 sm:py-1.5 w-full sm:w-44 focus:outline-none focus:border-indigo-500 min-h-[44px] sm:min-h-0"
             />
           </div>
 
           {onNavigateTab && (
             <button
               onClick={() => onNavigateTab('resources', { subTab: 'topics', subject: activeDetailData.category.title })}
-              className="text-xs bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-xl font-semibold flex items-center space-x-1.5 transition-all cursor-pointer shrink-0"
+              className="text-xs bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 px-3.5 py-2.5 sm:px-3 sm:py-1.5 rounded-xl font-semibold flex items-center space-x-1.5 transition-all cursor-pointer shrink-0 min-h-[44px] sm:min-h-0"
               title="Kaynak Takibi Konularım Sekmesine Git"
             >
               <span>Konu Takibine Git</span>
@@ -90,7 +90,7 @@ export const SubjectTopicsTab: React.FC<SubjectTopicsTabProps> = ({
           <select
             value={topicStatusFilter}
             onChange={(e) => setTopicStatusFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-indigo-500"
+            className="bg-slate-950 border border-slate-800 text-white text-xs rounded-xl px-3.5 py-2.5 sm:py-1.5 focus:outline-none focus:border-indigo-500 min-h-[44px] sm:min-h-0 cursor-pointer"
           >
             <option value="ALL">Tüm Durumlar</option>
             <option value="Uzmanlaştım">Uzmanlaştım</option>

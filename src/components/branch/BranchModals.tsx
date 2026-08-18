@@ -738,7 +738,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                                 key={opt}
                                 type="button"
                                 onClick={() => setCorrectOption && setCorrectOption(isSelected ? '' : opt)}
-                                className={`py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer border ${
+                                className={`py-2.5 sm:py-1.5 min-h-[44px] rounded-xl text-sm font-black transition-all cursor-pointer border flex items-center justify-center active:scale-95 ${
                                   isSelected
                                     ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-600/30 scale-105 ring-2 ring-emerald-500/40'
                                     : 'bg-slate-800/80 text-slate-300 border-slate-700/80 hover:bg-slate-700 hover:text-white'
@@ -920,14 +920,14 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">Sınav Türü</label>
-                  <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800">
+                  <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800 min-h-[48px] sm:min-h-0">
                     <button
                       type="button"
                       onClick={() => {
                         setExamType('TYT');
                         setExamSubject(YKS_SUBJECTS.TYT[0]);
                       }}
-                      className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      className={`flex-1 py-2.5 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
                         examType === 'TYT'
                           ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                           : 'text-slate-400 hover:text-white'
@@ -941,7 +941,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                         setExamType('AYT');
                         setExamSubject(YKS_SUBJECTS.AYT[0]);
                       }}
-                      className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      className={`flex-1 py-2.5 sm:py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
                         examType === 'AYT'
                           ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
                           : 'text-slate-400 hover:text-white'
@@ -959,7 +959,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                     required
                     value={examDate}
                     onChange={(e) => setExamDate(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 sm:py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors min-h-[48px] sm:min-h-0"
                   />
                 </div>
               </div>
@@ -971,7 +971,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                   <select
                     value={examSubject}
                     onChange={(e) => setExamSubject(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer transition-colors"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 sm:py-2 text-xs text-white focus:outline-none focus:border-indigo-500 cursor-pointer transition-colors min-h-[48px] sm:min-h-0"
                   >
                     {YKS_SUBJECTS[examType].map((sub) => (
                       <option key={sub} value={sub}>{sub}</option>
@@ -986,13 +986,13 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                     placeholder="Ör: Bilgi Sarmal 15'li Deneme #3"
                     value={publisher}
                     onChange={(e) => setPublisher(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 sm:py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors min-h-[48px] sm:min-h-0"
                   />
                 </div>
               </div>
 
               {/* Doğru / Yanlış / Boş / Süre Grid */}
-              <div className="grid grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <div>
                   <label className="block text-[11px] font-bold text-emerald-400 mb-1 text-center">Doğru</label>
                   <input
@@ -1002,7 +1002,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                     placeholder="0"
                     value={correct}
                     onChange={(e) => setCorrect(e.target.value)}
-                    className="w-full bg-slate-950 border border-emerald-500/30 focus:border-emerald-500 rounded-2xl px-2 py-2 text-xs text-center font-mono font-bold text-emerald-400 focus:outline-none transition-colors"
+                    className="w-full bg-slate-950 border border-emerald-500/30 focus:border-emerald-500 rounded-2xl px-2 py-3 sm:py-2 text-sm sm:text-xs text-center font-mono font-bold text-emerald-400 focus:outline-none transition-colors min-h-[48px] sm:min-h-0"
                   />
                 </div>
                 <div>
@@ -1014,7 +1014,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                     placeholder="0"
                     value={wrong}
                     onChange={(e) => setWrong(e.target.value)}
-                    className="w-full bg-slate-950 border border-rose-500/30 focus:border-rose-500 rounded-2xl px-2 py-2 text-xs text-center font-mono font-bold text-rose-400 focus:outline-none transition-colors"
+                    className="w-full bg-slate-950 border border-rose-500/30 focus:border-rose-500 rounded-2xl px-2 py-3 sm:py-2 text-sm sm:text-xs text-center font-mono font-bold text-rose-400 focus:outline-none transition-colors min-h-[48px] sm:min-h-0"
                   />
                 </div>
                 <div>
@@ -1026,7 +1026,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                     placeholder="0"
                     value={empty}
                     onChange={(e) => setEmpty(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-slate-600 rounded-2xl px-2 py-2 text-xs text-center font-mono font-semibold text-slate-300 focus:outline-none transition-colors"
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-slate-600 rounded-2xl px-2 py-3 sm:py-2 text-sm sm:text-xs text-center font-mono font-semibold text-slate-300 focus:outline-none transition-colors min-h-[48px] sm:min-h-0"
                   />
                 </div>
                 <div>
@@ -1037,7 +1037,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                     placeholder="45"
                     value={durationMinutes}
                     onChange={(e) => setDurationMinutes(e.target.value)}
-                    className="w-full bg-slate-950 border border-amber-500/30 focus:border-amber-500 rounded-2xl px-2 py-2 text-xs text-center font-mono font-bold text-amber-300 focus:outline-none transition-colors"
+                    className="w-full bg-slate-950 border border-amber-500/30 focus:border-amber-500 rounded-2xl px-2 py-3 sm:py-2 text-sm sm:text-xs text-center font-mono font-bold text-amber-300 focus:outline-none transition-colors min-h-[48px] sm:min-h-0"
                   />
                 </div>
               </div>
@@ -1053,20 +1053,20 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                   placeholder="Ör: Trigonometri soruları zordu, süre yetti."
                   value={examNotes}
                   onChange={(e) => setExamNotes(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 sm:py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors min-h-[48px] sm:min-h-0"
                 />
               </div>
 
               {/* Analiz Edildi Checkbox */}
               <div 
                 onClick={() => setIsAnalyzed(!isAnalyzed)}
-                className="flex items-center space-x-3 p-3 bg-slate-950/80 rounded-2xl border border-slate-800 cursor-pointer hover:border-slate-700 transition-all select-none"
+                className="flex items-center space-x-3 p-3.5 sm:p-3 bg-slate-950/80 rounded-2xl border border-slate-800 cursor-pointer hover:border-slate-700 transition-all select-none min-h-[48px]"
               >
                 <input
                   type="checkbox"
                   checked={isAnalyzed}
                   onChange={() => {}} // handled by parent onClick
-                  className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0 cursor-pointer"
+                  className="w-5 h-5 rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0 cursor-pointer"
                 />
                 <div>
                   <span className="text-xs font-bold text-slate-200 block">Yanlışlar Analiz Edildi mi?</span>
@@ -1079,7 +1079,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                 <button
                   type="button"
                   onClick={() => { setShowAddExamModal(false); setEditingExam(null); }}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-2xl text-xs font-bold transition-all cursor-pointer"
+                  className="px-4 py-3 sm:py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center"
                 >
                   İptal
                 </button>

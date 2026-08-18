@@ -604,3 +604,57 @@ html, body {
 .light .day-header-add-btn:hover {
   background-color: rgba(255, 255, 255, 0.3) !important;
 }
+
+/* ========================================================================== */
+/* 📱 MOBİL DOKUNMA HEDEFLERİ (TOUCH TARGETS) & FORM GELİŞTİRMELERİ            */
+/* ========================================================================== */
+
+/* Dokunmatik Ekranlar için Minimum 44-48px Dokunma Hedefi Sınıfları */
+.touch-target-48 {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+.touch-target-44 {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Mobil Ekranlar (<768px) için Form İyileştirmeleri */
+@media (max-width: 768px) {
+  /* iOS otomatik yakınlaştırmayı (auto-zoom) engellemek için min 16px font */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Form kontrolleri için ferah dokunma alanı */
+  .mobile-form-input {
+    min-height: 48px !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+
+  /* Checkbox & Radio için genişletilmiş dokunma alanı */
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 20px;
+    min-height: 20px;
+    cursor: pointer;
+  }
+
+  /* Butonlar için mobil dokunma ferahlığı */
+  .mobile-action-btn {
+    min-height: 48px !important;
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+    font-size: 0.875rem !important;
+  }
+}
+

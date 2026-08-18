@@ -1384,16 +1384,16 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
           <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
             {/* Live Search Bar */}
             <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 sm:top-2.5" />
               <input
                 type="text"
                 placeholder="Ders, not veya tarih ara..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 focus:border-indigo-500 rounded-xl pl-9 pr-8 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
+                className="w-full bg-slate-900 border border-slate-800 focus:border-indigo-500 rounded-xl pl-9 pr-8 py-2.5 sm:py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all min-h-[44px] sm:min-h-0"
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-2 text-slate-500 hover:text-white cursor-pointer p-0.5">
+                <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-2.5 sm:top-2 text-slate-500 hover:text-white cursor-pointer p-1">
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -1403,7 +1403,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
             <select
               value={filterExamType}
               onChange={(e) => setFilterExamType(e.target.value)}
-              className="bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 rounded-xl px-3 py-1.5 focus:outline-none cursor-pointer"
+              className="bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 rounded-xl px-3 py-2.5 sm:py-1.5 focus:outline-none cursor-pointer min-h-[44px] sm:min-h-0"
             >
               <option value="ALL">Tüm Sınavlar</option>
               <option value="TYT">Sadece TYT</option>
@@ -1414,7 +1414,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
             <select
               value={filterSubject}
               onChange={(e) => setFilterSubject(e.target.value)}
-              className="bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 rounded-xl px-3 py-1.5 focus:outline-none cursor-pointer max-w-[210px] truncate"
+              className="bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-200 rounded-xl px-3 py-2.5 sm:py-1.5 focus:outline-none cursor-pointer max-w-[210px] truncate min-h-[44px] sm:min-h-0"
             >
               <option value="ALL">Tüm Dersler ({totalTableFilteredLogsCount})</option>
               {availableTableSubjects.map(s => (
@@ -1431,14 +1431,14 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
             <button
               type="button"
               onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
-              className="bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-semibold text-slate-200 rounded-xl px-3 py-1.5 flex items-center space-x-1.5 cursor-pointer transition-all shrink-0"
+              className="bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-semibold text-slate-200 rounded-xl px-3 py-2.5 sm:py-1.5 flex items-center space-x-1.5 cursor-pointer transition-all shrink-0 min-h-[44px] sm:min-h-0"
               title="Tarih sıralamasını değiştir (Yeniden Eskiye / Eskiden Yeniye)"
             >
               <ArrowUpDown className="w-3.5 h-3.5 text-indigo-400" />
               <span>{sortOrder === 'desc' ? 'Yeniden Eskiye' : 'Eskiden Yeniye'}</span>
             </button>
 
-            <span className="text-xs bg-slate-900 text-slate-300 font-mono font-bold px-2.5 py-1.5 rounded-xl border border-slate-800 shrink-0">
+            <span className="text-xs bg-slate-900 text-slate-300 font-mono font-bold px-3 py-2.5 sm:py-1.5 rounded-xl border border-slate-800 shrink-0 min-h-[44px] sm:min-h-0 flex items-center">
               {filteredLogs.length} Kayıt
             </span>
           </div>
@@ -1742,7 +1742,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
               
               {/* Row 1: Date & Exam Type */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">Tarih *</label>
                   <input
@@ -1750,7 +1750,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                     required
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-mono"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 sm:py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-mono min-h-[48px] sm:min-h-0"
                   />
                 </div>
 
@@ -1763,7 +1763,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       setExamType(val);
                       setSubject(YKS_SUBJECTS[val][0]);
                     }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 sm:py-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500 transition-all cursor-pointer min-h-[48px] sm:min-h-0"
                   >
                     <option value="TYT">TYT</option>
                     <option value="AYT">AYT</option>
@@ -1777,7 +1777,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                 <select
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 sm:py-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500 transition-all cursor-pointer min-h-[48px] sm:min-h-0"
                 >
                   {YKS_SUBJECTS[examType].map((s) => (
                     <option key={s} value={s}>{s}</option>
@@ -1787,10 +1787,10 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
 
               {/* Row 3: Solved, Correct, Wrong, Empty Counts - Side-by-side Grid */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-1">
                   <label className="block text-xs font-bold text-slate-200">Soru Sayıları ve Sonuçlar *</label>
                   {/* Quick Question Count Presets */}
-                  <div className="flex items-center space-x-1 text-[10px]">
+                  <div className="flex items-center space-x-1.5 text-[10px]">
                     <span className="text-slate-400 font-medium hidden sm:inline">Hızlı:</span>
                     {[20, 30, 40, 50, 100].map((num) => (
                       <button
@@ -1805,7 +1805,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                             setEmptyCount(0);
                           }
                         }}
-                        className="px-1.5 py-0.5 rounded-lg bg-slate-950 hover:bg-indigo-600 hover:text-white border border-slate-800 text-slate-300 font-mono font-bold transition-all cursor-pointer"
+                        className="px-2.5 py-1.5 sm:px-1.5 sm:py-0.5 min-h-[36px] sm:min-h-0 rounded-xl sm:rounded-lg bg-slate-950 hover:bg-indigo-600 hover:text-white border border-slate-800 text-slate-300 font-mono font-bold transition-all cursor-pointer flex items-center justify-center"
                       >
                         +{num}
                       </button>
@@ -1832,7 +1832,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                           setEmptyCount(Math.max(0, Number(val) - (c + w)));
                         }
                       }}
-                      className="w-full bg-slate-950 border border-indigo-500/50 rounded-2xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-400 transition-all font-mono font-bold"
+                      className="w-full bg-slate-950 border border-indigo-500/50 rounded-2xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 transition-all font-mono font-bold min-h-[48px] sm:min-h-0"
                     />
                   </div>
 
@@ -1853,7 +1853,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                           setEmptyCount(Math.max(0, s - (c + w)));
                         }
                       }}
-                      className="w-full bg-slate-950 border border-emerald-500/40 rounded-2xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-400 transition-all font-mono font-bold"
+                      className="w-full bg-slate-950 border border-emerald-500/40 rounded-2xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-emerald-400 transition-all font-mono font-bold min-h-[48px] sm:min-h-0"
                     />
                   </div>
 
@@ -1876,7 +1876,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                           setEmptyCount('');
                         }
                       }}
-                      className="w-full bg-slate-950 border border-rose-500/40 rounded-2xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-rose-400 transition-all font-mono font-bold"
+                      className="w-full bg-slate-950 border border-rose-500/40 rounded-2xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-rose-400 transition-all font-mono font-bold min-h-[48px] sm:min-h-0"
                     />
                   </div>
 
@@ -1888,7 +1888,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       placeholder="0"
                       value={emptyCount}
                       onChange={(e) => setEmptyCount(e.target.value === '' ? '' : Number(e.target.value))}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-mono font-bold"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-mono font-bold min-h-[48px] sm:min-h-0"
                     />
                   </div>
                 </div>
@@ -1896,19 +1896,19 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
 
               {/* Row 4: Duration in Minutes */}
               <div className="space-y-1.5 pt-1">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-1">
                   <label className="block text-xs font-bold text-amber-300 flex items-center space-x-1">
                     <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                     <span>Çözme Süresi (Dakika)</span>
                   </label>
                   {/* Quick Duration Presets */}
-                  <div className="flex items-center space-x-1 text-[10px]">
+                  <div className="flex items-center space-x-1.5 text-[10px]">
                     {[15, 30, 45, 60, 90].map((mins) => (
                       <button
                         key={mins}
                         type="button"
                         onClick={() => setDurationMinutes(mins)}
-                        className="px-1.5 py-0.5 rounded-lg bg-slate-950 hover:bg-amber-600 hover:text-white border border-slate-800 text-amber-300 font-mono font-bold transition-all cursor-pointer"
+                        className="px-2 py-1.5 sm:px-1.5 sm:py-0.5 min-h-[34px] sm:min-h-0 rounded-xl sm:rounded-lg bg-slate-950 hover:bg-amber-600 hover:text-white border border-slate-800 text-amber-300 font-mono font-bold transition-all cursor-pointer flex items-center justify-center"
                       >
                         {mins}dk
                       </button>
@@ -1921,7 +1921,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                   placeholder="Ör: 45 dk (Opsiyonel)"
                   value={durationMinutes}
                   onChange={(e) => setDurationMinutes(e.target.value === '' ? '' : Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-amber-500/40 rounded-2xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-400 transition-all font-mono font-bold"
+                  className="w-full bg-slate-950 border border-amber-500/40 rounded-2xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-amber-400 transition-all font-mono font-bold min-h-[48px] sm:min-h-0"
                 />
               </div>
 
@@ -1955,7 +1955,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                   placeholder="Ör: Paragrafta süreye uyuldu, soru bankası sayfa 40."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 sm:py-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-all min-h-[48px] sm:min-h-0"
                 />
               </div>
 
@@ -1964,13 +1964,13 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  className="px-4 py-3 sm:py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold px-6 py-2.5 rounded-2xl transition-all shadow-lg shadow-emerald-500/25 border border-emerald-400/30 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                  className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs sm:text-xs font-bold px-6 py-3.5 sm:py-2.5 rounded-2xl transition-all shadow-lg shadow-emerald-500/25 border border-emerald-400/30 cursor-pointer hover:scale-[1.02] active:scale-[0.98] min-h-[48px] sm:min-h-0 flex items-center justify-center"
                 >
                   {editingLogId ? 'Değişiklikleri Kaydet' : 'Soru Kaydını Ekle'}
                 </button>

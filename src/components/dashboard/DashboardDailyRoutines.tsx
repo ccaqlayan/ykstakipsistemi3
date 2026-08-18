@@ -48,7 +48,7 @@ export const DashboardDailyRoutines: React.FC<DashboardDailyRoutinesProps> = ({
           <button
             type="button"
             onClick={() => onNavigateTab('routines')}
-            className="text-[11px] sm:text-xs bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl font-semibold flex items-center space-x-1 transition-all cursor-pointer shrink-0 whitespace-nowrap"
+            className="text-xs bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 px-3.5 py-2 sm:px-3 sm:py-1.5 rounded-xl font-semibold flex items-center space-x-1 transition-all cursor-pointer shrink-0 whitespace-nowrap min-h-[38px] sm:min-h-0"
           >
             <span>Tüm Rutinler</span>
             <ArrowUpRight className="w-3.5 h-3.5" />
@@ -65,26 +65,26 @@ export const DashboardDailyRoutines: React.FC<DashboardDailyRoutinesProps> = ({
                 key={r.id}
                 type="button"
                 onClick={() => onToggleRoutineDay(r.id, todayDayName)}
-                className={`flex items-center justify-between text-xs p-3.5 rounded-xl border text-left transition-all cursor-pointer active:scale-[0.98] ${
+                className={`flex items-center justify-between text-xs p-4 sm:p-3.5 rounded-2xl border text-left transition-all cursor-pointer active:scale-[0.98] min-h-[56px] sm:min-h-0 ${
                   isDoneToday
                     ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
                     : 'bg-white/5 hover:bg-white/10 border-white/5 text-slate-300'
                 }`}
               >
-                <div className="flex items-center space-x-2.5 min-w-0 mr-2.5 flex-1">
-                  <div className={`w-4.5 h-4.5 rounded-full flex items-center justify-center border transition-all shrink-0 ${
+                <div className="flex items-center space-x-3 min-w-0 mr-2.5 flex-1">
+                  <div className={`w-6 h-6 sm:w-5 sm:h-5 rounded-full flex items-center justify-center border transition-all shrink-0 ${
                     isDoneToday 
-                      ? 'bg-emerald-500 border-emerald-400 text-slate-950' 
+                      ? 'bg-emerald-500 border-emerald-400 text-slate-950 shadow-sm shadow-emerald-500/30' 
                       : 'bg-slate-800 border-slate-700 text-slate-500'
                   }`}>
-                    {isDoneToday && <Check className="w-3 h-3 stroke-[3]" />}
+                    {isDoneToday && <Check className="w-3.5 h-3.5 sm:w-3 sm:h-3 stroke-[3]" />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <span className="font-semibold block text-xs sm:text-sm text-slate-100 leading-snug break-normal">{r.title}</span>
-                    {r.target && <span className="text-[11px] text-slate-400 block mt-0.5 font-medium leading-tight">{r.target}</span>}
+                    <span className="font-semibold block text-sm sm:text-sm text-slate-100 leading-snug break-normal">{r.title}</span>
+                    {r.target && <span className="text-xs sm:text-[11px] text-slate-400 block mt-0.5 font-medium leading-tight">{r.target}</span>}
                   </div>
                 </div>
-                <span className={`text-[9.5px] px-2.5 py-1 rounded-full font-bold shrink-0 ${
+                <span className={`text-[10px] sm:text-[9.5px] px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-full font-bold shrink-0 ${
                   isDoneToday 
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
                     : 'bg-slate-800 text-slate-500 border border-slate-700'
