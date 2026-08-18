@@ -112,7 +112,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
       {
         id: 'msg-welcome',
         sender: 'ai',
-        text: `Merhaba ${currentUser?.name || state.profile?.name || 'Şampiyon'}! 👋 Ben senin kişisel YKS Koçunum. Soru çözümlerini, deneme netlerini ve yanlış yaptığın konuları yakından takip ediyorum. Hedeflediğin ${state.profile?.targetUniversity || 'üniversite'} ve derece için aklına takılan her şeyi bana sorabilirsin!`,
+        text: `Merhaba ${currentUser?.name || state.profile?.name || 'Şampiyon'}! 👋 Ben senin kişisel YKS Koçun ve Mentorunum. Soru çözümlerini, deneme netlerini ve yanlış yaptığın konuları yakından takip ediyorum. Hedeflediğin ${state.profile?.targetUniversity || 'üniversite'} ve derece için YKS hazırlığı, ders çalışma taktikleri ve motivasyon konusunda aklına takılan her şeyi bana sorabilirsin! Masanın başına geçmeye hazır mısın? 🚀`,
         timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
       }
     ];
@@ -838,7 +838,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                   type="text"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Koçuna bir soru sor (Örn: Bu hafta Geometriyi nasıl toparlarım?)..."
+                  placeholder="YKS Koçuna dersler, stratejin veya çalışma planın hakkında bir soru sor (Örn: Geometriyi nasıl toparlarım?)..."
                   disabled={chatLoading}
                   className="flex-1 bg-slate-950 border border-slate-800 focus:border-purple-500 text-xs text-white p-3 rounded-xl focus:outline-none placeholder-slate-500 disabled:opacity-50"
                 />
