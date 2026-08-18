@@ -1008,14 +1008,14 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                         isFullyWatched ? 'border-emerald-500/30 opacity-90' : ''
                       }`}
                     >
-                      {/* 1. 16:9 Kapak Görseli (Hero Thumbnail) */}
-                      <div className="aspect-video relative overflow-hidden bg-slate-950 flex items-center justify-center">
+                      {/* 1. 16:9 Kapak Görseli (Hero Thumbnail - Liste Görünümüyle Birebir Aydınlık Tasarım) */}
+                      <div className="aspect-video relative overflow-hidden bg-slate-950 flex items-center justify-center border-b border-slate-800/80 group/thumb">
                         {thumbnailUrl ? (
                           <img
                             src={thumbnailUrl}
                             alt={vid.playlistTitle || vid.topicName}
                             referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
+                            className="relative z-10 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={(e) => {
                               const imgEl = e.currentTarget;
                               if (imgEl.src.includes('mqdefault')) {
@@ -1030,29 +1030,38 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                         ) : null}
 
                         {/* Fallback Graphic if no image */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-red-950/80 flex flex-col items-center justify-center p-3 text-center pointer-events-none">
+                        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-red-950/80 flex flex-col items-center justify-center p-3 text-center z-0">
                           <Youtube className="w-10 h-10 text-red-500 opacity-60 mb-1" />
                           <span className="text-[10px] font-bold text-slate-400 line-clamp-1">{vid.channelName}</span>
                         </div>
 
-                        {/* Soft Dark Vignette Gradient */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-slate-950/60 pointer-events-none" />
+                        {/* 20% Soft Vignette Gradient (Aydınlık & Canlı) */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 via-transparent to-transparent pointer-events-none z-20" />
 
-                        {/* Üst Rozetler Satırı (Ders & Tür) */}
-                        <div className="absolute top-2.5 inset-x-2.5 z-10 flex items-center justify-between gap-1.5 pointer-events-none">
+                        {/* Üst Rozetler Satırı (Ders & İzlenme Durumu) */}
+                        <div className="absolute top-2.5 inset-x-2.5 z-30 flex items-center justify-between gap-1.5 pointer-events-none">
+                          {/* Sol Üst: İzlenme Durumu Glass Rozeti */}
+                          {isFullyWatched ? (
+                            <span className="bg-emerald-500/90 text-white backdrop-blur-md border border-emerald-400/40 text-[10px] font-black px-2.5 py-1 rounded-xl flex items-center space-x-1 shadow-lg shrink-0">
+                              <CheckCircle className="w-3 h-3 text-white" />
+                              <span>Tamamlandı</span>
+                            </span>
+                          ) : isPlaylist && watchedVideosCount > 0 ? (
+                            <span className="bg-amber-500/90 text-slate-950 backdrop-blur-md border border-amber-400/40 text-[10px] font-black px-2.5 py-1 rounded-xl flex items-center space-x-1 shadow-lg shrink-0 font-mono">
+                              <span>%{progressPct} İzlendi</span>
+                            </span>
+                          ) : (
+                            <span className="bg-red-600/90 text-white backdrop-blur-md border border-red-400/40 text-[10px] font-black px-2.5 py-1 rounded-xl flex items-center space-x-1 shadow-lg shrink-0">
+                              <span>İzlenecek</span>
+                            </span>
+                          )}
+
+                          {/* Sağ Üst: Ders Adı */}
                           <span
-                            className="text-[9.5px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider backdrop-blur-md border shadow-md truncate max-w-[55%] shrink bg-red-600/30 text-white border-red-500/50"
-                            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+                            className="text-[9.5px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider backdrop-blur-md border shadow-md truncate max-w-[48%] shrink bg-slate-950/80 text-red-400 border-red-500/30"
                             title={vid.subject}
                           >
                             {vid.subject}
-                          </span>
-
-                          <span
-                            className="text-[9px] px-2 py-0.5 rounded-lg font-extrabold uppercase tracking-wider backdrop-blur-md border shadow-md truncate max-w-[45%] shrink bg-slate-900/80 text-amber-300 border-amber-500/40"
-                            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
-                          >
-                            {isPlaylist ? `Kamp (${totalVideosCount})` : 'Tek Video'}
                           </span>
                         </div>
 
@@ -1062,40 +1071,33 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                             href={vid.videoUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="absolute inset-0 flex items-center justify-center bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 cursor-pointer"
+                            className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-40 cursor-pointer"
                             title="YouTube'da İzle"
                           >
-                            <div className="p-3 bg-red-600 hover:bg-red-500 text-white rounded-full shadow-2xl scale-90 group-hover:scale-105 transition-all">
-                              <Play className="w-5 h-5 fill-current ml-0.5" />
+                            <div className="p-3 bg-red-600 hover:bg-red-500 text-white rounded-full shadow-2xl scale-90 group-hover:scale-100 transition-all">
+                              <Play className="w-6 h-6 fill-current ml-0.5" />
                             </div>
                           </a>
                         )}
 
-                        {/* Alt Rozetler Satırı (İzlenme Durumu & Süre) */}
-                        <div className="absolute bottom-2 inset-x-2.5 z-10 flex items-center justify-between gap-1.5 pointer-events-none">
-                          {isFullyWatched ? (
-                            <span className="text-[9.5px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider backdrop-blur-md border shadow-md bg-emerald-600/90 text-white border-emerald-400/50 flex items-center space-x-1">
-                              <CheckCircle className="w-3 h-3 text-white" />
-                              <span>Tamamlandı</span>
-                            </span>
-                          ) : isPlaylist && watchedVideosCount > 0 ? (
-                            <span className="text-[9.5px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider backdrop-blur-md border shadow-md bg-amber-500/90 text-slate-950 border-amber-400/50 font-mono">
-                              %{progressPct} İzlendi
-                            </span>
+                        {/* Sağ Alt: Süre / Video Sayısı Rozeti */}
+                        <div className="absolute bottom-2.5 right-2.5 z-30 bg-slate-950/90 text-white font-mono text-[10px] font-bold px-2 py-0.5 rounded-lg border border-white/10 shadow-md flex items-center space-x-1">
+                          {isPlaylist ? (
+                            <>
+                              <ListVideo className="w-3 h-3 text-amber-400" />
+                              <span>{totalVideosCount} Video</span>
+                            </>
                           ) : (
-                            <span className="text-[9.5px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider backdrop-blur-md border shadow-md bg-rose-600/90 text-white border-rose-400/50 animate-pulse">
-                              İzlenecek
-                            </span>
+                            <>
+                              <Clock className="w-3 h-3 text-red-400" />
+                              <span>{totalDuration > 0 ? formatDuration(totalDuration) : (vid.durationMinutes ? formatDuration(vid.durationMinutes) : 'Video')}</span>
+                            </>
                           )}
-
-                          <span className="text-[9.5px] font-mono font-bold px-2 py-0.5 rounded-lg backdrop-blur-md border bg-slate-950/80 text-slate-300 border-white/10 shadow-md">
-                            {totalDuration > 0 ? formatDuration(totalDuration) : isPlaylist ? `${totalVideosCount} Video` : 'Video'}
-                          </span>
                         </div>
 
                         {/* Playlist Mini Progress Line */}
                         {isPlaylist && (
-                          <div className="absolute bottom-0 inset-x-0 h-1 bg-slate-950/80 z-20 overflow-hidden">
+                          <div className="absolute bottom-0 inset-x-0 h-1 bg-slate-950/80 z-30 overflow-hidden">
                             <div
                               className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 transition-all duration-500"
                               style={{ width: `${progressPct}%` }}
