@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { BranchExam, TopicErrorItem, ErrorReason, GeneralMockExam, ResourceItem } from '../../types';
 import { ConfirmDeleteModal } from '../ConfirmDeleteModal';
-import { formatDisplayDate } from '../../utils/dateUtils';
+import { formatDisplayDate, formatShortDisplayDate } from '../../utils/dateUtils';
 
 interface BranchModalsProps {
   // Error Modal
@@ -1203,31 +1203,31 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
 
       {/* ── MODAL 2: GÖRSEL SAKLAMA & YAPAY ZEKA ÇÖZÜM MODALI ── */}
       {previewImage && (
-        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 z-50 overflow-y-auto animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto relative max-h-[92vh] flex flex-col modal-dialog-card">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
-              <div className="flex items-center space-x-2">
-                <div className="p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400">
-                  <ImageIcon className="w-5 h-5" />
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-6 z-50 overflow-y-auto animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-3 sm:p-6 shadow-2xl space-y-3 sm:space-y-4 my-auto relative max-h-[92vh] flex flex-col modal-dialog-card overflow-x-hidden">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-2.5 sm:pb-3 shrink-0">
+              <div className="flex items-center space-x-2 min-w-0 flex-1 pr-1">
+                <div className="p-1.5 sm:p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-400 shrink-0">
+                  <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-white truncate max-w-xs sm:max-w-md">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xs sm:text-sm md:text-base font-bold text-white truncate" title={previewImage.title}>
                     {previewImage.title}
                   </h3>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                  <div className="flex items-center gap-2 text-[10px] sm:text-[11px] text-slate-400">
                     {(() => {
                       const mErr = getMatchingErrorItem();
                       if (mErr && mErr.date) {
                         return (
-                          <span className="text-indigo-300 font-semibold flex items-center gap-1">
+                          <span className="text-indigo-300 font-semibold flex items-center gap-1 shrink-0">
                             <Calendar className="w-3 h-3 text-indigo-400" />
-                            <span>Eklenme: {formatDisplayDate(mErr.date)}</span>
+                            <span>{formatShortDisplayDate(mErr.date)}</span>
                           </span>
                         );
                       }
                       return null;
                     })()}
-                    <span>• Yapay zeka destekli soru analiz ve çözüm merkezi</span>
+                    <span className="hidden sm:inline text-slate-500">• Yapay zeka destekli soru analiz ve çözüm merkezi</span>
                   </div>
                 </div>
               </div>
@@ -1235,19 +1235,20 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
               <button
                 type="button"
                 onClick={() => setPreviewImage(null)}
-                className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition-all cursor-pointer shrink-0"
+                className="text-slate-400 hover:text-white p-1.5 sm:p-2 rounded-xl bg-slate-800/60 hover:bg-slate-800 transition-all cursor-pointer shrink-0 ml-1"
+                title="Kapat"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0 overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 flex-1 min-h-0 overflow-y-auto">
               {/* Sol Taraf: Görsel */}
-              <div className="bg-slate-950 p-2.5 rounded-2xl border border-slate-800 flex flex-col items-center justify-center min-h-[250px] relative overflow-hidden group">
+              <div className="bg-slate-950 p-2.5 rounded-2xl border border-slate-800 flex flex-col items-center justify-center min-h-[200px] sm:min-h-[250px] relative overflow-hidden group">
                 <img
                   src={previewImage.url}
                   alt={previewImage.title}
-                  className="max-h-[60vh] md:max-h-full w-auto object-contain rounded-xl"
+                  className="max-h-[50vh] md:max-h-full w-auto object-contain rounded-xl"
                 />
                 <a
                   href={previewImage.url}
@@ -1262,43 +1263,43 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
 
               {/* Sağ Taraf: Yapay Zeka Özellikleri (Çözüm, Benzer Soru, Soru Karnesi) */}
               <div className="flex flex-col space-y-3 min-h-0">
-                {/* Sekme Seçici: Soru Çözümü & Benzer Sorular & Soru Karnesi */}
-                <div className="flex items-center space-x-1.5 border-b border-slate-800 pb-2 shrink-0">
+                {/* Sekme Seçici: Soru Çözümü & Benzer Sorular & Soru Karnesi (Mobilde Tek Satırda Eşit Grid) */}
+                <div className="grid grid-cols-3 gap-1 sm:gap-1.5 border-b border-slate-800 pb-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => setAiModalTab('solution')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                    className={`px-1.5 sm:px-3 py-1.5 rounded-xl text-[10.5px] sm:text-xs font-bold transition-all flex items-center justify-center space-x-1 sm:space-x-1.5 cursor-pointer whitespace-nowrap ${
                       aiModalTab === 'solution'
                         ? 'bg-purple-600 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
                     }`}
                   >
-                    <Brain className="w-3.5 h-3.5" />
-                    <span>Soru Çözümü</span>
+                    <Brain className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                    <span className="truncate">Soru Çözümü</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setAiModalTab('similar')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                    className={`px-1.5 sm:px-3 py-1.5 rounded-xl text-[10.5px] sm:text-xs font-bold transition-all flex items-center justify-center space-x-1 sm:space-x-1.5 cursor-pointer whitespace-nowrap ${
                       aiModalTab === 'similar'
                         ? 'bg-cyan-600 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
                     }`}
                   >
-                    <HelpCircle className="w-3.5 h-3.5" />
-                    <span>Benzer Sorular ({similarQuestionsList.length}/3)</span>
+                    <HelpCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                    <span className="truncate">Benzer Sorular</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setAiModalTab('report')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                    className={`px-1.5 sm:px-3 py-1.5 rounded-xl text-[10.5px] sm:text-xs font-bold transition-all flex items-center justify-center space-x-1 sm:space-x-1.5 cursor-pointer whitespace-nowrap ${
                       aiModalTab === 'report'
                         ? 'bg-amber-600 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
                     }`}
                   >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Soru Karnesi</span>
+                    <FileText className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                    <span className="truncate">Soru Karnesi</span>
                   </button>
                 </div>
 
@@ -1392,7 +1393,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                           ) : (
                             <>
                               <Sparkles className="w-3 h-3 text-cyan-200" />
-                              <span>{similarQuestionsList.length > 0 ? `+ Yeni Soru (${similarQuestionsList.length}/3)` : 'Benzer Soru Üret'}</span>
+                              <span>{similarQuestionsList.length > 0 ? '+ Yeni Soru' : 'Benzer Soru Üret'}</span>
                             </>
                           )}
                         </button>
@@ -1487,7 +1488,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                           className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-cyan-600/20 transition-all cursor-pointer inline-flex items-center space-x-1.5"
                         >
                           <Sparkles className="w-4 h-4 text-cyan-200" />
-                          <span>Benzer Soru Oluştur (1/3)</span>
+                          <span>Benzer Soru Oluştur</span>
                         </button>
                       </div>
                     )}
@@ -1548,5 +1549,6 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
         </div>
       )}
     </>
+
   );
 };
