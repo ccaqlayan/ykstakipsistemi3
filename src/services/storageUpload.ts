@@ -41,6 +41,26 @@ function getClientStorage() {
   }
 }
 
+/**
+ * Firebase Storage CDN URL'ini manuel olarak oluşturur.
+ * getDownloadURL() başarısız olduğunda fallback olarak kullanılır.
+ * Format: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{encodedPath}?alt=media
+ */
+function buildFirebaseStorageCDNUrl(storagePath: string): string | null {
+  try {
+    const storage = getClientStorage();
+    if (!storage) return null;
+    // Firebase app config'den bucket'i çıkar
+    const appConfig = (app as any).options;
+    const bucket = appConfig?.storageBucket;
+    if (!bucket) return null;
+    const encodedPath = encodeURIComponent(storagePath).replace(/%2F/g, '%2F');
+    return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodedPath}?alt=media`;
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function uploadProfileAvatar(file: File, userId: string): Promise<UploadResult> {
   const { dataUrl, originalKb, compressedKb } = await compressImageFile(file, 800, 0.7);
   let ext = 'jpg';
@@ -65,11 +85,23 @@ export async function uploadProfileAvatar(file: File, userId: string): Promise<U
             finalUrl = directUrl;
           }
         } catch (urlErr) {
-          console.warn('Could not get Firebase direct URL, fallback to cached:', urlErr);
+          // getDownloadURL başarısız: manuel CDN URL oluştur
+          const cdnUrl = buildFirebaseStorageCDNUrl(storagePath);
+          if (cdnUrl) {
+            finalUrl = cdnUrl;
+            console.info('[Storage] getDownloadURL failed, using manual CDN URL for avatar.');
+          } else {
+            console.warn('Could not get Firebase direct URL, fallback to cached:', urlErr);
+          }
         }
       }
     }
   } catch (clientErr) {
+    if (isDirect) {
+      // Upload başarısız ama isDirect: yine de manuel CDN URL üreterek kaydet
+      const cdnUrl = buildFirebaseStorageCDNUrl(storagePath);
+      if (cdnUrl) finalUrl = cdnUrl;
+    }
     console.warn('Direct Firebase Storage upload fallback to server:', clientErr);
   }
 
@@ -126,11 +158,21 @@ export async function uploadChannelAvatar(file: File, channelUrl: string, channe
             finalUrl = directUrl;
           }
         } catch (urlErr) {
-          console.warn('Could not get Firebase direct YouTube URL, fallback:', urlErr);
+          const cdnUrl = buildFirebaseStorageCDNUrl(storagePath);
+          if (cdnUrl) {
+            finalUrl = cdnUrl;
+            console.info('[Storage] getDownloadURL failed, using manual CDN URL for youtube avatar.');
+          } else {
+            console.warn('Could not get Firebase direct YouTube URL, fallback:', urlErr);
+          }
         }
       }
     }
   } catch (err) {
+    if (isDirect) {
+      const cdnUrl = buildFirebaseStorageCDNUrl(storagePath);
+      if (cdnUrl) finalUrl = cdnUrl;
+    }
     console.warn('Direct YouTube avatar upload fallback to server:', err);
   }
 
@@ -177,11 +219,21 @@ export async function uploadMessageAttachment(file: File, messageId: string): Pr
             finalUrl = directUrl;
           }
         } catch (urlErr) {
-          console.warn('Could not get Firebase direct attachment URL, fallback:', urlErr);
+          const cdnUrl = buildFirebaseStorageCDNUrl(storagePath);
+          if (cdnUrl) {
+            finalUrl = cdnUrl;
+            console.info('[Storage] getDownloadURL failed, using manual CDN URL for message attachment.');
+          } else {
+            console.warn('Could not get Firebase direct attachment URL, fallback:', urlErr);
+          }
         }
       }
     }
   } catch (err) {
+    if (isDirect) {
+      const cdnUrl = buildFirebaseStorageCDNUrl(storagePath);
+      if (cdnUrl) finalUrl = cdnUrl;
+    }
     console.warn('Direct message attachment upload fallback to server:', err);
   }
 
@@ -227,11 +279,23 @@ export async function uploadQuestionErrorImage(file: File, userId: string, error
             finalUrl = directUrl;
           }
         } catch (urlErr) {
-          console.warn('Could not get Firebase direct question error URL, fallback:', urlErr);
+          // getDownloadURL başarısız: Firebase Storage CDN URL'ini manuel oluştur
+          const cdnUrl = buildFirebaseStorageCDNUrl(storagePath);
+          if (cdnUrl) {
+            finalUrl = cdnUrl;
+            console.info('[Storage] getDownloadURL failed, using manual CDN URL for question error image.');
+          } else {
+            console.warn('Could not get Firebase direct question error URL, fallback:', urlErr);
+          }
         }
       }
     }
   } catch (err) {
+    if (isDirect) {
+      // Firebase upload bile başarısız oldu: en azından CDN URL oluşturmayı dene
+      const cdnUrl = buildFirebaseStorageCDNUrl(storagePath);
+      if (cdnUrl) finalUrl = cdnUrl;
+    }
     console.warn('Direct question error upload fallback to server:', err);
   }
 

@@ -347,6 +347,15 @@ export function subscribeToFirestore(
       if (data.maintenanceAllowTeachers !== undefined) {
         localStorage.setItem('maintenance_allow_teachers', String(data.maintenanceAllowTeachers));
       }
+      // storageDeliveryMode: Firestore'dan oku ve localStorage + in-memory'ye kaydet
+      if (data.storageDeliveryMode === 'FIREBASE_DIRECT' || data.storageDeliveryMode === 'LOCAL_MIRROR') {
+        localStorage.setItem('yks_storage_delivery_mode', data.storageDeliveryMode);
+        // Dinamik import ile döngüsel bağımlılık olmadan set et
+        try {
+          const { setStorageDeliveryMode } = await import('./storageUpload');
+          setStorageDeliveryMode(data.storageDeliveryMode);
+        } catch (e) {}
+      }
       // Dispatch a custom event so components can listen to setting updates reactively
       window.dispatchEvent(new Event('yks_settings_updated'));
     }
