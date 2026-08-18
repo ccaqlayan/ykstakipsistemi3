@@ -142,14 +142,14 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   const [inlineEditingErrorId, setInlineEditingErrorId] = useState<string | null>(null);
   const [inlineNotesText, setInlineNotesText] = useState<string>('');
 
-  // 🔀 Görünüm Modu State (Liste vs Tablo vs Galeri)
+  // 🔀 Görünüm Modu State (Liste vs Tablo vs Galeri - Varsayılan: Galeri)
   const [viewMode, setViewMode] = useState<'list' | 'table' | 'gallery'>(() => {
     try {
       const saved = localStorage.getItem('yks_error_notebook_view_mode');
       if (saved === 'list' || saved === 'table' || saved === 'gallery') return saved;
-      return 'list';
+      return 'gallery';
     } catch {
-      return 'list';
+      return 'gallery';
     }
   });
 
@@ -1240,31 +1240,30 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
                     </div>
                   )}
 
-                  {/* Sol Üst: Ders Rozeti */}
-                  <div className="absolute top-2.5 left-2.5 z-10">
+                  {/* Üst Rozetler Satırı (Ders & Hata Sebebi) - Asla Üst Üste Binmez */}
+                  <div className="absolute top-2.5 inset-x-2.5 z-10 flex items-center justify-between gap-1.5 pointer-events-none">
                     <span
-                      className="text-[10px] font-black px-2.5 py-1 rounded-xl uppercase tracking-wider backdrop-blur-md border shadow-md block"
+                      className="text-[9.5px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider backdrop-blur-md border shadow-md truncate max-w-[48%] shrink"
                       style={{
-                        backgroundColor: `${subColor}30`,
+                        backgroundColor: `${subColor}35`,
                         color: '#ffffff',
                         borderColor: `${subColor}60`,
                         textShadow: '0 1px 2px rgba(0,0,0,0.8)',
                       }}
+                      title={item.subject}
                     >
                       {item.subject}
                     </span>
-                  </div>
 
-                  {/* Sağ Üst: Hata Sebebi Rozeti */}
-                  <div className="absolute top-2.5 right-2.5 z-10">
                     <span
-                      className="text-[9.5px] px-2.5 py-1 rounded-xl font-extrabold uppercase tracking-wider backdrop-blur-md border shadow-md block"
+                      className="text-[9px] px-2 py-0.5 rounded-lg font-extrabold uppercase tracking-wider backdrop-blur-md border shadow-md truncate max-w-[48%] shrink"
                       style={{
-                        backgroundColor: `${reasonColor}35`,
+                        backgroundColor: `${reasonColor}40`,
                         color: '#ffffff',
-                        borderColor: `${reasonColor}60`,
+                        borderColor: `${reasonColor}65`,
                         textShadow: '0 1px 2px rgba(0,0,0,0.8)',
                       }}
+                      title={reasonLabel}
                     >
                       {reasonLabel}
                     </span>
