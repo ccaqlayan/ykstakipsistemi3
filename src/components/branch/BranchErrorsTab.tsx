@@ -480,251 +480,169 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
         );
       })()}
 
-      {/* ── 4 KPI SUMMARY METRIC CARDS ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Toplam Yanlış Kaydı */}
-        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Toplam Yanlış Kaydı</span>
-            <div className="w-8 h-8 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+      {/* ── 4 KPI SUMMARY METRIC CARDS (KOMPAKT MİNİ İSTATİSTİK ŞERİDİ) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+        {/* Card 1: Toplam Yanlış */}
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-rose-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shrink-0">
               <AlertTriangle className="w-4 h-4 text-rose-400" />
             </div>
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-black text-white font-mono">{topicErrors.length}</span>
-              <span className="text-xs text-slate-400 font-medium">Soru</span>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Toplam Yanlış</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-white font-mono">{topicErrors.length}</span>
+                <span className="text-[10px] text-slate-500">Soru</span>
+              </div>
             </div>
-            <span className="text-[10px] bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
-              Hata Havuzu
-            </span>
           </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Filtrelenen Soru:</span>
-            <span className="text-rose-300 font-bold font-mono">{filteredErrors.length}</span>
-          </div>
+          <span className="text-[9px] bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+            Havuz
+          </span>
         </div>
 
         {/* Card 2: Bekleyen Tekrarlar */}
-        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Bekleyen Tekrarlar</span>
-            <div className="w-8 h-8 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-amber-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
               <BookOpen className="w-4 h-4 text-amber-400" />
             </div>
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-black text-amber-400 font-mono">
-                {topicErrors.filter(e => !e.revised).length}
-              </span>
-              <span className="text-xs text-slate-400 font-medium">Soru</span>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Bekleyen Tekrar</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-amber-400 font-mono">{topicErrors.filter(e => !e.revised).length}</span>
+                <span className="text-[10px] text-slate-500">Soru</span>
+              </div>
             </div>
-            <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
-              Tekrar Bekliyor
-            </span>
           </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Tekrar Oranı:</span>
-            <span className="text-amber-300 font-bold font-mono">
-              %{topicErrors.length > 0 ? Math.round((topicErrors.filter(e => e.revised).length / topicErrors.length) * 100) : 0}
-            </span>
-          </div>
+          <span className="text-[9px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+            %{topicErrors.length > 0 ? Math.round((topicErrors.filter(e => e.revised).length / topicErrors.length) * 100) : 0} Oran
+          </span>
         </div>
 
         {/* Card 3: Tekrar Edilenler */}
-        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Tekrar Edilenler</span>
-            <div className="w-8 h-8 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-emerald-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             </div>
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-black text-emerald-400 font-mono">
-                {topicErrors.filter(e => e.revised).length}
-              </span>
-              <span className="text-xs text-slate-400 font-medium">Soru</span>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Pekiştirilen</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-emerald-400 font-mono">{topicErrors.filter(e => e.revised).length}</span>
+                <span className="text-[10px] text-slate-500">Soru</span>
+              </div>
             </div>
-            <span className="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
-              Tamamlandı
-            </span>
           </div>
-          <div className="mt-3 w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-            <div 
-              className="bg-emerald-500 h-full rounded-full transition-all duration-500" 
-              style={{ width: `${topicErrors.length > 0 ? Math.round((topicErrors.filter(e => e.revised).length / topicErrors.length) * 100) : 0}%` }} 
-            />
-          </div>
+          <span className="text-[9px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+            Tamamlandı
+          </span>
         </div>
 
-        {/* Card 4: Görselli / Yapay Zekalı Sorular */}
-        <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl flex flex-col justify-between shadow-xl backdrop-blur-md relative overflow-hidden group hover:border-slate-700 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400">Görselli & AI Çözümlü</span>
-            <div className="w-8 h-8 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+        {/* Card 4: AI & Görselli */}
+        <div className="bg-slate-900/90 border border-slate-800 p-2.5 sm:p-3 rounded-2xl flex items-center justify-between shadow-md backdrop-blur-md relative overflow-hidden group hover:border-purple-500/40 transition-all">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
               <Brain className="w-4 h-4 text-purple-400" />
             </div>
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-3xl font-black text-purple-400 font-mono">
-                {topicErrors.filter(e => e.imageUrl || e.aiAnalysis || e.aiFeedback).length}
-              </span>
-              <span className="text-xs text-slate-400 font-medium">Soru</span>
+            <div className="min-w-0">
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">Görselli & AI</span>
+              <div className="flex items-baseline space-x-1.5">
+                <span className="text-base sm:text-lg font-black text-purple-400 font-mono">{topicErrors.filter(e => e.imageUrl || e.aiAnalysis || e.aiFeedback).length}</span>
+                <span className="text-[10px] text-slate-500">Soru</span>
+              </div>
             </div>
-            <span className="text-[10px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-semibold font-mono">
-              AI Destekli
-            </span>
           </div>
-          <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Fotoğraflı Soru:</span>
-            <span className="text-purple-300 font-bold font-mono">{topicErrors.filter(e => !!e.imageUrl).length}</span>
-          </div>
+          <span className="text-[9px] bg-purple-500/15 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0 hidden sm:inline">
+            AI Destekli
+          </span>
         </div>
       </div>
 
-      {/* ── 📁 DERS KLASÖRLERİ (INTERACTIVE FOLDER BROWSER) ── */}
+      {/* ── 📁 DERS KLASÖRLERİ (KOMPAKT YATAY BUTON ŞERİDİ) ── */}
       {topicErrors.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className="p-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
-                <Folder className="w-4 h-4" />
+              <div className="p-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                <Folder className="w-3.5 h-3.5" />
               </div>
-              <h3 className="text-sm font-black text-white flex items-center gap-2">
+              <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
                 <span>Ders Klasörleri</span>
-                <span className="text-[10px] font-mono font-bold text-indigo-300 bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded-full">
-                  {subjectFolders.length > 1 ? `${subjectFolders.length - 1} Ders Klasörü` : '1 Klasör'}
+                <span className="text-[9.5px] font-mono font-bold text-indigo-300 bg-indigo-500/20 border border-indigo-500/30 px-1.5 py-0.2 rounded-full">
+                  {subjectFolders.length > 1 ? `${subjectFolders.length - 1} Ders` : '1 Klasör'}
                 </span>
               </h3>
             </div>
-            <span className="text-[11px] text-slate-400 hidden sm:inline font-medium">
-              Ders klasörüne tıklayarak o derse ait hataları hızlıca inceleyin
+            <span className="text-[10.5px] text-slate-400 hidden sm:inline font-medium">
+              Ders butonuna tıklayarak ilgili hataları filtreleyin
             </span>
           </div>
 
-          {/* Horizontal scrollable folder shelf */}
-          <div className="flex items-stretch gap-3.5 overflow-x-auto pb-2.5 pt-1 scrollbar-none snap-x -mx-1 px-1">
+          {/* Horizontal scrollable compact folder pill bar */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1.5 pt-0.5 scrollbar-none snap-x -mx-1 px-1">
             {subjectFolders.map((folder) => {
               const isSelected = (folder.isAll && (filterSubject === 'ALL' || !filterSubject)) || (!folder.isAll && filterSubject === folder.subject);
               const folderColor = folder.color;
 
               return (
-                <div
+                <button
                   key={folder.subject}
+                  type="button"
                   onClick={() => {
                     setFilterSubject(folder.isAll ? 'ALL' : folder.subject);
                     setFilterExamId(null);
                   }}
-                  className={`min-w-[240px] sm:min-w-[270px] max-w-[290px] rounded-3xl p-4 transition-all duration-300 cursor-pointer snap-start relative overflow-hidden flex flex-col justify-between select-none group border ${
+                  className={`shrink-0 px-3 py-2 rounded-2xl transition-all duration-200 cursor-pointer snap-start flex items-center space-x-2 text-xs font-bold border select-none ${
                     isSelected
-                      ? 'bg-slate-900/95 shadow-2xl scale-[1.02]'
-                      : 'bg-slate-900/70 hover:bg-slate-900/90 border-slate-800 hover:border-slate-700 shadow-lg hover:scale-[1.01]'
+                      ? 'bg-slate-900 text-white shadow-md scale-[1.02]'
+                      : 'bg-slate-900/60 hover:bg-slate-900 text-slate-300 hover:text-white border-slate-800 hover:border-slate-700'
                   }`}
                   style={{
                     borderColor: isSelected ? folderColor : undefined,
-                    boxShadow: isSelected ? `0 10px 30px -10px ${folderColor}50` : undefined,
+                    boxShadow: isSelected ? `0 4px 15px -4px ${folderColor}60` : undefined,
                   }}
+                  title={
+                    folder.topTopics.length > 0
+                      ? `${folder.isAll ? 'Tüm Dersler' : folder.subject}: ${folder.total} Soru (${folder.pending} Bekleyen) • En Çok Hata: ${folder.topTopics.map(t => `${t.topic} (${t.count})`).join(', ')}`
+                      : `${folder.isAll ? 'Tüm Dersler' : folder.subject}: ${folder.total} Soru`
+                  }
                 >
-                  {/* Top Glowing Ambient Light */}
-                  {isSelected && (
-                    <div
-                      className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-25 pointer-events-none"
-                      style={{ backgroundColor: folderColor }}
-                    />
-                  )}
-
-                  <div>
-                    {/* Folder Tab Header */}
-                    <div className="flex items-center justify-between pb-2.5 border-b border-white/5">
-                      <div className="flex items-center space-x-2.5 min-w-0">
-                        <div
-                          className="w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 border transition-all duration-300 shadow-sm"
-                          style={{
-                            backgroundColor: `${folderColor}20`,
-                            color: folderColor,
-                            borderColor: `${folderColor}40`,
-                          }}
-                        >
-                          {isSelected ? (
-                            <FolderOpen className="w-5 h-5 animate-pulse" />
-                          ) : (
-                            <Folder className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <span className="text-xs font-extrabold text-white truncate block">
-                            {folder.isAll ? '🗂️ Tüm Dersler (Arşiv)' : folder.subject}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            {folder.total} Hata Kaydı
-                          </span>
-                        </div>
-                      </div>
-
-                      {isSelected && (
-                        <span
-                          className="text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wider border shrink-0 animate-fade-in"
-                          style={{
-                            backgroundColor: `${folderColor}25`,
-                            color: folderColor,
-                            borderColor: `${folderColor}50`,
-                          }}
-                        >
-                          Seçili
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Folder Metrics & Progress */}
-                    <div className="mt-3 space-y-2">
-                      <div className="flex items-center justify-between text-xs font-mono">
-                        <span className="text-slate-300 flex items-center gap-1.5 font-semibold">
-                          <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-                          <span>{folder.pending} Bekliyor</span>
-                        </span>
-                        <span className="text-slate-300 flex items-center gap-1.5 font-semibold">
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-                          <span>%{folder.rate} Pekiştirildi</span>
-                        </span>
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="w-full bg-slate-950/80 h-2 rounded-full overflow-hidden border border-white/5 p-0.5">
-                        <div
-                          className="h-full rounded-full transition-all duration-500 shadow-sm"
-                          style={{
-                            width: `${folder.rate}%`,
-                            backgroundColor: folderColor,
-                          }}
-                        />
-                      </div>
-                    </div>
+                  <div
+                    className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0 border"
+                    style={{
+                      backgroundColor: `${folderColor}20`,
+                      color: folderColor,
+                      borderColor: `${folderColor}40`,
+                    }}
+                  >
+                    {isSelected ? (
+                      <FolderOpen className="w-3 h-3" />
+                    ) : (
+                      <Folder className="w-3 h-3" />
+                    )}
                   </div>
 
-                  {/* 🔥 En Çok Hata Yapılan Alt Konular (Mini Chips) */}
-                  {folder.topTopics.length > 0 && (
-                    <div className="mt-3 pt-2.5 border-t border-white/5 space-y-1.5">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-amber-400" />
-                        <span>En Çok Hata:</span>
-                      </span>
-                      <div className="flex flex-wrap gap-1">
-                        {folder.topTopics.map((t, idx) => (
-                          <span
-                            key={idx}
-                            className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-950/90 text-slate-300 border border-white/10 font-medium truncate max-w-[170px]"
-                            title={`${t.topic}: ${t.count} Soru`}
-                          >
-                            {t.topic}: <strong className="text-rose-400 font-bold font-mono">{t.count}</strong>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+                  <span className="truncate max-w-[140px] sm:max-w-[180px]">
+                    {folder.isAll ? '🗂️ Tüm Dersler' : folder.subject}
+                  </span>
+
+                  <span 
+                    className="text-[10px] font-mono px-1.5 py-0.2 rounded-md font-bold"
+                    style={{
+                      backgroundColor: isSelected ? `${folderColor}30` : 'rgba(255,255,255,0.06)',
+                      color: isSelected ? '#ffffff' : folderColor,
+                    }}
+                  >
+                    {folder.total}
+                  </span>
+
+                  {folder.rate > 0 && (
+                    <span className="text-[9.5px] text-emerald-400 font-mono hidden md:inline">
+                      %{folder.rate}
+                    </span>
                   )}
-                </div>
+                </button>
               );
             })}
           </div>
