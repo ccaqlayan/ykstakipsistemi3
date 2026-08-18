@@ -1576,8 +1576,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                     <tr className="border-b border-slate-800 bg-slate-950/80 text-xs font-bold text-slate-400">
                       <th className="py-4 px-3 w-10 text-center">#</th>
                       <th className="py-4 px-3 whitespace-nowrap">Ders / Tür</th>
-                      <th className="py-4 px-3 whitespace-nowrap">Yayınevi</th>
-                      <th className="py-4 px-3 whitespace-nowrap">Kaynak Adı</th>
+                      <th className="py-4 px-3 whitespace-nowrap">Yayınevi & Kaynak</th>
                       <th className="py-4 px-3 whitespace-nowrap">Zorluk & Popülerlik</th>
                       <th className="py-4 px-4 min-w-[200px]">İçerik & Tavsiye</th>
                       <th className="py-4 px-3 text-right whitespace-nowrap">İşlemler</th>
@@ -1601,8 +1600,16 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                               <span className="text-[10px] text-slate-400 font-medium">{book.category}</span>
                             </div>
                           </td>
-                          <td className="py-3 px-3 font-bold text-white whitespace-nowrap">{book.publisher}</td>
-                          <td className="py-3 px-3 font-semibold text-slate-100 whitespace-nowrap">{book.name}</td>
+                          <td className="py-3 px-3">
+                            <div className="flex flex-col space-y-1">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 text-[10px] font-extrabold uppercase tracking-wide w-max">
+                                {book.publisher}
+                              </span>
+                              <span className="font-bold text-xs text-white whitespace-nowrap">
+                                {book.name}
+                              </span>
+                            </div>
+                          </td>
                           <td className="py-3 px-3 whitespace-nowrap">
                             <div className="flex items-center space-x-2">
                               {renderDifficultyBadge(book.difficultyValue, book.difficulty)}
