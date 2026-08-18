@@ -136,7 +136,15 @@ const RECOMMENDED_CHANNELS: RecommendedChannel[] = [
   { subject: 'Coğrafya', name: 'Yavuz Tuna', subscribersText: '450 B', subscribersCount: 450000, url: 'https://www.youtube.com/@YavuzTuna' },
 
   // Felsefe
-  { subject: 'Felsefe', name: 'Can Köni', subscribersText: '98.4 B', subscribersCount: 98400, url: 'https://www.youtube.com/@CanKoni' }
+  { subject: 'Felsefe', name: 'Can Köni', subscribersText: '98.4 B', subscribersCount: 98400, url: 'https://www.youtube.com/@CanKoni' },
+
+  // Dil (YDT)
+  { subject: 'Dil', name: 'Akın Dil Eğitim', subscribersText: '105 B', subscribersCount: 105000, url: 'https://www.youtube.com/@AkinDilEgitim' },
+  { subject: 'Dil', name: 'Çağdaş\'ın İngilizce Dil Okulu', subscribersText: '102 B', subscribersCount: 102000, url: 'https://www.youtube.com/@CagdasinIngilizceDilOkulu' },
+  { subject: 'Dil', name: 'MODADİL', subscribersText: '55.1 B', subscribersCount: 55100, url: 'https://www.youtube.com/@MODADIL' },
+  { subject: 'Dil', name: 'Berk Hoca', subscribersText: '44.8 B', subscribersCount: 44800, url: 'https://www.youtube.com/@berkhocaydt' },
+  { subject: 'Dil', name: 'Dilci Burak Hoca', subscribersText: '9.9 B', subscribersCount: 9900, url: 'https://www.youtube.com/@dilciburakhoca' },
+  { subject: 'Dil', name: 'Şahan Hoca', subscribersText: '2.1 B', subscribersCount: 2100, url: 'https://www.youtube.com/@sahanydt' }
 ];
 
 const defaultChannelsWithIds: RecommendedChannel[] = RECOMMENDED_CHANNELS.map(ch => ({
@@ -158,7 +166,8 @@ const SUBJECTS = [
   { value: 'Biyoloji', label: 'Biyoloji' },
   { value: 'Tarih', label: 'Tarih' },
   { value: 'Coğrafya', label: 'Coğrafya' },
-  { value: 'Felsefe', label: 'Felsefe' }
+  { value: 'Felsefe', label: 'Felsefe' },
+  { value: 'Dil', label: 'Dil' }
 ];
 
 const SUBJECT_COLORS: Record<string, { bg: string, text: string, border: string }> = {
@@ -170,6 +179,8 @@ const SUBJECT_COLORS: Record<string, { bg: string, text: string, border: string 
   'Biyoloji': { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/20' },
   'Tarih': { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/20' },
   'Coğrafya': { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/20' },
+  'Felsefe': { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/20' },
+  'Dil': { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20' },
 };
 
 const getChannelAvatar = (channel: RecommendedChannel): string => {
@@ -647,7 +658,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         return book.category.includes('TYT');
       }
       if (selectedExamType === 'AYT') {
-        return book.category.includes('AYT');
+        return book.category.includes('AYT') || book.category.includes('YDT');
       }
       return true;
     }
@@ -661,7 +672,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         return book.category.includes('TYT');
       }
       if (selectedExamType === 'AYT') {
-        return book.category.includes('AYT');
+        return book.category.includes('AYT') || book.category.includes('YDT');
       }
       return true;
     }

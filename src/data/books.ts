@@ -2536,5 +2536,147 @@ export const RECOMMENDED_BOOKS: RecommendedBook[] = [
     difficultyValue: 5,
     reason: 'Mantık, psikoloji ve sosyoloji konularında en çelişkili ve zor sorular.',
     isPopular: true
+  },
+
+  // --- YDT YABANCI DİL / İNGİLİZCE (Subject: Dil) ---
+  {
+    subject: 'Dil',
+    category: 'YDT İngilizce',
+    publisher: 'Benim Hocam',
+    name: 'YDT İngilizce Video Destekli Soru Bankası',
+    difficulty: '⭐⭐☆☆☆ (Kolay-Orta)',
+    difficultyValue: 2,
+    reason: 'Video ders anlatımlarıyla tam uyumlu, dil temeli oluşturmak isteyenler için ideal başlangıç.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'YDT İngilizce',
+    publisher: 'Karekök',
+    name: 'YDT İngilizce MPS Soru Bankası',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Modüler piramit sistemiyle soru tiplerini tek tek kavratan öğretici kaynak.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'YDT İngilizce',
+    publisher: 'MODADİL',
+    name: 'YDT 60 Günde Kelime & Soru Bankası',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Suat Gürcan & Rıdvan Gürbüz imzalı, ÖSYM kelime sıklığına göre hazırlanan başucu kaynağı.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'YDT İngilizce',
+    publisher: 'MODADİL',
+    name: 'YDT İngilizce Soru Bankası',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: '11 ÖSYM soru tipini detaylı taktiklerle ele alan en popüler genel soru bankalarından biri.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'YDT İngilizce',
+    publisher: 'Akın Dil',
+    name: '100 Günde 1000 Kelime & Reading Passages',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Ahmet Akın rehberliğinde günlük okuma ve kelime disiplini sağlayan çok popüler kaynak.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'YDT İngilizce',
+    publisher: 'Akın Dil',
+    name: 'YDT İngilizce Soru Bankası',
+    difficulty: '⭐⭐⭐⭐☆ (Orta-Zor)',
+    difficultyValue: 4,
+    reason: 'ÖSYM formatında özgün ve seçici sorular içeren, netleri yukarı taşıyan güçlü soru bankası.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'YDT İngilizce',
+    publisher: 'Pelikan',
+    name: 'English Grammar Inside Out',
+    difficulty: '⭐⭐⭐⭐☆ (Orta-Zor)',
+    difficultyValue: 4,
+    reason: 'Türkiye\'de dilcilerin gramer konusunda en çok başvurduğu, detaylı ve kapsamlı başvuru kitabı.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'YDT İngilizce',
+    publisher: 'Pelikan',
+    name: 'Reading Words (Okuma Parçaları)',
+    difficulty: '⭐⭐⭐⭐☆ (Orta-Zor)',
+    difficultyValue: 4,
+    reason: 'Farklı disiplinlerden metinlerle okuduğunu anlama hızını ve kelime dağarcığını geliştiren eser.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'YDT İngilizce',
+    publisher: 'YDS Publishing',
+    name: 'Road to Success YDT Soru Bankası',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: 'Klasikleşmiş YDS Publishing kalitesiyle YDT sınavına eksiksiz hazırlık sunan kapsamlı SB.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'YDT İngilizce',
+    publisher: 'YDS Publishing',
+    name: 'YDT Marathon Vocabulary & Reading',
+    difficulty: '⭐⭐⭐⭐☆ (Orta-Zor)',
+    difficultyValue: 4,
+    reason: 'Zorlu okuma parçaları ve phrasal verbs ağırlıklı maraton hazırlık kitabı.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'YDT İngilizce',
+    publisher: 'Dilko',
+    name: 'YDT Grammar & Vocabulary Soru Bankası',
+    difficulty: '⭐⭐⭐⭐☆ (Orta-Zor)',
+    difficultyValue: 4,
+    reason: 'Yılların dil uzmanı Dilko Yayıncılık\'tan konu konu ayrılmış titiz soru bankası.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'YDT İngilizce',
+    publisher: 'Dilko',
+    name: 'YDT 10\'lu Özgün Branş Denemesi',
+    difficulty: '⭐⭐⭐⭐⭐ (Zor)',
+    difficultyValue: 5,
+    reason: 'Gerçek sınav provası niteliğinde, süre yönetimini ve çeldiricileri test eden zor deneme seti.',
+    isPopular: true
+  },
+  {
+    subject: 'Dil',
+    category: 'YDT İngilizce',
+    publisher: 'İrem Yayıncılık',
+    name: 'YDT Soru Tipleri ve Çözüm Taktikleri',
+    difficulty: '⭐⭐⭐☆☆ (Orta)',
+    difficultyValue: 3,
+    reason: '11 farklı soru tipine yaklaşım stratejilerini ve pratik ipuçlarını öğreten taktik kitabı.',
+    isPopular: false
+  },
+  {
+    subject: 'Dil',
+    category: 'YDT İngilizce',
+    publisher: 'Özgün Yayınları',
+    name: 'ELS English Grammar & Practice',
+    difficulty: '⭐⭐⭐⭐☆ (Orta-Zor)',
+    difficultyValue: 4,
+    reason: 'Dil sınıflarının köklü klasiği ELS yayınlarından gramer ve kelime pekiştirme kaynağı.',
+    isPopular: false
   }
 ];
