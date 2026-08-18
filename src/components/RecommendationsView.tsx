@@ -1043,8 +1043,8 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
           </div>
         </div>
 
-        {/* Horizontal Subject Picker Chips */}
-        <div className="space-y-1.5 pt-1">
+        {/* Subject Picker - Responsive Grid (No horizontal scrollbar) */}
+        <div className="space-y-2 pt-1">
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 flex items-center gap-1.5">
               <Layers className="w-3 h-3 text-purple-400" />
@@ -1055,7 +1055,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-1">
+          <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1.5 w-full">
             {SUBJECTS.map((sub) => {
               const isSelected = selectedSubject === sub.value && !showOnlyFollowed;
               const subCount = activeTab === 'books' 
@@ -1069,17 +1069,18 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                     setSelectedSubject(sub.value);
                     setShowOnlyFollowed(false);
                   }}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border cursor-pointer shrink-0 flex items-center space-x-1.5 ${
+                  className={`w-full py-2 px-1 rounded-xl text-[11px] sm:text-xs font-bold transition-all border cursor-pointer flex items-center justify-center space-x-1 truncate ${
                     isSelected
                       ? activeTab === 'youtube'
-                        ? 'bg-gradient-to-r from-red-600 to-rose-600 border-red-400 text-white shadow-lg shadow-red-600/30 scale-[1.02]'
-                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30 scale-[1.02]'
+                        ? 'bg-gradient-to-r from-red-600 to-rose-600 border-red-400 text-white shadow-md shadow-red-600/30 scale-[1.02]'
+                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 border-indigo-400 text-white shadow-md shadow-indigo-600/30 scale-[1.02]'
                       : 'bg-slate-950 border-slate-800/80 text-slate-400 hover:text-white hover:border-slate-700'
                   }`}
+                  title={`${sub.label} (${subCount} kaynak)`}
                 >
-                  <span>{sub.emoji}</span>
-                  <span>{sub.label}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                  <span className="shrink-0 text-xs">{sub.emoji}</span>
+                  <span className="truncate">{sub.label}</span>
+                  <span className={`text-[9px] px-1 py-0.2 rounded-full font-mono shrink-0 ${
                     isSelected ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
                   }`}>
                     {subCount}
@@ -1092,19 +1093,19 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
 
         {/* Sub-Filters for Books & Sort Options */}
         {activeTab === 'books' && (
-          <div className="pt-3 border-t border-slate-800/80 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="pt-3 border-t border-slate-800/80 space-y-3">
             
-            {/* Dynamic Sub-Category Tabs (e.g. Kelime, Gramer, Skills, Okuma, Deneme for Dil) */}
-            <div className="flex items-center space-x-2 overflow-x-auto no-scrollbar py-0.5">
-              <span className="text-[10px] uppercase font-extrabold text-slate-400 shrink-0 flex items-center gap-1">
+            {/* Dynamic Sub-Category Tabs (e.g. Kelime, Gramer, Skills, Okuma, Deneme) - Wrapped without scrollbar */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] uppercase font-extrabold text-slate-400 shrink-0 flex items-center gap-1 mr-1">
                 <Filter className="w-3 h-3 text-indigo-400" />
                 <span>Kategori:</span>
               </span>
               <button
                 onClick={() => setSelectedCategory('Tümü')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 cursor-pointer border ${
+                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
                   selectedCategory === 'Tümü'
-                    ? 'bg-purple-600 border-purple-500 text-white'
+                    ? 'bg-purple-600 border-purple-500 text-white shadow-md'
                     : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
@@ -1114,7 +1115,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shrink-0 cursor-pointer border ${
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
                     selectedCategory === cat
                       ? 'bg-purple-600 border-purple-500 text-white shadow-md'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
@@ -1125,41 +1126,45 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
               ))}
             </div>
 
-            {/* Level, Popularity and Sort Filters */}
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-              <button
-                onClick={() => setShowOnlyPopular(!showOnlyPopular)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border cursor-pointer flex items-center space-x-1 ${
-                  showOnlyPopular
-                    ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-md shadow-amber-500/10'
-                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                <Flame className="w-3 h-3 text-amber-400" />
-                <span>En Çok Tercih Edilenler</span>
-              </button>
+            {/* Level, Popularity and Sort Filters row */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-slate-800/50">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setShowOnlyPopular(!showOnlyPopular)}
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border cursor-pointer flex items-center space-x-1.5 ${
+                    showOnlyPopular
+                      ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-md shadow-amber-500/10'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Flame className="w-3.5 h-3.5 text-amber-400" />
+                  <span>En Çok Tercih Edilenler</span>
+                </button>
+              </div>
 
-              <select
-                value={difficultyFilter}
-                onChange={(e) => setDifficultyFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                className="bg-slate-950 border border-slate-800 text-slate-300 text-[11px] font-bold rounded-lg px-2.5 py-1 focus:outline-none focus:border-purple-500"
-              >
-                <option value="all">Tüm Zorluk Seviyeleri</option>
-                <option value="1">⭐ Kolay (Seviye 1-2)</option>
-                <option value="3">⭐⭐⭐ Orta (Seviye 3)</option>
-                <option value="5">⭐⭐⭐⭐⭐ Zor (Seviye 4-5)</option>
-              </select>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={difficultyFilter}
+                  onChange={(e) => setDifficultyFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                  className="bg-slate-950 border border-slate-800 text-slate-300 text-[11px] font-bold rounded-xl px-3 py-1.5 focus:outline-none focus:border-purple-500 cursor-pointer"
+                >
+                  <option value="all">Tüm Zorluk Seviyeleri</option>
+                  <option value="1">⭐ Kolay (Seviye 1-2)</option>
+                  <option value="3">⭐⭐⭐ Orta (Seviye 3)</option>
+                  <option value="5">⭐⭐⭐⭐⭐ Zor (Seviye 4-5)</option>
+                </select>
 
-              <select
-                value={bookSortOrder}
-                onChange={(e) => setBookSortOrder(e.target.value as any)}
-                className="bg-slate-950 border border-slate-800 text-slate-300 text-[11px] font-bold rounded-lg px-2.5 py-1 focus:outline-none focus:border-purple-500"
-              >
-                <option value="difficulty_asc">Sırala: Kolaydan Zora</option>
-                <option value="difficulty_desc">Sırala: Zordan Kolaya</option>
-                <option value="popular">Sırala: Popülerlik</option>
-                <option value="publisher">Sırala: Yayınevi (A-Z)</option>
-              </select>
+                <select
+                  value={bookSortOrder}
+                  onChange={(e) => setBookSortOrder(e.target.value as any)}
+                  className="bg-slate-950 border border-slate-800 text-slate-300 text-[11px] font-bold rounded-xl px-3 py-1.5 focus:outline-none focus:border-purple-500 cursor-pointer"
+                >
+                  <option value="difficulty_asc">Sırala: Kolaydan Zora</option>
+                  <option value="difficulty_desc">Sırala: Zordan Kolaya</option>
+                  <option value="popular">Sırala: Popülerlik</option>
+                  <option value="publisher">Sırala: Yayınevi (A-Z)</option>
+                </select>
+              </div>
             </div>
 
           </div>
