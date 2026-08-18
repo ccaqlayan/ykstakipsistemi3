@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Sidebar, TabType } from './components/Sidebar';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { LoginView } from './components/LoginView';
 import { MaintenanceView } from './components/MaintenanceView';
 import { ProfileModal } from './components/ProfileModal';
@@ -3048,7 +3049,7 @@ export default function App() {
         )}
 
         {/* Content Area */}
-        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 pb-24 sm:pb-24 md:pb-8 overflow-y-auto">
           <AppTabRouter
             activeTab={activeTab}
             currentUser={currentUser}
@@ -3142,6 +3143,20 @@ export default function App() {
         </main>
 
       </div>
+ 
+      {/* Mobile Bottom Navigation Bar (Sadece mobilde görünür) */}
+      {!isZenMode && currentUser && (
+        <MobileBottomNav
+          currentUser={currentUser}
+          previewStudentUser={previewStudentUser}
+          activeTab={activeTab}
+          onSelectTab={handleTabChange}
+          unresolvedErrorCount={unresolvedErrorCount}
+          unreadMessageCount={unreadMessageCount}
+          onToggleMobileMenu={() => setIsMobileMenuOpen((prev) => !prev)}
+          isMobileMenuOpen={isMobileMenuOpen}
+        />
+      )}
 
       {/* Profile Edit Modal */}
       {showProfileModal && currentUser && (

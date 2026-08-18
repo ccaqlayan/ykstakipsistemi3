@@ -103,7 +103,7 @@ export const MotivationToast: React.FC<MotivationToastProps> = ({
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9990] max-w-sm w-full animate-slideInRight select-none">
+    <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-6 left-3 sm:left-auto z-[9990] max-w-sm w-auto sm:w-full animate-slideInRight select-none">
       <div
         className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${style.bg} border-2 ${style.border} p-4 shadow-2xl ${style.glow} backdrop-blur-xl transition-all duration-300`}
       >

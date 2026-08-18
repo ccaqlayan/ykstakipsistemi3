@@ -77,7 +77,7 @@ export const AppToastBanner: React.FC<AppToastBannerProps> = ({
         const titleColorClass = isError ? 'text-rose-400' : isWarning ? 'text-amber-400' : isInfo ? 'text-sky-400' : 'text-slate-400';
 
         return (
-          <div className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-6 sm:bottom-6 z-50 animate-bounce-short max-w-sm sm:max-w-md md:max-w-lg ml-auto">
+          <div className="fixed bottom-20 left-3 right-3 sm:left-auto sm:right-6 sm:bottom-6 z-50 animate-bounce-short max-w-sm sm:max-w-md md:max-w-lg ml-auto">
             <div className={`bg-slate-900/95 border ${borderClass} text-white p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-2xl backdrop-blur-xl flex items-center space-x-2.5 sm:space-x-3.5`}>
               <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl ${iconBgClass} flex items-center justify-center shrink-0`}>
                 {isError ? (

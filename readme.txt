@@ -20,6 +20,7 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 --------------------------------------------------------------------------------
 - src/components/Navbar.tsx                 : Üst navigasyon barı (Profil, duyurular, aktif sekme başlığı).
 - src/components/Sidebar.tsx                : Sol menü navigasyon çubuğu.
+- src/components/MobileBottomNav.tsx        : Mobil cihazlar için sabit alt navigasyon çubuğu (Bottom Tab Bar).
 - src/components/StudentPreviewBanner.tsx   : Öğrenci gözünden önizleme modu (salt okunur) üst bilgi ve geri dönüş şeridi.
 - src/components/app/AppTabRouter.tsx       : 18 ana sayfanın görünümünü yönlendiren ana tab switcher bileşeni.
 - src/components/app/AppToastBanner.tsx      : Yüzen geri al (undo) toast kutusu, kota uyarısı ve PWA yükleme rehberi modalı.
