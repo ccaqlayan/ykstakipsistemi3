@@ -30,7 +30,8 @@ import {
   RotateCcw,
   Calendar,
   ArrowUpDown,
-  SlidersHorizontal
+  SlidersHorizontal,
+  LayoutGrid
 } from 'lucide-react';
 import { YouTubeVideoItem } from '../types';
 import { YKS_SUBJECTS } from '../data/initialData';
@@ -268,6 +269,24 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
   const [hideWatched, setHideWatched] = useState(false);
   const [sortOption, setSortOption] = useState<YouTubeSortOption>('newest');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // 🔀 Görünüm Modu State (Galeri vs Liste - Varsayılan: Galeri)
+  const [viewMode, setViewMode] = useState<'gallery' | 'list'>(() => {
+    try {
+      const saved = localStorage.getItem('yks_youtube_tracker_view_mode');
+      if (saved === 'gallery' || saved === 'list') return saved;
+      return 'gallery';
+    } catch {
+      return 'gallery';
+    }
+  });
+
+  const handleSetViewMode = (mode: 'gallery' | 'list') => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('yks_youtube_tracker_view_mode', mode);
+    } catch {}
+  };
 
   // Expanded Playlist Cards map: videoId -> boolean
   const [expandedPlaylists, setExpandedPlaylists] = useState<Record<string, boolean>>({});
@@ -763,8 +782,8 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
           {/* ── 2. FILTER & CONTROLS BAR ── */}
           {videos.length > 0 && (
             <div className="space-y-3 bg-slate-900/90 border border-slate-800 p-4 rounded-3xl shadow-xl backdrop-blur-md">
-              {/* Row 1: Search & Sorting Dropdown */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+              {/* Row 1: Search & Sorting Dropdown + View Mode Switcher */}
+              <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
                 {/* Search Box */}
                 <div className="relative flex-1 min-w-[200px] max-w-md">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -786,27 +805,59 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                   )}
                 </div>
 
-                {/* Sort Dropdown */}
-                <div className="flex items-center space-x-2 shrink-0">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden md:inline-flex items-center gap-1">
-                    <ArrowUpDown className="w-3.5 h-3.5 text-red-400" />
-                    <span>Sıralama:</span>
-                  </span>
-                  <select
-                    value={sortOption}
-                    onChange={(e) => setSortOption(e.target.value as any)}
-                    className="bg-slate-950 border border-slate-800 text-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-red-500 cursor-pointer shadow-sm hover:border-slate-700 transition-colors w-full sm:w-auto"
-                  >
-                    <option value="newest">🗓️ Yeniden Eskiye (En Yeni İlk) ⭐</option>
-                    <option value="oldest">🗓️ Eskiden Yeniye (İlk Eklenen)</option>
-                    <option value="title_asc">🔤 İsim / Konu (A → Z)</option>
-                    <option value="title_desc">🔤 İsim / Konu (Z → A)</option>
-                    <option value="channel_asc">🎙️ Kanal Adı (A → Z)</option>
-                    <option value="duration_desc">⏱️ Süre (En Uzun İlk)</option>
-                    <option value="duration_asc">⏱️ Süre (En Kısa İlk)</option>
-                    <option value="progress_desc">📊 İlerleme (En Yüksek İlk)</option>
-                    <option value="progress_asc">📊 İlerleme (En Düşük İlk)</option>
-                  </select>
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Sort Dropdown */}
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider hidden md:inline-flex items-center gap-1">
+                      <ArrowUpDown className="w-3.5 h-3.5 text-red-400" />
+                      <span>Sıralama:</span>
+                    </span>
+                    <select
+                      value={sortOption}
+                      onChange={(e) => setSortOption(e.target.value as any)}
+                      className="bg-slate-950 border border-slate-800 text-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-red-500 cursor-pointer shadow-sm hover:border-slate-700 transition-colors w-full sm:w-auto"
+                    >
+                      <option value="newest">🗓️ Yeniden Eskiye (En Yeni İlk) ⭐</option>
+                      <option value="oldest">🗓️ Eskiden Yeniye (İlk Eklenen)</option>
+                      <option value="title_asc">🔤 İsim / Konu (A → Z)</option>
+                      <option value="title_desc">🔤 İsim / Konu (Z → A)</option>
+                      <option value="channel_asc">🎙️ Kanal Adı (A → Z)</option>
+                      <option value="duration_desc">⏱️ Süre (En Uzun İlk)</option>
+                      <option value="duration_asc">⏱️ Süre (En Kısa İlk)</option>
+                      <option value="progress_desc">📊 İlerleme (En Yüksek İlk)</option>
+                      <option value="progress_asc">📊 İlerleme (En Düşük İlk)</option>
+                    </select>
+                  </div>
+
+                  {/* 🔀 Görünüm Değiştirici (Galeri vs Liste) */}
+                  <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800 shadow-inner shrink-0 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => handleSetViewMode('gallery')}
+                      className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        viewMode === 'gallery'
+                          ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
+                      }`}
+                      title="16:9 Video Kartları Galeri Görünümü"
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                      <span>Galeri</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetViewMode('list')}
+                      className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        viewMode === 'list'
+                          ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
+                      }`}
+                      title="Detaylı Liste Görünümü"
+                    >
+                      <Layers className="w-3.5 h-3.5" />
+                      <span>Liste</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -930,7 +981,282 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                     : 'Seçili filtrelere uygun video veya playlist bulunmuyor.'}
                 </p>
               </div>
+            ) : viewMode === 'gallery' ? (
+              /* ── 🎬 YOUTUBE GALERİ GÖRÜNÜMÜ (16:9 VIDEO & PLAYLIST GRID) ── */
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4.5 animate-fade-in">
+                {filteredVideos.map((vid) => {
+                  const isPlaylist = isPlaylistItem(vid);
+                  const firstSubUrl = vid.playlistVideos?.[0]?.videoUrl;
+                  const thumbnailUrl = getYouTubeThumbnail(vid.videoUrl, firstSubUrl);
+
+                  const totalDuration = isPlaylist && vid.playlistVideos ? vid.playlistVideos.reduce((acc, v) => acc + (v.durationMinutes || 0), 0) : (vid.durationMinutes || 0);
+                  const watchedDuration = isPlaylist && vid.playlistVideos ? vid.playlistVideos.filter(v => v.isWatched).reduce((acc, v) => acc + (v.durationMinutes || 0), 0) : (vid.isWatched ? (vid.durationMinutes || 0) : 0);
+                  
+                  const isFullyWatched = isPlaylist && vid.playlistVideos ? vid.playlistVideos.length > 0 && vid.playlistVideos.every(v => v.isWatched) : vid.isWatched;
+
+                  const totalVideosCount = isPlaylist && vid.playlistVideos ? vid.playlistVideos.length : 1;
+                  const watchedVideosCount = isPlaylist && vid.playlistVideos ? vid.playlistVideos.filter(v => v.isWatched).length : (vid.isWatched ? 1 : 0);
+                  const progressPct = Math.round((watchedVideosCount / (totalVideosCount || 1)) * 100);
+
+                  const isExpanded = Boolean(expandedPlaylists[vid.id]);
+
+                  return (
+                    <div
+                      key={vid.id}
+                      className={`bg-slate-900/90 border border-slate-800 hover:border-red-500/50 rounded-3xl overflow-hidden shadow-xl transition-all duration-300 flex flex-col justify-between group hover:shadow-2xl hover:scale-[1.015] backdrop-blur-md relative ${
+                        isFullyWatched ? 'border-emerald-500/30 opacity-90' : ''
+                      }`}
+                    >
+                      {/* 1. 16:9 Kapak Görseli (Hero Thumbnail) */}
+                      <div className="aspect-video relative overflow-hidden bg-slate-950 flex items-center justify-center">
+                        {thumbnailUrl ? (
+                          <img
+                            src={thumbnailUrl}
+                            alt={vid.playlistTitle || vid.topicName}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500"
+                            onError={(e) => {
+                              const imgEl = e.currentTarget;
+                              if (imgEl.src.includes('mqdefault')) {
+                                imgEl.src = imgEl.src.replace('mqdefault', 'hqdefault');
+                              } else if (imgEl.src.includes('i.ytimg.com')) {
+                                imgEl.src = imgEl.src.replace('i.ytimg.com', 'img.youtube.com');
+                              } else {
+                                imgEl.style.display = 'none';
+                              }
+                            }}
+                          />
+                        ) : null}
+
+                        {/* Fallback Graphic if no image */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-red-950/80 flex flex-col items-center justify-center p-3 text-center pointer-events-none">
+                          <Youtube className="w-10 h-10 text-red-500 opacity-60 mb-1" />
+                          <span className="text-[10px] font-bold text-slate-400 line-clamp-1">{vid.channelName}</span>
+                        </div>
+
+                        {/* Soft Dark Vignette Gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-slate-950/60 pointer-events-none" />
+
+                        {/* Üst Rozetler Satırı (Ders & Tür) */}
+                        <div className="absolute top-2.5 inset-x-2.5 z-10 flex items-center justify-between gap-1.5 pointer-events-none">
+                          <span
+                            className="text-[9.5px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider backdrop-blur-md border shadow-md truncate max-w-[55%] shrink bg-red-600/30 text-white border-red-500/50"
+                            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+                            title={vid.subject}
+                          >
+                            {vid.subject}
+                          </span>
+
+                          <span
+                            className="text-[9px] px-2 py-0.5 rounded-lg font-extrabold uppercase tracking-wider backdrop-blur-md border shadow-md truncate max-w-[45%] shrink bg-slate-900/80 text-amber-300 border-amber-500/40"
+                            style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}
+                          >
+                            {isPlaylist ? `Kamp (${totalVideosCount})` : 'Tek Video'}
+                          </span>
+                        </div>
+
+                        {/* Hover Play Button (YouTube'da İzle) */}
+                        {vid.videoUrl && (
+                          <a
+                            href={vid.videoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="absolute inset-0 flex items-center justify-center bg-black/25 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 cursor-pointer"
+                            title="YouTube'da İzle"
+                          >
+                            <div className="p-3 bg-red-600 hover:bg-red-500 text-white rounded-full shadow-2xl scale-90 group-hover:scale-105 transition-all">
+                              <Play className="w-5 h-5 fill-current ml-0.5" />
+                            </div>
+                          </a>
+                        )}
+
+                        {/* Alt Rozetler Satırı (İzlenme Durumu & Süre) */}
+                        <div className="absolute bottom-2 inset-x-2.5 z-10 flex items-center justify-between gap-1.5 pointer-events-none">
+                          {isFullyWatched ? (
+                            <span className="text-[9.5px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider backdrop-blur-md border shadow-md bg-emerald-600/90 text-white border-emerald-400/50 flex items-center space-x-1">
+                              <CheckCircle className="w-3 h-3 text-white" />
+                              <span>Tamamlandı</span>
+                            </span>
+                          ) : isPlaylist && watchedVideosCount > 0 ? (
+                            <span className="text-[9.5px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider backdrop-blur-md border shadow-md bg-amber-500/90 text-slate-950 border-amber-400/50 font-mono">
+                              %{progressPct} İzlendi
+                            </span>
+                          ) : (
+                            <span className="text-[9.5px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider backdrop-blur-md border shadow-md bg-rose-600/90 text-white border-rose-400/50 animate-pulse">
+                              İzlenecek
+                            </span>
+                          )}
+
+                          <span className="text-[9.5px] font-mono font-bold px-2 py-0.5 rounded-lg backdrop-blur-md border bg-slate-950/80 text-slate-300 border-white/10 shadow-md">
+                            {totalDuration > 0 ? formatDuration(totalDuration) : isPlaylist ? `${totalVideosCount} Video` : 'Video'}
+                          </span>
+                        </div>
+
+                        {/* Playlist Mini Progress Line */}
+                        {isPlaylist && (
+                          <div className="absolute bottom-0 inset-x-0 h-1 bg-slate-950/80 z-20 overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-amber-500 to-emerald-500 transition-all duration-500"
+                              style={{ width: `${progressPct}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 2. Kart Gövdesi & Detayları */}
+                      <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                        <div className="space-y-1.5">
+                          <h4
+                            className="text-sm font-extrabold text-white leading-snug line-clamp-2"
+                            title={vid.playlistTitle || vid.topicName}
+                          >
+                            {vid.playlistTitle || vid.topicName}
+                          </h4>
+
+                          {/* Kanal Adı & İlerleme */}
+                          <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+                            <span className="font-semibold text-slate-300 truncate max-w-[140px] flex items-center gap-1">
+                              <span>🎙️</span>
+                              <span className="truncate">{vid.channelName || 'YouTube'}</span>
+                            </span>
+
+                            {isPlaylist ? (
+                              <span className="text-[10px] text-amber-300 font-mono font-bold">
+                                {watchedVideosCount}/{totalVideosCount} Video
+                              </span>
+                            ) : (
+                              vid.durationMinutes ? (
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {formatDuration(vid.durationMinutes)}
+                                </span>
+                              ) : null
+                            )}
+                          </div>
+
+                          {/* Varsa Not */}
+                          {vid.notes && (
+                            <p className="text-[11px] text-slate-300 bg-slate-950/70 p-2 rounded-xl border border-white/5 line-clamp-2 italic">
+                              "{vid.notes}"
+                            </p>
+                          )}
+                        </div>
+
+                        {/* 3. Kart Alt Eylemleri */}
+                        <div className="pt-2.5 border-t border-slate-800/80 flex flex-col gap-2">
+                          {/* Playlist ise: Accordion / Alt Video Listesi Aç Butonu */}
+                          {isPlaylist ? (
+                            <button
+                              type="button"
+                              onClick={() => toggleExpandPlaylist(vid.id)}
+                              className={`w-full py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center space-x-1.5 border shadow-sm ${
+                                isExpanded
+                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
+                                  : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border-slate-800'
+                              }`}
+                            >
+                              {isExpanded ? (
+                                <>
+                                  <ChevronUp className="w-3.5 h-3.5 text-amber-400" />
+                                  <span>Videoları Gizle</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ListVideo className="w-3.5 h-3.5 text-amber-400" />
+                                  <span>Kamp Videolarını İncele ({totalVideosCount})</span>
+                                </>
+                              )}
+                            </button>
+                          ) : (
+                            /* Tekil Video ise: İzlendi Toggle Butonu */
+                            <button
+                              type="button"
+                              onClick={() => onUpdateVideo({ ...vid, isWatched: !vid.isWatched })}
+                              className={`w-full py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center space-x-1.5 border shadow-sm ${
+                                vid.isWatched
+                                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                                  : 'bg-gradient-to-r from-red-600/80 to-rose-600/80 hover:from-red-600 hover:to-rose-600 text-white border-red-500/50'
+                              }`}
+                            >
+                              {vid.isWatched ? (
+                                <>
+                                  <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span>İzlendi</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="w-3.5 h-3.5" />
+                                  <span>İzlendi Olarak İşaretle</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+
+                          {/* Genişletilmiş Playlist Video Listesi (Accordion) */}
+                          {isPlaylist && isExpanded && vid.playlistVideos && (
+                            <div className="pt-2 border-t border-slate-800/80 animate-fade-in">
+                              <PlaylistSubVideosList
+                                playlistId={vid.id}
+                                videos={vid.playlistVideos}
+                                onToggleWatch={(idx, subVid) => {
+                                  if (!vid.playlistVideos) return;
+                                  const nextVids = [...vid.playlistVideos];
+                                  nextVids[idx] = {
+                                    ...subVid,
+                                    isWatched: !subVid.isWatched
+                                  };
+                                  const allWatched = nextVids.every(v => v.isWatched);
+                                  onUpdateVideo({
+                                    ...vid,
+                                    playlistVideos: nextVids,
+                                    isWatched: allWatched
+                                  });
+                                }}
+                              />
+                            </div>
+                          )}
+
+                          {/* Düzenle & Sil & YouTube Link Butonları */}
+                          <div className="flex items-center justify-between pt-1">
+                            {vid.videoUrl ? (
+                              <a
+                                href={vid.videoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[11px] text-red-400 hover:text-red-300 font-bold flex items-center space-x-1 cursor-pointer"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                <span>YouTube'da Aç</span>
+                              </a>
+                            ) : <span />}
+
+                            <div className="flex items-center space-x-1">
+                              <button
+                                type="button"
+                                onClick={() => handleStartEditCard(vid)}
+                                className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 rounded-xl transition-all cursor-pointer shadow-sm hover:scale-105"
+                                title="Düzenle"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setDeletingVideo({ id: vid.id, title: vid.playlistTitle || vid.topicName })}
+                                className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl transition-all cursor-pointer shadow-sm hover:scale-105"
+                                title="Sil"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
+              /* ── 📑 LİSTE GÖRÜNÜMÜ ── */
               <div className="grid grid-cols-1 gap-4">
                 {filteredVideos.map((vid) => {
                   const isPlaylist = isPlaylistItem(vid);
