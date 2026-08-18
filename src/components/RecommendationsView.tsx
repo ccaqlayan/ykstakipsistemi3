@@ -236,6 +236,17 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   const [bookSortOrder, setBookSortOrder] = useState<'difficulty_asc' | 'difficulty_desc' | 'popular' | 'publisher'>('difficulty_asc');
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
+  // --- Yerel kanal takip state'i (YouTube Ders Takip sayfasını kirletmez) ---
+  const followedChannelsStorageKey = `followedChannels_${currentUser?.id || 'guest'}`;
+  const [followedChannels, setFollowedChannels] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem(followedChannelsStorageKey);
+      return stored ? new Set<string>(JSON.parse(stored)) : new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
+  });
+
   React.useEffect(() => {
     fetch('/api/youtube/sync-avatars', {
       method: 'POST',
@@ -538,37 +549,25 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
 
   const isTeacher = currentUser?.role === 'teacher' || currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor' || currentUser?.role === 'admin';
 
-  // --- YouTube Follow Logic ---
+  // --- YouTube Follow Logic (yerel state — ders takip sayfasını etkilemez) ---
   const isChannelAdded = (channelName: string) => {
-    return trackedVideos.some(
-      v => v.channelName.localeCompare(channelName, 'tr', { sensitivity: 'base' }) === 0
-    );
-  };
-
-  const getTrackedVideo = (channelName: string) => {
-    return trackedVideos.find(
-      v => v.channelName.localeCompare(channelName, 'tr', { sensitivity: 'base' }) === 0
-    );
+    return followedChannels.has(channelName);
   };
 
   const handleToggleChannelFollow = (channel: RecommendedChannel) => {
-    const tracked = getTrackedVideo(channel.name);
-    if (tracked) {
-      if (onDeleteVideo) {
-        setUnfollowChannelItem({ id: tracked.id, name: channel.name });
-      } else {
-        setSuccessToast(`"${channel.name}" zaten takip listenizde ekli!`);
-        setTimeout(() => setSuccessToast(null), 3000);
-      }
+    const isFollowed = followedChannels.has(channel.name);
+    if (isFollowed) {
+      // Takipten çıkarmak için onay modal'ı aç
+      setUnfollowChannelItem({ id: channel.name, name: channel.name });
     } else {
-      onAddVideo({
-        subject: channel.subject,
-        channelName: channel.name,
-        topicName: `${channel.subject} Konu Anlatım Serisi`,
-        playlistTitle: `${channel.name} Genel Kampı`,
-        videoUrl: channel.url,
-        isWatched: false,
-        notes: `${channel.name} önerilen ${channel.subject} kanalı.`
+      // Sadece yerel takip listesine ekle — YouTube Ders Takip sayfasına EKLEME
+      setFollowedChannels(prev => {
+        const next = new Set(prev);
+        next.add(channel.name);
+        try {
+          localStorage.setItem(followedChannelsStorageKey, JSON.stringify(Array.from(next)));
+        } catch {}
+        return next;
       });
       setSuccessToast(`"${channel.name}" kanalı başarıyla takip listenize eklendi!`);
       setTimeout(() => setSuccessToast(null), 3000);
@@ -698,7 +697,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
       const valB = parseSubscriberTextToNumber(b.subscribersText);
       return channelSortOrder === 'desc' ? valB - valA : valA - valB;
     });
-  }, [allChannels, selectedSubject, showOnlyFollowed, searchQuery, channelSortOrder, trackedVideos]);
+  }, [allChannels, selectedSubject, showOnlyFollowed, searchQuery, channelSortOrder, followedChannels]);
 
   const displayedBooks = useMemo(() => {
     return allBooks.filter(book => {
@@ -2117,9 +2116,17 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         title="Takip Listesinden Kaldır"
         itemName={unfollowChannelItem?.name}
         onConfirm={() => {
-          if (unfollowChannelItem && onDeleteVideo) {
-            onDeleteVideo(unfollowChannelItem.id);
-            setSuccessToast(`"${unfollowChannelItem.name}" kanalı takip listenizden çıkarıldı.`);
+          if (unfollowChannelItem) {
+            const channelName = unfollowChannelItem.name;
+            setFollowedChannels(prev => {
+              const next = new Set(prev);
+              next.delete(channelName);
+              try {
+                localStorage.setItem(followedChannelsStorageKey, JSON.stringify(Array.from(next)));
+              } catch {}
+              return next;
+            });
+            setSuccessToast(`"${channelName}" kanalı takip listenizden çıkarıldı.`);
             setTimeout(() => setSuccessToast(null), 3000);
             setUnfollowChannelItem(null);
           }
