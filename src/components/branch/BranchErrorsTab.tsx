@@ -142,16 +142,18 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   const [inlineEditingErrorId, setInlineEditingErrorId] = useState<string | null>(null);
   const [inlineNotesText, setInlineNotesText] = useState<string>('');
 
-  // 🔀 Görünüm Modu State (Liste vs Tablo)
-  const [viewMode, setViewMode] = useState<'list' | 'table'>(() => {
+  // 🔀 Görünüm Modu State (Liste vs Tablo vs Galeri)
+  const [viewMode, setViewMode] = useState<'list' | 'table' | 'gallery'>(() => {
     try {
-      return (localStorage.getItem('yks_error_notebook_view_mode') as 'list' | 'table') || 'list';
+      const saved = localStorage.getItem('yks_error_notebook_view_mode');
+      if (saved === 'list' || saved === 'table' || saved === 'gallery') return saved;
+      return 'list';
     } catch {
       return 'list';
     }
   });
 
-  const handleSetViewMode = (mode: 'list' | 'table') => {
+  const handleSetViewMode = (mode: 'list' | 'table' | 'gallery') => {
     setViewMode(mode);
     try {
       localStorage.setItem('yks_error_notebook_view_mode', mode);
@@ -769,12 +771,12 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
             </button>
           </div>
 
-          {/* 🔀 Görünüm Değiştirici Switch (Liste vs Tablo) */}
+          {/* 🔀 Görünüm Değiştirici Switch (Liste vs Tablo vs Galeri) */}
           <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800 shadow-inner shrink-0 self-start sm:self-auto">
             <button
               type="button"
               onClick={() => handleSetViewMode('list')}
-              className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 viewMode === 'list'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
@@ -787,7 +789,7 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
             <button
               type="button"
               onClick={() => handleSetViewMode('table')}
-              className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 viewMode === 'table'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
                   : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
@@ -796,6 +798,19 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
             >
               <Table className="w-3.5 h-3.5" />
               <span>Tablo</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetViewMode('gallery')}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                viewMode === 'gallery'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
+              }`}
+              title="Pinterest/Instagram Tarzı Görsel Galeri"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Galeri</span>
             </button>
           </div>
         </div>
@@ -1160,6 +1175,233 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
               </tbody>
             </table>
           </div>
+        </div>
+      ) : viewMode === 'gallery' ? (
+        /* ── 🖼️ GÖRSEL GALERİ GÖRÜNÜMÜ (PINTEREST / INSTAGRAM GRID) ── */
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4.5 animate-fade-in">
+          {filteredErrors.map((item) => {
+            const isRevised = !!item.revised;
+            const isFading = !!fadingOutIds[item.id];
+            const reasonColor = ERROR_REASON_COLORS[item.errorReason] || '#ef4444';
+            const reasonLabel = ERROR_REASON_LABELS[item.errorReason] || item.errorReason;
+            const subColor = SUBJECT_COLORS[item.subject] || '#6366f1';
+
+            return (
+              <div
+                key={item.id}
+                className={`bg-slate-900/90 border border-slate-800 hover:border-indigo-500/50 rounded-3xl overflow-hidden shadow-xl transition-all duration-300 flex flex-col justify-between group hover:shadow-2xl hover:scale-[1.015] backdrop-blur-md relative ${
+                  isRevised ? 'border-emerald-500/30' : ''
+                } ${isFading ? 'opacity-30 filter blur-[1px]' : ''}`}
+              >
+                {/* 1. Üst Görsel / Kapak Alanı */}
+                <div className="aspect-[4/3] relative overflow-hidden bg-slate-950 flex items-center justify-center">
+                  {item.imageUrl ? (
+                    <>
+                      <img
+                        src={item.imageUrl}
+                        alt={item.topicName}
+                        className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 cursor-pointer"
+                        onClick={() => openImagePreview(item.imageUrl!, `${item.subject} - ${item.topicName}`)}
+                      />
+                      {/* Gradient Dark Vignette Overlay */}
+                      <div
+                        className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-slate-950/60 pointer-events-none"
+                      />
+                      {/* Hover Zoom Overlay */}
+                      <div
+                        onClick={() => openImagePreview(item.imageUrl!, `${item.subject} - ${item.topicName}`)}
+                        className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                      >
+                        <div className="bg-slate-900/90 text-white text-[10px] font-bold px-3 py-1.5 rounded-xl border border-slate-700 shadow-xl flex items-center space-x-1.5 backdrop-blur-md">
+                          <Maximize2 className="w-3.5 h-3.5 text-indigo-400" />
+                          <span>Tam Ekran İncele</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    /* Fotoğraf Yoksa: Özel Gradient Kart */
+                    <div
+                      onClick={() => openAddErrorModal(item)}
+                      className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800/80 cursor-pointer group/nopic hover:bg-slate-900/80 transition-colors"
+                      title="Bu soruya fotoğraf ekle"
+                    >
+                      <div
+                        className="w-12 h-12 rounded-2xl flex items-center justify-center border shadow-inner transition-transform group-hover/nopic:scale-110 mb-2"
+                        style={{
+                          backgroundColor: `${subColor}15`,
+                          borderColor: `${subColor}30`,
+                          color: subColor,
+                        }}
+                      >
+                        <Camera className="w-6 h-6" />
+                      </div>
+                      <span className="text-[11px] font-bold text-slate-300">Fotoğraf Eklenmemiş</span>
+                      <span className="text-[9.5px] text-indigo-400 font-semibold underline mt-0.5">+ Fotoğraf Ekle</span>
+                    </div>
+                  )}
+
+                  {/* Sol Üst: Ders Rozeti */}
+                  <div className="absolute top-2.5 left-2.5 z-10">
+                    <span
+                      className="text-[10px] font-black px-2.5 py-1 rounded-xl uppercase tracking-wider backdrop-blur-md border shadow-md block"
+                      style={{
+                        backgroundColor: `${subColor}30`,
+                        color: '#ffffff',
+                        borderColor: `${subColor}60`,
+                        textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+                      }}
+                    >
+                      {item.subject}
+                    </span>
+                  </div>
+
+                  {/* Sağ Üst: Hata Sebebi Rozeti */}
+                  <div className="absolute top-2.5 right-2.5 z-10">
+                    <span
+                      className="text-[9.5px] px-2.5 py-1 rounded-xl font-extrabold uppercase tracking-wider backdrop-blur-md border shadow-md block"
+                      style={{
+                        backgroundColor: `${reasonColor}35`,
+                        color: '#ffffff',
+                        borderColor: `${reasonColor}60`,
+                        textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+                      }}
+                    >
+                      {reasonLabel}
+                    </span>
+                  </div>
+
+                  {/* Sağ Alt: Tekrar Durumu Rozeti */}
+                  <div className="absolute bottom-2.5 right-2.5 z-10">
+                    <button
+                      type="button"
+                      disabled={revisingIds[item.id]}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleErrorRevision(item.id);
+                      }}
+                      className={`text-[10px] px-2.5 py-1 rounded-xl font-black uppercase tracking-wider border backdrop-blur-md shadow-lg transition-all cursor-pointer flex items-center space-x-1 ${
+                        isRevised
+                          ? 'bg-emerald-600/80 text-white border-emerald-400 shadow-emerald-600/30'
+                          : 'bg-rose-600/80 hover:bg-rose-500 text-white border-rose-400 shadow-rose-600/30 animate-pulse'
+                      }`}
+                      title="Tekrar durumunu değiştir"
+                    >
+                      {isRevised ? (
+                        <>
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Pekiştirildi</span>
+                        </>
+                      ) : (
+                        <>
+                          <Clock className="w-3 h-3" />
+                          <span>Bekliyor</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Kart Gövdesi & Detayları */}
+                <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                  <div className="space-y-1.5">
+                    <h4
+                      className="text-sm font-extrabold text-white leading-snug line-clamp-2"
+                      title={item.topicName}
+                    >
+                      {item.topicName}
+                    </h4>
+
+                    {/* Kaynak / Yayın & Tarih */}
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+                      {item.publisher ? (
+                        <span className="font-semibold text-slate-300 truncate max-w-[140px] flex items-center gap-1">
+                          {isBookMatch(item) ? (
+                            <BookOpen className="w-3 h-3 text-emerald-400 shrink-0" />
+                          ) : isExamMatch(item) ? (
+                            <Target className="w-3 h-3 text-indigo-400 shrink-0" />
+                          ) : null}
+                          <span className="truncate">{item.publisher}</span>
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 italic">Kaynak Yok</span>
+                      )}
+
+                      {item.date && (
+                        <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                          {formatDisplayDate(item.date)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Varsa Hata Notu */}
+                    {item.solutionNotes && (
+                      <p className="text-[11px] text-slate-300 bg-slate-950/70 p-2 rounded-xl border border-white/5 line-clamp-2 italic">
+                        "{item.solutionNotes}"
+                      </p>
+                    )}
+                  </div>
+
+                  {/* 3. Kart Alt Aksiyon Butonları */}
+                  <div className="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-1.5">
+                    <div className="flex items-center space-x-1">
+                      {item.imageUrl && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenSolveModal(item)}
+                            className="p-1.5 bg-purple-500/15 hover:bg-purple-500/25 text-purple-300 border border-purple-500/30 rounded-xl transition-all cursor-pointer shadow-sm hover:scale-105"
+                            title="Yapay Zeka Çözüm Rehberi"
+                          >
+                            <Brain className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenSimilarModal(item)}
+                            className="p-1.5 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 rounded-xl transition-all cursor-pointer shadow-sm hover:scale-105"
+                            title="Benzer Soru Üret"
+                          >
+                            <HelpCircle className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveAiErrorItem(item);
+                          setAnalysisErrorMsg(null);
+                        }}
+                        className="p-1.5 bg-slate-800 hover:bg-purple-950/40 text-slate-300 hover:text-purple-300 border border-slate-700/80 hover:border-purple-500/40 rounded-xl transition-all cursor-pointer shadow-sm hover:scale-105"
+                        title="Hata Analizi"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center space-x-1">
+                      <button
+                        type="button"
+                        onClick={() => openAddErrorModal(item)}
+                        className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/80 rounded-xl transition-all cursor-pointer shadow-sm hover:scale-105"
+                        title="Düzenle"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setDeletingItem({ type: 'error', id: item.id, title: `${item.subject} - ${item.topicName}` })}
+                        className="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl transition-all cursor-pointer shadow-sm hover:scale-105"
+                        title="Sil"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : (
         /* ── 📑 LİSTE GÖRÜNÜMÜ (ZENGİN KART AKIŞI) ── */
