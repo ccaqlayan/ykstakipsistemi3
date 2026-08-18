@@ -290,7 +290,7 @@ export function subscribeToFirestore(
   });
 
   // 7. Listen to Global Settings
-  const unsubSettings = onSnapshot(doc(db, 'settings', 'school_config'), (snapshot) => {
+  const unsubSettings = onSnapshot(doc(db, 'settings', 'school_config'), async (snapshot) => {
     if (snapshot.exists()) {
       const data = snapshot.data();
       if (data.schoolName) {
