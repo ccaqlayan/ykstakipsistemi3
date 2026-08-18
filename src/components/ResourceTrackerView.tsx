@@ -34,8 +34,6 @@ interface ResourceTrackerViewProps {
   onAddResource: (res: Omit<ResourceItem, 'id'>) => void;
   onUpdateResource: (res: ResourceItem) => void;
   onDeleteResource: (id: string) => void;
-  onTogglePastExamSolved?: (id: string) => void;
-  onTogglePastExamAnalyzed?: (id: string) => void;
   onUpdatePastExam?: (pe: PastExamItem) => void;
   topicStatuses?: Record<string, 'Çalışmadım' | 'Erteledim' | 'Zor Geldi' | 'Çalıştım' | 'Uzmanlaştım'>;
   onUpdateTopicStatus?: (topicName: string, status: 'Çalışmadım' | 'Erteledim' | 'Zor Geldi' | 'Çalıştım' | 'Uzmanlaştım', isManual?: boolean) => void;
@@ -172,8 +170,6 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   onAddResource,
   onUpdateResource,
   onDeleteResource,
-  onTogglePastExamSolved,
-  onTogglePastExamAnalyzed,
   onUpdatePastExam,
   topicStatuses = {},
   onUpdateTopicStatus,
