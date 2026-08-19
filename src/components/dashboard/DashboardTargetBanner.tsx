@@ -39,7 +39,9 @@ export const DashboardTargetBanner: React.FC<DashboardTargetBannerProps> = ({
           <p className="text-slate-300 text-[10px] sm:text-sm mt-0.5 sm:mt-1 flex items-center flex-nowrap whitespace-nowrap overflow-hidden gap-1 sm:gap-2">
             <span className="truncate">{profile.targetDepartment || 'Bölüm Hedefi'}</span>
             <span className="shrink-0">•</span>
-            <span className="text-emerald-400 font-semibold font-mono shrink-0">Hedef Sıralama: #{profile.targetRank}</span>
+            <span className="text-emerald-400 font-semibold font-mono shrink-0">
+              Hedef Sıralama: {profile.targetRank && profile.targetRank > 0 ? `#${profile.targetRank.toLocaleString('tr-TR')}` : 'Belirlenmedi'}
+            </span>
             {profile.targetField && (
               <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-md font-bold font-mono shrink-0">
                 {profile.targetField}
@@ -51,13 +53,19 @@ export const DashboardTargetBanner: React.FC<DashboardTargetBannerProps> = ({
         <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4 bg-white/10 backdrop-blur-md p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-white/15 shadow-inner">
           <div className="text-center px-1.5 sm:px-3 border-r border-white/15">
             <div className="text-[10px] sm:text-xs text-slate-300">Hedef TYT</div>
-            <div className="text-base sm:text-xl font-bold text-indigo-400 font-mono">{profile.targetTYTNet}</div>
+            <div className="text-base sm:text-xl font-bold text-indigo-400 font-mono">{profile.targetTYTNet ?? 0}</div>
             <div className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Mevcut: <span className="text-white font-semibold">{latestTYTNet}</span></div>
           </div>
 
           <div className="text-center px-1.5 sm:px-3 border-r border-white/15">
-            <div className="text-[10px] sm:text-xs text-slate-300">Hedef AYT</div>
-            <div className="text-base sm:text-xl font-bold text-emerald-400 font-mono">{profile.targetAYTNet}</div>
+            <div className="text-[10px] sm:text-xs text-slate-300">
+              {profile.targetField === 'DİL' || (profile.targetField as string) === 'DIL' ? 'Hedef YDT' : 'Hedef AYT'}
+            </div>
+            <div className="text-base sm:text-xl font-bold text-emerald-400 font-mono">
+              {(profile.targetField === 'DİL' || (profile.targetField as string) === 'DIL') 
+                ? (profile.targetYDTNet ?? profile.targetAYTNet ?? 0) 
+                : (profile.targetAYTNet ?? 0)}
+            </div>
             <div className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5">Mevcut: <span className="text-white font-semibold">{latestAYTNet}</span></div>
           </div>
 

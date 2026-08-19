@@ -28,6 +28,11 @@ interface SubjectTopicsTabProps {
   };
   getStatusBadge: (topicName: string) => { label: string; color: string };
   onNavigateTab?: (tab: string, opts?: any) => void;
+  onUpdateTopicStatus?: (
+    topicName: string,
+    status: 'Çalışmadım' | 'Erteledim' | 'Zor Geldi' | 'Çalıştım' | 'Uzmanlaştım',
+    isManual?: boolean
+  ) => void;
 }
 
 export const SubjectTopicsTab: React.FC<SubjectTopicsTabProps> = ({
@@ -48,6 +53,7 @@ export const SubjectTopicsTab: React.FC<SubjectTopicsTabProps> = ({
   resourceTopicStats,
   getStatusBadge,
   onNavigateTab,
+  onUpdateTopicStatus,
 }) => {
   return (
     <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-5 shadow-2xl">
@@ -59,7 +65,7 @@ export const SubjectTopicsTab: React.FC<SubjectTopicsTabProps> = ({
             <span>Müfredat Konu Listesi ve İlerleme Durumu</span>
           </h3>
           <p className="text-xs text-slate-400 mt-0.5">
-            Bu sayfa bilgilendirme amaçlıdır. Konu durumlarını düzenlemek için Rutinler & Konu Takibi sekmesine geçebilirsiniz.
+            Müfredat konularınızın durumunu doğrudan buradan güncelleyebilir veya kaynaklardaki soru çözümlerinizi takip edebilirsiniz.
           </p>
         </div>
 
@@ -256,10 +262,25 @@ export const SubjectTopicsTab: React.FC<SubjectTopicsTabProps> = ({
                                 </div>
 
                                 <div className="flex items-center justify-between sm:justify-end space-x-3 shrink-0">
-                                  {/* Status Badge */}
-                                  <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${badge.color}`}>
-                                    {badge.label}
-                                  </span>
+                                  {/* Status Selector / Badge */}
+                                  {onUpdateTopicStatus ? (
+                                    <select
+                                      value={topicStatuses[topicName] || (completedPastTopics.includes(topicName) ? 'Çalıştım' : 'Çalışmadım')}
+                                      onChange={(e) => onUpdateTopicStatus(topicName, e.target.value as any, true)}
+                                      className={`text-[10px] font-bold px-2 py-1 rounded-xl border bg-slate-950/90 cursor-pointer focus:outline-none transition-all shadow-sm ${badge.color}`}
+                                      title="Konu durumunu değiştir"
+                                    >
+                                      <option value="Çalışmadım" className="bg-slate-900 text-slate-300">⚪ Çalışmadım</option>
+                                      <option value="Erteledim" className="bg-slate-900 text-amber-400">🟡 Erteledim</option>
+                                      <option value="Zor Geldi" className="bg-slate-900 text-rose-400">🔴 Zor Geldi</option>
+                                      <option value="Çalıştım" className="bg-slate-900 text-indigo-400">🔵 Çalıştım</option>
+                                      <option value="Uzmanlaştım" className="bg-slate-900 text-emerald-400">⭐ Uzmanlaştım</option>
+                                    </select>
+                                  ) : (
+                                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${badge.color}`}>
+                                      {badge.label}
+                                    </span>
+                                  )}
 
                                   {/* Resource Solved Progress */}
                                   <div className="flex items-center space-x-2">

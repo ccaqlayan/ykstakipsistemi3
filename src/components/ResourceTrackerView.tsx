@@ -95,7 +95,9 @@ const getTopicsForResource = (subject: string, examType?: 'TYT' | 'AYT' | 'YDT')
 
   const resolvedKey = Object.keys(YKS_CURRICULUM_TOPICS).find(key => {
     const kLower = key.toLowerCase();
-    return kLower.includes(examType.toLowerCase()) && (kLower.includes(subLower) || subLower.includes(kLower.replace('tyt ', '').replace('ayt ', '')));
+    const examLower = examType ? examType.toLowerCase() : '';
+    const matchExam = examLower ? kLower.includes(examLower) : true;
+    return matchExam && (kLower.includes(subLower) || subLower.includes(kLower.replace('tyt ', '').replace('ayt ', '')));
   });
 
   if (resolvedKey) {

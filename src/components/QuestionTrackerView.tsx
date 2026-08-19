@@ -473,13 +473,15 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const target = targetCount === '' ? 0 : Number(targetCount);
-    const solved = solvedCount === '' ? 0 : Number(solvedCount);
     const correct = correctCount === '' ? 0 : Number(correctCount);
     const wrong = wrongCount === '' ? 0 : Number(wrongCount);
     const empty = emptyCount === '' ? 0 : Number(emptyCount);
+    const totalDyb = correct + wrong + empty;
+    const rawSolved = solvedCount === '' ? 0 : Number(solvedCount);
+    const solved = Math.max(rawSolved, totalDyb);
+    const target = targetCount === '' ? solved : Number(targetCount);
     const duration = durationMinutes === '' ? undefined : Number(durationMinutes);
-    const net = Math.max(0, correct - wrong * 0.25);
+    const net = correct - wrong * 0.25;
 
     if (editingLogId) {
       onUpdateLog({
@@ -1851,11 +1853,15 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       onChange={(e) => {
                         const val = e.target.value === '' ? '' : Number(e.target.value);
                         setCorrectCount(val);
-                        if (solvedCount !== '' && wrongCount !== '') {
-                          const s = Number(solvedCount);
-                          const c = val === '' ? 0 : Number(val);
-                          const w = Number(wrongCount);
-                          setEmptyCount(Math.max(0, s - (c + w)));
+                        const c = val === '' ? 0 : Number(val);
+                        const w = wrongCount === '' ? 0 : Number(wrongCount);
+                        const emp = emptyCount === '' ? 0 : Number(emptyCount);
+                        const currentSolved = solvedCount === '' ? 0 : Number(solvedCount);
+                        if (c + w + emp > currentSolved) {
+                          setSolvedCount(c + w + emp);
+                          setTargetCount(c + w + emp);
+                        } else if (solvedCount !== '') {
+                          setEmptyCount(Math.max(0, currentSolved - (c + w)));
                         }
                       }}
                       className="w-full bg-slate-950 border border-emerald-500/40 rounded-2xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-emerald-400 transition-all font-mono font-bold min-h-[48px] sm:min-h-0"
@@ -1872,13 +1878,15 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       onChange={(e) => {
                         const val = e.target.value === '' ? '' : Number(e.target.value);
                         setWrongCount(val);
-                        if (val !== '' && solvedCount !== '') {
-                          const s = Number(solvedCount);
-                          const c = correctCount === '' ? 0 : Number(correctCount);
-                          const w = Number(val);
-                          setEmptyCount(Math.max(0, s - (c + w)));
-                        } else if (val === '') {
-                          setEmptyCount('');
+                        const c = correctCount === '' ? 0 : Number(correctCount);
+                        const w = val === '' ? 0 : Number(val);
+                        const emp = emptyCount === '' ? 0 : Number(emptyCount);
+                        const currentSolved = solvedCount === '' ? 0 : Number(solvedCount);
+                        if (c + w + emp > currentSolved) {
+                          setSolvedCount(c + w + emp);
+                          setTargetCount(c + w + emp);
+                        } else if (solvedCount !== '') {
+                          setEmptyCount(Math.max(0, currentSolved - (c + w)));
                         }
                       }}
                       className="w-full bg-slate-950 border border-rose-500/40 rounded-2xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-rose-400 transition-all font-mono font-bold min-h-[48px] sm:min-h-0"
@@ -1892,7 +1900,18 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       min="0"
                       placeholder="0"
                       value={emptyCount}
-                      onChange={(e) => setEmptyCount(e.target.value === '' ? '' : Number(e.target.value))}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? '' : Number(e.target.value);
+                        setEmptyCount(val);
+                        const c = correctCount === '' ? 0 : Number(correctCount);
+                        const w = wrongCount === '' ? 0 : Number(wrongCount);
+                        const emp = val === '' ? 0 : Number(val);
+                        const currentSolved = solvedCount === '' ? 0 : Number(solvedCount);
+                        if (c + w + emp > currentSolved) {
+                          setSolvedCount(c + w + emp);
+                          setTargetCount(c + w + emp);
+                        }
+                      }}
                       className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-500 transition-all font-mono font-bold min-h-[48px] sm:min-h-0"
                     />
                   </div>

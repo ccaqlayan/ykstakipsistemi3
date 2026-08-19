@@ -660,6 +660,7 @@ const SubjectProgressView: React.FC<SubjectProgressViewProps> = ({
               resourceTopicStats={resourceTopicStats}
               getStatusBadge={getStatusBadge}
               onNavigateTab={onNavigateTab}
+              onUpdateTopicStatus={onUpdateTopicStatus}
             />
           )}
 

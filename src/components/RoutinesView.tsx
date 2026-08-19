@@ -100,54 +100,12 @@ export const RoutinesView: React.FC<RoutinesViewProps> = ({
 
   const DAYS_OF_WEEK = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
 
-  const CHRONOLOGICAL_SEEDS = ['6 - 12 Temmuz', '13 - 19 Temmuz', '20 - 26 Temmuz'];
-
   const getRoutineHistory = (routine: RoutineItem): { weekLabel: string; completedDays: string[] }[] => {
-    const defaultHistory: { weekLabel: string; completedDays: string[] }[] = [];
-    
-    const titleLower = routine.title.toLowerCase();
-    const isParagraf = titleLower.includes('paragraf') || routine.id === 'rot-1';
-    const isProblem = titleLower.includes('problem') || routine.id === 'rot-2';
-    const isGeometri = titleLower.includes('geometri') || routine.id === 'rot-3';
-    
-    if (isParagraf) {
-      defaultHistory.push(
-        { weekLabel: '6 - 12 Temmuz', completedDays: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'] },
-        { weekLabel: '13 - 19 Temmuz', completedDays: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'] },
-        { weekLabel: '20 - 26 Temmuz', completedDays: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'] }
-      );
-    } else if (isProblem) {
-      defaultHistory.push(
-        { weekLabel: '6 - 12 Temmuz', completedDays: ['Pazartesi', 'Salı', 'Perşembe', 'Cuma'] },
-        { weekLabel: '13 - 19 Temmuz', completedDays: ['Pazartesi', 'Çarşamba', 'Cuma', 'Pazar'] },
-        { weekLabel: '20 - 26 Temmuz', completedDays: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'] }
-      );
-    } else if (isGeometri) {
-      defaultHistory.push(
-        { weekLabel: '6 - 12 Temmuz', completedDays: ['Salı', 'Perşembe', 'Cumartesi'] },
-        { weekLabel: '13 - 19 Temmuz', completedDays: ['Salı', 'Perşembe', 'Cumartesi', 'Pazar'] },
-        { weekLabel: '20 - 26 Temmuz', completedDays: ['Pazartesi', 'Çarşamba', 'Cuma'] }
-      );
-    } else {
-      defaultHistory.push(
-        { weekLabel: '6 - 12 Temmuz', completedDays: ['Pazartesi', 'Çarşamba', 'Cuma'] },
-        { weekLabel: '13 - 19 Temmuz', completedDays: ['Salı', 'Perşembe', 'Cumartesi'] },
-        { weekLabel: '20 - 26 Temmuz', completedDays: ['Pazartesi', 'Çarşamba', 'Cuma', 'Pazar'] }
-      );
-    }
-    
-    const realHistory = (routine.history || []).map(h => ({ ...h, weekLabel: normalizeWeekLabel(h.weekLabel) }));
-    const realLabels = new Set(realHistory.map(h => h.weekLabel));
-    const filteredDefault = defaultHistory.filter(d => !realLabels.has(d.weekLabel));
-    
-    return [...filteredDefault, ...realHistory];
+    return (routine.history || []).map(h => ({ ...h, weekLabel: normalizeWeekLabel(h.weekLabel) }));
   };
 
   const getOrderedWeeks = () => {
-    const rawLabels = [
-      ...routines.flatMap(r => (r.history || []).map(h => h.weekLabel)),
-      ...CHRONOLOGICAL_SEEDS
-    ];
+    const rawLabels = routines.flatMap(r => (r.history || []).map(h => h.weekLabel));
     const normalized = rawLabels.filter(Boolean).map(l => normalizeWeekLabel(l));
     const unique = Array.from(new Set(normalized));
     unique.sort((a, b) => parseWeekStartTimestamp(a) - parseWeekStartTimestamp(b));
@@ -892,6 +850,23 @@ export const RoutinesView: React.FC<RoutinesViewProps> = ({
         </div>
       </div>
     </>
+  ) : orderedWeeks.length === 0 ? (
+    <div className="bg-slate-900/90 border border-slate-800/80 rounded-3xl p-10 text-center space-y-4 shadow-xl">
+      <div className="w-16 h-16 bg-indigo-500/10 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto border border-indigo-500/20">
+        <History className="w-8 h-8" />
+      </div>
+      <h3 className="text-lg font-bold text-white">Henüz Arşivlenmiş Rutin Geçmişi Yok</h3>
+      <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+        Haftalık rutinlerinizi tamamlayıp hafta bitiminde <strong className="text-indigo-300">"Haftayı Sıfırla & Arşivle"</strong> butonuna bastığınızda haftalık başarı grafikleriniz ve istatistikleriniz burada birikecektir.
+      </p>
+      <button
+        type="button"
+        onClick={() => setActiveSubTab('tracker')}
+        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/30 cursor-pointer"
+      >
+        Bu Haftanın Rutinlerine Dön
+      </button>
+    </div>
   ) : (
     <div className="space-y-8">
       {/* Metrics Row */}
