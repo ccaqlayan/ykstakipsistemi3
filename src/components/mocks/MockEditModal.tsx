@@ -462,16 +462,16 @@ export const MockEditModal: React.FC<MockEditModalProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     {[
-                      { key: 'turkce', label: 'Türkçe', max: 40 },
-                      { key: 'matematik', label: 'Matematik', max: 30 },
-                      { key: 'geometri', label: 'Geometri', max: 10 },
-                      { key: 'fizik', label: 'Fizik', max: 7 },
-                      { key: 'kimya', label: 'Kimya', max: 7 },
-                      { key: 'biyoloji', label: 'Biyoloji', max: 6 },
-                      { key: 'tarih', label: 'Tarih', max: 5 },
-                      { key: 'cografya', label: 'Coğrafya', max: 5 },
-                      { key: 'felsefe', label: 'Felsefe', max: 5 },
-                      { key: 'din', label: 'Din Kültürü', max: 5 },
+                      { key: 'turkce', label: 'TYT Türkçe', max: 40 },
+                      { key: 'matematik', label: 'TYT Matematik (Saf)', max: 30 },
+                      { key: 'geometri', label: 'TYT Geometri', max: 10 },
+                      { key: 'fizik', label: 'TYT Fizik', max: 7 },
+                      { key: 'kimya', label: 'TYT Kimya', max: 7 },
+                      { key: 'biyoloji', label: 'TYT Biyoloji', max: 6 },
+                      { key: 'tarih', label: 'TYT Tarih', max: 5 },
+                      { key: 'cografya', label: 'TYT Coğrafya', max: 5 },
+                      { key: 'felsefe', label: 'TYT Felsefe', max: 5 },
+                      { key: 'din', label: 'TYT Din Kültürü', max: 5 },
                     ].map((sub) => {
                       const k = sub.key as TytSubKey;
                       const item = editTytDyb?.[k] || { d: '', y: '', b: '', net: '' };

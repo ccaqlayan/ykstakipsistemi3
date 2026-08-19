@@ -215,7 +215,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
 
     solvedTopicsSet.forEach(topicName => {
       const currentStatus = topicStatuses[topicName] || 'Çalışmadım';
-      if (currentStatus === 'Çalışmadım') {
+      if (currentStatus === 'Çalışmadım' && onUpdateTopicStatus) {
         onUpdateTopicStatus(topicName, 'Çalıştım', false);
       }
     });
@@ -301,11 +301,13 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
     if (!editingResource || !editBookTitle.trim()) return;
 
     const subjectTopics = getTopicsForResource(editSubject, editExamType);
-    const totalUnitsCount = subjectTopics.length > 0 ? subjectTopics.length : 10;
-    
-    // filter topics that exist in the selected subject's curriculum to prevent orphaned states
-    const finalCompletedTopics = editCompletedTopics.filter(t => subjectTopics.includes(t));
+    const finalCompletedTopics = subjectTopics.length > 0
+      ? editCompletedTopics.filter(t => subjectTopics.includes(t))
+      : editCompletedTopics;
     const completedUnitsCount = finalCompletedTopics.length;
+    const totalUnitsCount = subjectTopics.length > 0 
+      ? subjectTopics.length 
+      : Math.max(editingResource.totalUnits || 0, completedUnitsCount || 1);
 
     onUpdateResource({
       ...editingResource,
@@ -355,9 +357,11 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
     e.preventDefault();
     if (!bookTitle.trim() || !subject || !examType) return;
 
-    const subjectTopics = YKS_CURRICULUM_TOPICS[subject] || [];
-    const totalUnitsCount = subjectTopics.length > 0 ? subjectTopics.length : 10;
+    const subjectTopics = getTopicsForResource(subject, examType as any) || YKS_CURRICULUM_TOPICS[subject] || [];
     const completedUnitsCount = selectedInitialTopics.length;
+    const totalUnitsCount = subjectTopics.length > 0 
+      ? subjectTopics.length 
+      : Math.max(completedUnitsCount, 1);
 
     onAddResource({
       subject,

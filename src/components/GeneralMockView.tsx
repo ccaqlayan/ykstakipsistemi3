@@ -181,6 +181,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   onUpdateProfile
 }) => {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
   const [activeGeneralTab, setActiveGeneralTab] = useState<'analytics' | 'history'>('analytics');
   const [mockListTab, setMockListTab] = useState<'individual' | 'institutional'>('individual');
   const [selectedInstitutionalExam, setSelectedInstitutionalExam] = useState<InstitutionalMockExam | null>(null);
@@ -645,6 +646,8 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
       isAnalyzed: editIsAnalyzed
     });
 
+    setSuccessToast(`"${editTitle.trim()}" deneme sınavı başarıyla güncellendi!`);
+    setTimeout(() => setSuccessToast(null), 3500);
     setEditingMock(null);
   };
 
@@ -853,6 +856,9 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
         }
       }));
     }
+
+    setSuccessToast(`"${title.trim()}" deneme sınavı başarıyla kaydedildi!`);
+    setTimeout(() => setSuccessToast(null), 3500);
 
     resetAddForm();
     setShowAddModal(false);
@@ -1141,6 +1147,14 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
   return (
     <div className="space-y-6 animate-fade-in">
       
+      {/* Toast Alert */}
+      {successToast && (
+        <div className="fixed top-20 right-6 z-50 animate-fade-in bg-slate-900/95 border border-indigo-500/50 text-indigo-100 px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-2.5 text-xs font-semibold backdrop-blur-xl ring-1 ring-indigo-500/20">
+          <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse shrink-0" />
+          <span>{successToast}</span>
+        </div>
+      )}
+
       {/* ── TOP PRIMARY NAVIGATION TABS (En Üstte) ── */}
       <div className="bg-slate-900/95 border border-slate-800 p-2.5 rounded-3xl flex flex-wrap items-center justify-between gap-3 shadow-2xl backdrop-blur-md">
         <div className="bg-slate-950 p-1.5 rounded-2xl border border-slate-800 flex flex-wrap gap-1.5">

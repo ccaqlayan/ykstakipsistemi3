@@ -299,47 +299,75 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-400 mb-1">Türkçe (40 Soru)</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-400">Türkçe (40 Soru)</label>
+                        {parseNetVal(tytTurkce) > 40 && (
+                          <span className="text-[10px] text-rose-400 font-bold">Maks 40</span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         inputMode="decimal"
                         placeholder="0"
                         value={tytTurkce}
                         onChange={(e) => setTytTurkce(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500 min-h-[48px] sm:min-h-0"
+                        className={`w-full bg-slate-900 border rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none min-h-[48px] sm:min-h-0 transition-all ${
+                          parseNetVal(tytTurkce) > 40 ? 'border-rose-500 bg-rose-500/10 focus:border-rose-400' : 'border-slate-800 focus:border-indigo-500'
+                        }`}
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-400 mb-1">Matematik (40 Soru)</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-400">Matematik (40 Soru)</label>
+                        {parseNetVal(tytMat) > 40 && (
+                          <span className="text-[10px] text-rose-400 font-bold">Maks 40</span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         inputMode="decimal"
                         placeholder="0"
                         value={tytMat}
                         onChange={(e) => setTytMat(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500 min-h-[48px] sm:min-h-0"
+                        className={`w-full bg-slate-900 border rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none min-h-[48px] sm:min-h-0 transition-all ${
+                          parseNetVal(tytMat) > 40 ? 'border-rose-500 bg-rose-500/10 focus:border-rose-400' : 'border-slate-800 focus:border-indigo-500'
+                        }`}
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-400 mb-1">Sosyal (20 Soru)</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-400">Sosyal (20 Soru)</label>
+                        {parseNetVal(tytSosyal) > 20 && (
+                          <span className="text-[10px] text-rose-400 font-bold">Maks 20</span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         inputMode="decimal"
                         placeholder="0"
                         value={tytSosyal}
                         onChange={(e) => setTytSosyal(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500 min-h-[48px] sm:min-h-0"
+                        className={`w-full bg-slate-900 border rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none min-h-[48px] sm:min-h-0 transition-all ${
+                          parseNetVal(tytSosyal) > 20 ? 'border-rose-500 bg-rose-500/10 focus:border-rose-400' : 'border-slate-800 focus:border-indigo-500'
+                        }`}
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-400 mb-1">Fen (20 Soru)</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-400">Fen (20 Soru)</label>
+                        {parseNetVal(tytFen) > 20 && (
+                          <span className="text-[10px] text-rose-400 font-bold">Maks 20</span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         inputMode="decimal"
                         placeholder="0"
                         value={tytFen}
                         onChange={(e) => setTytFen(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500 min-h-[48px] sm:min-h-0"
+                        className={`w-full bg-slate-900 border rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none min-h-[48px] sm:min-h-0 transition-all ${
+                          parseNetVal(tytFen) > 20 ? 'border-rose-500 bg-rose-500/10 focus:border-rose-400' : 'border-slate-800 focus:border-indigo-500'
+                        }`}
                       />
                     </div>
                   </div>
@@ -363,59 +391,87 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className={targetField === 'SAY' || targetField === 'EA' ? 'ring-1 ring-emerald-500/30 rounded-xl p-1.5 bg-emerald-500/5' : ''}>
-                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                        AYT Mat (40 Soru)
-                        {(targetField === 'SAY' || targetField === 'EA') && <span className="text-[9px] text-emerald-400 ml-1 font-bold">★ {targetField}</span>}
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-300">
+                          AYT Mat (40)
+                          {(targetField === 'SAY' || targetField === 'EA') && <span className="text-[9px] text-emerald-400 ml-1 font-bold">★ {targetField}</span>}
+                        </label>
+                        {parseNetVal(aytMat) > 40 && (
+                          <span className="text-[10px] text-rose-400 font-bold">Maks 40</span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         inputMode="decimal"
                         placeholder="0"
                         value={aytMat}
                         onChange={(e) => setAytMat(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500 min-h-[48px] sm:min-h-0"
+                        className={`w-full bg-slate-900 border rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none min-h-[48px] sm:min-h-0 transition-all ${
+                          parseNetVal(aytMat) > 40 ? 'border-rose-500 bg-rose-500/10 focus:border-rose-400' : 'border-slate-800 focus:border-emerald-500'
+                        }`}
                       />
                     </div>
                     <div className={targetField === 'SAY' ? 'ring-1 ring-emerald-500/30 rounded-xl p-1.5 bg-emerald-500/5' : ''}>
-                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                        AYT Fen (40 Soru)
-                        {targetField === 'SAY' && <span className="text-[9px] text-emerald-400 ml-1 font-bold">★ SAY</span>}
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-300">
+                          AYT Fen (40)
+                          {targetField === 'SAY' && <span className="text-[9px] text-emerald-400 ml-1 font-bold">★ SAY</span>}
+                        </label>
+                        {parseNetVal(aytFen) > 40 && (
+                          <span className="text-[10px] text-rose-400 font-bold">Maks 40</span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         inputMode="decimal"
                         placeholder="0"
                         value={aytFen}
                         onChange={(e) => setAytFen(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500 min-h-[48px] sm:min-h-0"
+                        className={`w-full bg-slate-900 border rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none min-h-[48px] sm:min-h-0 transition-all ${
+                          parseNetVal(aytFen) > 40 ? 'border-rose-500 bg-rose-500/10 focus:border-rose-400' : 'border-slate-800 focus:border-emerald-500'
+                        }`}
                       />
                     </div>
                     <div className={targetField === 'EA' || targetField === 'SÖZ' || (targetField as string) === 'SOZ' ? 'ring-1 ring-emerald-500/30 rounded-xl p-1.5 bg-emerald-500/5' : ''}>
-                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                        Edeb-Sos1 (40 Soru)
-                        {(targetField === 'EA' || targetField === 'SÖZ' || (targetField as string) === 'SOZ') && <span className="text-[9px] text-emerald-400 ml-1 font-bold">★ {targetField}</span>}
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-300">
+                          Edeb-Sos1 (40)
+                          {(targetField === 'EA' || targetField === 'SÖZ' || (targetField as string) === 'SOZ') && <span className="text-[9px] text-emerald-400 ml-1 font-bold">★ {targetField}</span>}
+                        </label>
+                        {parseNetVal(aytEdebiyatSos1) > 40 && (
+                          <span className="text-[10px] text-rose-400 font-bold">Maks 40</span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         inputMode="decimal"
                         placeholder="0"
                         value={aytEdebiyatSos1}
                         onChange={(e) => setAytEdebiyatSos1(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500 min-h-[48px] sm:min-h-0"
+                        className={`w-full bg-slate-900 border rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none min-h-[48px] sm:min-h-0 transition-all ${
+                          parseNetVal(aytEdebiyatSos1) > 40 ? 'border-rose-500 bg-rose-500/10 focus:border-rose-400' : 'border-slate-800 focus:border-emerald-500'
+                        }`}
                       />
                     </div>
                     <div className={targetField === 'SÖZ' || (targetField as string) === 'SOZ' ? 'ring-1 ring-emerald-500/30 rounded-xl p-1.5 bg-emerald-500/5' : ''}>
-                      <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-                        AYT Sos2 (40 Soru)
-                        {(targetField === 'SÖZ' || (targetField as string) === 'SOZ') && <span className="text-[9px] text-emerald-400 ml-1 font-bold">★ SÖZ</span>}
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-300">
+                          AYT Sos2 (40)
+                          {(targetField === 'SÖZ' || (targetField as string) === 'SOZ') && <span className="text-[9px] text-emerald-400 ml-1 font-bold">★ SÖZ</span>}
+                        </label>
+                        {parseNetVal(aytSos2) > 40 && (
+                          <span className="text-[10px] text-rose-400 font-bold">Maks 40</span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         inputMode="decimal"
                         placeholder="0"
                         value={aytSos2}
                         onChange={(e) => setAytSos2(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none focus:border-emerald-500 min-h-[48px] sm:min-h-0"
+                        className={`w-full bg-slate-900 border rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold focus:outline-none min-h-[48px] sm:min-h-0 transition-all ${
+                          parseNetVal(aytSos2) > 40 ? 'border-rose-500 bg-rose-500/10 focus:border-rose-400' : 'border-slate-800 focus:border-emerald-500'
+                        }`}
                       />
                     </div>
                   </div>
@@ -452,14 +508,21 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-semibold text-slate-400 mb-1">YDT Neti (80 Soru)</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-semibold text-slate-400">YDT Neti (80 Soru)</label>
+                        {parseNetVal(ydtNet) > 80 && (
+                          <span className="text-[10px] text-rose-400 font-bold">Maks 80</span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         inputMode="decimal"
                         placeholder="0"
                         value={ydtNet}
                         onChange={(e) => setYdtNet(sanitizeNetInput(e.target.value))}
-                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none focus:border-sky-500"
+                        className={`w-full bg-slate-900 border rounded-xl px-3 py-2 text-xs text-white font-mono font-bold focus:outline-none transition-all ${
+                          parseNetVal(ydtNet) > 80 ? 'border-rose-500 bg-rose-500/10 focus:border-rose-400' : 'border-slate-800 focus:border-sky-500'
+                        }`}
                       />
                     </div>
                   </div>
@@ -475,7 +538,10 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
               {(addExamType === 'TYT' || addExamType === 'TYT_AYT' || addExamType === 'TYT_DIL') && (
                 <div className="bg-slate-950/80 p-4.5 rounded-2xl border border-indigo-500/20 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-indigo-400 uppercase tracking-wider">TYT Alt Ders Kırılımları</span>
+                    <div>
+                      <span className="text-xs font-black text-indigo-400 uppercase tracking-wider block">TYT Alt Ders Kırılımları</span>
+                      <span className="text-[10px] text-slate-400 font-medium">Matematik (30 Soru) + Geometri (10 Soru) = 40 Soru</span>
+                    </div>
                     <span className="text-xs text-indigo-300 font-mono font-bold bg-indigo-500/10 px-2.5 py-0.5 rounded-lg border border-indigo-500/20">
                       Hesaplanan TYT: {(
                         (parseNetVal(addTytDyb?.turkce?.net)) +
@@ -494,16 +560,16 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                     {[
-                      { key: 'turkce', label: 'Türkçe', max: 40 },
-                      { key: 'matematik', label: 'Matematik', max: 30 },
-                      { key: 'geometri', label: 'Geometri', max: 10 },
-                      { key: 'fizik', label: 'Fizik', max: 7 },
-                      { key: 'kimya', label: 'Kimya', max: 7 },
-                      { key: 'biyoloji', label: 'Biyoloji', max: 6 },
-                      { key: 'tarih', label: 'Tarih', max: 5 },
-                      { key: 'cografya', label: 'Coğrafya', max: 5 },
-                      { key: 'felsefe', label: 'Felsefe', max: 5 },
-                      { key: 'din', label: 'Din Kültürü', max: 5 },
+                      { key: 'turkce', label: 'TYT Türkçe', max: 40 },
+                      { key: 'matematik', label: 'TYT Matematik (Saf)', max: 30 },
+                      { key: 'geometri', label: 'TYT Geometri', max: 10 },
+                      { key: 'fizik', label: 'TYT Fizik', max: 7 },
+                      { key: 'kimya', label: 'TYT Kimya', max: 7 },
+                      { key: 'biyoloji', label: 'TYT Biyoloji', max: 6 },
+                      { key: 'tarih', label: 'TYT Tarih', max: 5 },
+                      { key: 'cografya', label: 'TYT Coğrafya', max: 5 },
+                      { key: 'felsefe', label: 'TYT Felsefe', max: 5 },
+                      { key: 'din', label: 'TYT Din Kültürü', max: 5 },
                     ].map((sub) => {
                       const k = sub.key as TytSubKey;
                       const item = addTytDyb?.[k] || { d: '', y: '', b: '', net: '' };

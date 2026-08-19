@@ -464,12 +464,8 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
   }, [chartSubject, chartExamType, questionLogs, isDateInChartTimeRange]);
 
   useEffect(() => {
-    if (activeGraphType === 'net') {
-      setHiddenSubjects(activeSubjects);
-    } else {
-      setHiddenSubjects([]);
-    }
-  }, [chartSubject, chartExamType, activeGraphType, activeSubjects]);
+    setHiddenSubjects([]);
+  }, [chartSubject, chartExamType, activeGraphType]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1806,10 +1802,10 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                         onClick={() => {
                           setTargetCount(num);
                           setSolvedCount(num);
-                          if (correctCount === '' && wrongCount === '') {
-                            setCorrectCount(num);
-                            setWrongCount(0);
-                            setEmptyCount(0);
+                          if (correctCount !== '' || wrongCount !== '') {
+                            const c = correctCount === '' ? 0 : Number(correctCount);
+                            const w = wrongCount === '' ? 0 : Number(wrongCount);
+                            setEmptyCount(Math.max(0, num - (c + w)));
                           }
                         }}
                         className="px-2.5 py-1.5 sm:px-1.5 sm:py-0.5 min-h-[36px] sm:min-h-0 rounded-xl sm:rounded-lg bg-slate-950 hover:bg-indigo-600 hover:text-white border border-slate-800 text-slate-300 font-mono font-bold transition-all cursor-pointer flex items-center justify-center"
@@ -1833,10 +1829,12 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                         const val = e.target.value === '' ? '' : Number(e.target.value);
                         setSolvedCount(val);
                         setTargetCount(val);
-                        if (val !== '' && wrongCount !== '') {
+                        if (val !== '') {
                           const c = correctCount === '' ? 0 : Number(correctCount);
-                          const w = Number(wrongCount);
+                          const w = wrongCount === '' ? 0 : Number(wrongCount);
                           setEmptyCount(Math.max(0, Number(val) - (c + w)));
+                        } else {
+                          setEmptyCount('');
                         }
                       }}
                       className="w-full bg-slate-950 border border-indigo-500/50 rounded-2xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 transition-all font-mono font-bold min-h-[48px] sm:min-h-0"
@@ -1857,11 +1855,11 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                         const w = wrongCount === '' ? 0 : Number(wrongCount);
                         const emp = emptyCount === '' ? 0 : Number(emptyCount);
                         const currentSolved = solvedCount === '' ? 0 : Number(solvedCount);
-                        if (c + w + emp > currentSolved) {
+                        if (c + w + emp > currentSolved && currentSolved > 0) {
                           setSolvedCount(c + w + emp);
                           setTargetCount(c + w + emp);
                         } else if (solvedCount !== '') {
-                          setEmptyCount(Math.max(0, currentSolved - (c + w)));
+                          setEmptyCount(Math.max(0, Number(solvedCount) - (c + w)));
                         }
                       }}
                       className="w-full bg-slate-950 border border-emerald-500/40 rounded-2xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-emerald-400 transition-all font-mono font-bold min-h-[48px] sm:min-h-0"
@@ -1882,11 +1880,11 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                         const w = val === '' ? 0 : Number(val);
                         const emp = emptyCount === '' ? 0 : Number(emptyCount);
                         const currentSolved = solvedCount === '' ? 0 : Number(solvedCount);
-                        if (c + w + emp > currentSolved) {
+                        if (c + w + emp > currentSolved && currentSolved > 0) {
                           setSolvedCount(c + w + emp);
                           setTargetCount(c + w + emp);
                         } else if (solvedCount !== '') {
-                          setEmptyCount(Math.max(0, currentSolved - (c + w)));
+                          setEmptyCount(Math.max(0, Number(solvedCount) - (c + w)));
                         }
                       }}
                       className="w-full bg-slate-950 border border-rose-500/40 rounded-2xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-rose-400 transition-all font-mono font-bold min-h-[48px] sm:min-h-0"
@@ -1954,7 +1952,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                 <div>
                   <span className="text-[9px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-wider block">Net Skor</span>
                   <span className="text-sm sm:text-base font-extrabold text-indigo-300 font-mono">
-                    {liveCalculatedNet} Net
+                    {liveSolvedCount > 0 || liveCorrectCount > 0 || liveWrongCount > 0 ? `${liveCalculatedNet} Net` : '-'}
                   </span>
                 </div>
                 <div>
@@ -1966,7 +1964,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                 <div>
                   <span className="text-[9px] sm:text-[10px] text-slate-400 font-medium uppercase tracking-wider block">Doğruluk</span>
                   <span className="text-sm sm:text-base font-extrabold text-emerald-400 font-mono">
-                    %{liveSolvedCount > 0 ? Math.round((liveCorrectCount / liveSolvedCount) * 100) : 0}
+                    {liveSolvedCount > 0 ? `%${Math.round((liveCorrectCount / liveSolvedCount) * 100)}` : '-'}
                   </span>
                 </div>
               </div>
