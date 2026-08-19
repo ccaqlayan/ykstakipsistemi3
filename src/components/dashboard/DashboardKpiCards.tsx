@@ -59,7 +59,8 @@ export const renderKpiMocks = (
   latestMock: GeneralMockExam | null,
   latestTYTNet: number,
   latestAYTNet: number,
-  onNavigateTab: (tab: any) => void
+  onNavigateTab: (tab: any) => void,
+  isDil: boolean = false
 ) => (
   <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-5 shadow-xl hover:border-white/20 transition-all flex flex-col justify-between">
     <div>
@@ -71,7 +72,7 @@ export const renderKpiMocks = (
       </div>
       <div className="flex items-baseline space-x-2">
         <span className="text-xl font-bold text-white font-mono">TYT: {latestTYTNet}</span>
-        <span className="text-sm font-semibold text-emerald-400 font-mono">AYT: {latestAYTNet}</span>
+        <span className="text-sm font-semibold text-emerald-400 font-mono">{isDil ? 'YDT' : 'AYT'}: {latestAYTNet}</span>
       </div>
       <p className="text-xs text-slate-400 mt-2 truncate">
         {latestMock ? latestMock.title : 'Henüz deneme girilmedi'}

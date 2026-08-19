@@ -280,9 +280,15 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
     let currentTyt = 0;
     let currentAyt = 0;
     if (state.generalMocks && state.generalMocks.length > 0) {
-      const lastMock = state.generalMocks[state.generalMocks.length - 1];
-      currentTyt = lastMock.tyt?.totalNet || 0;
-      currentAyt = isDil ? (lastMock.ydt?.net || 0) : (lastMock.ayt?.totalNet || 0);
+      const sortedMocks = [...state.generalMocks].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const latestTYTMock = sortedMocks.find(m => m.tyt && m.tyt.totalNet !== undefined && (m.examType === 'TYT' || m.examType === 'TYT_AYT' || m.examType === 'TYT_DIL' || m.tyt.totalNet > 0));
+      const latestAYTMock = sortedMocks.find(m => m.ayt && m.ayt.totalNet !== undefined && (m.examType === 'AYT' || m.examType === 'TYT_AYT' || m.ayt.totalNet > 0));
+      const latestYDTMock = sortedMocks.find(m => m.ydt && m.ydt.net !== undefined && (m.examType === 'DIL' || m.examType === 'TYT_DIL' || Number(m.ydt.net) > 0));
+
+      currentTyt = latestTYTMock?.tyt?.totalNet ?? (sortedMocks[0]?.tyt?.totalNet || 0);
+      currentAyt = isDil 
+        ? (latestYDTMock?.ydt?.net ?? latestAYTMock?.ayt?.totalNet ?? (sortedMocks[0]?.ydt?.net || 0))
+        : (latestAYTMock?.ayt?.totalNet ?? (sortedMocks[0]?.ayt?.totalNet || 0));
     }
     return { 
       isDil,
@@ -333,16 +339,22 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
       const stData = studentsData[st.id];
       if (stData) {
         if (stData.generalMocks && stData.generalMocks.length > 0) {
-          const lastMock = stData.generalMocks[stData.generalMocks.length - 1];
-          if (lastMock.tyt?.totalNet !== undefined && lastMock.tyt.totalNet > 0) {
-            const t = lastMock.tyt.totalNet;
+          const sortedMocks = [...stData.generalMocks].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          const latestTYTMock = sortedMocks.find(m => m.tyt && m.tyt.totalNet !== undefined && (m.examType === 'TYT' || m.examType === 'TYT_AYT' || m.examType === 'TYT_DIL' || m.tyt.totalNet > 0));
+          const latestAYTMock = sortedMocks.find(m => m.ayt && m.ayt.totalNet !== undefined && (m.examType === 'AYT' || m.examType === 'TYT_AYT' || m.ayt.totalNet > 0));
+          const latestYDTMock = sortedMocks.find(m => m.ydt && m.ydt.net !== undefined && (m.examType === 'DIL' || m.examType === 'TYT_DIL' || Number(m.ydt.net) > 0));
+
+          const isStudentDil = stData.profile?.targetField === 'DİL' || (stData.profile?.targetField as string) === 'DIL';
+          const t = latestTYTMock?.tyt?.totalNet;
+          const a = isStudentDil ? (latestYDTMock?.ydt?.net ?? latestAYTMock?.ayt?.totalNet) : latestAYTMock?.ayt?.totalNet;
+
+          if (t !== undefined && t > 0) {
             sumTYT += t;
             countTYT++;
             if (t > highestTYT) highestTYT = t;
             if (t < lowestTYT) lowestTYT = t;
           }
-          if (lastMock.ayt?.totalNet !== undefined && lastMock.ayt.totalNet > 0) {
-            const a = lastMock.ayt.totalNet;
+          if (a !== undefined && a > 0) {
             sumAYT += a;
             countAYT++;
             if (a > highestAYT) highestAYT = a;
@@ -500,9 +512,18 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
 
         if (stData) {
           if (stData.generalMocks && stData.generalMocks.length > 0) {
-            const lastMock = stData.generalMocks[stData.generalMocks.length - 1];
-            if (lastMock.tyt?.totalNet) tyt = lastMock.tyt.totalNet;
-            if (lastMock.ayt?.totalNet) ayt = lastMock.ayt.totalNet;
+            const sortedMocks = [...stData.generalMocks].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            const latestTYTMock = sortedMocks.find(m => m.tyt && m.tyt.totalNet !== undefined && (m.examType === 'TYT' || m.examType === 'TYT_AYT' || m.examType === 'TYT_DIL' || m.tyt.totalNet > 0));
+            const latestAYTMock = sortedMocks.find(m => m.ayt && m.ayt.totalNet !== undefined && (m.examType === 'AYT' || m.examType === 'TYT_AYT' || m.ayt.totalNet > 0));
+            const latestYDTMock = sortedMocks.find(m => m.ydt && m.ydt.net !== undefined && (m.examType === 'DIL' || m.examType === 'TYT_DIL' || Number(m.ydt.net) > 0));
+
+            const isStudentDil = stData.profile?.targetField === 'DİL' || (stData.profile?.targetField as string) === 'DIL';
+            if (latestTYTMock?.tyt?.totalNet) tyt = latestTYTMock.tyt.totalNet;
+            if (isStudentDil) {
+              ayt = latestYDTMock?.ydt?.net ?? latestAYTMock?.ayt?.totalNet ?? 0;
+            } else if (latestAYTMock?.ayt?.totalNet) {
+              ayt = latestAYTMock.ayt.totalNet;
+            }
           }
           if (stData.topicErrors) {
             const activeErrors = stData.topicErrors.filter(e => !e.revised);

@@ -248,6 +248,15 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   });
 
   React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem(followedChannelsStorageKey);
+      setFollowedChannels(stored ? new Set<string>(JSON.parse(stored)) : new Set<string>());
+    } catch {
+      setFollowedChannels(new Set<string>());
+    }
+  }, [followedChannelsStorageKey]);
+
+  React.useEffect(() => {
     fetch('/api/youtube/sync-avatars', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

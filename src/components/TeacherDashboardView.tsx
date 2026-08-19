@@ -418,13 +418,21 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
     const data = resolveStudentData(st, studentsData);
     if (data) {
       if (data.generalMocks && data.generalMocks.length > 0) {
-        const lastMock = data.generalMocks[data.generalMocks.length - 1];
-        if (lastMock.tyt?.totalNet) {
-          sumTYTNet += lastMock.tyt.totalNet;
+        const sortedMocks = [...data.generalMocks].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const latestTYTMock = sortedMocks.find(m => m.tyt && m.tyt.totalNet !== undefined && (m.examType === 'TYT' || m.examType === 'TYT_AYT' || m.examType === 'TYT_DIL' || m.tyt.totalNet > 0));
+        const latestAYTMock = sortedMocks.find(m => m.ayt && m.ayt.totalNet !== undefined && (m.examType === 'AYT' || m.examType === 'TYT_AYT' || m.ayt.totalNet > 0));
+        const latestYDTMock = sortedMocks.find(m => m.ydt && m.ydt.net !== undefined && (m.examType === 'DIL' || m.examType === 'TYT_DIL' || Number(m.ydt.net) > 0));
+
+        const isStudentDil = data.profile?.targetField === 'DİL' || (data.profile?.targetField as string) === 'DIL';
+        const t = latestTYTMock?.tyt?.totalNet;
+        const a = isStudentDil ? (latestYDTMock?.ydt?.net ?? latestAYTMock?.ayt?.totalNet) : latestAYTMock?.ayt?.totalNet;
+
+        if (t !== undefined && t > 0) {
+          sumTYTNet += t;
           countTYT++;
         }
-        if (lastMock.ayt?.totalNet) {
-          sumAYTNet += lastMock.ayt.totalNet;
+        if (a !== undefined && a > 0) {
+          sumAYTNet += a;
           countAYT++;
         }
       }
@@ -503,13 +511,21 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           clsQuestions += (ql.solvedCount || 0) || ((ql.correctCount || 0) + (ql.wrongCount || 0) + (ql.blankCount || 0));
         });
         if (data.generalMocks && data.generalMocks.length > 0) {
-          const lastMock = data.generalMocks[data.generalMocks.length - 1];
-          if (lastMock.tyt && lastMock.tyt.totalNet > 0) {
-            clsTYTSum += lastMock.tyt.totalNet;
+          const sortedMocks = [...data.generalMocks].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          const latestTYTMock = sortedMocks.find(m => m.tyt && m.tyt.totalNet !== undefined && (m.examType === 'TYT' || m.examType === 'TYT_AYT' || m.examType === 'TYT_DIL' || m.tyt.totalNet > 0));
+          const latestAYTMock = sortedMocks.find(m => m.ayt && m.ayt.totalNet !== undefined && (m.examType === 'AYT' || m.examType === 'TYT_AYT' || m.ayt.totalNet > 0));
+          const latestYDTMock = sortedMocks.find(m => m.ydt && m.ydt.net !== undefined && (m.examType === 'DIL' || m.examType === 'TYT_DIL' || Number(m.ydt.net) > 0));
+
+          const isStudentDil = data.profile?.targetField === 'DİL' || (data.profile?.targetField as string) === 'DIL';
+          const t = latestTYTMock?.tyt?.totalNet;
+          const a = isStudentDil ? (latestYDTMock?.ydt?.net ?? latestAYTMock?.ayt?.totalNet) : latestAYTMock?.ayt?.totalNet;
+
+          if (t !== undefined && t > 0) {
+            clsTYTSum += t;
             clsTYTCount++;
           }
-          if (lastMock.ayt && lastMock.ayt.totalNet > 0) {
-            clsAYTSum += lastMock.ayt.totalNet;
+          if (a !== undefined && a > 0) {
+            clsAYTSum += a;
             clsAYTCount++;
           }
         }

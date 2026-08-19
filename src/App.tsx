@@ -2176,12 +2176,23 @@ export default function App() {
 
   const handleToggleTopicCompleted = (topicKey: string) => {
     const prevList = currentStudentData.completedPastTopics || [];
-    const exists = prevList.includes(topicKey);
+    const isDoubleColon = topicKey.includes('::');
+    const isSingleColon = !isDoubleColon && topicKey.includes(':');
+    
+    let altKey = '';
+    if (isDoubleColon) {
+      altKey = topicKey.replace('::', ':');
+    } else if (isSingleColon) {
+      altKey = topicKey.replace(':', '::');
+    }
+
+    const exists = prevList.includes(topicKey) || (altKey ? prevList.includes(altKey) : false);
+
     updateCurrentStudentData((prev) => {
       const currentList = prev.completedPastTopics || [];
       const updatedList = exists
-        ? currentList.filter((k) => k !== topicKey)
-        : [...currentList, topicKey];
+        ? currentList.filter((k) => k !== topicKey && k !== altKey)
+        : [...currentList.filter((k) => k !== topicKey && k !== altKey), topicKey];
       return {
         ...prev,
         completedPastTopics: updatedList

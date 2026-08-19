@@ -56,13 +56,19 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
     return currentSubjectTopics.reduce((acc, t) => acc + (t.totalQuestions / 8), 0);
   }, [currentSubjectTopics]);
 
+  // Helper to check topic completed status across : and :: formats
+  const isTopicCompleted = (subject: string, topicName: string) => {
+    return (
+      completedPastTopics.includes(`${subject}:${topicName}`) ||
+      completedPastTopics.includes(`${subject}::${topicName}`) ||
+      completedPastTopics.includes(topicName)
+    );
+  };
+
   // Average questions solved/completed based on student's checked topics for selected subject
   const completedQuestionsAvg = useMemo(() => {
     return currentSubjectTopics
-      .filter((t) => {
-        const topicKey = `${t.subject}:${t.topic}`;
-        return completedPastTopics.includes(topicKey);
-      })
+      .filter((t) => isTopicCompleted(t.subject, t.topic))
       .reduce((acc, t) => acc + (t.totalQuestions / 8), 0);
   }, [currentSubjectTopics, completedPastTopics]);
 
@@ -78,10 +84,7 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
 
   // Count of completed topics in selected subject
   const completedTopicsCount = useMemo(() => {
-    return currentSubjectTopics.filter((t) => {
-      const topicKey = `${t.subject}:${t.topic}`;
-      return completedPastTopics.includes(topicKey);
-    }).length;
+    return currentSubjectTopics.filter((t) => isTopicCompleted(t.subject, t.topic)).length;
   }, [currentSubjectTopics, completedPastTopics]);
 
   const topicCountPercentage = currentSubjectTopics.length > 0
@@ -114,8 +117,7 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
 
     if (completionFilter !== 'ALL') {
       list = list.filter((t) => {
-        const topicKey = `${t.subject}:${t.topic}`;
-        const isCompleted = completedPastTopics.includes(topicKey);
+        const isCompleted = isTopicCompleted(t.subject, t.topic);
         return completionFilter === 'completed' ? isCompleted : !isCompleted;
       });
     }
@@ -133,7 +135,7 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
   const handleMarkAllCompleted = () => {
     currentSubjectTopics.forEach(t => {
       const topicKey = `${t.subject}:${t.topic}`;
-      if (!completedPastTopics.includes(topicKey)) {
+      if (!isTopicCompleted(t.subject, t.topic)) {
         onTogglePastTopic(topicKey);
       }
     });
@@ -142,7 +144,7 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
   const handleResetAllCompleted = () => {
     currentSubjectTopics.forEach(t => {
       const topicKey = `${t.subject}:${t.topic}`;
-      if (completedPastTopics.includes(topicKey)) {
+      if (isTopicCompleted(t.subject, t.topic)) {
         onTogglePastTopic(topicKey);
       }
     });
@@ -558,7 +560,7 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
               <tbody className="divide-y divide-slate-800/80 text-xs">
                 {displayedTopics.map((topicItem, index) => {
                   const topicKey = `${topicItem.subject}:${topicItem.topic}`;
-                  const isCompleted = completedPastTopics.includes(topicKey);
+                  const isCompleted = isTopicCompleted(topicItem.subject, topicItem.topic);
                   const avgPerYear = (topicItem.totalQuestions / 8).toFixed(1);
                   const numAvg = topicItem.totalQuestions / 8;
                   const ratioToMax = Math.min(100, Math.max(8, (topicItem.totalQuestions / (maxTopicQuestions || 1)) * 100));

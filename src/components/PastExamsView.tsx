@@ -64,8 +64,17 @@ export const PastExamsView: React.FC<PastExamsViewProps> = ({
     return sum + Object.values(topic.counts).reduce((a, b) => a + b, 0);
   }, 0);
 
+  // Helper to check if a past topic is marked as completed (supports both :: and : formats)
+  const isTopicCompleted = (subject: string, topicName: string) => {
+    return (
+      completedPastTopics.includes(`${subject}::${topicName}`) ||
+      completedPastTopics.includes(`${subject}:${topicName}`) ||
+      completedPastTopics.includes(topicName)
+    );
+  };
+
   const subjectCompletedCount = currentDistribution.topics.filter((topic) => 
-    completedPastTopics.includes(`${selectedSubject}::${topic.topicName}`)
+    isTopicCompleted(selectedSubject, topic.topicName)
   ).length;
 
   const subjectCompletionPercentage = currentDistribution.topics.length > 0 
@@ -362,7 +371,7 @@ export const PastExamsView: React.FC<PastExamsViewProps> = ({
                   ) : (
                     filteredTopics.map((topic, index) => {
                       const topicKey = `${selectedSubject}::${topic.topicName}`;
-                      const isCompleted = completedPastTopics.includes(topicKey);
+                      const isCompleted = isTopicCompleted(selectedSubject, topic.topicName);
                       
                       const totalQuestions = Object.values(topic.counts).reduce((a, b) => a + b, 0);
                       const avgPerYear = (totalQuestions / PAST_EXAM_YEARS.length).toFixed(1);

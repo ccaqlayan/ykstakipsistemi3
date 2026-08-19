@@ -253,9 +253,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     ? Math.round((totalQuestionsSolved / totalQuestionsTarget) * 100) 
     : 0;
 
-  const latestMock = generalMocks.length > 0 ? generalMocks[generalMocks.length - 1] : null;
-  const latestTYTNet = latestMock ? latestMock.tyt.totalNet : 0;
-  const latestAYTNet = latestMock ? latestMock.ayt.totalNet : 0;
+  const isDilField = profile?.targetField === 'DİL' || (profile?.targetField as string) === 'DIL';
+
+  const sortedMocks = useMemo(() => {
+    return [...generalMocks].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [generalMocks]);
+
+  const latestMock = sortedMocks.length > 0 ? sortedMocks[0] : null;
+  const latestTYTMock = sortedMocks.find(m => m.tyt && m.tyt.totalNet !== undefined && (m.examType === 'TYT' || m.examType === 'TYT_AYT' || m.examType === 'TYT_DIL' || m.tyt.totalNet > 0));
+  const latestAYTMock = sortedMocks.find(m => m.ayt && m.ayt.totalNet !== undefined && (m.examType === 'AYT' || m.examType === 'TYT_AYT' || m.ayt.totalNet > 0));
+  const latestYDTMock = sortedMocks.find(m => m.ydt && m.ydt.net !== undefined && (m.examType === 'DIL' || m.examType === 'TYT_DIL' || Number(m.ydt.net) > 0));
+
+  const latestTYTNet = latestTYTMock?.tyt?.totalNet ?? (latestMock ? latestMock.tyt.totalNet : 0);
+  const latestAYTNet = isDilField 
+    ? (latestYDTMock?.ydt?.net ?? latestAYTMock?.ayt?.totalNet ?? (latestMock ? latestMock.ayt.totalNet : 0))
+    : (latestAYTMock?.ayt?.totalNet ?? (latestMock ? latestMock.ayt.totalNet : 0));
 
   const pendingTopicErrors = topicErrors.filter((e) => !e.revised);
 
@@ -309,7 +321,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       case 'kpi_questions': 
         return renderKpiQuestions(totalQuestionsSolved, totalQuestionsTarget, questionTargetPercent, onNavigateTab);
       case 'kpi_mocks': 
-        return renderKpiMocks(latestMock, latestTYTNet, latestAYTNet, onNavigateTab);
+        return renderKpiMocks(latestMock, latestTYTNet, latestAYTNet, onNavigateTab, isDilField);
       case 'kpi_errors': 
         return renderKpiErrors(pendingTopicErrors, onNavigateTab);
       case 'kpi_resources': 
