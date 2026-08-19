@@ -1180,7 +1180,7 @@ export const RoutinesView: React.FC<RoutinesViewProps> = ({
             // Check if there is already an archive with this weekLabel in any routine's history
             const isAlreadyArchived = routines.some(r => 
               (r.history || []).some(h => normalizeWeekLabel(h.weekLabel) === normalizeWeekLabel(targetWeekLabel))
-            ) || CHRONOLOGICAL_SEEDS.includes(targetWeekLabel);
+            );
 
             const handleInitiateChoice = (choice: 'keep_template' | 'fresh_start') => {
               setArchiveChoice(choice);
