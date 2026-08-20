@@ -85,7 +85,158 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
   const totalTasks = activePlans.length;
 
   const handleTriggerPrint = () => {
-    window.print();
+    const printDoc = document.getElementById('study-plan-print-document');
+    if (!printDoc) {
+      window.print();
+      return;
+    }
+
+    // Remove any existing print iframe
+    const oldIframe = document.getElementById('study-plan-print-iframe');
+    if (oldIframe) {
+      oldIframe.remove();
+    }
+
+    // Create a hidden iframe for isolated 1:1 printing
+    const iframe = document.createElement('iframe');
+    iframe.id = 'study-plan-print-iframe';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const pri = iframe.contentWindow;
+    if (!pri) {
+      window.print();
+      return;
+    }
+
+    // Collect all styles from the current document
+    let styleHtml = '';
+    document.querySelectorAll('style, link[rel="stylesheet"]').forEach((node) => {
+      styleHtml += node.outerHTML;
+    });
+
+    const pageOrientation = orientation === 'landscape' ? 'A4 landscape' : 'A4 portrait';
+
+    pri.document.open();
+    pri.document.write(`
+      <!DOCTYPE html>
+      <html lang="tr">
+        <head>
+          <meta charset="utf-8" />
+          <title>${documentTitle} - ${studentName}</title>
+          ${styleHtml}
+          <style>
+            @page {
+              size: ${pageOrientation};
+              margin: 4mm;
+            }
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              color-adjust: exact !important;
+              box-sizing: border-box !important;
+            }
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              background-color: #ffffff !important;
+              background: #ffffff !important;
+              color: #000000 !important;
+              width: 100% !important;
+              height: auto !important;
+              overflow: visible !important;
+              font-family: inherit !important;
+            }
+            #print-root {
+              width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            /* Clean up outer card shadows on physical paper */
+            #study-plan-print-document {
+              border: none !important;
+              box-shadow: none !important;
+              max-width: 100% !important;
+              width: 100% !important;
+              margin: 0 auto !important;
+              padding: 2mm !important;
+            }
+            /* Solid explicit borders to guarantee razor-sharp lines in all printer engines */
+            .border {
+              border-width: 1px !important;
+              border-style: solid !important;
+            }
+            .border-2 {
+              border-width: 2px !important;
+              border-style: solid !important;
+            }
+            .border-b {
+              border-bottom-width: 1px !important;
+              border-bottom-style: solid !important;
+            }
+            .border-b-2 {
+              border-bottom-width: 2px !important;
+              border-bottom-style: solid !important;
+            }
+            .border-t {
+              border-top-width: 1px !important;
+              border-top-style: solid !important;
+            }
+            .border-r {
+              border-right-width: 1px !important;
+              border-right-style: solid !important;
+            }
+            .border-dashed {
+              border-style: dashed !important;
+            }
+            .border-black {
+              border-color: #000000 !important;
+            }
+            .border-gray-300 {
+              border-color: #d1d5db !important;
+            }
+            .border-gray-400 {
+              border-color: #9ca3af !important;
+            }
+            .border-gray-200 {
+              border-color: #e5e7eb !important;
+            }
+            .bg-gray-50 {
+              background-color: #f9fafb !important;
+            }
+            .bg-gray-100 {
+              background-color: #f3f4f6 !important;
+            }
+            .bg-gray-200 {
+              background-color: #e5e7eb !important;
+            }
+            .bg-white {
+              background-color: #ffffff !important;
+            }
+          </style>
+        </head>
+        <body>
+          <div id="print-root">
+            ${printDoc.outerHTML}
+          </div>
+        </body>
+      </html>
+    `);
+    pri.document.close();
+
+    // Small timeout to allow fonts and CSS to compute cleanly before printing
+    setTimeout(() => {
+      pri.focus();
+      pri.print();
+      setTimeout(() => {
+        iframe.remove();
+      }, 2000);
+    }, 400);
   };
 
   return (
