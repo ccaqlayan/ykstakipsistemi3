@@ -373,6 +373,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
 
   // Week navigation states
   const currentMonday = React.useMemo(() => getMonday(new Date()), []);
+  const realCurrentWeekLabel = React.useMemo(() => formatWeekLabelWithYear(currentMonday), [currentMonday]);
   const [selectedMondayDate, setSelectedMondayDate] = useState<Date>(currentMonday);
   const [weekSlideDirection, setWeekSlideDirection] = useState<'next' | 'prev'>('next');
 
@@ -412,6 +413,16 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     return {
       date: getIsoDateString(targetDate),
       weekLabel: currentWeekLabel
+    };
+  };
+
+  const getRealCurrentWeekPlanDateAndLabel = (targetDay: DayOfWeek) => {
+    const dayIndex = DAYS.indexOf(targetDay);
+    const targetDate = new Date(currentMonday);
+    targetDate.setDate(currentMonday.getDate() + (dayIndex >= 0 ? dayIndex : 0));
+    return {
+      date: getIsoDateString(targetDate),
+      weekLabel: realCurrentWeekLabel
     };
   };
   
@@ -489,6 +500,9 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   const getPlansForWeek = (weekLabel: string): StudyPlanItem[] => {
     const realArchived = studyPlans.filter(p => p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, weekLabel));
     if (realArchived.length > 0) return realArchived;
+
+    const unarchivedMatching = studyPlans.filter(p => !p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, weekLabel));
+    if (unarchivedMatching.length > 0) return unarchivedMatching;
 
     if (isSameWeekLabel(weekLabel, '6 - 12 Temmuz')) {
       return [
@@ -635,9 +649,9 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       return;
     }
 
-    // Active unarchived plans in current week
+    // Active unarchived plans in REAL CURRENT WEEK (not the currently viewed past week)
     const currentActivePlans = studyPlans.filter(p => !p.archived && (
-      !p.weekLabel || isSameWeekLabel(p.weekLabel, currentWeekLabel)
+      !p.weekLabel || isSameWeekLabel(p.weekLabel, realCurrentWeekLabel)
     ));
 
     if (currentActivePlans.length === 0) {
@@ -659,9 +673,9 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     const pastPlans = getPlansForWeek(targetPastWeekLabel);
     if (pastPlans.length === 0) return;
 
-    // Generate new unarchived plans for current week with reset status and proper dates
+    // Generate new unarchived plans STRICTLY for the REAL CURRENT WEEK with reset status and proper dates
     const newPlansForCurrentWeek: StudyPlanItem[] = pastPlans.map(p => {
-      const { date, weekLabel } = getPlanDateAndWeekLabel(p.day);
+      const { date, weekLabel } = getRealCurrentWeekPlanDateAndLabel(p.day);
       return {
         ...p,
         id: 'plan-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
@@ -677,27 +691,27 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     let updatedAllPlans: StudyPlanItem[] = [];
 
     if (choice === 'replace') {
-      // Keep archived plans + keep other week unarchived plans, but remove current week active plans
+      // Remove any existing active unarchived plans belonging to real current week, and replace with newPlansForCurrentWeek
       const otherPlans = studyPlans.filter(p => {
         if (p.archived) return true;
-        if (p.weekLabel && !isSameWeekLabel(p.weekLabel, currentWeekLabel)) return true;
+        if (p.weekLabel && !isSameWeekLabel(p.weekLabel, realCurrentWeekLabel)) return true;
         return false;
       });
       updatedAllPlans = [...otherPlans, ...newPlansForCurrentWeek];
     } else {
-      // Merge / append
+      // Merge / append to existing plans
       updatedAllPlans = [...studyPlans, ...newPlansForCurrentWeek];
     }
 
     onUpdateAllPlans(
       updatedAllPlans,
-      `"${targetPastWeekLabel}" haftasının ders planı güncel haftaya uygulandı (${choice === 'replace' ? 'Sıfırlandı' : 'Birleştirildi'}).`
+      `"${targetPastWeekLabel}" haftasının ders planı güncel haftaya (${realCurrentWeekLabel}) uygulandı (${choice === 'replace' ? 'Sıfırlandı' : 'Birleştirildi'}).`
     );
 
-    // Switch view to current week tracker
+    // Switch view to real current week tracker
     setSelectedMondayDate(currentMonday);
     setActiveSubTab('tracker');
-    setQuestionToast(`✨ "${targetPastWeekLabel}" haftasının planı güncel haftanıza başarıyla aktarıldı!`);
+    setQuestionToast(`✨ "${targetPastWeekLabel}" haftasının planı güncel haftanıza (${realCurrentWeekLabel}) başarıyla aktarıldı!`);
   };
   
   // Helper to get question logs linked to a specific study plan item
@@ -1527,7 +1541,9 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   // Active/Displayed Plans for the currently selected week (Past, Current, or Future)
   const activePlans = React.useMemo(() => {
     if (isCurrentWeek) {
-      return studyPlans.filter(p => !p.archived);
+      return studyPlans.filter(p => !p.archived && (
+        !p.weekLabel || isSameWeekLabel(p.weekLabel, realCurrentWeekLabel)
+      ));
     }
 
     if (isPastWeek) {
@@ -1536,6 +1552,12 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         (p.date && selectedWeekDays.some(d => d.isoDate === p.date))
       ));
       if (archivedMatched.length > 0) return archivedMatched;
+
+      const unarchivedMatched = studyPlans.filter(p => !p.archived && (
+        (p.weekLabel && isSameWeekLabel(p.weekLabel, currentWeekLabel)) ||
+        (p.date && selectedWeekDays.some(d => d.isoDate === p.date))
+      ));
+      if (unarchivedMatched.length > 0) return unarchivedMatched;
 
       return getPlansForWeek(currentWeekLabel);
     }
@@ -1549,7 +1571,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     }
 
     return [];
-  }, [studyPlans, selectedMondayDate, currentWeekLabel, isCurrentWeek, isPastWeek, isFutureWeek, selectedWeekDays]);
+  }, [studyPlans, selectedMondayDate, currentWeekLabel, realCurrentWeekLabel, isCurrentWeek, isPastWeek, isFutureWeek, selectedWeekDays]);
 
   // Daily Net Study Time Modal & State
   const [dailyStudyLogModalData, setDailyStudyLogModalData] = useState<DailyStudyLogModalData | null>(null);
