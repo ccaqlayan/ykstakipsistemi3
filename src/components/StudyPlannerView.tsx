@@ -1883,7 +1883,6 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
             title="Haftalık ders çalışma planını resmi siyah-beyaz formatta PDF olarak indir veya yazdır"
           >
             <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400 shrink-0" />
-            <span className="sm:hidden">PDF / Yazdır</span>
             <span className="hidden sm:inline">Haftalık Planı Yazdır / PDF</span>
           </button>
 
@@ -1904,11 +1903,10 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
             <button
               type="button"
               onClick={() => handleInitiateApplyPlanToNextWeek(realCurrentWeekLabel)}
-              className="inline-flex items-center space-x-1 sm:space-x-1.5 px-2.5 py-1.5 sm:px-4 sm:py-3 bg-purple-950/60 hover:bg-purple-600/30 text-purple-300 hover:text-white border border-purple-500/40 hover:border-purple-400 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition-all shadow-lg active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
+              className="hidden sm:inline-flex items-center space-x-1 sm:space-x-1.5 px-2.5 py-1.5 sm:px-4 sm:py-3 bg-purple-950/60 hover:bg-purple-600/30 text-purple-300 hover:text-white border border-purple-500/40 hover:border-purple-400 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition-all shadow-lg active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
               title="Bu haftanın ders çalışma programını gelecek haftaya kopyalar"
             >
               <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 shrink-0" />
-              <span className="sm:hidden">Geleceğe Kopyala</span>
               <span className="hidden sm:inline">Gelecek Haftaya Kopyala</span>
             </button>
           )}
@@ -2097,15 +2095,14 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                   </p>
                 </div>
 
-                {/* Enter Sade / Fullscreen Mode Button */}
+                {/* Enter Sade / Fullscreen Mode Button (Desktop Only) */}
                 <button
                   onClick={() => onZenModeChange?.(true)}
-                  className="bg-indigo-600/80 hover:bg-indigo-500 text-white border border-indigo-400/40 text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-lg shadow-indigo-600/30 flex items-center space-x-2 cursor-pointer shrink-0 self-start sm:self-center active:scale-95 group"
+                  className="hidden sm:flex bg-indigo-600/80 hover:bg-indigo-500 text-white border border-indigo-400/40 text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-lg shadow-indigo-600/30 items-center space-x-2 cursor-pointer shrink-0 self-start sm:self-center active:scale-95 group"
                   title="Sade / Tam Ekran Çalışma Moduna Geç"
                 >
                   <Maximize className="w-4 h-4 text-indigo-200 group-hover:scale-110 transition-transform" />
                   <span className="hidden sm:inline">Sade Mod (Tam Ekran)</span>
-                  <span className="sm:hidden">Tam Ekran</span>
                 </button>
               </div>
 
@@ -2121,7 +2118,15 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                     }`}
                   >
                     <ListFilter className="w-3.5 h-3.5 shrink-0" />
-                    <span className="sm:hidden">Günlük ({selectedDay})</span>
+                    <span className="sm:hidden">
+                      Günlük ({
+                        selectedDay === 'Pazartesi' ? 'Pzt' :
+                        selectedDay === 'Çarşamba' ? 'Çarş' :
+                        selectedDay === 'Perşembe' ? 'Perş' :
+                        selectedDay === 'Cumartesi' ? 'Cmt' :
+                        selectedDay === 'Pazar' ? 'Paz' : selectedDay
+                      })
+                    </span>
                     <span className="hidden sm:inline">Günlük Plan ({selectedDay})</span>
                   </button>
                   <button
@@ -2148,7 +2153,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                     }`}
                   >
                     <PieChart className="w-3.5 h-3.5 shrink-0" />
-                    <span className="sm:hidden">İstatistikler</span>
+                    <span className="sm:hidden">İstatistik</span>
                     <span className="hidden sm:inline">Haftalık İstatistikler</span>
                   </button>
                 </div>

@@ -109,7 +109,7 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
                   ? 'bg-indigo-950/40 border-indigo-500/30 shadow-lg shadow-indigo-950/30'
                   : 'bg-slate-950/60 border-slate-800'
               }`}>
-                <div className="flex items-center space-x-3 min-w-0">
+                <div className="flex items-center space-x-3 sm:space-x-3.5 min-w-0 flex-1">
                   <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
                     isManual
                       ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
@@ -119,7 +119,7 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
                   }`}>
                     <Clock className="w-5 h-5" />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center space-x-2">
                       <span className="text-xs font-bold text-slate-300">
                         Günün Net Çalışma Süresi:
@@ -135,34 +135,35 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
                       ) : null}
                     </div>
 
-                    <div className="flex items-center space-x-3 mt-0.5">
-                      <span className="text-lg font-black text-white font-mono">
+                    <div className="flex items-center flex-wrap gap-2 sm:gap-3 mt-1">
+                      <span className="text-base sm:text-lg font-black text-white font-mono shrink-0">
                         {formattedTime}
                       </span>
+
+                      {openDailyStudyLogModal && (
+                        <button
+                          type="button"
+                          onClick={() => openDailyStudyLogModal(selectedDay)}
+                          className="px-2.5 py-1 sm:px-3.5 sm:py-1.5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl text-[11px] sm:text-xs font-bold transition-all shadow-md shadow-indigo-600/30 cursor-pointer flex items-center space-x-1 sm:space-x-1.5 shrink-0"
+                        >
+                          <Edit3 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                          <span>{isManual ? 'Süreyi Düzenle' : '+ Net Süre Gir'}</span>
+                        </button>
+                      )}
+
                       {isManual && taskMins > 0 && (
-                        <span className="text-xs text-slate-400">
+                        <span className="text-[11px] sm:text-xs text-slate-400">
                           (Görev Süresi: {Math.floor(taskMins / 60)} sa {taskMins % 60} dk)
                         </span>
                       )}
                       {logNotes && (
-                        <span className="text-xs text-slate-400 italic truncate max-w-xs">
+                        <span className="text-[11px] sm:text-xs text-slate-400 italic truncate max-w-xs">
                           "{logNotes}"
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
-
-                {openDailyStudyLogModal && (
-                  <button
-                    type="button"
-                    onClick={() => openDailyStudyLogModal(selectedDay)}
-                    className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/30 cursor-pointer flex items-center space-x-1.5 shrink-0 self-start sm:self-auto"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>{isManual ? 'Süreyi Düzenle' : '+ Net Süre Gir'}</span>
-                  </button>
-                )}
               </div>
             );
           })()
