@@ -739,29 +739,36 @@ body.modal-open .mobile-bottom-nav {
 /* 🖨️ HAFTALIK ÇALIŞMA PLANI YAZDIRMA & PDF ÇIKTISI (PRINT STYLES)            */
 /* ========================================================================== */
 @media print {
-  @page {
-    size: A4 landscape;
-    margin: 6mm;
+  /* Sayfa akışının 2. sayfaya taşmasını önlemek için html/body yüksekliğini tek sayfaya sınırla */
+  html, body {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
   }
 
-  /* Normal ekran bileşenlerini gizle */
+  /* Ekran arayüz bileşenlerini tamamen gizle */
   body * {
     visibility: hidden;
   }
 
-  body, html, #root {
-    background-color: #ffffff !important;
-    background: #ffffff !important;
-    color: #000000 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-
   .screen-only {
     display: none !important;
+  }
+
+  /* Modal ve kapsayıcıları sıfırla */
+  #study-plan-print-modal-backdrop,
+  #study-plan-print-modal-wrapper,
+  #study-plan-print-modal-backdrop *,
+  #study-plan-print-modal-wrapper * {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
   /* Sadece yazdırma belgesi kapsayıcısını ve çocuklarını görünür yap */
@@ -770,21 +777,27 @@ body.modal-open .mobile-bottom-nav {
     visibility: visible !important;
   }
 
+  /* position: fixed yerine position: absolute kullanarak sayfanın 2 kez tekrarlanmasını (duplicate page) önle */
   #study-plan-print-document {
-    position: fixed !important;
+    position: absolute !important;
     left: 0 !important;
     top: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    height: auto !important;
     min-height: auto !important;
     margin: 0 !important;
-    padding: 4mm !important;
+    padding: 0 !important;
     box-shadow: none !important;
     border: none !important;
     background-color: #ffffff !important;
     color: #000000 !important;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
     page-break-inside: avoid !important;
+    break-inside: avoid !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 }
+

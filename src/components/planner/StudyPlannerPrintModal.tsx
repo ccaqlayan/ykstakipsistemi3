@@ -89,10 +89,22 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-200">
+    <div
+      id="study-plan-print-modal-backdrop"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-200"
+    >
+      <style>{`
+        @page {
+          size: ${orientation === 'landscape' ? 'A4 landscape' : 'A4 portrait'};
+          margin: 4mm;
+        }
+      `}</style>
       
       {/* Modal Container */}
-      <div className="bg-slate-900 border border-slate-700 w-full max-w-6xl h-[94vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden relative">
+      <div
+        id="study-plan-print-modal-wrapper"
+        className="bg-slate-900 border border-slate-700 w-full max-w-6xl h-[94vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden relative"
+      >
         
         {/* Header Toolbar (Screen only) */}
         <div className="px-6 py-3.5 border-b border-slate-800 bg-slate-950 flex items-center justify-between shrink-0 screen-only">
