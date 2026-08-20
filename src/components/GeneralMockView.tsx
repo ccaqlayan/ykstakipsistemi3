@@ -1206,7 +1206,7 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
               setShowAddModal(true);
             }}
             id="add-general-mock-btn"
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-xl shadow-indigo-600/25 flex items-center justify-center space-x-2 cursor-pointer border border-indigo-400/30 group shrink-0"
+            className="hidden sm:flex bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-xl shadow-indigo-600/25 items-center justify-center space-x-2 cursor-pointer border border-indigo-400/30 group shrink-0"
           >
             <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
             <span>Genel Deneme Sonucu Gir</span>
@@ -1214,17 +1214,17 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
         </div>
       </div>
 
-      {/* ── HERO HEADER BANNER ── */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 p-6 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-md relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1.5 z-10">
-          <div className="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full text-xs font-bold text-indigo-300">
+      {/* ── HERO HEADER BANNER (MOBILE-OPTIMIZED) ── */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 p-3.5 sm:p-5 md:p-6 rounded-2xl sm:rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-md relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+        <div className="space-y-1 sm:space-y-1.5 z-10">
+          <div className="hidden landscape:inline-flex sm:inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full text-xs font-bold text-indigo-300">
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
             <span>YKS Genel Deneme Takip ve İlerleme Paneli</span>
           </div>
-          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center space-x-2">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight flex items-center space-x-2">
             <span>Genel Deneme Analizi & Net Yükseliş Grafiği</span>
           </h1>
-          <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+          <p className="hidden landscape:block sm:block text-xs text-slate-400 max-w-2xl leading-relaxed">
             Türkiye geneli ve kurum içi TYT & AYT genel deneme sonuçlarınızı girin, net ivmenizi ve tahmini YKS sıralamanızı adım adım takip edin.
           </p>
         </div>

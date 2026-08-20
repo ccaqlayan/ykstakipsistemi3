@@ -2119,23 +2119,23 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       
       {/* Header & Section Selector */}
       {mode !== 'errors' && (
-        <div className="flex flex-col gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:gap-4 bg-slate-900 p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-800">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-xl font-bold text-white flex items-center space-x-2">
+              <h1 className="text-lg sm:text-xl font-bold text-white flex items-center space-x-2">
                 {mode === 'branches' ? (
                   <>
-                    <Target className="w-5 h-5 text-indigo-400" />
+                    <Target className="w-5 h-5 text-indigo-400 shrink-0" />
                     <span>Branş Deneme Analizi</span>
                   </>
                 ) : (
                   <>
-                    <Target className="w-5 h-5 text-indigo-400" />
+                    <Target className="w-5 h-5 text-indigo-400 shrink-0" />
                     <span>Branş Denemeleri Analizi & Yanlış Tablosu</span>
                   </>
                 )}
               </h1>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="hidden landscape:block sm:block text-xs text-slate-400 mt-1">
                 {mode === 'branches'
                   ? 'Ders bazlı branş denemelerinizi kaydedin, net analizlerinizi ve ilerlemenizi görün.'
                   : 'Ders bazlı branş denemelerinizi kaydedin, yanlış yaptığınız eksik konuları tespit edip tekrar edin.'
@@ -2143,7 +2143,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
               </p>
             </div>
 
-            <div className="flex items-center space-x-2 shrink-0">
+            <div className="hidden sm:flex items-center space-x-2 shrink-0">
               {activeSubTab === 'errors' ? (
                 <button
                   onClick={handleOpenAddErrorModal}

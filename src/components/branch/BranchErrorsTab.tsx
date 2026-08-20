@@ -393,24 +393,24 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   return (
     <div className="space-y-6 font-sans animate-fade-in">
       
-      {/* ── HERO HEADER BANNER ── */}
+      {/* ── HERO HEADER BANNER (MOBILE-OPTIMIZED) ── */}
       {!hideHeroHeader && (
-        <div className="bg-gradient-to-r from-slate-900 via-rose-950/30 to-slate-900 p-6 sm:p-7 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-md relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5">
-          <div className="space-y-2 z-10">
-            <div className="inline-flex items-center space-x-2 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full text-xs font-bold text-rose-300">
+        <div className="bg-gradient-to-r from-slate-900 via-rose-950/30 to-slate-900 p-3.5 sm:p-5 md:p-6 rounded-2xl sm:rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-md relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+          <div className="space-y-1 sm:space-y-1.5 z-10">
+            <div className="hidden landscape:inline-flex sm:inline-flex items-center space-x-2 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full text-xs font-bold text-rose-300">
               <Sparkles className="w-3.5 h-3.5 text-rose-400" />
               <span>YKS Sıfır Hata & Yapay Zeka Çözüm Merkezi</span>
             </div>
-            <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center space-x-2.5">
-              <AlertTriangle className="w-6 h-6 text-rose-500 shrink-0 animate-pulse" />
+            <h1 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight flex items-center space-x-2">
+              <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-rose-500 shrink-0 animate-pulse" />
               <span>Hata Defteri & Yanlış Tablosu</span>
             </h1>
-            <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+            <p className="hidden landscape:block sm:block text-xs text-slate-400 max-w-2xl leading-relaxed">
               Deneme sınavları ve soru bankalarında yanlış yaptığınız konuları analiz edin, yapay zeka ile adım adım çözümlerini inceleyin ve tekrar ederek tam hakimiyet sağlayın.
             </p>
           </div>
 
-          <div className="flex items-center space-x-3 shrink-0 z-10">
+          <div className="hidden sm:flex items-center space-x-3 shrink-0 z-10">
             <button
               type="button"
               onClick={() => openAddErrorModal()}

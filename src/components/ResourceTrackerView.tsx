@@ -635,23 +635,23 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   return (
     <div className="space-y-6 font-sans animate-fade-in">
       
-      {/* ── HERO HEADER BANNER ── */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 p-6 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-md relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1.5 z-10">
-          <div className="inline-flex items-center space-x-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full text-xs font-bold text-amber-300">
+      {/* ── HERO HEADER BANNER (MOBILE-OPTIMIZED) ── */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 p-3.5 sm:p-5 md:p-6 rounded-2xl sm:rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-md relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+        <div className="space-y-1 sm:space-y-1.5 z-10">
+          <div className="hidden landscape:inline-flex sm:inline-flex items-center space-x-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full text-xs font-bold text-amber-300">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>YKS Konu & Kaynak Takip Sistemi</span>
           </div>
-          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight flex items-center space-x-2">
-            <BookOpenCheck className="w-6 h-6 text-amber-400 shrink-0" />
+          <h1 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight flex items-center space-x-2">
+            <BookOpenCheck className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 shrink-0" />
             <span>Kaynak Takibi (Konu Bazlı)</span>
           </h1>
-          <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+          <p className="hidden landscape:block sm:block text-xs text-slate-400 max-w-2xl leading-relaxed">
             Müfredat konu listenizdeki konuları kaynak kitaplarınızla eşleştirerek soru çözme tamamlama oranınızı adım adım takip edin.
           </p>
         </div>
 
-        <div className="flex items-center space-x-3 shrink-0 z-10">
+        <div className="hidden sm:flex items-center space-x-3 shrink-0 z-10">
           <button
             onClick={() => setShowAddModal(true)}
             id="add-resource-book-btn"

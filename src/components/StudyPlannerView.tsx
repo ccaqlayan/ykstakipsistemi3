@@ -2078,19 +2078,19 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
 
           {/* Top Banner & View Switcher (Normal Mode) */}
           {!isZenMode && (
-          <div className="bg-gradient-to-r from-indigo-900/60 via-slate-900/80 to-purple-900/60 border border-indigo-500/30 rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 md:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
+          <div className="bg-gradient-to-r from-indigo-900/60 via-slate-900/80 to-purple-900/60 border border-indigo-500/30 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 md:p-6 backdrop-blur-xl relative overflow-hidden shadow-2xl">
             <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="flex flex-col gap-3 relative z-10">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 min-w-0">
-                <div className="min-w-0">
-                  <div className="flex items-center space-x-2 text-indigo-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest mb-0.5 truncate">
+            <div className="flex flex-col gap-2.5 sm:gap-3 relative z-10">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 sm:gap-3 min-w-0">
+                <div className="min-w-0 space-y-1">
+                  <div className="hidden landscape:flex sm:flex items-center space-x-2 text-indigo-400 font-bold text-[10px] sm:text-xs uppercase tracking-widest mb-0.5 truncate">
                     <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                     <span className="truncate">YKS Haftalık Çalışma Düzenleyici</span>
                   </div>
-                  <h1 className="text-sm sm:text-2xl md:text-3xl font-black text-white tracking-tight truncate leading-tight">
+                  <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-white tracking-tight truncate leading-tight">
                     Günlük - Haftalık Çalışma Planı
                   </h1>
-                  <p className="hidden sm:block text-slate-300 text-xs md:text-sm mt-1 max-w-3xl leading-relaxed">
+                  <p className="hidden landscape:block sm:block text-slate-300 text-xs md:text-sm mt-1 max-w-3xl leading-relaxed">
                     Görevlerin üzerine basılı tutarak gün değiştirebilir (Sürükle & Bırak), tamamlanan dersleri işaretleyebilir ve haftalık ders programınızı yönetebilirsiniz. Tamamlanan görevlerinizdeki sorularınız soru takip sayfasına aktarılır.
                   </p>
                 </div>

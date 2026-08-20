@@ -742,23 +742,23 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       
-      {/* ── 1. STUNNING YOUTUBE HERO BANNER ── */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-red-950 via-slate-900 to-red-950 border border-red-500/20 rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
+      {/* ── 1. STUNNING YOUTUBE HERO BANNER (MOBILE-OPTIMIZED) ── */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-red-950 via-slate-900 to-red-950 border border-red-500/20 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 md:p-6 shadow-2xl backdrop-blur-xl">
         {/* Glow Effects */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-60 h-60 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-red-600/20 border border-red-500/30 text-red-300 text-xs font-bold uppercase tracking-wider">
+        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 sm:gap-6">
+          <div className="space-y-1 sm:space-y-2 max-w-2xl">
+            <div className="hidden landscape:inline-flex sm:inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-red-600/20 border border-red-500/30 text-red-300 text-xs font-bold uppercase tracking-wider">
               <Youtube className="w-3.5 h-3.5 text-red-400" />
               <span>Görsel YouTube Ders & Kamp Takip Paneli</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
-              <Tv className="w-8 h-8 text-red-500 shrink-0" />
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+              <Tv className="w-5 h-5 sm:w-8 sm:h-8 text-red-500 shrink-0" />
               <span>YouTube Video & Playlist Takibi</span>
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p className="hidden landscape:block sm:block text-xs sm:text-sm text-slate-300 leading-relaxed">
               Video veya kamp bağlantılarını ekleyin. Kapak fotoğraflarını (thumbnail) canlı görüntüleyin, izlediğiniz dersleri tek tıkla işaretleyin ve izleme sürelerinizi otomatik takip edin.
             </p>
           </div>
@@ -769,7 +769,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('my_list')}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center space-x-1.5 ${
+                className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center space-x-1.5 ${
                   activeTab === 'my_list'
                     ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
                     : 'text-slate-400 hover:text-white'
@@ -781,7 +781,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
               <button
                 type="button"
                 onClick={() => setActiveTab('recommendations')}
-                className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center space-x-1.5 ${
+                className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center space-x-1.5 ${
                   activeTab === 'recommendations'
                     ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
                     : 'text-slate-400 hover:text-white'
@@ -795,7 +795,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
             <button
               onClick={() => setShowAddModal(true)}
               id="add-youtube-video-btn"
-              className="bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-2xl shadow-xl shadow-red-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center space-x-2 border border-red-400/30 cursor-pointer"
+              className="hidden sm:flex bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs sm:text-sm px-5 py-3 rounded-2xl shadow-xl shadow-red-600/25 transition-all hover:scale-[1.02] active:scale-[0.98] items-center justify-center space-x-2 border border-red-400/30 cursor-pointer"
             >
               <Plus className="w-5 h-5" />
               <span>Video / Playlist Ekle</span>
