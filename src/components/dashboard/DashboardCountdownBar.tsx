@@ -4,16 +4,19 @@ import { Timer, Calendar } from 'lucide-react';
 interface DashboardCountdownBarProps {
   daysLeft: number;
   timeBreakdown: { months: number; days: number };
+  onClick?: () => void;
 }
 
 export const DashboardCountdownBar: React.FC<DashboardCountdownBarProps> = ({
   daysLeft,
-  timeBreakdown
+  timeBreakdown,
+  onClick
 }) => {
   return (
     <div 
-      className="bg-slate-900/90 backdrop-blur-md border border-indigo-500/20 rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-lg flex items-center justify-between gap-2 sm:gap-4 relative z-40 group cursor-pointer flex-nowrap whitespace-nowrap"
-      title={`Sınav Tarihi: 19 Haziran 2027 • Kalan Süre: ${timeBreakdown.months} Ay ${timeBreakdown.days} Gün (Toplam ${daysLeft} Gün)`}
+      onClick={onClick}
+      className="bg-slate-900/90 backdrop-blur-md border border-indigo-500/20 hover:border-emerald-500/40 rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 shadow-lg flex items-center justify-between gap-2 sm:gap-4 relative z-40 group cursor-pointer flex-nowrap whitespace-nowrap transition-all hover:bg-slate-850"
+      title="Tıklayarak YKS Genel Hazırlık & Performans Durumunuzu İnceleyin"
     >
       <div className="flex items-center space-x-2 sm:space-x-3 shrink min-w-0 overflow-hidden">
         <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0">

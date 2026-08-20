@@ -11,6 +11,7 @@ import {
 // Subcomponents
 import { DSH_STORAGE_KEY, mergeWidgetsWithDefaults } from './dashboard/DashboardTypes';
 import { DashboardCountdownBar } from './dashboard/DashboardCountdownBar';
+import { DashboardReadinessModal } from './dashboard/DashboardReadinessModal';
 import { DashboardTargetBanner } from './dashboard/DashboardTargetBanner';
 import { DashboardDailyRoutines } from './dashboard/DashboardDailyRoutines';
 import { 
@@ -72,6 +73,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const [showTargetModal, setShowTargetModal] = useState(false);
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
+  const [showReadinessModal, setShowReadinessModal] = useState(false);
 
   // Schedule Widget tab state (Yesterday, Today, Tomorrow)
   const [scheduleDayTab, setScheduleDayTab] = useState<'yesterday' | 'today' | 'tomorrow'>('today');
@@ -294,7 +296,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
     switch (widget.id) {
       case 'countdown': 
-        return <DashboardCountdownBar daysLeft={daysLeft} timeBreakdown={timeBreakdown} />;
+        return (
+          <DashboardCountdownBar 
+            daysLeft={daysLeft} 
+            timeBreakdown={timeBreakdown} 
+            onClick={() => setShowReadinessModal(true)} 
+          />
+        );
       case 'target_banner': 
         return (
           <DashboardTargetBanner 
@@ -553,6 +561,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         onClose={() => setActiveNotesSubject(null)}
         onUpdateSubjectNotes={onUpdateSubjectNotes}
       />
+
+      {/* YKS Genel Hazırlık & Performans Durumu Modalı */}
+      {showReadinessModal && (
+        <DashboardReadinessModal
+          state={state}
+          daysLeft={daysLeft}
+          timeBreakdown={timeBreakdown}
+          onNavigateTab={onNavigateTab}
+          onClose={() => setShowReadinessModal(false)}
+        />
+      )}
 
     </div>
   );
