@@ -567,15 +567,21 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
         </div>
 
         {displayedTopics.length === 0 ? (
-          <div className="p-16 text-center space-y-3">
+          <div
+            role="status"
+            aria-live="polite"
+            className="p-16 text-center space-y-3"
+          >
             <div className="w-14 h-14 mx-auto rounded-full bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
-              <HelpCircle className="w-7 h-7" />
+              <HelpCircle className="w-7 h-7" aria-hidden="true" />
             </div>
             <h3 className="text-sm font-bold text-white">Konu Kaydı Bulunamadı</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              {isGlobalSearchActive 
-                ? `"${searchTerm}" aramasına uygun hiçbir YKS çıkmış soru konusu bulunamadı.` 
-                : 'Arama kriterlerinize veya seçilen filtrelere uygun çıkmış soru kaydı bulunamadı.'}
+            <p className="text-center text-slate-400 text-xs max-w-sm mx-auto">
+              {isGlobalSearchActive
+                ? `"${searchTerm}" aramasına uygun hiçbir YKS çıkmış soru konusu bulunamadı.`
+                : completionFilter !== 'ALL'
+                ? 'Seçilen filtreye uyan konu kaydı bulunamadı. Filtreyi değiştirmeyi deneyin.'
+                : 'Henüz soru eklenmedi. İlk sorunu ekleyerek başlayabilirsin!'}
             </p>
           </div>
         ) : (

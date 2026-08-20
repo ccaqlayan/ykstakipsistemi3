@@ -1446,9 +1446,21 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
 
         {/* Table Body */}
         {filteredLogs.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-slate-800 rounded-2xl space-y-2">
-            <HelpCircle className="w-8 h-8 text-slate-600 mx-auto" />
-            <p className="text-xs text-slate-400 font-medium">Arama kriterlerine uygun soru kaydı bulunamadı.</p>
+          <div
+            role="status"
+            aria-live="polite"
+            className="text-center py-12 border border-dashed border-slate-800 rounded-2xl space-y-2"
+          >
+            <HelpCircle className="w-8 h-8 text-slate-600 mx-auto" aria-hidden="true" />
+            {(filterExamType === 'ALL' && filterSubject === 'ALL' && !searchQuery.trim()) ? (
+              <p className="text-center text-slate-400 text-xs font-medium">
+                Henüz soru eklenmedi. İlk sorunu ekleyerek başlayabilirsin!
+              </p>
+            ) : (
+              <p className="text-center text-slate-400 text-xs font-medium">
+                Arama kriterlerine uygun soru kaydı bulunamadı.
+              </p>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
