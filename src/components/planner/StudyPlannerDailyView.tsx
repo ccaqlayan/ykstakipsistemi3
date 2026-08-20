@@ -84,32 +84,10 @@ export const StudyPlannerDailyView: React.FC<StudyPlannerDailyViewProps> = ({
             </p>
           </div>
 
-          <div className="flex flex-col items-end shrink-0 gap-1.5 sm:flex-row sm:items-center sm:gap-3 self-start">
-            <span className="inline-flex items-center justify-center text-[10px] sm:text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg sm:rounded-full border border-indigo-500/30 font-semibold leading-tight shrink-0 whitespace-nowrap">
+          <div className="flex items-center shrink-0 self-start sm:self-center">
+            <span className="inline-flex items-center justify-center text-[10px] sm:text-xs bg-indigo-500/20 text-indigo-300 px-2.5 py-1 sm:px-3 sm:py-1 rounded-xl sm:rounded-full border border-indigo-500/30 font-semibold leading-tight shrink-0 whitespace-nowrap shadow-sm">
               <span className="font-bold mr-1">{dayPlans.length}</span> Görev
             </span>
-
-            {!isArchivedWeek && (
-              <div className="flex items-center space-x-2">
-                {openAddVideoModal && (
-                  <button
-                    onClick={() => openAddVideoModal(selectedDay)}
-                    className="text-[11px] sm:text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-all font-bold flex items-center space-x-1 shadow-lg shadow-indigo-600/30 border border-indigo-400/30 shrink-0 cursor-pointer whitespace-nowrap"
-                  >
-                    <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                    <Youtube className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                    <span>Video Ekle</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => openAddModal(selectedDay)}
-                  className="text-[11px] sm:text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl transition-all font-bold flex items-center space-x-1 sm:space-x-1.5 shadow-lg shadow-indigo-600/30 border border-indigo-400/30 shrink-0 cursor-pointer whitespace-nowrap"
-                >
-                  <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                  <span>Görev Ekle</span>
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
