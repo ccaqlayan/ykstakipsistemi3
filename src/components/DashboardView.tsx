@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Sliders } from 'lucide-react';
+import { Sliders, LayoutGrid } from 'lucide-react';
 import { YKSDataState, StudentProfile, UserAccount, QuickNote } from '../types';
 import { TargetModal } from './TargetModal';
 import { 
@@ -506,10 +506,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <button
           type="button"
           onClick={() => setShowCustomizeModal(true)}
-          className="text-[11px] sm:text-xs bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-400/40 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center space-x-1.5 cursor-pointer hover:scale-102 active:scale-98 shrink-0 whitespace-nowrap"
+          title="Dashboard modüllerini göster/gizle ve sırala"
+          className="bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/40 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center space-x-1.5 cursor-pointer active:scale-95 shrink-0 whitespace-nowrap"
         >
-          <Sliders className="w-3.5 h-3.5 text-indigo-300" />
-          <span>Özeti Düzenle</span>
+          <LayoutGrid className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline text-xs">Modülleri Özelleştir</span>
         </button>
       </div>
 
