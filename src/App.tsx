@@ -9,7 +9,7 @@ import { MandatoryPasswordChangeModal } from './components/MandatoryPasswordChan
 import { StudentPreviewBanner } from './components/StudentPreviewBanner';
 import { OnboardingWizard } from './components/OnboardingWizard';
 
-import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, InstitutionalMockExam, FieldType, DailyStudyTimeLog, StudyPlanItem } from './types';
+import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, InstitutionalMockExam, FieldType, DailyStudyTimeLog, StudyPlanItem, ResourceItem, RoutineItem } from './types';
 import { deleteStorageFile } from './services/storageUpload';
 import { loadGlobalState, saveGlobalState, exportDataAsJSON, resetToDefaultData } from './services/storage';
 import { isMessageUnreadForUser } from './utils/statusUtils';
