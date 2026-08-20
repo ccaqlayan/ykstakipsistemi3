@@ -31,6 +31,8 @@ interface StudyPlannerPrintModalProps {
 }
 
 const DAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+const WEEKDAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma'];
+const WEEKEND: DayOfWeek[] = ['Cumartesi', 'Pazar'];
 
 export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
   isOpen,
@@ -63,6 +65,7 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
   const [showBlankLines, setShowBlankLines] = useState(true);
   const [showGoalSummary, setShowGoalSummary] = useState(true);
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
+  const [landscapeLayoutMode, setLandscapeLayoutMode] = useState<'weekdays_weekend' | '7cols'>('weekdays_weekend');
 
   // Keep institutionName updated if profile high school changes
   React.useEffect(() => {
@@ -245,6 +248,92 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
     }, 400);
   };
 
+  const renderDayCard = (day: DayOfWeek, minHeightClass: string) => {
+    const dayPlans = activePlans.filter((p) => p.day === day);
+    const dayDateInfo = weekDaysMap?.[day];
+    const dayPlannedMins = dayPlans.reduce((s, p) => s + (p.plannedMinutes || 0), 0);
+    const dayTargetQ = dayPlans.reduce((s, p) => s + (p.targetQuestionCount || 0), 0);
+
+    return (
+      <div
+        key={day}
+        className={`border border-black ${minHeightClass} text-[7.5px] flex flex-col justify-between bg-white`}
+      >
+        {/* Gün Başlığı (Mürekkep Tasarruflu Açık Gri Zemin) */}
+        <div className="bg-gray-200 text-black border-b border-black px-1 py-0.5 text-center font-black flex items-center justify-between">
+          <span className="uppercase text-[8px] font-black">{day}</span>
+          {dayDateInfo && (
+            <span className="text-[6.5px] text-gray-700 font-mono font-bold">
+              {dayDateInfo.displayDate.split(' ')[0]} {dayDateInfo.displayDate.split(' ')[1]}
+            </span>
+          )}
+        </div>
+
+        {/* Günün Görevleri */}
+        <div className="p-0.5 space-y-0.5 flex-1 flex flex-col justify-start">
+          {dayPlans.length === 0 ? (
+            <div className="text-center text-gray-400 italic py-1.5 text-[7px]">
+              Planlanan ders yok
+            </div>
+          ) : (
+            dayPlans.map((plan, pIdx) => (
+              <div
+                key={plan.id || pIdx}
+                className="border-b border-gray-300 pb-0.5 last:border-b-0"
+              >
+                <div className="flex items-start space-x-1">
+                  {showCheckboxes && (
+                    <span className="inline-block w-2.5 h-2.5 border border-black rounded-[2px] mt-0.5 shrink-0" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="font-black text-black text-[7.5px] leading-tight break-words">
+                      {plan.subject}
+                    </div>
+                    <div className="text-gray-800 text-[7px] leading-tight truncate">
+                      {plan.topic}
+                    </div>
+                    <div className="text-gray-600 text-[6.5px] font-mono mt-0.2">
+                      {plan.plannedMinutes > 0 && `${plan.plannedMinutes} dk`}
+                      {plan.targetQuestionCount ? ` • ${plan.targetQuestionCount} Soru` : ''}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+
+          {/* Boş İlave Satır Çizgileri */}
+          {showBlankLines && (
+            <div className="pt-0.5 mt-auto border-t border-dashed border-gray-300 space-y-0.5 opacity-60">
+              <div className="flex items-center space-x-1">
+                {showCheckboxes && <span className="w-2 h-2 border border-gray-400 rounded-[2px] shrink-0" />}
+                <div className="h-1.5 border-b border-gray-400 w-full" />
+              </div>
+              <div className="flex items-center space-x-1">
+                {showCheckboxes && <span className="w-2 h-2 border border-gray-400 rounded-[2px] shrink-0" />}
+                <div className="h-1.5 border-b border-gray-400 w-full" />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Günlük Toplam & Net Çalışma Süresi Alt Bilgisi */}
+        <div className="bg-gray-50 border-t border-black px-1 py-0.5 text-[6.5px] space-y-0.5">
+          <div className="flex items-center justify-between text-gray-700 font-bold">
+            <span>Hedef: {dayPlans.length} D</span>
+            <span className="font-mono font-black">{Math.floor(dayPlannedMins / 60)}s {dayPlannedMins % 60}d {dayTargetQ > 0 ? `• ${dayTargetQ}S` : ''}</span>
+          </div>
+          <div className="flex items-center justify-between border-t border-dashed border-gray-300 pt-0.5 font-bold text-black">
+            <span className="text-[6px] uppercase tracking-tighter">Net Süre:</span>
+            <span className="font-mono text-[6.5px] bg-white px-0.5 border border-gray-400 rounded">
+              ___ sa ___ dk
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div
       id="study-plan-print-modal-backdrop"
@@ -295,7 +384,8 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors cursor-pointer"
+              title="Kapat"
             >
               <X className="w-5 h-5" />
             </button>
@@ -375,14 +465,45 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
               </div>
             </div>
 
-            {/* Bölüm Aç / Kapat Toggle'ları */}
-            <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 space-y-2.5">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Görünecek Alanlar
-              </label>
+            {/* Yatay Düzen Seçeneği (Haftaiçi Üstte / 7 Sütun) */}
+            {orientation === 'landscape' && (
+              <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 space-y-2">
+                <label className="block text-[10px] font-bold text-slate-400">Yatay Gün Dizilimi</label>
+                <div className="space-y-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setLandscapeLayoutMode('weekdays_weekend')}
+                    className={`w-full py-2 px-2.5 text-[11px] font-bold rounded-xl border transition-all cursor-pointer text-left flex items-center justify-between ${
+                      landscapeLayoutMode === 'weekdays_weekend'
+                        ? 'bg-indigo-600 border-indigo-400 text-white shadow'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>Haftaiçi Üstte / Haftasonu Altta (5+2)</span>
+                    {landscapeLayoutMode === 'weekdays_weekend' && <Check className="w-3.5 h-3.5 shrink-0" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLandscapeLayoutMode('7cols')}
+                    className={`w-full py-2 px-2.5 text-[11px] font-bold rounded-xl border transition-all cursor-pointer text-left flex items-center justify-between ${
+                      landscapeLayoutMode === '7cols'
+                        ? 'bg-indigo-600 border-indigo-400 text-white shadow'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span>7 Gün Yan Yana (7 Sütun)</span>
+                    {landscapeLayoutMode === '7cols' && <Check className="w-3.5 h-3.5 shrink-0" />}
+                  </button>
+                </div>
+              </div>
+            )}
 
+            {/* Görünüm & Bölüm Seçenekleri */}
+            <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-800 space-y-2.5">
+              <label className="block text-[10px] font-bold text-slate-400">Yazdırılacak Alanlar</label>
+              
               <label className="flex items-center justify-between cursor-pointer text-slate-300 hover:text-white">
-                <span className="text-[11px]">Onay Kutucukları ([ ])</span>
+                <span className="text-[11px]">Görev Onay Kutucukları ([ ])</span>
                 <input
                   type="checkbox"
                   checked={showCheckboxes}
@@ -505,98 +626,32 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
                 </div>
               </div>
 
-              {/* ══════════ 2. 7 GÜNLÜK HAFTALIK MATRİS TABLOSU ══════════ */}
-              <div className="mb-1.5">
-                <div className={`grid ${orientation === 'landscape' ? 'grid-cols-7 gap-1' : 'grid-cols-2 gap-1.5'}`}>
-                  {DAYS.map((day) => {
-                    const dayPlans = activePlans.filter((p) => p.day === day);
-                    const dayDateInfo = weekDaysMap?.[day];
-                    const dayPlannedMins = dayPlans.reduce((s, p) => s + (p.plannedMinutes || 0), 0);
-                    const dayTargetQ = dayPlans.reduce((s, p) => s + (p.targetQuestionCount || 0), 0);
-
-                    return (
-                      <div
-                        key={day}
-                        className={`border border-black ${
-                          orientation === 'landscape' ? 'min-h-[165px]' : 'min-h-[105px]'
-                        } text-[7.5px] flex flex-col justify-between bg-white`}
-                      >
-                        {/* Gün Başlığı (Mürekkep Tasarruflu Açık Gri Zemin) */}
-                        <div className="bg-gray-200 text-black border-b border-black px-1 py-0.5 text-center font-black flex items-center justify-between">
-                          <span className="uppercase text-[8px] font-black">{day}</span>
-                          {dayDateInfo && (
-                            <span className="text-[6.5px] text-gray-700 font-mono font-bold">
-                              {dayDateInfo.displayDate.split(' ')[0]} {dayDateInfo.displayDate.split(' ')[1]}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Günün Görevleri */}
-                        <div className="p-0.5 space-y-0.5 flex-1 flex flex-col justify-start">
-                          {dayPlans.length === 0 ? (
-                            <div className="text-center text-gray-400 italic py-1.5 text-[7px]">
-                              Planlanan ders yok
-                            </div>
-                          ) : (
-                            dayPlans.map((plan, pIdx) => (
-                              <div
-                                key={plan.id || pIdx}
-                                className="border-b border-gray-300 pb-0.5 last:border-b-0"
-                              >
-                                <div className="flex items-start space-x-1">
-                                  {showCheckboxes && (
-                                    <span className="inline-block w-2.5 h-2.5 border border-black rounded-[2px] mt-0.5 shrink-0" />
-                                  )}
-                                  <div className="min-w-0 flex-1">
-                                    <div className="font-black text-black text-[7.5px] leading-tight break-words">
-                                      {plan.subject}
-                                    </div>
-                                    <div className="text-gray-800 text-[7px] leading-tight truncate">
-                                      {plan.topic}
-                                    </div>
-                                    <div className="text-gray-600 text-[6.5px] font-mono mt-0.2">
-                                      {plan.plannedMinutes > 0 && `${plan.plannedMinutes} dk`}
-                                      {plan.targetQuestionCount ? ` • ${plan.targetQuestionCount} Soru` : ''}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))
-                          )}
-
-                          {/* Boş İlave Satır Çizgileri */}
-                          {showBlankLines && (
-                            <div className="pt-0.5 mt-auto border-t border-dashed border-gray-300 space-y-0.5 opacity-60">
-                              <div className="flex items-center space-x-1">
-                                {showCheckboxes && <span className="w-2 h-2 border border-gray-400 rounded-[2px] shrink-0" />}
-                                <div className="h-1.5 border-b border-gray-400 w-full" />
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                {showCheckboxes && <span className="w-2 h-2 border border-gray-400 rounded-[2px] shrink-0" />}
-                                <div className="h-1.5 border-b border-gray-400 w-full" />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Günlük Toplam & Net Çalışma Süresi Alt Bilgisi */}
-                        <div className="bg-gray-50 border-t border-black px-1 py-0.5 text-[6.5px] space-y-0.5">
-                          <div className="flex items-center justify-between text-gray-700 font-bold">
-                            <span>Hedef: {dayPlans.length} D</span>
-                            <span className="font-mono font-black">{Math.floor(dayPlannedMins / 60)}s {dayPlannedMins % 60}d {dayTargetQ > 0 ? `• ${dayTargetQ}S` : ''}</span>
-                          </div>
-                          <div className="flex items-center justify-between border-t border-dashed border-gray-300 pt-0.5 font-bold text-black">
-                            <span className="text-[6px] uppercase tracking-tighter">Net Süre:</span>
-                            <span className="font-mono text-[6.5px] bg-white px-0.5 border border-gray-400 rounded">
-                              ___ sa ___ dk
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+              {/* ══════════ 2. HAFTALIK MATRİS TABLOSU ══════════ */}
+              {orientation === 'landscape' && landscapeLayoutMode === 'weekdays_weekend' ? (
+                /* YATAY DÜZEN: HAFTAİÇİ ÜSTTE (5 GÜN) + HAFTASONU ALTTA (2 GÜN) */
+                <div className="space-y-1 mb-1.5">
+                  <div className="grid grid-cols-5 gap-1">
+                    {WEEKDAYS.map((day) => renderDayCard(day, 'min-h-[82px]'))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {WEEKEND.map((day) => renderDayCard(day, 'min-h-[78px]'))}
+                  </div>
                 </div>
-              </div>
+              ) : orientation === 'landscape' && landscapeLayoutMode === '7cols' ? (
+                /* YATAY DÜZEN: 7 GÜN YAN YANA (7 SÜTUN) */
+                <div className="mb-1.5">
+                  <div className="grid grid-cols-7 gap-1">
+                    {DAYS.map((day) => renderDayCard(day, 'min-h-[165px]'))}
+                  </div>
+                </div>
+              ) : (
+                /* DİKEY DÜZEN (2 SÜTUNLU 7 GÜN) */
+                <div className="mb-1.5">
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {DAYS.map((day) => renderDayCard(day, 'min-h-[105px]'))}
+                  </div>
+                </div>
+              )}
 
               {/* ══════════ 3. GÜNLÜK ALIŞKANLIK & RUTİN ÇİZELGESİ ══════════ */}
               {showRoutines && (
