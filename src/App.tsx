@@ -3016,6 +3016,7 @@ export default function App() {
           undoCount={canUndoForNavbar ? undoStack.length : 0}
           onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
           unreadMessageCount={unreadMessageCount}
+          onOpenMessages={() => setActiveTab('messages')}
           theme={theme}
           onToggleTheme={handleToggleTheme}
           alwaysShowMenuButton={activeTab === 'bulk_exam_import' || activeTab === 'teacher_system'}

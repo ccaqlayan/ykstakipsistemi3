@@ -213,33 +213,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          {/* Message Icon button - Hidden or locked in preview mode */}
-          {!isPreviewMode ? (
-            <button
-              onClick={() => handleSelectTab('messages')}
-              id="sidebar-messages-icon-btn"
-              title="Mesajlar"
-              className={`relative p-2.5 rounded-xl border transition-all shrink-0 ml-1.5 ${
-                activeTab === 'messages'
-                  ? 'bg-indigo-600 text-white border-indigo-400 shadow-md shadow-indigo-500/30'
-                  : 'bg-indigo-500/10 text-indigo-200 hover:text-white hover:bg-indigo-500/20 border-indigo-500/20 backdrop-blur-md'
-              }`}
-            >
-              <MessageSquare className="w-4 h-4" />
-              {unreadMessageCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white font-black text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-slate-900 shadow-md animate-pulse">
-                  {unreadMessageCount}
-                </span>
-              )}
-            </button>
-          ) : (
-            <div
-              className="p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-300/60 shrink-0 ml-1.5 cursor-not-allowed"
-              title="Önizleme modunda özel mesajlar gizlidir"
-            >
-              <MessageSquare className="w-4 h-4 opacity-50" />
-            </div>
-          )}
         </div>
 
         {tabs.map((t, idx) => {

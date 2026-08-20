@@ -10,7 +10,8 @@ import {
   Cloud,
   Menu,
   Sun,
-  Moon
+  Moon,
+  MessageSquare
 } from 'lucide-react';
 import { UserAccount, StudentProfile, GoogleSheetsStatus } from '../types';
 import { YildizLisesiLogo } from './YildizLisesiLogo';
@@ -30,6 +31,7 @@ interface NavbarProps {
   undoCount?: number;
   onToggleMobileMenu?: () => void;
   unreadMessageCount?: number;
+  onOpenMessages?: () => void;
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
   alwaysShowMenuButton?: boolean;
@@ -50,6 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   undoCount = 0,
   onToggleMobileMenu,
   unreadMessageCount = 0,
+  onOpenMessages,
   theme = 'dark',
   onToggleTheme,
   alwaysShowMenuButton = false
@@ -143,6 +146,23 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {undoCount > 0 && (
                   <span className="bg-amber-400 text-slate-950 font-black text-[10px] px-1.5 py-0.2 rounded-full">
                     {undoCount}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {/* Mesajlar Butonu (Navbar) */}
+            {onOpenMessages && !isPreviewMode && (
+              <button
+                onClick={onOpenMessages}
+                id="navbar-messages-btn"
+                title="Mesajlar"
+                className="relative p-2 text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0"
+              >
+                <MessageSquare className="w-4 h-4" />
+                {unreadMessageCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white font-black text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-slate-900 shadow-md animate-pulse">
+                    {unreadMessageCount}
                   </span>
                 )}
               </button>
