@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   Youtube, 
@@ -280,6 +280,23 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
   const [selectedDetailVideo, setSelectedDetailVideo] = useState<YouTubeVideoItem | null>(null);
   const [detailPlaylistSearch, setDetailPlaylistSearch] = useState<string>('');
   const [deletingVideo, setDeletingVideo] = useState<{ id: string; title: string } | null>(null);
+
+  // 🎯 Otomatik Sıradaki Videoya Odaklanma Ref'i & Kaydırma
+  const nextSubVideoRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (selectedDetailVideo && isPlaylistItem(selectedDetailVideo)) {
+      const timer = setTimeout(() => {
+        if (nextSubVideoRef.current) {
+          nextSubVideoRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedDetailVideo?.id]);
   const [activeTab, setActiveTab] = useState<'my_list' | 'recommendations'>('my_list');
   const [isLoadingPlaylist, setIsLoadingPlaylist] = useState(false);
   const [isLoadingInfo, setIsLoadingInfo] = useState(false);
@@ -1317,28 +1334,16 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
 
                           {/* 3. Kart Alt Eylemleri */}
                           <div className="pt-2.5 border-t border-slate-800/80 flex flex-col gap-2">
-                            {/* Playlist ise: Accordion / Alt Video Listesi Aç Butonu */}
+                            {/* Playlist ise: Detayları & Videoları İncele Butonu (Tek Satır) */}
                             {isPlaylist ? (
                               <button
                                 type="button"
-                                onClick={() => toggleExpandPlaylist(vid.id)}
-                                className={`w-full py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center space-x-1.5 border shadow-sm ${
-                                  isExpanded
-                                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
-                                    : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border-slate-800'
-                                }`}
+                                onClick={() => setSelectedDetailVideo(vid)}
+                                className="w-full py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center space-x-1.5 border shadow-sm bg-slate-950 hover:bg-amber-950/40 text-amber-300 hover:text-amber-200 border-amber-500/30 hover:border-amber-500/50 whitespace-nowrap"
+                                title="Tüm Kamp Videolarını İncele"
                               >
-                                {isExpanded ? (
-                                  <>
-                                    <ChevronUp className="w-3.5 h-3.5 text-amber-400" />
-                                    <span>Videoları Gizle</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <ListVideo className="w-3.5 h-3.5 text-amber-400" />
-                                    <span>Kamp Videolarını İncele ({totalVideosCount})</span>
-                                  </>
-                                )}
+                                <ListVideo className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                <span className="truncate">Videolarını İncele ({totalVideosCount})</span>
                               </button>
                             ) : (
                               /* Tekil Video ise: İzlendi Toggle Butonu */
@@ -2484,7 +2489,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                     </div>
 
                     {/* Liste */}
-                    <div className="max-h-72 overflow-y-auto custom-scrollbar pr-1 space-y-1.5 bg-slate-950 p-2.5 rounded-2xl border border-slate-800">
+                    <div className="max-h-72 overflow-y-auto custom-scrollbar pr-1 space-y-1.5 bg-slate-950 p-2.5 rounded-2xl border border-slate-800 scroll-smooth">
                       {filteredSubVideos.map((subVid, idx) => {
                         const originalIdx = vid.playlistVideos!.findIndex(v => v.id === subVid.id);
                         const actualIdx = originalIdx >= 0 ? originalIdx : idx;
@@ -2493,6 +2498,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
                         return (
                           <div
                             key={subVid.id || idx}
+                            ref={isNextTarget ? nextSubVideoRef : undefined}
                             className={`flex items-center justify-between p-2.5 rounded-xl transition-all group border ${
                               isNextTarget
                                 ? 'bg-amber-950/40 border-amber-500/60 text-amber-200 shadow-md ring-1 ring-amber-500/30'
