@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Sparkles, 
   GraduationCap, 
@@ -14,10 +14,17 @@ import {
   Zap,
   School,
   BookCheck,
-  ChevronRight
+  Building2,
+  PlusCircle,
+  Trash2,
+  Award
 } from 'lucide-react';
 import { UserAccount, StudentProfile, FieldType, ResourceItem, RoutineItem, ClassDefinition } from '../types';
 import { UniversityLogo } from './UniversityLogo';
+import { UNIVERSITIES } from '../data/universities';
+import { DEPARTMENTS } from '../data/departments';
+import { RECOMMENDED_BOOKS, RecommendedBook } from '../data/books';
+import { YKS_SUBJECTS } from '../data/initialData';
 
 interface OnboardingWizardProps {
   currentUser: UserAccount;
@@ -29,6 +36,10 @@ interface OnboardingWizardProps {
     newRoutines: RoutineItem[]
   ) => void;
 }
+
+const toTurkishLowerCase = (str: string) => {
+  return str.replace(/I/g, 'ı').replace(/İ/g, 'i').toLowerCase();
+};
 
 const POPULAR_UNIVERSITIES = [
   'Orta Doğu Teknik Üniversitesi (ODTÜ)',
@@ -92,7 +103,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 }) => {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
 
-  // Step 1 State: Hedefler
+  // ════════════ STEP 1: HEDEFLER & ALAN ════════════
   const [selectedField, setSelectedField] = useState<FieldType>(currentProfile.targetField || 'SAY');
   const [targetUniversity, setTargetUniversity] = useState(currentProfile.targetUniversity || 'Orta Doğu Teknik Üniversitesi (ODTÜ)');
   const [targetDepartment, setTargetDepartment] = useState(currentProfile.targetDepartment || 'Bilgisayar Mühendisliği');
@@ -100,17 +111,56 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
   const [targetTYTNet, setTargetTYTNet] = useState(currentProfile.targetTYTNet || 95);
   const [targetAYTNet, setTargetAYTNet] = useState(currentProfile.targetAYTNet || 70);
 
-  // Step 2 State: Seçilen Kitaplar
+  const [showUniSuggestions, setShowUniSuggestions] = useState(false);
+  const [showDeptSuggestions, setShowDeptSuggestions] = useState(false);
+
+  const filteredUniversities = useMemo(() => {
+    const q = targetUniversity.trim();
+    if (!q) return UNIVERSITIES.slice(0, 8);
+    const query = toTurkishLowerCase(q);
+    return UNIVERSITIES.filter(u => toTurkishLowerCase(u).includes(query)).slice(0, 8);
+  }, [targetUniversity]);
+
+  const filteredDepartments = useMemo(() => {
+    const q = targetDepartment.trim();
+    if (!q) return DEPARTMENTS.slice(0, 8);
+    const query = toTurkishLowerCase(q);
+    return DEPARTMENTS.filter(d => toTurkishLowerCase(d).includes(query)).slice(0, 8);
+  }, [targetDepartment]);
+
+  // ════════════ STEP 2: KAYNAK KİTAPLARI ════════════
   const [selectedBooks, setSelectedBooks] = useState<ResourceItem[]>([]);
 
-  // Step 3 State: Seçilen Rutinler
-  const [selectedRoutines, setSelectedRoutines] = useState<RoutineItem[]>([
-    { id: `rot-${Date.now()}-1`, title: 'Paragraf Çözümü', target: '20 Soru', completedDays: [] },
-    { id: `rot-${Date.now()}-2`, title: 'Problem Çözümü', target: '15 Soru', completedDays: [] },
-    { id: `rot-${Date.now()}-3`, title: 'Geometri Rutini', target: '10 Soru', completedDays: [] }
-  ]);
+  // Manuel / Özel Kaynak Ekleme Formu
+  const [showCustomBookForm, setShowCustomBookForm] = useState(false);
+  const [customExamType, setCustomExamType] = useState<'TYT' | 'AYT'>('TYT');
+  const [customSubject, setCustomSubject] = useState<string>('TYT Matematik');
+  const [customBookTitle, setCustomBookTitle] = useState('');
+  const [customPublisher, setCustomPublisher] = useState('');
+  const [customUnits, setCustomUnits] = useState<number>(30);
+  const [showBookSuggestions, setShowBookSuggestions] = useState(false);
 
-  const toggleBookSelection = (book: { subject: string; title: string; publisher: string; units: number; examType: 'TYT' | 'AYT' }) => {
+  const availableSubjectsForCustom = useMemo(() => {
+    return YKS_SUBJECTS[customExamType] || [];
+  }, [customExamType]);
+
+  const matchedBookSuggestions = useMemo(() => {
+    if (!customBookTitle.trim()) return [];
+    const query = toTurkishLowerCase(customBookTitle.trim());
+    const normSub = toTurkishLowerCase(customSubject);
+
+    return RECOMMENDED_BOOKS.filter((b) => {
+      const bSub = toTurkishLowerCase(b.subject);
+      const bCat = toTurkishLowerCase(b.category);
+      const isSubMatch = bSub === normSub || bCat.includes(normSub) || normSub.includes(bSub) || normSub.includes(bCat);
+      const isQueryMatch = toTurkishLowerCase(b.name).includes(query) ||
+                           toTurkishLowerCase(b.publisher).includes(query) ||
+                           toTurkishLowerCase(`${b.publisher} ${b.name}`).includes(query);
+      return isSubMatch && isQueryMatch;
+    }).slice(0, 6);
+  }, [customSubject, customBookTitle]);
+
+  const toggleStarterBookSelection = (book: { subject: string; title: string; publisher: string; units: number; examType: 'TYT' | 'AYT' }) => {
     const exists = selectedBooks.find(b => b.bookTitle === book.title);
     if (exists) {
       setSelectedBooks(selectedBooks.filter(b => b.bookTitle !== book.title));
@@ -128,6 +178,40 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
       setSelectedBooks([...selectedBooks, newBook]);
     }
   };
+
+  const handleAddCustomBookSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!customBookTitle.trim()) return;
+
+    const newBook: ResourceItem = {
+      id: `res-custom-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      subject: customSubject,
+      bookTitle: customBookTitle.trim(),
+      publisher: customPublisher.trim() || 'Özel Yayın',
+      totalUnits: customUnits > 0 ? customUnits : 30,
+      completedUnits: 0,
+      status: 'not_started',
+      examType: customExamType
+    };
+
+    setSelectedBooks(prev => [...prev, newBook]);
+    setCustomBookTitle('');
+    setCustomPublisher('');
+    setCustomUnits(30);
+    setShowBookSuggestions(false);
+    setShowCustomBookForm(false);
+  };
+
+  const handleRemoveBook = (bookId: string) => {
+    setSelectedBooks(prev => prev.filter(b => b.id !== bookId));
+  };
+
+  // ════════════ STEP 3: GÜNLÜK RUTİNLER ════════════
+  const [selectedRoutines, setSelectedRoutines] = useState<RoutineItem[]>([
+    { id: `rot-${Date.now()}-1`, title: 'Paragraf Çözümü', target: '20 Soru', completedDays: [] },
+    { id: `rot-${Date.now()}-2`, title: 'Problem Çözümü', target: '15 Soru', completedDays: [] },
+    { id: `rot-${Date.now()}-3`, title: 'Geometri Rutini', target: '10 Soru', completedDays: [] }
+  ]);
 
   const toggleRoutine = (r: typeof DEFAULT_STARTER_ROUTINES[0]) => {
     const exists = selectedRoutines.find(item => item.title === r.title);
@@ -149,8 +233,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
   const handleFinish = () => {
     const updatedProfile: Partial<StudentProfile> = {
       targetField: selectedField,
-      targetUniversity,
-      targetDepartment,
+      targetUniversity: targetUniversity.trim(),
+      targetDepartment: targetDepartment.trim(),
       targetRank,
       targetTYTNet,
       targetAYTNet
@@ -176,7 +260,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
               <div className="text-xs font-bold text-white">YKS Başlangıç Kurulumu</div>
               <div className="text-[10px] text-slate-400">
                 {step === 1 && '1. Hedef & Alanını Belirle'}
-                {step === 2 && '2. Kaynak Kitaplarını Seç'}
+                {step === 2 && '2. Kaynak Kitaplarını Seç & Ekle'}
                 {step === 3 && '3. Günlük Rutinlerini Kur'}
                 {step === 4 && '4. Hazırsın! 🚀'}
               </div>
@@ -201,7 +285,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         </div>
 
         {/* Step Body */}
-        <div className="p-5 sm:p-8 overflow-y-auto space-y-6 flex-1 relative z-10">
+        <div className="p-5 sm:p-8 overflow-y-auto space-y-6 flex-1 relative z-10 custom-scrollbar">
 
           {/* ═════════ STEP 1: HEDEF & ALAN ═════════ */}
           {step === 1 && (
@@ -233,7 +317,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                       className={`p-3.5 rounded-2xl border text-center font-bold transition-all cursor-pointer ${
                         selectedField === f
                           ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30 scale-102 ring-2 ring-indigo-400/50'
-                          : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                          : 'bg-slate-950/60 border-slate-850 text-slate-400 hover:text-white hover:border-slate-700'
                       }`}
                     >
                       <div className="text-lg font-black">{f}</div>
@@ -248,27 +332,69 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 </div>
               </div>
 
-              {/* Hedef Üniversite & Bölüm */}
+              {/* Hedef Üniversite & Bölüm (Otomatik Tamamlamalı) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                    Hedef Üniversite
+                
+                {/* Hedef Üniversite */}
+                <div className="relative">
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center space-x-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Hedef Üniversite</span>
+                    </span>
+                    {targetUniversity && (
+                      <span className="text-[10px] text-indigo-300 font-mono">Önizleme logosu</span>
+                    )}
                   </label>
-                  <input
-                    type="text"
-                    value={targetUniversity}
-                    onChange={(e) => setTargetUniversity(e.target.value)}
-                    placeholder="Örn: ODTÜ, Boğaziçi, İTÜ..."
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white text-xs font-semibold rounded-xl px-3.5 py-2.5 outline-none transition-all"
-                  />
+
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      value={targetUniversity}
+                      onChange={(e) => {
+                        setTargetUniversity(e.target.value);
+                        setShowUniSuggestions(true);
+                      }}
+                      onFocus={() => setShowUniSuggestions(true)}
+                      placeholder="Örn: İstanbul Teknik Üniversitesi (İTÜ)"
+                      className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white text-xs font-semibold rounded-xl pl-3.5 pr-10 py-2.5 outline-none transition-all"
+                    />
+                    <div className="absolute right-3 flex items-center pointer-events-none">
+                      <UniversityLogo universityName={targetUniversity} sizeClassName="w-5 h-5" />
+                    </div>
+                  </div>
+
+                  {/* University Autocomplete Suggestions */}
+                  {showUniSuggestions && filteredUniversities.length > 0 && (
+                    <div className="absolute z-30 left-0 right-0 mt-1 bg-slate-950 border border-indigo-500/40 rounded-xl shadow-2xl max-h-48 overflow-y-auto custom-scrollbar">
+                      {filteredUniversities.map((uni) => (
+                        <button
+                          key={uni}
+                          type="button"
+                          onClick={() => {
+                            setTargetUniversity(uni);
+                            setShowUniSuggestions(false);
+                          }}
+                          className="w-full text-left px-3.5 py-2 text-xs text-slate-200 hover:bg-indigo-600/30 hover:text-white flex items-center space-x-2.5 transition-colors border-b border-white/5 last:border-b-0 cursor-pointer"
+                        >
+                          <UniversityLogo universityName={uni} sizeClassName="w-4 h-4" />
+                          <span className="truncate">{uni}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Hızlı Seçim Butonları */}
                   <div className="flex flex-wrap gap-1 mt-2">
                     {POPULAR_UNIVERSITIES.slice(0, 4).map((uni) => (
                       <button
                         key={uni}
                         type="button"
-                        onClick={() => setTargetUniversity(uni)}
-                        className="text-[10px] bg-slate-950 border border-slate-800 hover:border-indigo-500/50 text-slate-400 hover:text-white px-2 py-0.5 rounded-lg transition-all"
+                        onClick={() => {
+                          setTargetUniversity(uni);
+                          setShowUniSuggestions(false);
+                        }}
+                        className="text-[10px] bg-slate-950 border border-slate-800 hover:border-indigo-500/50 text-slate-400 hover:text-white px-2 py-0.5 rounded-lg transition-all cursor-pointer"
                       >
                         {uni.split(' ')[0]}
                       </button>
@@ -276,25 +402,52 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                    Hedef Bölüm
+                {/* Hedef Bölüm */}
+                <div className="relative">
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center space-x-1.5">
+                    <GraduationCap className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Hedef Bölüm</span>
                   </label>
+                  
                   <input
                     type="text"
                     value={targetDepartment}
-                    onChange={(e) => setTargetDepartment(e.target.value)}
-                    placeholder="Örn: Bilgisayar Mühendisliği, Tıp, Hukuk..."
+                    onChange={(e) => {
+                      setTargetDepartment(e.target.value);
+                      setShowDeptSuggestions(true);
+                    }}
+                    onFocus={() => setShowDeptSuggestions(true)}
+                    placeholder="Örn: Bilgisayar Mühendisliği, Tıp..."
                     className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 text-white text-xs font-semibold rounded-xl px-3.5 py-2.5 outline-none transition-all"
                   />
+
+                  {/* Department Autocomplete Suggestions */}
+                  {showDeptSuggestions && filteredDepartments.length > 0 && (
+                    <div className="absolute z-30 left-0 right-0 mt-1 bg-slate-950 border border-indigo-500/40 rounded-xl shadow-2xl max-h-48 overflow-y-auto custom-scrollbar">
+                      {filteredDepartments.map((dept) => (
+                        <button
+                          key={dept}
+                          type="button"
+                          onClick={() => {
+                            setTargetDepartment(dept);
+                            setShowDeptSuggestions(false);
+                          }}
+                          className="w-full text-left px-3.5 py-2 text-xs text-slate-200 hover:bg-indigo-600/30 hover:text-white transition-colors border-b border-white/5 last:border-b-0 cursor-pointer"
+                        >
+                          {dept}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Hedef Sıralama ve Netler */}
               <div className="grid grid-cols-3 gap-3 bg-slate-950/60 p-4 rounded-2xl border border-slate-850">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1">
-                    Hedef Sıralama
+                  <label className="block text-[11px] font-bold text-slate-400 mb-1 flex items-center space-x-1">
+                    <Award className="w-3 h-3 text-emerald-400" />
+                    <span>Hedef Sıralama</span>
                   </label>
                   <div className="relative">
                     <span className="absolute left-2.5 top-2 text-indigo-400 font-bold text-xs">#</span>
@@ -340,59 +493,258 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
               <div className="text-center space-y-1">
                 <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider">
                   <BookCheck className="w-3.5 h-3.5" />
-                  <span>{selectedField} Alanı Kaynak Önerileri</span>
+                  <span>{selectedField} Alanı Kaynak Önerileri & Kitap Ekleme</span>
                 </div>
                 <h2 className="text-xl sm:text-2xl font-black text-white">
-                  Kullandığın Kaynak Kitapları Seç
+                  Kullandığın Kaynak Kitapları Seç & Ekle
                 </h2>
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
-                  Çözmeye başladığın veya elinde olan kitapları seçerek tek tıkla kaynak takip listene ekle. (Daha sonra yenilerini ekleyebilirsin)
+                  Önerilen popüler kitaplardan hızlıca seçebilir veya elindeki farklı kitapları otomatik tamamlamayla ekleyebilirsin.
                 </p>
               </div>
 
-              {/* Book Recommendation Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {RECOMMENDED_STARTER_BOOKS[selectedField]?.map((book) => {
-                  const isSelected = selectedBooks.some(b => b.bookTitle === book.title);
+              {/* Starter Recommended Books Grid */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                    {selectedField} Popüler Başlangıç Kaynakları
+                  </span>
+                  <span className="text-[10px] text-slate-400">Tek tıkla listene ekle</span>
+                </div>
 
-                  return (
-                    <div
-                      key={book.title}
-                      onClick={() => toggleBookSelection(book)}
-                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-                        isSelected
-                          ? 'bg-amber-500/15 border-amber-500/50 shadow-md shadow-amber-500/10'
-                          : 'bg-slate-950/60 border-slate-850 hover:border-slate-750'
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-900 text-indigo-300 border border-slate-800">
-                          {book.subject}
-                        </span>
-                        <div className="text-xs font-bold text-white truncate mt-1">
-                          {book.title}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {RECOMMENDED_STARTER_BOOKS[selectedField]?.map((book) => {
+                    const isSelected = selectedBooks.some(b => b.bookTitle === book.title);
+
+                    return (
+                      <div
+                        key={book.title}
+                        onClick={() => toggleStarterBookSelection(book)}
+                        className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                          isSelected
+                            ? 'bg-amber-500/15 border-amber-500/50 shadow-md shadow-amber-500/10'
+                            : 'bg-slate-950/60 border-slate-850 hover:border-slate-750'
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-900 text-indigo-300 border border-slate-800">
+                            {book.subject}
+                          </span>
+                          <div className="text-xs font-bold text-white truncate mt-1">
+                            {book.title}
+                          </div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">
+                            {book.publisher} • {book.units} Ünite
+                          </div>
                         </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">
-                          {book.publisher} • {book.units} Ünite/Test
+
+                        <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
+                          isSelected
+                            ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold'
+                            : 'bg-slate-900 text-slate-400 border-slate-800'
+                        }`}>
+                          {isSelected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
                         </div>
                       </div>
-
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
-                        isSelected
-                          ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold'
-                          : 'bg-slate-900 text-slate-400 border-slate-800'
-                      }`}>
-                        {isSelected ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
 
+              {/* ── MANUEL KAYNAK EKLEME PANELİ (OTOMATİK TAMAMLAMALI) ── */}
+              <div className="pt-2 border-t border-slate-800">
+                {!showCustomBookForm ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomBookForm(true)}
+                    className="w-full py-2.5 px-4 bg-indigo-950/40 hover:bg-indigo-900/50 border border-dashed border-indigo-500/40 hover:border-indigo-400 rounded-2xl text-indigo-300 hover:text-white text-xs font-bold flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-sm"
+                  >
+                    <PlusCircle className="w-4 h-4 text-indigo-400" />
+                    <span>+ Listede Olmayan Farklı Bir Kaynak Kitap Ekle</span>
+                  </button>
+                ) : (
+                  <div className="bg-slate-950/80 border border-indigo-500/40 rounded-2xl p-4 space-y-3.5 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <div className="flex items-center space-x-2 text-xs font-black text-indigo-300">
+                        <BookOpen className="w-4 h-4 text-indigo-400" />
+                        <span>Farklı / Özel Kaynak Ekle</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowCustomBookForm(false)}
+                        className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Sınav Türü */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Sınav Türü</label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {(['TYT', 'AYT'] as const).map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => {
+                                setCustomExamType(t);
+                                setCustomSubject(t === 'TYT' ? 'TYT Matematik' : 'AYT Matematik');
+                              }}
+                              className={`py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                                customExamType === t
+                                  ? 'bg-indigo-600 border-indigo-400 text-white shadow-md'
+                                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                              }`}
+                            >
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Ders Seçimi */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Ders</label>
+                        <select
+                          value={customSubject}
+                          onChange={(e) => setCustomSubject(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500 cursor-pointer"
+                        >
+                          {availableSubjectsForCustom.map((sub) => (
+                            <option key={sub} value={sub}>{sub}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Kitap Adı (Otomatik Tamamlamalı) */}
+                    <div className="relative">
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1 flex items-center justify-between">
+                        <span>Kitap Adı</span>
+                        <span className="text-[10px] text-indigo-400">Yazdıkça öneri listesi açılır</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Örn: 3D AYT Matematik, Bilgi Sarmal..."
+                        value={customBookTitle}
+                        onChange={(e) => {
+                          setCustomBookTitle(e.target.value);
+                          setShowBookSuggestions(true);
+                        }}
+                        onFocus={() => setShowBookSuggestions(true)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
+                      />
+
+                      {/* Kitap Otomatik Tamamlama Önerileri */}
+                      {showBookSuggestions && matchedBookSuggestions.length > 0 && (
+                        <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-slate-900 border border-indigo-500/40 rounded-xl p-1.5 shadow-2xl space-y-1 backdrop-blur-xl max-h-48 overflow-y-auto custom-scrollbar">
+                          <div className="text-[10px] font-bold text-slate-400 px-2 py-0.5 uppercase tracking-wider flex items-center justify-between border-b border-slate-800 pb-1">
+                            <span>Kaynak Önerileri ({customSubject})</span>
+                            <span className="text-indigo-400 font-mono">{matchedBookSuggestions.length} Öneri</span>
+                          </div>
+                          {matchedBookSuggestions.map((rec, idx) => (
+                            <div
+                              key={idx}
+                              onClick={() => {
+                                setCustomBookTitle(rec.name);
+                                setCustomPublisher(rec.publisher);
+                                setShowBookSuggestions(false);
+                              }}
+                              className="p-2 hover:bg-indigo-950/80 rounded-lg cursor-pointer transition-all border border-transparent hover:border-indigo-500/30 flex items-center justify-between gap-2 group"
+                            >
+                              <div className="min-w-0">
+                                <div className="text-xs font-bold text-white group-hover:text-indigo-300 transition-colors truncate">
+                                  <span className="text-indigo-400 font-extrabold">{rec.publisher}</span> - {rec.name}
+                                </div>
+                                {rec.reason && (
+                                  <p className="text-[10px] text-slate-400 truncate max-w-sm">{rec.reason}</p>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md font-bold shrink-0">
+                                {rec.difficulty}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Yayınevi */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Yayınevi</label>
+                        <input
+                          type="text"
+                          placeholder="Örn: 3D Yayınları, Bilgi Sarmal"
+                          value={customPublisher}
+                          onChange={(e) => setCustomPublisher(e.target.value)}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium"
+                        />
+                      </div>
+
+                      {/* Toplam Ünite / Test Sayısı */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Toplam Ünite / Test</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="200"
+                          value={customUnits}
+                          onChange={(e) => setCustomUnits(Number(e.target.value))}
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => setShowCustomBookForm(false)}
+                        className="px-3 py-1.5 text-xs text-slate-400 hover:text-white cursor-pointer"
+                      >
+                        Vazgeç
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAddCustomBookSubmit()}
+                        disabled={!customBookTitle.trim()}
+                        className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+                      >
+                        Listeye Ekle
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Seçili Kitaplar Özeti */}
               {selectedBooks.length > 0 && (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between">
-                  <span>✅ <strong>{selectedBooks.length} kaynak</strong> takip listene eklenecek.</span>
-                  <span className="font-mono font-bold">Toplam {selectedBooks.reduce((a, b) => a + b.totalUnits, 0)} Ünite</span>
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                    <span>Seçilen Kaynaklar ({selectedBooks.length} Kitap)</span>
+                    <span className="font-mono text-emerald-400">Toplam {selectedBooks.reduce((a, b) => a + b.totalUnits, 0)} Ünite</span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-1">
+                    {selectedBooks.map((b) => (
+                      <div
+                        key={b.id}
+                        className="inline-flex items-center space-x-1.5 bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 px-2.5 py-1 rounded-xl text-xs"
+                      >
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        <span className="font-semibold truncate max-w-[200px]">{b.publisher} - {b.bookTitle}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveBook(b.id)}
+                          className="text-emerald-400/60 hover:text-rose-400 p-0.5 rounded cursor-pointer"
+                          title="Listeden Kaldır"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -548,7 +900,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
               <button
                 type="button"
-                onClick={() => setStep((s) => (s + 1) as any)}
+                onClick={() => {
+                  setShowUniSuggestions(false);
+                  setShowDeptSuggestions(false);
+                  setShowBookSuggestions(false);
+                  setStep((s) => (s + 1) as any);
+                }}
                 className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all shadow-lg shadow-indigo-600/30 flex items-center space-x-1.5 cursor-pointer active:scale-95"
               >
                 <span>Devam Et</span>
