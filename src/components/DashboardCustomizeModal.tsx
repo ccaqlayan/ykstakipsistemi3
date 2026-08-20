@@ -253,6 +253,7 @@ export const DashboardCustomizeModal: React.FC<DashboardCustomizeModalProps> = (
   const [filterCategory, setFilterCategory] = useState<'all' | 'header' | 'kpis' | 'charts' | 'content'>('all');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [lastMovedId, setLastMovedId] = useState<string | null>(null);
+  const [newlyAddedId, setNewlyAddedId] = useState<string | null>(null);
 
   const getWidgetIcon = (id: string) => {
     if (id === 'subject_progress_widget' || id.startsWith('subject_progress')) {
@@ -322,7 +323,28 @@ export const DashboardCustomizeModal: React.FC<DashboardCustomizeModalProps> = (
       order: localWidgets.length + 1,
       config: { subject: unused }
     };
+
+    // If active category filter is hiding KPIs, switch to 'all' so the new card is immediately visible
+    if (filterCategory !== 'all' && filterCategory !== 'kpis') {
+      setFilterCategory('all');
+    }
+
     setLocalWidgets(prev => [...prev, newWidget]);
+    setNewlyAddedId(newId);
+    setLastMovedId(newId);
+
+    // Smoothly scroll down to the newly created widget card
+    setTimeout(() => {
+      const el = document.getElementById(`widget-card-${newId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 120);
+
+    setTimeout(() => {
+      setNewlyAddedId(prev => (prev === newId ? null : prev));
+      setLastMovedId(prev => (prev === newId ? null : prev));
+    }, 2500);
   };
 
   const handleRemoveSubjectWidget = (id: string) => {
@@ -504,11 +526,11 @@ export const DashboardCustomizeModal: React.FC<DashboardCustomizeModalProps> = (
             <button
               type="button"
               onClick={handleAddSubjectProgressWidget}
-              className="text-xs bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-200 border border-cyan-400/40 px-3 py-1.5 rounded-xl font-bold transition-all flex items-center space-x-1.5 cursor-pointer shadow-md shadow-cyan-600/20"
+              className="text-xs bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-200 border border-cyan-400/40 px-3 py-1.5 rounded-xl font-bold transition-all flex items-center space-x-1.5 cursor-pointer shadow-md shadow-cyan-600/20 active:scale-95"
               title="Birden fazla ders için ilerleme kutucuğu ekle"
             >
               <Plus className="w-3.5 h-3.5 text-cyan-300 stroke-[3]" />
-              <span>+ Ders Kutucuğu Ekle</span>
+              <span>Ders Kutucuğu Ekle</span>
             </button>
 
             <button
@@ -546,17 +568,19 @@ export const DashboardCustomizeModal: React.FC<DashboardCustomizeModalProps> = (
               {filteredWidgets.map((widget) => {
                 const globalIndex = localWidgets.findIndex(w => w.id === widget.id);
                 const isDragging = draggedIndex === globalIndex;
-                const isJustMoved = lastMovedId === widget.id;
+                const isNewlyAdded = newlyAddedId === widget.id;
+                const isJustMoved = lastMovedId === widget.id && !isNewlyAdded;
 
                 return (
                   <motion.div
                     layout
+                    id={`widget-card-${widget.id}`}
                     key={widget.id}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 15, scale: 0.96 }}
                     animate={{ 
                       opacity: 1, 
                       y: 0,
-                      scale: isJustMoved ? 1.015 : 1
+                      scale: isNewlyAdded ? 1.02 : isJustMoved ? 1.015 : 1
                     }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{
@@ -568,7 +592,9 @@ export const DashboardCustomizeModal: React.FC<DashboardCustomizeModalProps> = (
                     onDragOver={(e) => handleDragOver(e as any, globalIndex)}
                     onDragEnd={handleDragEnd}
                     className={`p-3 sm:p-3.5 rounded-2xl border transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                      isJustMoved 
+                      isNewlyAdded
+                        ? 'bg-cyan-950/60 border-cyan-400 ring-2 ring-cyan-400/60 shadow-2xl shadow-cyan-500/30 z-20'
+                        : isJustMoved 
                         ? 'bg-slate-850 border-indigo-400 ring-2 ring-indigo-500/50 shadow-xl shadow-indigo-500/20 z-10'
                         : widget.visible
                         ? 'bg-slate-900/90 border-slate-800 hover:border-indigo-500/50'
@@ -601,6 +627,12 @@ export const DashboardCustomizeModal: React.FC<DashboardCustomizeModalProps> = (
                             {widget.title}
                           </h3>
                           {getCategoryBadge(widget.category)}
+                          {isNewlyAdded && (
+                            <span className="text-[10px] bg-cyan-500/20 text-cyan-300 font-bold px-2 py-0.5 rounded-full border border-cyan-400/40 animate-pulse flex items-center space-x-1">
+                              <span>✨</span>
+                              <span>Yeni Eklendi</span>
+                            </span>
+                          )}
                           {isJustMoved && (
                             <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-bold px-1.5 py-0.5 rounded border border-indigo-500/30 animate-pulse">
                               Taşındı ✨
