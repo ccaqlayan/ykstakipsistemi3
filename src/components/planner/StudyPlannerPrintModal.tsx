@@ -42,8 +42,17 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
   routines = [],
   weekDaysMap
 }) => {
+  const defaultInstitutionName = React.useMemo(() => {
+    if (profile?.highSchool && profile.highSchool.trim()) {
+      const cleanSchool = profile.highSchool.trim().toUpperCase();
+      if (cleanSchool.includes('REHBERLİK')) return cleanSchool;
+      return `${cleanSchool} REHBERLİK SERVİSİ`;
+    }
+    return 'YILDIZ ANADOLU LİSESİ REHBERLİK SERVİSİ';
+  }, [profile?.highSchool]);
+
   // Customization Options State
-  const [institutionName, setInstitutionName] = useState('T.C. MİLLÎ EĞİTİM BAKANLIĞI / REHBERLİK SERVİSİ');
+  const [institutionName, setInstitutionName] = useState(defaultInstitutionName);
   const [documentTitle, setDocumentTitle] = useState('YKS HAFTALIK DERS ÇALIŞMA PROGRAMI & TAKİP ÇİZELGESİ');
   const [coachNote, setCoachNote] = useState(
     'Haftalık hedeflerini adım adım tamamla, çözdüğün her sorunun analizini yap. Başarı, günlük disiplinin toplamıdır!'
@@ -54,6 +63,11 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
   const [showBlankLines, setShowBlankLines] = useState(true);
   const [showGoalSummary, setShowGoalSummary] = useState(true);
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
+
+  // Keep institutionName updated if profile high school changes
+  React.useEffect(() => {
+    setInstitutionName(defaultInstitutionName);
+  }, [defaultInstitutionName]);
 
   const printAreaRef = useRef<HTMLDivElement>(null);
 
@@ -336,11 +350,11 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
                         key={day}
                         className="border-2 border-black flex flex-col justify-between bg-white text-[9px] min-h-[220px]"
                       >
-                        {/* Gün Başlığı */}
-                        <div className="bg-black text-white px-1.5 py-1 text-center font-black flex items-center justify-between">
-                          <span className="uppercase text-[9.5px]">{day}</span>
+                        {/* Gün Başlığı (Mürekkep Tasarruflu Açık Gri Zemin) */}
+                        <div className="bg-gray-200 text-black border-b border-black px-1.5 py-1 text-center font-black flex items-center justify-between">
+                          <span className="uppercase text-[9.5px] font-black">{day}</span>
                           {dayDateInfo && (
-                            <span className="text-[7.5px] text-gray-300 font-mono font-normal">
+                            <span className="text-[7.5px] text-gray-700 font-mono font-bold">
                               {dayDateInfo.displayDate.split(' ')[0]} {dayDateInfo.displayDate.split(' ')[1]}
                             </span>
                           )}
@@ -394,10 +408,18 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
                           )}
                         </div>
 
-                        {/* Günlük Toplam Alt Bilgisi */}
-                        <div className="bg-gray-100 border-t border-black px-1.5 py-0.5 font-bold text-[7.5px] flex items-center justify-between text-gray-800">
-                          <span>{dayPlans.length} Görev</span>
-                          <span className="font-mono font-black">{Math.floor(dayPlannedMins / 60)}s {dayPlannedMins % 60}d {dayTargetQ > 0 ? `• ${dayTargetQ} S` : ''}</span>
+                        {/* Günlük Toplam & Net Çalışma Süresi Alt Bilgisi */}
+                        <div className="bg-gray-50 border-t border-black px-1.5 py-1 text-[7.5px] space-y-0.5">
+                          <div className="flex items-center justify-between text-gray-700 font-bold">
+                            <span>Hedef: {dayPlans.length} Ders</span>
+                            <span className="font-mono font-black">{Math.floor(dayPlannedMins / 60)}s {dayPlannedMins % 60}d {dayTargetQ > 0 ? `• ${dayTargetQ} S` : ''}</span>
+                          </div>
+                          <div className="flex items-center justify-between border-t border-dashed border-gray-300 pt-0.5 font-bold text-black">
+                            <span className="text-[7px] uppercase tracking-tighter">Net Çalışma Süresi:</span>
+                            <span className="font-mono text-[7.5px] bg-white px-1 py-0.2 border border-gray-400 rounded">
+                              ____ sa ____ dk
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );
