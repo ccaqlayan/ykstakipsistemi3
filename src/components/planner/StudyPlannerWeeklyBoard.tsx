@@ -59,6 +59,7 @@ interface StudyPlannerWeeklyBoardProps {
   openDailyStudyLogModal?: (day: DayOfWeek) => void;
   onApplyPastWeekToCurrent?: () => void;
   onApplyCurrentWeekToFuture?: () => void;
+  onClearFutureWeekPlan?: () => void;
 }
 
 export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = ({
@@ -100,22 +101,24 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
   getEffectiveDayStudyMinutes,
   openDailyStudyLogModal,
   onApplyPastWeekToCurrent,
-  onApplyCurrentWeekToFuture
+  onApplyCurrentWeekToFuture,
+  onClearFutureWeekPlan
 }) => {
   return (
     <div className="space-y-4">
+      {/* Dynamic Context Banner: Past Archived Week vs Current Active Week vs Future Week */}
       {isArchivedWeek && (
         <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs text-amber-300">
           <div className="flex items-center space-x-2">
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-            <span><strong>Geçmiş Hafta Arşivi:</strong> Şu an geçmiş bir haftanın kaydını görüntülüyorsunuz. Tamamlanan dersler veritabanında saklanmıştır.</span>
+            <span><strong>Geçmiş Hafta Arşivi:</strong> Bu haftanın dersleri ve soru tamamlama verileri salt-okunur olarak arşivlenmiştir.</span>
           </div>
           <div className="flex items-center space-x-2 shrink-0 self-end sm:self-auto">
             {onApplyPastWeekToCurrent && (
               <button
                 type="button"
                 onClick={onApplyPastWeekToCurrent}
-                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/30 cursor-pointer shrink-0 active:scale-95"
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-amber-600/30 cursor-pointer shrink-0 active:scale-95"
                 title="Bu haftanın ders programı şablonunu güncel (bu) haftaya aktar"
               >
                 <Copy className="w-3.5 h-3.5" />
@@ -144,6 +147,17 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
             <span><strong>Gelecek Hafta Planı:</strong> Bu hafta için ders ve hedef planlaması yapıyorsunuz. Haftası geldiğinde otomatik aktifleşecektir.</span>
           </div>
           <div className="flex items-center space-x-2 shrink-0 self-end sm:self-auto">
+            {onClearFutureWeekPlan && activePlans.length > 0 && (
+              <button
+                type="button"
+                onClick={onClearFutureWeekPlan}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 hover:text-rose-200 border border-rose-500/40 rounded-xl text-xs font-bold transition-all shadow cursor-pointer shrink-0 active:scale-95"
+                title="Gelecek haftanın tüm ders planlarını temizle ve baştan planla"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Planı Temizle</span>
+              </button>
+            )}
             {onApplyCurrentWeekToFuture && (
               <button
                 type="button"

@@ -18,7 +18,8 @@ import {
   Check, 
   Plus,
   Clock,
-  Copy
+  Copy,
+  ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StudyPlanItem, DayOfWeek, QuestionLog, DailyStudyTimeLog } from '../../types';
@@ -137,6 +138,14 @@ interface StudyPlannerModalsProps {
   setDailyStudyLogModalData?: (data: DailyStudyLogModalData | null) => void;
   handleSaveDailyStudyLogModal?: (minutes: number, notes?: string) => void;
   handleDeleteDailyStudyLogModal?: () => void;
+
+  clearFutureWeekConfirm?: {
+    weekLabel: string;
+    plansCount: number;
+    step: 1 | 2;
+  } | null;
+  setClearFutureWeekConfirm?: (data: { weekLabel: string; plansCount: number; step: 1 | 2 } | null) => void;
+  handleConfirmClearFutureWeek?: () => void;
 }
 
 export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
@@ -224,7 +233,10 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
   dailyStudyLogModalData,
   setDailyStudyLogModalData,
   handleSaveDailyStudyLogModal,
-  handleDeleteDailyStudyLogModal
+  handleDeleteDailyStudyLogModal,
+  clearFutureWeekConfirm,
+  setClearFutureWeekConfirm,
+  handleConfirmClearFutureWeek
 }) => {
   const [modalHours, setModalHours] = React.useState<number>(0);
   const [modalMinutes, setModalMinutes] = React.useState<number>(0);
@@ -1790,6 +1802,125 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: 2-STEP CONFIRMATION FOR CLEARING FUTURE WEEK PLAN */}
+      {clearFutureWeekConfirm && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && setClearFutureWeekConfirm) {
+              setClearFutureWeekConfirm(null);
+            }
+          }}
+        >
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
+            
+            {/* Step 1 / 2 */}
+            {clearFutureWeekConfirm.step === 1 ? (
+              <>
+                <div className="flex items-center space-x-3.5 border-b border-slate-800 pb-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center font-bold shrink-0 shadow-inner">
+                    <AlertTriangle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-base font-black text-white">
+                        Gelecek Hafta Planını Temizle
+                      </h3>
+                      <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/30">
+                        1 / 2 Onay
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Gelecek haftayı sıfırdan planlamak için temizleme adımı
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2 text-xs">
+                  <div className="flex items-center justify-between text-slate-300 font-bold">
+                    <span>Hedef Hafta:</span>
+                    <span className="text-indigo-300 font-mono font-black">{clearFutureWeekConfirm.weekLabel}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-rose-300 font-bold">
+                    <span>Silinecek Ders / Görev:</span>
+                    <span className="font-mono font-black">{clearFutureWeekConfirm.plansCount} Ders</span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  <strong>{clearFutureWeekConfirm.weekLabel}</strong> haftasına ait planlanmış <strong>{clearFutureWeekConfirm.plansCount} adet ders görevi</strong> tamamen kaldırılacaktır. Bu haftayı baştan planlamak istiyor musunuz?
+                </p>
+
+                <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setClearFutureWeekConfirm && setClearFutureWeekConfirm(null)}
+                    className="px-4 py-2.5 rounded-xl border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Vazgeç
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setClearFutureWeekConfirm && setClearFutureWeekConfirm({ ...clearFutureWeekConfirm, step: 2 })}
+                    className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition-all shadow-lg shadow-amber-600/30 active:scale-95 cursor-pointer flex items-center space-x-1.5"
+                  >
+                    <span>Devam Et (2. Onay)</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Step 2 / 2 - Final Critical Confirmation */}
+                <div className="flex items-center space-x-3.5 border-b border-slate-800 pb-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center font-bold shrink-0 shadow-inner">
+                    <Trash2 className="w-6 h-6 animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-base font-black text-rose-200">
+                        Kalıcı Silme Onayı
+                      </h3>
+                      <span className="text-[10px] bg-rose-500/20 text-rose-300 font-bold px-2 py-0.5 rounded-full border border-rose-500/30 animate-pulse">
+                        2 / 2 Son Onay
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Bu işlem geri alınamaz!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-xs text-rose-200 leading-relaxed font-medium">
+                  ⚠️ <strong>DİKKAT:</strong> <strong>{clearFutureWeekConfirm.weekLabel}</strong> haftasındaki <strong>{clearFutureWeekConfirm.plansCount} adet ders</strong> kalıcı olarak silinecek ve hafta boşaltılacaktır.
+                </div>
+
+                <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setClearFutureWeekConfirm && setClearFutureWeekConfirm(null)}
+                    className="px-4 py-2.5 rounded-xl border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Vazgeç
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (handleConfirmClearFutureWeek) handleConfirmClearFutureWeek();
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition-all shadow-lg shadow-rose-600/30 active:scale-95 cursor-pointer flex items-center space-x-1.5"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Evet, Gelecek Hafta Planını Tamamen Temizle</span>
+                  </button>
+                </div>
+              </>
+            )}
+
           </div>
         </div>
       )}

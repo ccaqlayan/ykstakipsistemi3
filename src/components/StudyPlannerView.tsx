@@ -449,6 +449,11 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     currentPlansCount: number;
     onApply?: (choice: 'merge' | 'replace') => void;
   } | null>(null);
+  const [clearFutureWeekConfirm, setClearFutureWeekConfirm] = useState<{
+    weekLabel: string;
+    plansCount: number;
+    step: 1 | 2;
+  } | null>(null);
   const [subjectChartScope, setSubjectChartScope] = useState<'total' | 'selected'>('total');
   const [subjectChartMetric, setSubjectChartMetric] = useState<'duration' | 'question'>('duration');
 
@@ -812,6 +817,39 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     setSelectedMondayDate(nextMonday);
     setActiveSubTab('tracker');
     setQuestionToast(`✨ "${sourceWeekLabel}" planı gelecek haftanıza (${nextWeekLabel}) başarıyla aktarıldı!`);
+  };
+
+  const handleInitiateClearFutureWeek = () => {
+    if (!isFutureWeek) return;
+    if (activePlans.length === 0) {
+      alert('Bu hafta için henüz eklenmiş bir ders bulunmuyor.');
+      return;
+    }
+    setClearFutureWeekConfirm({
+      weekLabel: currentWeekLabel,
+      plansCount: activePlans.length,
+      step: 1
+    });
+  };
+
+  const handleConfirmClearFutureWeek = () => {
+    if (!isFutureWeek || !onUpdateAllPlans) return;
+    
+    // Remove active unarchived plans belonging to this future week
+    const remainingPlans = studyPlans.filter(p => {
+      const isTargetWeekPlan = !p.archived && (
+        (p.weekLabel && isSameWeekLabel(p.weekLabel, currentWeekLabel)) ||
+        (p.date && selectedWeekDays.some(d => d.isoDate === p.date))
+      );
+      return !isTargetWeekPlan;
+    });
+
+    onUpdateAllPlans(
+      remainingPlans,
+      `Gelecek Hafta (${currentWeekLabel}) ders planı temizlendi.`
+    );
+    setClearFutureWeekConfirm(null);
+    setQuestionToast(`✨ ${currentWeekLabel} ders planı başarıyla temizlendi. Sıfırdan plan oluşturabilirsiniz.`);
   };
   
   // Helper to get question logs linked to a specific study plan item
@@ -1876,16 +1914,30 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
           )}
 
           {isFutureWeek && (
-            <button
-              type="button"
-              onClick={() => handleInitiateApplyPlanToNextWeek(realCurrentWeekLabel)}
-              className="inline-flex items-center space-x-1 sm:space-x-1.5 px-2.5 py-1.5 sm:px-4 sm:py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
-              title="Güncel (bu) haftanın ders programı şablonunu buraya aktarır"
-            >
-              <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span className="sm:hidden">Şablon Yükle</span>
-              <span className="hidden sm:inline">Bu Haftanın Şablonunu Yükle</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              {activePlans.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleInitiateClearFutureWeek}
+                  className="inline-flex items-center space-x-1 sm:space-x-1.5 px-2.5 py-1.5 sm:px-4 sm:py-3 bg-rose-950/60 hover:bg-rose-600/30 text-rose-300 hover:text-white border border-rose-500/40 hover:border-rose-400 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition-all shadow-lg active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
+                  title="Gelecek haftanın tüm ders planlarını temizler ve baştan planlamanızı sağlar"
+                >
+                  <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-400 shrink-0" />
+                  <span className="sm:hidden">Temizle</span>
+                  <span className="hidden sm:inline">Planı Temizle</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => handleInitiateApplyPlanToNextWeek(realCurrentWeekLabel)}
+                className="inline-flex items-center space-x-1 sm:space-x-1.5 px-2.5 py-1.5 sm:px-4 sm:py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
+                title="Güncel (bu) haftanın ders programı şablonunu buraya aktarır"
+              >
+                <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span className="sm:hidden">Şablon Yükle</span>
+                <span className="hidden sm:inline">Bu Haftanın Şablonunu Yükle</span>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -2351,6 +2403,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                 openDailyStudyLogModal={openDailyStudyLogModal}
                 onApplyPastWeekToCurrent={() => handleInitiateApplyPastWeek(currentWeekLabel)}
                 onApplyCurrentWeekToFuture={() => handleInitiateApplyPlanToNextWeek(realCurrentWeekLabel)}
+                onClearFutureWeekPlan={handleInitiateClearFutureWeek}
               />
             </motion.div>
           </AnimatePresence>
@@ -2500,6 +2553,9 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         setDailyStudyLogModalData={setDailyStudyLogModalData}
         handleSaveDailyStudyLogModal={handleSaveDailyStudyLogModal}
         handleDeleteDailyStudyLogModal={handleDeleteDailyStudyLogModal}
+        clearFutureWeekConfirm={clearFutureWeekConfirm}
+        setClearFutureWeekConfirm={setClearFutureWeekConfirm}
+        handleConfirmClearFutureWeek={handleConfirmClearFutureWeek}
       />
 
       <AddVideoTaskModal
