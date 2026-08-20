@@ -866,28 +866,28 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       
-      {/* ── 1. STUNNING HEADER BANNER ── */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950/60 to-slate-900 border border-white/10 rounded-3xl p-6 shadow-2xl backdrop-blur-xl">
+      {/* ── 1. STUNNING HEADER BANNER (MOBILE-OPTIMIZED) ── */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950/60 to-slate-900 border border-white/10 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 md:p-6 shadow-2xl backdrop-blur-xl">
         {/* Glow Effects */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold uppercase tracking-wider">
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-6">
+          <div className="space-y-1 sm:space-y-2 max-w-2xl">
+            <div className="hidden sm:inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Soru Takibi & Süre Analiz Paneli</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
-              <CheckSquare className="w-7 h-7 text-emerald-400 shrink-0" />
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+              <CheckSquare className="w-5 h-5 sm:w-7 sm:h-7 text-emerald-400 shrink-0" />
               <span>Günlük Soru Çözümü & İstatistikler</span>
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p className="hidden sm:block text-xs sm:text-sm text-slate-300 leading-relaxed">
               Ders ders çözdüğünüz soru sayılarını, çalışma sürelerinizi ve net durumlarınızı kaydedin. Soru başı çözüm hızınızı ve konu gelişim grafiğinizi canlı takip edin.
             </p>
           </div>
 
-          <div className="flex items-center space-x-3 shrink-0 w-full sm:w-auto">
+          <div className="hidden sm:flex items-center space-x-3 shrink-0 w-full sm:w-auto">
             <button
               onClick={handleOpenAddModal}
               id="add-question-log-btn"
@@ -1529,7 +1529,6 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                       )}
                     </div>
                   </th>
-                  <th className="py-2.5 px-2">Not</th>
                   <th className="py-2.5 px-2 text-right rounded-r-2xl whitespace-nowrap">İşlem</th>
                 </tr>
               </thead>
@@ -1571,8 +1570,11 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                           <span>{log.subject}</span>
                         </div>
                         {(log.topic || log.notes) && (
-                          <div className="text-[10px] text-indigo-300 font-normal mt-0.5 truncate max-w-[200px]">
-                            {log.topic || log.notes}
+                          <div 
+                            className="text-[10px] text-indigo-300 font-normal mt-0.5 truncate max-w-[220px]"
+                            title={[log.topic, log.notes].filter(Boolean).join(' • ')}
+                          >
+                            {[log.topic, log.notes].filter(Boolean).join(' • ')}
                           </div>
                         )}
                       </td>
@@ -1590,9 +1592,6 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                           <span>{logDuration} dk</span>
                           {rowSpeed && <span className="text-[10px] text-amber-400/80 font-mono">({rowSpeed}dk/soru)</span>}
                         </span>
-                      </td>
-                      <td className="py-2 px-2 text-slate-400 text-xs" title={log.notes || ''}>
-                        {log.notes || '-'}
                       </td>
                       <td className="py-2 px-2 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end space-x-0.5">
@@ -2015,6 +2014,20 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
         }}
         onClose={() => setDeletingLog(null)}
       />
+
+      {/* ── FLOATING ACTION BUTTON (+ FAB) ── */}
+      <button
+        onClick={handleOpenAddModal}
+        id="fab-add-question-log-btn"
+        aria-label="Yeni Soru Kaydı Gir"
+        title="Yeni Soru Kaydı Gir"
+        className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 z-40 bg-gradient-to-tr from-emerald-500 via-teal-500 to-emerald-400 hover:from-emerald-400 hover:to-teal-400 text-white p-3.5 sm:px-5 sm:py-3.5 rounded-full sm:rounded-2xl shadow-[0_10px_25px_rgba(16,185,129,0.45)] border border-emerald-300/40 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 group ring-4 ring-emerald-500/20 backdrop-blur-md"
+      >
+        <Plus className="w-6 h-6 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:rotate-90 stroke-[2.5]" />
+        <span className="hidden sm:inline font-bold text-sm tracking-wide text-white drop-shadow-sm">
+          Yeni Soru Kaydı
+        </span>
+      </button>
 
     </div>
   );

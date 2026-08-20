@@ -21,4 +21,13 @@
 - **`tsx watch` vs Arka Plan Süreçleri:** Arka plan (daemon/async) süreçlerinde `tsx watch server.ts` komutu terminal TTY ve watcher beklemesi nedeniyle arka planda asılı kalabilir. Sunucuyu arka planda güvenle ayağa kaldırmak için doğrudan `cmd /c npx tsx server.ts` çalıştırılmalıdır.
 - **Vite & Firestore Başlatma Süresi:** Sunucu başladığında Vite middleware ve Firestore servislerinin derleme/bağlantı kurması yaklaşık 5-10 saniye sürer (`http://0.0.0.0:3000`). Doğrudan tarayıcı/bağlantı kontrolü yapılmadan önce sunucunun tamamen ayağa kalktığı loglardan teyit edilmelidir.
 
+## Playwright / Browser Subagent Sandbox Hatası (Windows)
+- **Sorun:** Windows'ta Antigravity IDE, Medium Integrity Level ile çalışır ve Administrators grubu `deny only` modundadır. Chrome'un sandbox'ı Low Integrity Level alt-süreç oluşturmaya çalışırken `Access Denied (0x5)` hatası alır ve tarayıcı askıda kalır, IDE kilitlenir.
+- **Kalıcı Çözüm (Uygulandı):** Aşağıdaki `HKCU\Environment` registry değerleri ayarlandı ve `ms-playwright` klasörüne App Container (S-1-15-2-1) izni verildi:
+  - `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` → `chrome-headless-shell.exe` (sandbox gerektirmeyen headless shell)
+  - `PLAYWRIGHT_LAUNCH_OPTIONS_ARGS` → `--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage`
+  - `PLAYWRIGHT_SKIP_BROWSER_GC_PREFIX` → `1`
+- **IDE Yeniden Başlatma Zorunluluğu:** Registry'e yazılan environment variable'ların geçerli olması için **Antigravity IDE'nin kapatılıp yeniden açılması gerekir**. IDE yeniden başlatılmadan bu değişkenler aktif olmaz.
+- **Playwright Modülü:** Browser testi için proje `node_modules`'ündeki Playwright kullanılmalıdır. Global `npx playwright` komutları sandbox hatası üretebilir; bunun yerine `node -e "const {chromium}=require('./node_modules/playwright');..."` şeklinde çalıştırılmalıdır.
+
 eğer promptum ile bir dosyada değişikliği yaptıysan mutlaka versiyon sayısını bu kurala göre arttırıp github a commit yap, açıklamaları her zaman Türkçe yaz.
