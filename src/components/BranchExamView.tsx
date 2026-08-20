@@ -2579,17 +2579,17 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       )}
 
       {/* ── FLOATING ACTION BUTTON (+ FAB) ── */}
-      {activeSubTab === 'branch_errors' ? (
+      {activeSubTab === 'errors' || mode === 'errors' ? (
         <button
           onClick={handleOpenAddErrorModal}
           id="fab-add-branch-error-btn"
-          aria-label="Hata Defterine Soru Ekle"
-          title="Hata Defterine Soru Ekle"
+          aria-label="Yeni Hata Kaydı Ekle"
+          title="Yeni Hata Kaydı Ekle"
           className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 z-40 bg-gradient-to-tr from-rose-600 via-pink-600 to-rose-500 hover:from-rose-500 hover:to-pink-500 text-white p-3.5 sm:px-5 sm:py-3.5 rounded-full sm:rounded-2xl shadow-[0_10px_25px_rgba(244,63,94,0.45)] border border-rose-400/40 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 group ring-4 ring-rose-500/20 backdrop-blur-md"
         >
           <Plus className="w-6 h-6 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:rotate-90 stroke-[2.5]" />
           <span className="hidden sm:inline font-bold text-sm tracking-wide text-white drop-shadow-sm">
-            Hata Defterine Ekle
+            Yeni Hata Kaydı
           </span>
         </button>
       ) : (
