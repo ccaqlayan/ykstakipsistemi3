@@ -12,7 +12,8 @@ import {
   ExternalLink,
   Play,
   Clock,
-  Edit3
+  Edit3,
+  Printer
 } from 'lucide-react';
 import { StudyPlanItem, DayOfWeek } from '../../types';
 import { SubjectTheme } from '../StudyPlannerView';
@@ -47,6 +48,7 @@ interface StudyPlannerWeeklyBoardProps {
   handleDuplicatePlan: (e: React.MouseEvent, plan: StudyPlanItem) => void;
   openAddModal: (day?: DayOfWeek) => void;
   openAddVideoModal?: (day?: DayOfWeek) => void;
+  openPrintModal?: () => void;
   setEditingPlan: (plan: StudyPlanItem | null) => void;
   setDeletingPlan: (plan: { id: string; title: string } | null) => void;
   touchStartRef: any;
@@ -86,6 +88,7 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
   handleDuplicatePlan,
   openAddModal,
   openAddVideoModal,
+  openPrintModal,
   setEditingPlan,
   setDeletingPlan,
   touchStartRef,
@@ -103,6 +106,17 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
             <span><strong>Geçmiş Hafta Arşivi:</strong> Şu an geçmiş bir haftanın kaydını görüntülüyorsunuz. Tamamlanan dersler veritabanında saklanmıştır.</span>
           </div>
+          {openPrintModal && (
+            <button
+              type="button"
+              onClick={openPrintModal}
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 rounded-xl text-xs font-bold transition-all shadow cursor-pointer shrink-0 ml-2"
+              title="Bu haftalık planı resmi siyah-beyaz formatta PDF olarak yazdır"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Yazdır (PDF)</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -112,6 +126,17 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
             <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
             <span><strong>Gelecek Hafta Planı:</strong> Bu hafta için ders ve hedef planlaması yapıyorsunuz. Haftası geldiğinde otomatik aktifleşecektir.</span>
           </div>
+          {openPrintModal && (
+            <button
+              type="button"
+              onClick={openPrintModal}
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 rounded-xl text-xs font-bold transition-all shadow cursor-pointer shrink-0 ml-2"
+              title="Bu haftalık planı resmi siyah-beyaz formatta PDF olarak yazdır"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>Yazdır (PDF)</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -121,6 +146,17 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
             <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
             <span><strong>Sürükle & Sırala İpucu:</strong> Görevleri basılı tutup sürükleyerek <strong>aynı gün içinde yukarı/aşağı sıralayabilir</strong> veya başka bir günün sütununa taşıyabilirsiniz.</span>
           </div>
+          {openPrintModal && (
+            <button
+              type="button"
+              onClick={openPrintModal}
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-950/70 hover:bg-indigo-600/30 text-indigo-300 hover:text-white border border-indigo-500/40 rounded-xl text-xs font-bold transition-all shadow cursor-pointer shrink-0"
+              title="Haftalık ders çalışma planını resmi siyah-beyaz formatta PDF olarak yazdır"
+            >
+              <Printer className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Haftalık Planı Yazdır (PDF)</span>
+            </button>
+          )}
         </div>
       )}
 

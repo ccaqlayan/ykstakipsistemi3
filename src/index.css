@@ -734,3 +734,57 @@ body.modal-open .mobile-bottom-nav {
 .animate-scale-in {
   animation: modalScaleIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ========================================================================== */
+/* 🖨️ HAFTALIK ÇALIŞMA PLANI YAZDIRMA & PDF ÇIKTISI (PRINT STYLES)            */
+/* ========================================================================== */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 6mm;
+  }
+
+  /* Normal ekran bileşenlerini gizle */
+  body * {
+    visibility: hidden;
+  }
+
+  body, html, #root {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .screen-only {
+    display: none !important;
+  }
+
+  /* Sadece yazdırma belgesi kapsayıcısını ve çocuklarını görünür yap */
+  #study-plan-print-document,
+  #study-plan-print-document * {
+    visibility: visible !important;
+  }
+
+  #study-plan-print-document {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 4mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    page-break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

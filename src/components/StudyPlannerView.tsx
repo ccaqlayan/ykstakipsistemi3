@@ -44,7 +44,8 @@ import {
   Edit2,
   Maximize,
   Minimize,
-  Youtube
+  Youtube,
+  Printer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -59,7 +60,7 @@ import {
   CartesianGrid,
   Legend
 } from 'recharts';
-import { StudyPlanItem, DayOfWeek, QuestionLog, YouTubeVideoItem, DailyStudyTimeLog } from '../types';
+import { StudyPlanItem, DayOfWeek, QuestionLog, YouTubeVideoItem, DailyStudyTimeLog, UserAccount, RoutineItem } from '../types';
 import { YKS_SUBJECTS, YKS_CURRICULUM_TOPICS, DEFAULT_TASK_TYPES, DEFAULT_DAILY_STUDY_LOGS } from '../data/initialData';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { StudyPlannerWeeklyBoard } from './planner/StudyPlannerWeeklyBoard';
@@ -67,6 +68,7 @@ import { StudyPlannerDailyView } from './planner/StudyPlannerDailyView';
 import { StudyPlannerStatsView } from './planner/StudyPlannerStatsView';
 import { StudyPlannerModals, DailyStudyLogModalData } from './planner/StudyPlannerModals';
 import { AddVideoTaskModal } from './planner/AddVideoTaskModal';
+import { StudyPlannerPrintModal } from './planner/StudyPlannerPrintModal';
 
 interface StudyPlannerViewProps {
   studyPlans: StudyPlanItem[];
@@ -83,6 +85,8 @@ interface StudyPlannerViewProps {
   onZenModeChange?: (isZen: boolean) => void;
   // AI suggest props
   profile?: any;
+  currentUser?: UserAccount;
+  routines?: RoutineItem[];
   topicErrors?: any[];
   generalMocks?: any[];
   branchExams?: any[];
@@ -335,6 +339,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   isZenMode = false,
   onZenModeChange,
   profile,
+  currentUser,
+  routines,
   topicErrors,
   generalMocks,
   branchExams,
@@ -349,6 +355,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   const [viewMode, setViewMode] = useState<'board' | 'daily' | 'stats'>('daily');
   const [selectedDay, setSelectedDay] = useState<DayOfWeek>(today);
   const [slideDirection, setSlideDirection] = useState<'next' | 'prev'>('next');
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   const handlePrevDay = () => {
     setSlideDirection('prev');
@@ -1723,8 +1730,19 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
           </button>
         </div>
 
-        {/* Right Side: Archive Week Button */}
-        <div className="flex items-center shrink-0 pb-1.5 sm:pb-0">
+        {/* Right Side: Print Button & Archive Week Button */}
+        <div className="flex items-center shrink-0 pb-1.5 sm:pb-0 gap-2">
+          <button
+            type="button"
+            onClick={() => setShowPrintModal(true)}
+            className="inline-flex items-center space-x-1 sm:space-x-1.5 px-2.5 py-1.5 sm:px-4 sm:py-3 bg-indigo-950/60 hover:bg-indigo-600/30 text-indigo-300 hover:text-white border border-indigo-500/40 hover:border-indigo-400 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition-all shadow-lg active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
+            title="Haftalık ders çalışma planını resmi siyah-beyaz formatta PDF olarak indir veya yazdır"
+          >
+            <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400 shrink-0" />
+            <span className="sm:hidden">PDF / Yazdır</span>
+            <span className="hidden sm:inline">Haftalık Planı Yazdır / PDF</span>
+          </button>
+
           <button
             onClick={() => {
               setArchiveWeekOffset(0);
@@ -1900,6 +1918,15 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
 
                 {/* Add task buttons */}
                 <div className="flex flex-row items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setShowPrintModal(true)}
+                    className="bg-slate-900/90 hover:bg-indigo-600/30 text-indigo-300 hover:text-white text-[11px] sm:text-xs font-bold px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl transition-all shadow-md border border-indigo-500/30 hover:border-indigo-400/50 flex items-center space-x-1.5 cursor-pointer shrink-0 whitespace-nowrap flex-1 sm:flex-initial justify-center"
+                    title="Haftalık ders çalışma planını resmi siyah-beyaz formatta PDF olarak indir veya yazdır"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <span>PDF Çıktısı</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => openAddVideoModal()}
@@ -2128,6 +2155,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                 handleDuplicatePlan={handleDuplicatePlan}
                 openAddModal={openAddModal}
                 openAddVideoModal={openAddVideoModal}
+                openPrintModal={() => setShowPrintModal(true)}
                 setEditingPlan={setEditingPlan}
                 setDeletingPlan={setDeletingPlan}
                 touchStartRef={touchStartRef}
@@ -2306,6 +2334,17 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
           onAddPlan({ ...plan, date, weekLabel });
         }}
         weekLabel={currentWeekLabel}
+      />
+
+      <StudyPlannerPrintModal
+        isOpen={showPrintModal}
+        onClose={() => setShowPrintModal(false)}
+        activePlans={activePlans}
+        weekLabel={currentWeekLabel}
+        profile={profile}
+        currentUser={currentUser}
+        routines={routines}
+        weekDaysMap={selectedWeekDaysMap}
       />
     </div>
   );
