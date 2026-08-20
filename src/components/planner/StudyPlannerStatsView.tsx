@@ -18,7 +18,8 @@ import {
   Activity,
   ChevronDown,
   Info,
-  Timer
+  Timer,
+  Copy
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -64,6 +65,7 @@ interface StudyPlannerStatsViewProps {
   openDailyStudyLogModal?: (day: DayOfWeek) => void;
   getSubjectTheme?: (subject: string) => any;
   currentWeekLabel?: string;
+  onInitiateApplyPastWeek?: (weekLabel: string) => void;
 }
 
 export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
@@ -89,7 +91,8 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
   today,
   openDailyStudyLogModal,
   getSubjectTheme,
-  currentWeekLabel
+  currentWeekLabel,
+  onInitiateApplyPastWeek
 }) => {
   // Active Week Chart State & Settings
   const [activeChartType, setActiveChartType] = useState<'bar' | 'area' | 'line'>('bar');
@@ -1650,7 +1653,7 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
               </div>
               {orderedWeeks.length === 0 ? (
                 <div className="text-center py-10 border border-dashed border-slate-800 rounded-2xl text-slate-500 text-xs bg-slate-900/10">
-                  Arşivlenmiş hafta bulunmamaktadır. Sağ üstteki "Haftayı Arşive Kaldır" butonu ile mevcut haftanızı buraya ekleyebilirsiniz.
+                  Henüz geçmişe ait arşivlenmiş bir hafta kaydı bulunmamaktadır. Tamamlanan haftalarınız otomatik olarak burada listelenecektir.
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -1759,16 +1762,30 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
                       </p>
                     </div>
                     
-                    <div className="flex items-center space-x-2 text-xs font-bold text-slate-300 bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-800">
-                      <CheckCircle className="w-4 h-4 text-emerald-400" />
-                      <span>
-                        Uyum Oranı: {(() => {
-                          const plans = getPlansForWeek(activeHistoryWeek);
-                          const tot = plans.length;
-                          const cmp = plans.filter(p => p.status === 'completed').length;
-                          return tot > 0 ? Math.round((cmp / tot) * 100) : 0;
-                        })()}%
-                      </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {onInitiateApplyPastWeek && (
+                        <button
+                          type="button"
+                          onClick={() => onInitiateApplyPastWeek(activeHistoryWeek)}
+                          className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/30 cursor-pointer shrink-0"
+                          title="Bu haftanın ders programı şablonunu güncel (bu) haftaya aktar"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Bu Planı Güncel Haftaya Uygula</span>
+                        </button>
+                      )}
+
+                      <div className="flex items-center space-x-2 text-xs font-bold text-slate-300 bg-slate-950 px-3.5 py-2 rounded-xl border border-slate-800">
+                        <CheckCircle className="w-4 h-4 text-emerald-400" />
+                        <span>
+                          Uyum Oranı: {(() => {
+                            const plans = getPlansForWeek(activeHistoryWeek);
+                            const tot = plans.length;
+                            const cmp = plans.filter(p => p.status === 'completed').length;
+                            return tot > 0 ? Math.round((cmp / tot) * 100) : 0;
+                          })()}%
+                        </span>
+                      </div>
                     </div>
                   </div>
 

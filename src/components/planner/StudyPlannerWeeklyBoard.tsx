@@ -57,6 +57,7 @@ interface StudyPlannerWeeklyBoardProps {
   isFutureWeek?: boolean;
   getEffectiveDayStudyMinutes?: (day: DayOfWeek, dateKey?: string) => { minutes: number; isManual: boolean; notes?: string };
   openDailyStudyLogModal?: (day: DayOfWeek) => void;
+  onApplyPastWeekToCurrent?: () => void;
 }
 
 export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = ({
@@ -96,27 +97,41 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
   isArchivedWeek = false,
   isFutureWeek = false,
   getEffectiveDayStudyMinutes,
-  openDailyStudyLogModal
+  openDailyStudyLogModal,
+  onApplyPastWeekToCurrent
 }) => {
   return (
     <div className="space-y-4">
       {isArchivedWeek && (
-        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between text-xs text-amber-300">
+        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs text-amber-300">
           <div className="flex items-center space-x-2">
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
             <span><strong>Geçmiş Hafta Arşivi:</strong> Şu an geçmiş bir haftanın kaydını görüntülüyorsunuz. Tamamlanan dersler veritabanında saklanmıştır.</span>
           </div>
-          {openPrintModal && (
-            <button
-              type="button"
-              onClick={openPrintModal}
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 rounded-xl text-xs font-bold transition-all shadow cursor-pointer shrink-0 ml-2"
-              title="Bu haftalık planı resmi siyah-beyaz formatta PDF olarak yazdır"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Yazdır (PDF)</span>
-            </button>
-          )}
+          <div className="flex items-center space-x-2 shrink-0 self-end sm:self-auto">
+            {onApplyPastWeekToCurrent && (
+              <button
+                type="button"
+                onClick={onApplyPastWeekToCurrent}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/30 cursor-pointer shrink-0 active:scale-95"
+                title="Bu haftanın ders programı şablonunu güncel (bu) haftaya aktar"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Bu Planı Güncel Haftaya Uygula</span>
+              </button>
+            )}
+            {openPrintModal && (
+              <button
+                type="button"
+                onClick={openPrintModal}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 rounded-xl text-xs font-bold transition-all shadow cursor-pointer shrink-0"
+                title="Bu haftalık planı resmi siyah-beyaz formatta PDF olarak yazdır"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Yazdır (PDF)</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
 

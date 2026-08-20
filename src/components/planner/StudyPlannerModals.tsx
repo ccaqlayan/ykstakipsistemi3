@@ -17,7 +17,8 @@ import {
   Edit2, 
   Check, 
   Plus,
-  Clock
+  Clock,
+  Copy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { StudyPlanItem, DayOfWeek, QuestionLog, DailyStudyTimeLog } from '../../types';
@@ -97,19 +98,13 @@ interface StudyPlannerModalsProps {
   setUncompleteConfirm: (val: any) => void;
   handleConfirmUncompleteWithLogDeletion: () => void;
 
-  showArchiveConfirm: boolean;
-  setShowArchiveConfirm: (show: boolean) => void;
-  archiveWeekOffset: number;
-  setArchiveWeekOffset: React.Dispatch<React.SetStateAction<number>>;
-  archiveChoice: 'keep_template' | 'fresh_start' | null;
-  setArchiveChoice: (choice: 'keep_template' | 'fresh_start' | null) => void;
-  overwriteStep: 0 | 1 | 2;
-  setOverwriteStep: (step: 0 | 1 | 2) => void;
-  getOffsetDate: (offsetInWeeks: number) => Date;
-  getWeekLabel: (d: Date) => string;
-  getOffsetBadgeText: (offset: number) => string;
-  CHRONOLOGICAL_SEEDS: string[];
-  executeArchiveAndReset: (choice: 'keep_template' | 'fresh_start', targetWeekLabel: string) => void;
+  applyPastWeekModalData: {
+    weekLabel: string;
+    pastPlans: StudyPlanItem[];
+    currentPlansCount: number;
+  } | null;
+  setApplyPastWeekModalData: (val: { weekLabel: string; pastPlans: StudyPlanItem[]; currentPlansCount: number } | null) => void;
+  handleApplyPastWeekToCurrent: (targetPastWeekLabel: string, choice: 'merge' | 'replace') => void;
 
   showTaskTypeModal: boolean;
   setShowTaskTypeModal: (show: boolean) => void;
@@ -197,19 +192,9 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
   uncompleteConfirm,
   setUncompleteConfirm,
   handleConfirmUncompleteWithLogDeletion,
-  showArchiveConfirm,
-  setShowArchiveConfirm,
-  archiveWeekOffset,
-  setArchiveWeekOffset,
-  archiveChoice,
-  setArchiveChoice,
-  overwriteStep,
-  setOverwriteStep,
-  getOffsetDate,
-  getWeekLabel,
-  getOffsetBadgeText,
-  CHRONOLOGICAL_SEEDS,
-  executeArchiveAndReset,
+  applyPastWeekModalData,
+  setApplyPastWeekModalData,
+  handleApplyPastWeekToCurrent,
   showTaskTypeModal,
   setShowTaskTypeModal,
   editingTaskTypeIndex,
@@ -1319,251 +1304,122 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
         </div>
       )}
 
-      {/* MODAL 5: ARCHIVE & RESET STUDY PLAN CONFIRMATION */}
-      {showArchiveConfirm && (
-        (() => {
-          const targetWeekLabel = formatWeekLabelWithYear(getOffsetDate(archiveWeekOffset));
-          const existingArchivedCount = studyPlans.filter(p => p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, targetWeekLabel)).length;
-          const isAlreadyArchived = existingArchivedCount > 0 || CHRONOLOGICAL_SEEDS.some(seed => isSameWeekLabel(seed, targetWeekLabel));
-
-          const handleInitiateChoice = (choice: 'keep_template' | 'fresh_start') => {
-            setArchiveChoice(choice);
-            if (isAlreadyArchived) {
-              setOverwriteStep(1);
-            } else {
-              executeArchiveAndReset(choice, targetWeekLabel);
-            }
-          };
-
-          return (
-            <div 
-              className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
-              onClick={(e) => { 
-                if (e.target === e.currentTarget) {
-                  setShowArchiveConfirm(false);
-                  setOverwriteStep(0);
-                  setArchiveChoice(null);
-                } 
-              }}
-            >
-              <div className="bg-slate-900 border border-purple-500/30 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5">
-                
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <h3 className="text-base font-black text-white flex items-center space-x-2">
-                    <History className="w-5 h-5 text-purple-400 shrink-0" />
-                    <span>Haftayı Arşive Kaldır & Sıfırla</span>
-                  </h3>
-                  <button 
-                    onClick={() => {
-                      setShowArchiveConfirm(false);
-                      setOverwriteStep(0);
-                      setArchiveChoice(null);
-                    }} 
-                    className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+      {/* MODAL 5: APPLY PAST WEEK TO CURRENT WEEK MODAL (CONFLICT RESOLUTION) */}
+      {applyPastWeekModalData && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={(e) => { 
+            if (e.target === e.currentTarget) {
+              setApplyPastWeekModalData(null);
+            } 
+          }}
+        >
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center font-bold shrink-0">
+                  <Copy className="w-5 h-5" />
                 </div>
+                <div>
+                  <h3 className="text-base font-black text-white">
+                    Güncel Haftaya Plan Aktarımı
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Geçmiş hafta ders programını bu haftaya uygulama tercihi
+                  </p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setApplyPastWeekModalData(null)} 
+                className="text-slate-400 hover:text-white p-1 rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-                {/* OVERWRITE CONFIRMATION STEP 1 */}
-                {overwriteStep === 1 && (
-                  <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="p-4 bg-amber-950/40 border border-amber-500/50 rounded-2xl space-y-2 text-xs">
-                      <div className="flex items-center space-x-2 text-amber-400 font-extrabold text-sm">
-                        <AlertTriangle className="w-5 h-5 shrink-0 text-amber-400" />
-                        <span>Üzerine Yazma Onayı (1 / 2)</span>
-                      </div>
-                      <p className="text-amber-200/90 leading-relaxed font-medium pt-1">
-                        Seçtiğiniz <strong className="text-white underline">{targetWeekLabel}</strong> haftasına ait sistemde daha önce kaydedilmiş bir arşiv verisi bulunmaktadır.
-                      </p>
-                      <p className="text-amber-300 font-semibold pt-1">
-                        Eski arşiv verisini silip, yerine bu haftanın çalışma planını kaydetmek istediğinizden emin misiniz?
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOverwriteStep(0);
-                          setArchiveChoice(null);
-                        }}
-                        className="px-4 py-2.5 text-slate-400 hover:text-white font-bold transition-colors rounded-xl border border-slate-800 hover:bg-slate-800 cursor-pointer"
-                      >
-                        İptal
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setOverwriteStep(2)}
-                        className="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold transition-all rounded-xl shadow-lg shadow-amber-600/30 cursor-pointer"
-                      >
-                        Evet, Devam Et (2. Adım)
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* OVERWRITE CONFIRMATION STEP 2 */}
-                {overwriteStep === 2 && (
-                  <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="p-4 bg-rose-950/50 border border-rose-500/60 rounded-2xl space-y-2 text-xs">
-                      <div className="flex items-center space-x-2 text-rose-400 font-extrabold text-sm">
-                        <AlertTriangle className="w-5 h-5 shrink-0 text-rose-400" />
-                        <span>⚠️ SON ONAY (2 / 2) - Kalıcı İşlem</span>
-                      </div>
-                      <p className="text-rose-200/95 leading-relaxed font-medium pt-1">
-                        <strong>DİKKAT:</strong> <strong className="text-white underline">{targetWeekLabel}</strong> haftasının eski arşiv verileri <strong>KALICI OLARAK SİLİNECEK</strong> ve geri getirilemeyecektir.
-                      </p>
-                      <p className="text-rose-300 font-bold pt-1">
-                        Bu işlemi onaylayıp eski arşivi silerek yeni planı kaydetmek istiyor musunuz?
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOverwriteStep(0);
-                          setArchiveChoice(null);
-                        }}
-                        className="px-4 py-2.5 text-slate-400 hover:text-white font-bold transition-colors rounded-xl border border-slate-800 hover:bg-slate-800 cursor-pointer"
-                      >
-                        İptal
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (archiveChoice) {
-                            executeArchiveAndReset(archiveChoice, targetWeekLabel);
-                          }
-                        }}
-                        className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold transition-all rounded-xl shadow-lg shadow-rose-600/30 cursor-pointer"
-                      >
-                        Kalıcı Olarak Sil ve Üzerine Yaz
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* MAIN ARCHIVE FORM */}
-                {overwriteStep === 0 && (
-                  <div className="space-y-4">
-                    <div className="p-3.5 bg-purple-950/20 border border-purple-500/20 rounded-2xl space-y-1 text-xs text-purple-300 leading-relaxed font-semibold">
-                      <p>ℹ️ Mevcut çalışma alanınızdaki görevler belirtilen haftanın arşivine aktarılacaktır.</p>
-                    </div>
-
-                    <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-3">
-                      <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-                        <span className="flex items-center space-x-1.5 text-purple-400">
-                          <CalendarDays className="w-4 h-4" />
-                          <span>Tarih Bilgisi (Arşivlenecek Hafta)</span>
-                        </span>
-                        <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-purple-900/40 text-purple-300 border border-purple-700/50 font-bold">
-                          {getOffsetBadgeText(archiveWeekOffset)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between bg-slate-900 border border-slate-750 p-2 rounded-xl">
-                        <button
-                          type="button"
-                          onClick={() => setArchiveWeekOffset(prev => prev - 1)}
-                          className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition-all cursor-pointer flex items-center space-x-1 text-xs font-bold shrink-0"
-                          title="Eski Haftalara Geçiş Yap"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                          <span className="hidden sm:inline">Önceki Hafta</span>
-                        </button>
-
-                        <div className="text-center px-3 py-1">
-                          <div className="text-sm font-black text-white tracking-wide">
-                            {targetWeekLabel}
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-medium mt-0.5">
-                            Seçilen Arşiv Haftası
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => setArchiveWeekOffset(prev => prev + 1)}
-                          className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white transition-all cursor-pointer flex items-center space-x-1 text-xs font-bold shrink-0"
-                          title="Sonraki Haftaya Geç"
-                        >
-                          <span className="hidden sm:inline">Sonraki Hafta</span>
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {isAlreadyArchived && (
-                      <div className="p-3.5 bg-amber-950/40 border border-amber-500/40 rounded-2xl flex items-start space-x-3 text-amber-200 text-xs animate-in fade-in duration-200">
-                        <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                        <div className="space-y-0.5">
-                          <div className="font-extrabold text-amber-300">
-                            Seçtiğiniz haftada daha önce girilmiş veri var!
-                          </div>
-                          <div className="text-[11px] text-amber-200/90 leading-relaxed">
-                            "{targetWeekLabel}" haftasına ait mevcut bir arşiv bulunuyor. Devam ederseniz eskisini silip üzerine yazmak için onay istenecektir.
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1 pt-1">
-                      YENİ HAFTA BAŞLANGIÇ TERCİHİNİZ:
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleInitiateChoice('keep_template')}
-                        className="p-4 bg-slate-950 hover:bg-slate-800/85 border border-indigo-500/30 hover:border-indigo-500/50 rounded-2xl text-left transition-all duration-200 group cursor-pointer"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-2.5 group-hover:scale-110 transition-transform">
-                          <RotateCcw className="w-4 h-4" />
-                        </div>
-                        <h4 className="text-xs font-black text-white">Plan Şablonunu Koru</h4>
-                        <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
-                          Mevcut derslerinizi ve hedeflerinizi korur; süre ve durumları sıfırlayarak yeni haftaya hazırlar.
-                        </p>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleInitiateChoice('fresh_start')}
-                        className="p-4 bg-slate-950 hover:bg-slate-800/85 border border-rose-500/20 hover:border-rose-500/40 rounded-2xl text-left transition-all duration-200 group cursor-pointer"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-400 mb-2.5 group-hover:scale-110 transition-transform">
-                          <Trash2 className="w-4 h-4" />
-                        </div>
-                        <h4 className="text-xs font-black text-white">Sıfırdan Başla</h4>
-                        <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
-                          Tüm programı tamamen temizler ve sıfırdan yeni bir haftalık çalışma planı sunar.
-                        </p>
-                      </button>
-                    </div>
-
-                    <div className="flex items-center justify-end pt-2 border-t border-slate-800 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowArchiveConfirm(false);
-                          setOverwriteStep(0);
-                          setArchiveChoice(null);
-                        }}
-                        className="px-4 py-2.5 text-slate-400 hover:text-white font-bold transition-colors rounded-xl border border-slate-800 hover:bg-slate-800 cursor-pointer"
-                      >
-                        Vazgeç
-                      </button>
-                    </div>
-                  </div>
-                )}
-
+            {/* Info Box */}
+            <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2 text-xs">
+              <div className="flex items-center justify-between text-slate-300 font-bold">
+                <span>Aktarılacak Plan:</span>
+                <span className="text-indigo-300 font-mono font-black">{applyPastWeekModalData.weekLabel}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-300 font-bold">
+                <span>Aktarılacak Görev Sayısı:</span>
+                <span className="text-purple-300 font-mono font-black">{applyPastWeekModalData.pastPlans.length} Ders</span>
+              </div>
+              <div className="flex items-center justify-between text-amber-300 font-bold pt-1 border-t border-slate-800">
+                <span>Güncel Haftada Ekli Görev:</span>
+                <span className="text-amber-300 font-mono font-black">{applyPastWeekModalData.currentPlansCount} Ders</span>
               </div>
             </div>
-          );
-        })()
+
+            <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-xs text-amber-200 leading-relaxed">
+              ⚠️ <strong>Dikkat:</strong> Güncel haftanızda zaten <strong>{applyPastWeekModalData.currentPlansCount} adet görev</strong> bulunuyor. Bu geçmiş planı nasıl uygulamak istersiniz?
+            </div>
+
+            {/* Choice Options */}
+            <div className="grid grid-cols-1 gap-3">
+              {/* Option 1: Merge / Append */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleApplyPastWeekToCurrent(applyPastWeekModalData.weekLabel, 'merge');
+                  setApplyPastWeekModalData(null);
+                }}
+                className="p-4 bg-slate-950 hover:bg-slate-800/90 border border-indigo-500/30 hover:border-indigo-400 rounded-2xl text-left transition-all group cursor-pointer flex items-start space-x-3.5"
+              >
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0 group-hover:scale-105 transition-transform mt-0.5">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-white group-hover:text-indigo-200">
+                    Mevcut Görevlerin Üzerine Ekle (Birleştir)
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                    Bu haftada önceden eklediğiniz görevleri korur, seçtiğiniz haftanın derslerini günlerine ilave olarak ekler.
+                  </p>
+                </div>
+              </button>
+
+              {/* Option 2: Replace / Fresh Template */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleApplyPastWeekToCurrent(applyPastWeekModalData.weekLabel, 'replace');
+                  setApplyPastWeekModalData(null);
+                }}
+                className="p-4 bg-slate-950 hover:bg-slate-800/90 border border-amber-500/30 hover:border-amber-400 rounded-2xl text-left transition-all group cursor-pointer flex items-start space-x-3.5"
+              >
+                <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 group-hover:scale-105 transition-transform mt-0.5">
+                  <RotateCcw className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-white group-hover:text-amber-200">
+                    Mevcut Görevleri Temizle ve Bu Planı Uygula (Sıfırla & Değiştir)
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                    Bu haftadaki mevcut görevleri temizler ve sadece seçtiğiniz haftanın programını temiz bir şablon olarak kurar.
+                  </p>
+                </div>
+              </button>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-end pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setApplyPastWeekModalData(null)}
+                className="px-4 py-2.5 text-slate-400 hover:text-white font-bold text-xs transition-colors rounded-xl border border-slate-800 hover:bg-slate-800 cursor-pointer"
+              >
+                Vazgeç
+              </button>
+            </div>
+
+          </div>
+        </div>
       )}
 
       {/* MODAL 6: TASK TYPES MANAGEMENT MODAL */}

@@ -418,10 +418,11 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   const [activeSubTab, setActiveSubTab] = useState<'tracker' | 'history'>('tracker');
   const [selectedHistoryWeek, setSelectedHistoryWeek] = useState<string>('');
   const [historyWeeksPage, setHistoryWeeksPage] = useState<number>(1);
-  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
-  const [archiveWeekOffset, setArchiveWeekOffset] = useState<number>(-1);
-  const [archiveChoice, setArchiveChoice] = useState<'keep_template' | 'fresh_start' | null>(null);
-  const [overwriteStep, setOverwriteStep] = useState<0 | 1 | 2>(0);
+  const [applyPastWeekModalData, setApplyPastWeekModalData] = useState<{
+    weekLabel: string;
+    pastPlans: StudyPlanItem[];
+    currentPlansCount: number;
+  } | null>(null);
   const [subjectChartScope, setSubjectChartScope] = useState<'total' | 'selected'>('total');
   const [subjectChartMetric, setSubjectChartMetric] = useState<'duration' | 'question'>('duration');
 
@@ -435,19 +436,6 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       mainElem.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [viewMode, activeSubTab]);
-
-  const getOffsetDate = (offsetInWeeks: number) => {
-    return addWeeks(selectedMondayDate, offsetInWeeks);
-  };
-
-  const getOffsetBadgeText = (offset: number) => {
-    if (offset === 0) return 'Bu Hafta (Mevcut Hafta)';
-    if (offset === -1) return 'Geçen Hafta (1 Hafta Önce)';
-    if (offset === -2) return '2 Hafta Önce';
-    if (offset < -2) return `${Math.abs(offset)} Hafta Önce`;
-    if (offset === 1) return 'Gelecek Hafta (1 Hafta Sonra)';
-    return `${offset} Hafta Sonra`;
-  };
 
   const CHRONOLOGICAL_SEEDS: string[] = ['6 - 12 Temmuz', '13 - 19 Temmuz', '20 - 26 Temmuz'];
 
@@ -640,80 +628,76 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     });
   };
 
-  const executeArchiveAndReset = (choice: 'keep_template' | 'fresh_start', targetWeekLabel: string) => {
-    if (!onUpdateAllPlans) return;
-
-    const isTargetCurrentWeek = isSameWeekLabel(targetWeekLabel, currentWeekLabel);
-
-    if (isTargetCurrentWeek) {
-      // Filter current active plans
-      const activePlansToArchive = studyPlans.filter(p => !p.archived);
-
-      // Archive current active plans with targetWeekLabel
-      const archivedPlans = activePlansToArchive.map(p => ({
-        ...p,
-        id: p.id.startsWith('arch-') ? p.id : 'arch-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-        archived: true,
-        weekLabel: targetWeekLabel
-      }));
-
-      // Keep existing archived plans EXCEPT those matching targetWeekLabel (which are overwritten)
-      const otherArchivedPlans = studyPlans.filter(p => !(p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, targetWeekLabel)));
-
-      // Create new active plans for next week
-      let newActivePlans: StudyPlanItem[] = [];
-      if (choice === 'keep_template') {
-        newActivePlans = activePlansToArchive.map(p => ({
-          ...p,
-          id: 'plan-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-          completedMinutes: 0,
-          status: 'pending' as const,
-          reflection: undefined,
-          archived: false,
-          weekLabel: undefined,
-          date: undefined
-        }));
-      }
-
-      const updatedAllPlans = [...otherArchivedPlans, ...archivedPlans, ...newActivePlans];
-      
-      onUpdateAllPlans(
-        updatedAllPlans, 
-        `Çalışma planı "${targetWeekLabel}" haftasına arşivlendi ve yeni hafta başlatıldı.`
-      );
-    } else {
-      // Archiving a specific past/other week - preserve current active plans!
-      const currentActivePlans = studyPlans.filter(p => !p.archived);
-      const existingOtherArchived = studyPlans.filter(p => p.archived && !(p.weekLabel && isSameWeekLabel(p.weekLabel, targetWeekLabel)));
-
-      let plansForTargetWeek = studyPlans.filter(p => p.weekLabel && isSameWeekLabel(p.weekLabel, targetWeekLabel));
-      if (plansForTargetWeek.length === 0) {
-        plansForTargetWeek = currentActivePlans.map(p => ({
-          ...p,
-          completedMinutes: choice === 'keep_template' ? (p.completedMinutes > 0 ? p.completedMinutes : (p.plannedMinutes || 60)) : 0,
-          status: choice === 'keep_template' ? (p.status === 'pending' ? 'completed' : p.status) : ('pending' as const)
-        }));
-      }
-
-      const archivedPlans = plansForTargetWeek.map(p => ({
-        ...p,
-        id: p.id.startsWith('arch-') ? p.id : 'arch-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-        archived: true,
-        weekLabel: targetWeekLabel
-      }));
-
-      const updatedAllPlans = [...existingOtherArchived, ...archivedPlans, ...currentActivePlans];
-      onUpdateAllPlans(
-        updatedAllPlans,
-        `Geçmiş "${targetWeekLabel}" haftası arşivlendi.`
-      );
+  const handleInitiateApplyPastWeek = (targetWeekLabel: string) => {
+    const pastPlans = getPlansForWeek(targetWeekLabel);
+    if (pastPlans.length === 0) {
+      alert('Seçilen haftaya ait aktarılacak ders bulunamadı.');
+      return;
     }
 
-    setShowArchiveConfirm(false);
-    setOverwriteStep(0);
-    setArchiveChoice(null);
-    setActiveSubTab('history');
-    setSelectedHistoryWeek(targetWeekLabel);
+    // Active unarchived plans in current week
+    const currentActivePlans = studyPlans.filter(p => !p.archived && (
+      !p.weekLabel || isSameWeekLabel(p.weekLabel, currentWeekLabel)
+    ));
+
+    if (currentActivePlans.length === 0) {
+      // Direct apply if current week is completely empty
+      handleApplyPastWeekToCurrent(targetWeekLabel, 'replace');
+    } else {
+      // Open conflict resolution modal
+      setApplyPastWeekModalData({
+        weekLabel: targetWeekLabel,
+        pastPlans,
+        currentPlansCount: currentActivePlans.length
+      });
+    }
+  };
+
+  const handleApplyPastWeekToCurrent = (targetPastWeekLabel: string, choice: 'merge' | 'replace') => {
+    if (!onUpdateAllPlans) return;
+
+    const pastPlans = getPlansForWeek(targetPastWeekLabel);
+    if (pastPlans.length === 0) return;
+
+    // Generate new unarchived plans for current week with reset status and proper dates
+    const newPlansForCurrentWeek: StudyPlanItem[] = pastPlans.map(p => {
+      const { date, weekLabel } = getPlanDateAndWeekLabel(p.day);
+      return {
+        ...p,
+        id: 'plan-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+        completedMinutes: 0,
+        status: 'pending' as const,
+        reflection: undefined,
+        archived: false,
+        date,
+        weekLabel
+      };
+    });
+
+    let updatedAllPlans: StudyPlanItem[] = [];
+
+    if (choice === 'replace') {
+      // Keep archived plans + keep other week unarchived plans, but remove current week active plans
+      const otherPlans = studyPlans.filter(p => {
+        if (p.archived) return true;
+        if (p.weekLabel && !isSameWeekLabel(p.weekLabel, currentWeekLabel)) return true;
+        return false;
+      });
+      updatedAllPlans = [...otherPlans, ...newPlansForCurrentWeek];
+    } else {
+      // Merge / append
+      updatedAllPlans = [...studyPlans, ...newPlansForCurrentWeek];
+    }
+
+    onUpdateAllPlans(
+      updatedAllPlans,
+      `"${targetPastWeekLabel}" haftasının ders planı güncel haftaya uygulandı (${choice === 'replace' ? 'Sıfırlandı' : 'Birleştirildi'}).`
+    );
+
+    // Switch view to current week tracker
+    setSelectedMondayDate(currentMonday);
+    setActiveSubTab('tracker');
+    setQuestionToast(`✨ "${targetPastWeekLabel}" haftasının planı güncel haftanıza başarıyla aktarıldı!`);
   };
   
   // Helper to get question logs linked to a specific study plan item
@@ -1743,20 +1727,18 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
             <span className="hidden sm:inline">Haftalık Planı Yazdır / PDF</span>
           </button>
 
-          <button
-            onClick={() => {
-              setArchiveWeekOffset(0);
-              setOverwriteStep(0);
-              setArchiveChoice(null);
-              setShowArchiveConfirm(true);
-            }}
-            className="inline-flex items-center space-x-1 sm:space-x-1.5 px-2.5 py-1.5 sm:px-4 sm:py-3 bg-slate-900/60 hover:bg-purple-500/10 text-slate-300 hover:text-purple-400 border border-slate-800 hover:border-purple-500/30 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition-all shadow-lg active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
-            title="Mevcut çalışma haftasını arşive kaldırıp yeni hafta başlatır"
-          >
-            <History className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 shrink-0" />
-            <span className="sm:hidden">Arşive Kaldır</span>
-            <span className="hidden sm:inline">Haftayı Arşive Kaldır</span>
-          </button>
+          {isPastWeek && (
+            <button
+              type="button"
+              onClick={() => handleInitiateApplyPastWeek(currentWeekLabel)}
+              className="inline-flex items-center space-x-1 sm:space-x-1.5 px-2.5 py-1.5 sm:px-4 sm:py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
+              title="Bu haftanın ders çalışma planı şablonunu güncel (bu) haftaya aktar"
+            >
+              <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="sm:hidden">Bu Planı Uygula</span>
+              <span className="hidden sm:inline">Bu Planı Güncel Haftaya Uygula</span>
+            </button>
+          )}
         </div>
       </div>
       )}
@@ -2164,6 +2146,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                 isFutureWeek={isFutureWeek}
                 getEffectiveDayStudyMinutes={getEffectiveDayStudyMinutes}
                 openDailyStudyLogModal={openDailyStudyLogModal}
+                onApplyPastWeekToCurrent={() => handleInitiateApplyPastWeek(currentWeekLabel)}
               />
             </motion.div>
           </AnimatePresence>
@@ -2223,6 +2206,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         openDailyStudyLogModal={openDailyStudyLogModal}
         getSubjectTheme={getSubjectTheme}
         currentWeekLabel={currentWeekLabel}
+        onInitiateApplyPastWeek={handleInitiateApplyPastWeek}
       />
 
       {/* ALL MODALS */}
@@ -2282,19 +2266,9 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         uncompleteConfirm={uncompleteConfirm}
         setUncompleteConfirm={setUncompleteConfirm}
         handleConfirmUncompleteWithLogDeletion={handleConfirmUncompleteWithLogDeletion}
-        showArchiveConfirm={showArchiveConfirm}
-        setShowArchiveConfirm={setShowArchiveConfirm}
-        archiveWeekOffset={archiveWeekOffset}
-        setArchiveWeekOffset={setArchiveWeekOffset}
-        archiveChoice={archiveChoice}
-        setArchiveChoice={setArchiveChoice}
-        overwriteStep={overwriteStep}
-        setOverwriteStep={setOverwriteStep}
-        getOffsetDate={getOffsetDate}
-        getWeekLabel={getWeekLabel}
-        getOffsetBadgeText={getOffsetBadgeText}
-        CHRONOLOGICAL_SEEDS={CHRONOLOGICAL_SEEDS}
-        executeArchiveAndReset={executeArchiveAndReset}
+        applyPastWeekModalData={applyPastWeekModalData}
+        setApplyPastWeekModalData={setApplyPastWeekModalData}
+        handleApplyPastWeekToCurrent={handleApplyPastWeekToCurrent}
         showTaskTypeModal={showTaskTypeModal}
         setShowTaskTypeModal={setShowTaskTypeModal}
         editingTaskTypeIndex={editingTaskTypeIndex}
