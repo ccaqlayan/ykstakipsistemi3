@@ -11,7 +11,11 @@ import {
   CheckCircle2,
   AlertCircle,
   Sun,
-  Moon
+  Moon,
+  Eye,
+  EyeOff,
+  Clock,
+  Info
 } from 'lucide-react';
 import { UserAccount, UserRole } from '../types';
 import { YildizLisesiLogo } from './YildizLisesiLogo';
@@ -46,6 +50,15 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Password visibility toggles
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
+
+  // Kayıt sonrası bekleme ekranı
+  const [showPendingInfo, setShowPendingInfo] = useState(false);
+  const [pendingUserName, setPendingUserName] = useState('');
 
   // Register form state
   const [regName, setRegName] = useState('');
@@ -164,8 +177,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
     };
 
     onCreateAccount(newUser);
-    setSuccessMessage('Öğrenci kaydınız başarıyla alındı! Hesabınız öğretmen onayına sunulmuştur. Öğretmeniniz onayladıktan sonra e-posta ve şifrenizle giriş yapabilirsiniz.');
-    setActiveTab('login');
+    setPendingUserName(regName);
+    setShowPendingInfo(true);
     setEmail(regEmail);
     setPassword('');
     setIsRegistering(false);
@@ -272,8 +285,62 @@ export const LoginView: React.FC<LoginViewProps> = ({
           </div>
         </div>
 
-        {/* Tab Switcher: Login vs Register */}
-        <div className="flex bg-white/10 p-1 rounded-2xl border border-white/10 mb-6">
+        {/* Kay\u0131t Sonras\u0131 Bekleme Bilgi Paneli */}
+        {showPendingInfo && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl space-y-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-white">Ba\u015fvurunuz Al\u0131nd\u0131!</div>
+                  <div className="text-[11px] text-emerald-300 font-semibold">{pendingUserName} \u2014 \u00d6\u011frenci Hesab\u0131</div>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-xs text-slate-300">
+                <div className="flex items-start space-x-2">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                  <span>Hesab\u0131n\u0131z sisteme ba\u015far\u0131yla kaydedildi.</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                  <span><strong className="text-amber-300">S\u0131nıf rehber \u00f6\u011fretmeninizin</strong> onay\u0131 bekleniyor. Genellikle 1 i\u015f g\u00fcn\u00fc i\u00e7inde onaylan\u0131r.</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <Info className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
+                  <span>\u00d6\u011fretmeninize bizzat s\u00f6yleyerek onay s\u00fcrecini h\u0131zland\u0131rabilirsiniz.</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-900/60 border border-slate-700/60 rounded-2xl">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Onay Sonras\u0131 Yap\u0131lacaklar</div>
+              <div className="text-xs text-slate-300 space-y-1">
+                <div>1. E-posta ve \u015fifrenizle giri\u015f yap\u0131n</div>
+                <div>2. Hedef \u00fcniversite ve bölüm\u00fcn\u00fc belirle</div>
+                <div>3. Kaynak kitaplar\u0131n\u0131 ekle ve \u00e7al\u0131\u015fmaya ba\u015fla</div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowPendingInfo(false);
+                setActiveTab('login');
+                setSuccessMessage('\u00d6\u011frenci hesab\u0131n\u0131z olu\u015fturuldu! \u00d6\u011fretmeniniz onaylad\u0131ktan sonra giri\u015f yapabilirsiniz.');
+              }}
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition-all shadow-lg shadow-indigo-600/30 border border-indigo-400/40 flex items-center justify-center space-x-2 cursor-pointer"
+            >
+              <ArrowRight className="w-4 h-4" />
+              <span>Giri\u015f Ekran\u0131na D\u00f6n</span>
+            </button>
+          </div>
+        )}
+
+        {/* Tab Switcher: Login vs Register (Sadece pending info yoksa g\u00f6ster) */}
+        {!showPendingInfo && <div className="flex bg-white/10 p-1 rounded-2xl border border-white/10 mb-6">
           <button
             onClick={() => { 
               setActiveTab('login'); 
@@ -310,7 +377,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
           >
             Yeni Hesap Oluştur
           </button>
-        </div>
+        </div>}
+
+        {/* Error & Success Notifications + Forms (Sadece pending bilgi ekranı yokken göster) */}
+        {!showPendingInfo && <>
 
         {/* Error Notification */}
         {errorMessage && (
@@ -355,13 +425,22 @@ export const LoginView: React.FC<LoginViewProps> = ({
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3.5 sm:top-3" />
                 <input
-                  type="password"
+                  type={showLoginPassword ? 'text' : 'password'}
                   required
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-3 sm:py-2.5 text-sm sm:text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-10 py-3 sm:py-2.5 text-sm sm:text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword(p => !p)}
+                  className="absolute right-3 top-3.5 sm:top-3 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                  tabIndex={-1}
+                  title={showLoginPassword ? 'Şifreyi Gizle' : 'Şifreyi Göster'}
+                >
+                  {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
               <div className="flex items-center justify-between mt-1.5 text-[11px] sm:text-[10px]">
                 <span className="text-slate-400">Demo şifre: <strong className="text-indigo-300">123</strong></span>
@@ -716,14 +795,25 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">Şifre Belirleyin</label>
-              <input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={regPassword}
-                onChange={(e) => setRegPassword(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
-              />
+              <div className="relative">
+                <input
+                  type={showRegPassword ? 'text' : 'password'}
+                  required
+                  placeholder="••••••••"
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 pr-10 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRegPassword(p => !p)}
+                  className="absolute right-3 top-3.5 sm:top-2.5 text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                  tabIndex={-1}
+                  title={showRegPassword ? 'Şifreyi Gizle' : 'Şifreyi Göster'}
+                >
+                  {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div>
@@ -748,8 +838,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
             >
               {isRegistering ? <span>Başvuru Gönderiliyor...</span> : <span>Öğrenci Kayıt Başvurusunu Gönder</span>}
             </button>
-          </form>
+            </form>
         )}
+
+        </> /* showPendingInfo false block end */}
 
         {/* Demo Credentials Summary Footer */}
         <div className="mt-6 pt-4 border-t border-white/10 text-center">
