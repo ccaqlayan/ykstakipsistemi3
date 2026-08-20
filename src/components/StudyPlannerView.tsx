@@ -2157,15 +2157,6 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                 <div className="flex flex-row items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
                   <button
                     type="button"
-                    onClick={() => setShowPrintModal(true)}
-                    className="bg-slate-900/90 hover:bg-indigo-600/30 text-indigo-300 hover:text-white text-[11px] sm:text-xs font-bold px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl transition-all shadow-md border border-indigo-500/30 hover:border-indigo-400/50 flex items-center space-x-1.5 cursor-pointer shrink-0 whitespace-nowrap flex-1 sm:flex-initial justify-center"
-                    title="Haftalık ders çalışma planını resmi siyah-beyaz formatta PDF olarak indir veya yazdır"
-                  >
-                    <Printer className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                    <span>PDF Çıktısı</span>
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => openAddVideoModal()}
                     className="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] sm:text-xs font-bold px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl transition-all shadow-md shadow-indigo-600/30 flex items-center space-x-1 border border-indigo-400/40 cursor-pointer shrink-0 whitespace-nowrap flex-1 sm:flex-initial justify-center"
                   >
