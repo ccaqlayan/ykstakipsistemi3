@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Calculator, X, Sliders, ChevronDown, Sparkles, Target, Award, Eye, EyeOff, 
   Info, Globe, BookOpen, Copy, Check, Filter, Layers, Zap, Scale, 
@@ -427,12 +428,12 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
     );
   };
 
-  return (
+  const modalContent = (
     <div 
-      className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
+      className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) setCalcMock(null); }}
     >
-      <div className="bg-slate-900 border border-slate-800/90 rounded-3xl max-w-5xl w-full p-5 sm:p-7 shadow-2xl shadow-indigo-950/50 space-y-5 max-h-[92vh] overflow-y-auto custom-scrollbar relative">
+      <div className="bg-slate-900 border border-slate-800/90 rounded-3xl max-w-5xl w-full p-5 sm:p-7 shadow-2xl shadow-indigo-950/50 space-y-5 max-h-[92vh] overflow-y-auto custom-scrollbar relative my-auto modal-dialog-card">
         
         {/* Top Glow Highlights */}
         <div className="absolute top-0 left-1/4 right-1/4 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-80" />
@@ -942,4 +943,6 @@ export const MockRankSimulatorModal: React.FC<MockRankSimulatorModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

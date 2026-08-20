@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, Bell, Brain, ArrowRight, Sparkles, Clock, CheckCircle2 } from 'lucide-react';
 import { TopicErrorItem } from '../../types';
 
@@ -17,9 +18,9 @@ export const RepetitionAlertModal: React.FC<RepetitionAlertModalProps> = ({
 }) => {
   if (!isOpen || dueQuestions.length === 0) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl p-5 sm:p-7 max-w-md w-full shadow-2xl space-y-4 animate-fade-in relative overflow-hidden">
+  const modalContent = (
+    <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-indigo-500/40 rounded-3xl p-5 sm:p-7 max-w-md w-full shadow-2xl space-y-4 animate-fade-in relative overflow-hidden my-auto modal-dialog-card">
         
         {/* Glow background accent */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
@@ -102,4 +103,6 @@ export const RepetitionAlertModal: React.FC<RepetitionAlertModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

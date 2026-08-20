@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { SlidersHorizontal, X, BarChart2, Pin, RotateCcw } from 'lucide-react';
 
 interface MockCustomizeModalProps {
@@ -31,9 +32,9 @@ export const MockCustomizeModal: React.FC<MockCustomizeModalProps> = ({
 }) => {
   if (!showCustomizeModal) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-5 space-y-5 text-white shadow-2xl relative">
+  const modalContent = (
+    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-5 space-y-5 text-white shadow-2xl relative my-auto modal-dialog-card">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <h2 className="text-base font-bold flex items-center space-x-2">
             <SlidersHorizontal className="w-5 h-5 text-indigo-400" />
@@ -201,4 +202,6 @@ export const MockCustomizeModal: React.FC<MockCustomizeModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

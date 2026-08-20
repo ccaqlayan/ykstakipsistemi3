@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, CheckCircle2, AlertCircle, Sparkles, ChevronRight, ChevronLeft, 
   RotateCcw, Brain, Trophy, BookOpen, Layers, ArrowRight, Eye, Check, HelpCircle 
@@ -59,9 +60,9 @@ export const SpacedRepetitionModal: React.FC<SpacedRepetitionModalProps> = ({
   if (!isOpen) return null;
 
   if (!currentQuestion || dueQuestions.length === 0) {
-    return (
-      <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-        <div className="bg-slate-900 border border-slate-700/80 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center space-y-4 shadow-2xl animate-fade-in">
+    const finishContent = (
+      <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="bg-slate-900 border border-slate-700/80 rounded-3xl p-6 sm:p-8 max-w-md w-full text-center space-y-4 shadow-2xl animate-fade-in my-auto modal-dialog-card">
           <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto border border-emerald-500/30">
             <Trophy className="w-8 h-8" />
           </div>
@@ -79,6 +80,7 @@ export const SpacedRepetitionModal: React.FC<SpacedRepetitionModalProps> = ({
         </div>
       </div>
     );
+    return typeof document !== 'undefined' ? createPortal(finishContent, document.body) : finishContent;
   }
 
   const stage = (currentQuestion.repetitionStage ?? 0) + 1;
@@ -114,8 +116,8 @@ export const SpacedRepetitionModal: React.FC<SpacedRepetitionModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-between p-2 sm:p-4 select-none overflow-y-auto">
+  const mainContent = (
+    <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex flex-col items-center justify-between p-2 sm:p-4 select-none overflow-y-auto">
       
       {/* 🟢 TOP BAR */}
       <div className="w-full max-w-4xl flex items-center justify-between px-3.5 py-2.5 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl backdrop-blur-md shrink-0 mb-2">
@@ -307,4 +309,6 @@ export const SpacedRepetitionModal: React.FC<SpacedRepetitionModalProps> = ({
 
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(mainContent, document.body) : mainContent;
 };

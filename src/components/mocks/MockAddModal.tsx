@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, X, SlidersHorizontal, CheckCircle2, Clock, Sparkles, Globe } from 'lucide-react';
 import { FieldType, MockExamType } from '../../types';
 import { sanitizeNetInput, parseNetVal } from '../../utils/mockUtils';
@@ -107,12 +108,12 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
 }) => {
   if (!showAddModal) return null;
 
-  return (
+  const modalContent = (
     <div 
-      className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
+      className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}
     >
-      <div className="bg-slate-900/95 border border-indigo-500/30 rounded-3xl max-w-2xl w-full p-5 sm:p-7 shadow-2xl shadow-indigo-950/50 space-y-5 max-h-[92vh] overflow-y-auto custom-scrollbar">
+      <div className="bg-slate-900/95 border border-indigo-500/30 rounded-3xl max-w-2xl w-full p-5 sm:p-7 shadow-2xl shadow-indigo-950/50 space-y-5 max-h-[92vh] overflow-y-auto custom-scrollbar my-auto modal-dialog-card">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-4">
@@ -885,4 +886,6 @@ export const MockAddModal: React.FC<MockAddModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

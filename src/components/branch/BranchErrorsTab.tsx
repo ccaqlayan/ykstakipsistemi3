@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   AlertTriangle, 
   BookOpen, 
@@ -1673,12 +1674,12 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
       )}
 
       {/* Modal: Hata Analizi (Kayıtlı veya Talep Üzerine Analiz) */}
-      {activeAiErrorItem && (
+      {activeAiErrorItem && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget && !isAnalyzingActiveError) setActiveAiErrorItem(null); }}
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl space-y-4 animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full p-5 sm:p-6 shadow-2xl space-y-4 animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar my-auto modal-dialog-card">
             
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -1816,7 +1817,8 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
             )}
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

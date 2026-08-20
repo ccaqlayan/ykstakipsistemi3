@@ -3109,7 +3109,7 @@ export default function App() {
       />
 
       {/* Main Container */}
-      <div className={`flex-1 ${activeTab === 'bulk_exam_import' || activeTab === 'teacher_system' ? 'w-full max-w-none px-2 sm:px-4' : 'max-w-7xl w-full mx-auto'} flex flex-col md:flex-row relative z-10`}>
+      <div className={`flex-1 ${activeTab === 'bulk_exam_import' || activeTab === 'teacher_system' ? 'w-full max-w-none px-2 sm:px-4' : 'max-w-7xl w-full mx-auto'} flex flex-col md:flex-row relative`}>
         
         {/* Navigation Sidebar */}
         {!isZenMode && (

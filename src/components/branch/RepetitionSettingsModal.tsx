@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Clock, Settings, Plus, Trash2, RotateCcw, Check, Sparkles } from 'lucide-react';
 import { 
   getUserRepetitionIntervals, 
@@ -57,9 +58,9 @@ export const RepetitionSettingsModal: React.FC<RepetitionSettingsModalProps> = (
     }, 800);
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-3xl p-5 sm:p-6 max-w-md w-full shadow-2xl space-y-4 animate-fade-in">
+  const modalContent = (
+    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-700/80 rounded-3xl p-5 sm:p-6 max-w-md w-full shadow-2xl space-y-4 animate-fade-in my-auto modal-dialog-card">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -201,4 +202,6 @@ export const RepetitionSettingsModal: React.FC<RepetitionSettingsModalProps> = (
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

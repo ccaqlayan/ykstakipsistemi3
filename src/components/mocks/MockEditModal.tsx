@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Pencil, X, SlidersHorizontal, CheckCircle2, Clock, Sparkles, Globe } from 'lucide-react';
 import { FieldType, GeneralMockExam, MockExamType } from '../../types';
 import { sanitizeNetInput, parseNetVal } from '../../utils/mockUtils';
@@ -107,12 +108,12 @@ export const MockEditModal: React.FC<MockEditModalProps> = ({
 }) => {
   if (!editingMock) return null;
 
-  return (
+  const modalContent = (
     <div 
-      className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
+      className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) setEditingMock(null); }}
     >
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto custom-scrollbar modal-dialog-card">
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto custom-scrollbar modal-dialog-card my-auto">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
           <h3 className="text-base font-bold text-white flex items-center gap-2">
             <Pencil className="w-4 h-4 text-indigo-400" />
@@ -783,4 +784,6 @@ export const MockEditModal: React.FC<MockEditModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

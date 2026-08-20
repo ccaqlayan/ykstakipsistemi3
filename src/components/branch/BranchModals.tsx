@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   BookOpen, 
@@ -445,9 +446,9 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
   return (
     <>
       {/* Modal: Add/Edit Topic Error */}
-      {showAddErrorModal && (
+      {showAddErrorModal && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
+          className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) { setShowAddErrorModal(false); setEditingError(null); } }}
         >
           {(() => {
@@ -464,7 +465,7 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
               .slice(0, 3);
 
             return (
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-5 md:p-6 shadow-2xl space-y-3 max-h-[90vh] overflow-y-auto animate-fade-in modal-dialog-card">
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-5 md:p-6 shadow-2xl space-y-3 max-h-[90vh] overflow-y-auto animate-fade-in modal-dialog-card my-auto">
                 <div className="flex items-center justify-between pb-1 border-b border-slate-800">
                   <h3 className="text-sm md:text-base font-bold text-white flex items-center space-x-1.5">
                     <BookOpen className="w-4 h-4 text-rose-400" />
@@ -863,13 +864,14 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
               </div>
             );
           })()}
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal: Add/Edit Branch Exam */}
-      {showAddExamModal && (
+      {showAddExamModal && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in"
+          className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) { setShowAddExamModal(false); setEditingExam(null); } }}
         >
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-fade-in my-auto max-h-[92vh] overflow-y-auto custom-scrollbar relative overflow-hidden modal-dialog-card">
@@ -1094,7 +1096,8 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <ConfirmDeleteModal
@@ -1106,12 +1109,12 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
       />
 
       {/* Modal: AI Tip Modal */}
-      {activeTipTopic && (
+      {activeTipTopic && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setActiveTipTopic(null); }}
         >
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 md:p-6 shadow-2xl space-y-4 animate-fade-in max-h-[85vh] overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-5 md:p-6 shadow-2xl space-y-4 animate-fade-in max-h-[85vh] overflow-y-auto my-auto modal-dialog-card">
             <div className="flex items-center justify-between pb-2 border-b border-slate-800">
               <div className="flex items-center space-x-2">
                 <Sparkles className="w-5 h-5 text-indigo-400" />
@@ -1199,12 +1202,13 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── MODAL 2: GÖRSEL SAKLAMA & YAPAY ZEKA ÇÖZÜM MODALI ── */}
-      {previewImage && (
-        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-6 z-50 overflow-y-auto animate-fade-in">
+      {previewImage && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-6 z-[100] overflow-y-auto animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full p-3 sm:p-6 shadow-2xl space-y-3 sm:space-y-4 my-auto relative max-h-[92vh] flex flex-col modal-dialog-card overflow-x-hidden">
             <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-2.5 sm:pb-3 shrink-0">
               <div className="flex items-center space-x-2 min-w-0 flex-1 pr-1">
