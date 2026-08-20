@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sliders, 
   X, 
@@ -251,6 +252,7 @@ export const DashboardCustomizeModal: React.FC<DashboardCustomizeModalProps> = (
 
   const [filterCategory, setFilterCategory] = useState<'all' | 'header' | 'kpis' | 'charts' | 'content'>('all');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [lastMovedId, setLastMovedId] = useState<string | null>(null);
 
   const getWidgetIcon = (id: string) => {
     if (id === 'subject_progress_widget' || id.startsWith('subject_progress')) {
@@ -350,12 +352,17 @@ export const DashboardCustomizeModal: React.FC<DashboardCustomizeModalProps> = (
     if (targetIndex < 0 || targetIndex >= localWidgets.length) return;
 
     const updated = [...localWidgets];
-    const temp = updated[index];
+    const movedItem = updated[index];
     updated[index] = updated[targetIndex];
-    updated[targetIndex] = temp;
+    updated[targetIndex] = movedItem;
 
     const reordered = updated.map((w, idx) => ({ ...w, order: idx + 1 }));
     setLocalWidgets(reordered);
+    setLastMovedId(movedItem.id);
+
+    setTimeout(() => {
+      setLastMovedId(prev => (prev === movedItem.id ? null : prev));
+    }, 1000);
   };
 
   // Drag and Drop handlers
@@ -534,133 +541,157 @@ export const DashboardCustomizeModal: React.FC<DashboardCustomizeModalProps> = (
             </span>
           </div>
 
-          <div className="space-y-2">
-            {filteredWidgets.map((widget) => {
-              const globalIndex = localWidgets.findIndex(w => w.id === widget.id);
-              const isDragging = draggedIndex === globalIndex;
+          <motion.div layout className="space-y-2">
+            <AnimatePresence initial={false}>
+              {filteredWidgets.map((widget) => {
+                const globalIndex = localWidgets.findIndex(w => w.id === widget.id);
+                const isDragging = draggedIndex === globalIndex;
+                const isJustMoved = lastMovedId === widget.id;
 
-              return (
-                <div
-                  key={widget.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, globalIndex)}
-                  onDragOver={(e) => handleDragOver(e, globalIndex)}
-                  onDragEnd={handleDragEnd}
-                  className={`p-3 sm:p-3.5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                    widget.visible
-                      ? 'bg-slate-900/90 border-slate-800 hover:border-indigo-500/50'
-                      : 'bg-slate-950/40 border-slate-900 opacity-60'
-                  } ${isDragging ? 'border-2 border-dashed border-indigo-500 bg-indigo-950/30' : ''}`}
-                >
-                  <div className="flex items-center space-x-3 min-w-0 flex-1">
-                    {/* Drag Handle */}
-                    <div 
-                      className="p-1 text-slate-500 hover:text-slate-300 cursor-grab active:cursor-grabbing rounded-lg hover:bg-slate-800 transition-colors shrink-0"
-                      title="Sürükle"
-                    >
-                      <GripVertical className="w-4 h-4" />
-                    </div>
-
-                    {/* Index Number */}
-                    <span className="text-xs font-mono font-bold text-slate-500 w-5 text-center shrink-0">
-                      {globalIndex + 1}.
-                    </span>
-
-                    {/* Icon */}
-                    <div className="w-8 h-8 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center shrink-0">
-                      {getWidgetIcon(widget.id)}
-                    </div>
-
-                    {/* Info */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center space-x-2">
-                        <h3 className="text-xs sm:text-sm font-bold text-white truncate">
-                          {widget.title}
-                        </h3>
-                        {getCategoryBadge(widget.category)}
+                return (
+                  <motion.div
+                    layout
+                    key={widget.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ 
+                      opacity: 1, 
+                      y: 0,
+                      scale: isJustMoved ? 1.015 : 1
+                    }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{
+                      layout: { type: 'spring', stiffness: 400, damping: 30 },
+                      scale: { duration: 0.25 }
+                    }}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e as any, globalIndex)}
+                    onDragOver={(e) => handleDragOver(e as any, globalIndex)}
+                    onDragEnd={handleDragEnd}
+                    className={`p-3 sm:p-3.5 rounded-2xl border transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                      isJustMoved 
+                        ? 'bg-slate-850 border-indigo-400 ring-2 ring-indigo-500/50 shadow-xl shadow-indigo-500/20 z-10'
+                        : widget.visible
+                        ? 'bg-slate-900/90 border-slate-800 hover:border-indigo-500/50'
+                        : 'bg-slate-950/40 border-slate-900 opacity-60'
+                    } ${isDragging ? 'border-2 border-dashed border-indigo-500 bg-indigo-950/30' : ''}`}
+                  >
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
+                      {/* Drag Handle */}
+                      <div 
+                        className="p-1 text-slate-500 hover:text-slate-300 cursor-grab active:cursor-grabbing rounded-lg hover:bg-slate-800 transition-colors shrink-0"
+                        title="Sürükle"
+                      >
+                        <GripVertical className="w-4 h-4" />
                       </div>
-                      <p className="text-[11px] text-slate-400 truncate mt-0.5">
-                        {widget.description}
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* Inline subject selection if widget is subject_progress */}
-                  {(widget.id === 'subject_progress_widget' || widget.id.startsWith('subject_progress')) && (
-                    <div className="flex items-center space-x-2 shrink-0 bg-slate-950/80 p-1.5 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-400 font-semibold pl-1">Ders:</span>
-                      <select
-                        value={widget.config?.subject || 'TYT Matematik'}
-                        onChange={(e) => updateWidgetConfig(widget.id, { subject: e.target.value })}
-                        className="bg-slate-900 text-indigo-300 font-bold border border-indigo-500/30 rounded-lg px-2 py-0.5 text-xs focus:outline-none focus:border-indigo-400 cursor-pointer"
-                      >
-                        {ALL_AVAILABLE_SUBJECTS.map(subj => (
-                          <option key={subj} value={subj}>{subj}</option>
-                        ))}
-                      </select>
-                      {widget.id !== 'subject_progress_widget' && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveSubjectWidget(widget.id)}
-                          className="p-1 text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 rounded-lg border border-rose-500/30 transition-all cursor-pointer"
-                          title="Bu ders kutucuğunu sil"
+                      {/* Index Number */}
+                      <span className="text-xs font-mono font-bold text-slate-500 w-5 text-center shrink-0">
+                        {globalIndex + 1}.
+                      </span>
+
+                      {/* Icon */}
+                      <div className="w-8 h-8 rounded-xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center shrink-0">
+                        {getWidgetIcon(widget.id)}
+                      </div>
+
+                      {/* Info */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-xs sm:text-sm font-bold text-white truncate">
+                            {widget.title}
+                          </h3>
+                          {getCategoryBadge(widget.category)}
+                          {isJustMoved && (
+                            <span className="text-[10px] bg-indigo-500/20 text-indigo-300 font-bold px-1.5 py-0.5 rounded border border-indigo-500/30 animate-pulse">
+                              Taşındı ✨
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                          {widget.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Inline subject selection if widget is subject_progress */}
+                    {(widget.id === 'subject_progress_widget' || widget.id.startsWith('subject_progress')) && (
+                      <div className="flex items-center space-x-2 shrink-0 bg-slate-950/80 p-1.5 rounded-xl border border-slate-800">
+                        <span className="text-[10px] text-slate-400 font-semibold pl-1">Ders:</span>
+                        <select
+                          value={widget.config?.subject || 'TYT Matematik'}
+                          onChange={(e) => updateWidgetConfig(widget.id, { subject: e.target.value })}
+                          className="bg-slate-900 text-indigo-300 font-bold border border-indigo-500/30 rounded-lg px-2 py-0.5 text-xs focus:outline-none focus:border-indigo-400 cursor-pointer"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  )}
+                          {ALL_AVAILABLE_SUBJECTS.map(subj => (
+                            <option key={subj} value={subj}>{subj}</option>
+                          ))}
+                        </select>
+                        {widget.id !== 'subject_progress_widget' && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSubjectWidget(widget.id)}
+                            className="p-1 text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 rounded-lg border border-rose-500/30 transition-all cursor-pointer"
+                            title="Bu ders kutucuğunu sil"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
 
-                  {/* Actions & Switch */}
-                  <div className="flex items-center justify-end space-x-2 shrink-0">
-                    <div className="flex items-center space-x-1">
+                    {/* Actions & Switch */}
+                    <div className="flex items-center justify-end space-x-2 shrink-0">
+                      <div className="flex items-center space-x-1">
+                        <motion.button
+                          whileTap={{ scale: 0.8 }}
+                          type="button"
+                          onClick={() => moveWidget(globalIndex, 'up')}
+                          disabled={globalIndex === 0}
+                          className="p-1.5 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 hover:bg-indigo-600/30 hover:border-indigo-500/40 disabled:opacity-30 disabled:pointer-events-none rounded-lg border border-slate-700/60 transition-colors cursor-pointer"
+                          title="Yukarı Taşı"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </motion.button>
+                        <motion.button
+                          whileTap={{ scale: 0.8 }}
+                          type="button"
+                          onClick={() => moveWidget(globalIndex, 'down')}
+                          disabled={globalIndex === localWidgets.length - 1}
+                          className="p-1.5 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 hover:bg-indigo-600/30 hover:border-indigo-500/40 disabled:opacity-30 disabled:pointer-events-none rounded-lg border border-slate-700/60 transition-colors cursor-pointer"
+                          title="Aşağı Taşı"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </motion.button>
+                      </div>
+
                       <button
                         type="button"
-                        onClick={() => moveWidget(globalIndex, 'up')}
-                        disabled={globalIndex === 0}
-                        className="p-1.5 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none rounded-lg border border-slate-700/60 transition-all cursor-pointer"
-                        title="Yukarı Taşı"
+                        onClick={() => toggleVisibility(widget.id)}
+                        className={`px-3 py-1.5 rounded-xl border font-semibold text-xs transition-all cursor-pointer flex items-center space-x-1.5 ${
+                          widget.visible
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30'
+                            : 'bg-slate-800 text-slate-500 border-slate-700 hover:bg-slate-750'
+                        }`}
                       >
-                        <ArrowUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moveWidget(globalIndex, 'down')}
-                        disabled={globalIndex === localWidgets.length - 1}
-                        className="p-1.5 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none rounded-lg border border-slate-700/60 transition-all cursor-pointer"
-                        title="Aşağı Taşı"
-                      >
-                        <ArrowDown className="w-3.5 h-3.5" />
+                        {widget.visible ? (
+                          <>
+                            <Eye className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Açık</span>
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Kapalı</span>
+                          </>
+                        )}
                       </button>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => toggleVisibility(widget.id)}
-                      className={`px-3 py-1.5 rounded-xl border font-semibold text-xs transition-all cursor-pointer flex items-center space-x-1.5 ${
-                        widget.visible
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30'
-                          : 'bg-slate-800 text-slate-500 border-slate-700 hover:bg-slate-750'
-                      }`}
-                    >
-                      {widget.visible ? (
-                        <>
-                          <Eye className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Açık</span>
-                        </>
-                      ) : (
-                        <>
-                          <EyeOff className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Kapalı</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                </div>
-              );
-            })}
-          </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
 
         </div>
 
