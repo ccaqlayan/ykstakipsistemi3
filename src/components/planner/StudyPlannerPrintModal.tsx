@@ -151,18 +151,21 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
               background: #ffffff !important;
               color: #000000 !important;
               width: 100% !important;
-              height: 100% !important;
+              height: 100vh !important;
               max-height: 100vh !important;
               overflow: hidden !important;
               font-family: inherit !important;
             }
             #print-root {
               width: 100% !important;
-              height: 100% !important;
+              height: 100vh !important;
               max-height: 100vh !important;
               margin: 0 !important;
               padding: 0 !important;
               overflow: hidden !important;
+              display: flex !important;
+              flex-direction: column !important;
+              justify-content: space-between !important;
             }
             /* Clean up outer card shadows on physical paper */
             #study-plan-print-document {
@@ -170,10 +173,16 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
               box-shadow: none !important;
               max-width: 100% !important;
               width: 100% !important;
+              height: 100vh !important;
+              max-height: 100vh !important;
               margin: 0 auto !important;
               padding: 1.5mm !important;
+              display: flex !important;
+              flex-direction: column !important;
+              justify-content: space-between !important;
               page-break-inside: avoid !important;
               break-inside: avoid !important;
+              box-sizing: border-box !important;
             }
             /* Solid explicit borders to guarantee razor-sharp lines in all printer engines */
             .border {
@@ -248,7 +257,7 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
     }, 400);
   };
 
-  const renderDayCard = (day: DayOfWeek, minHeightClass: string) => {
+  const renderDayCard = (day: DayOfWeek, minHeightClass: string = '') => {
     const dayPlans = activePlans.filter((p) => p.day === day);
     const dayDateInfo = weekDaysMap?.[day];
     const dayPlannedMins = dayPlans.reduce((s, p) => s + (p.plannedMinutes || 0), 0);
@@ -257,10 +266,10 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
     return (
       <div
         key={day}
-        className={`border border-black ${minHeightClass} text-[7.5px] flex flex-col justify-between bg-white`}
+        className={`border border-black ${minHeightClass} flex-1 h-full min-h-0 text-[7.5px] flex flex-col justify-between bg-white overflow-hidden`}
       >
         {/* Gün Başlığı (Mürekkep Tasarruflu Açık Gri Zemin) */}
-        <div className="bg-gray-200 text-black border-b border-black px-1 py-0.5 text-center font-black flex items-center justify-between">
+        <div className="bg-gray-200 text-black border-b border-black px-1 py-0.5 text-center font-black flex items-center justify-between shrink-0">
           <span className="uppercase text-[8px] font-black">{day}</span>
           {dayDateInfo && (
             <span className="text-[6.5px] text-gray-700 font-mono font-bold">
@@ -270,9 +279,9 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
         </div>
 
         {/* Günün Görevleri */}
-        <div className="p-0.5 space-y-0.5 flex-1 flex flex-col justify-start">
+        <div className="p-0.5 space-y-0.5 flex-1 flex flex-col justify-start overflow-hidden">
           {dayPlans.length === 0 ? (
-            <div className="text-center text-gray-400 italic py-1.5 text-[7px]">
+            <div className="text-center text-gray-400 italic py-1 text-[7px]">
               Planlanan ders yok
             </div>
           ) : (
@@ -302,9 +311,9 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
             ))
           )}
 
-          {/* Boş İlave Satır Çizgileri */}
+          {/* Boş İlave Satır Çizgileri - sütun boşluğunu tam dolduracak şekilde esner */}
           {showBlankLines && (
-            <div className="pt-0.5 mt-auto border-t border-dashed border-gray-300 space-y-0.5 opacity-60">
+            <div className="pt-0.5 mt-auto border-t border-dashed border-gray-300 space-y-0.5 opacity-60 flex-1 flex flex-col justify-around min-h-[14px]">
               <div className="flex items-center space-x-1">
                 {showCheckboxes && <span className="w-2 h-2 border border-gray-400 rounded-[2px] shrink-0" />}
                 <div className="h-1.5 border-b border-gray-400 w-full" />
@@ -318,7 +327,7 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
         </div>
 
         {/* Günlük Toplam & Net Çalışma Süresi Alt Bilgisi */}
-        <div className="bg-gray-50 border-t border-black px-1 py-0.5 text-[6.5px] space-y-0.5">
+        <div className="bg-gray-50 border-t border-black px-1 py-0.5 text-[6.5px] space-y-0.5 shrink-0">
           <div className="flex items-center justify-between text-gray-700 font-bold">
             <span>Hedef: {dayPlans.length} D</span>
             <span className="font-mono font-black">{Math.floor(dayPlannedMins / 60)}s {dayPlannedMins % 60}d {dayTargetQ > 0 ? `• ${dayTargetQ}S` : ''}</span>
@@ -565,10 +574,10 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
             <div
               id="study-plan-print-document"
               ref={printAreaRef}
-              className={`bg-white text-black font-sans shadow-2xl border border-gray-400 transition-all ${
+              className={`bg-white text-black font-sans shadow-2xl border border-gray-400 transition-all flex flex-col justify-between ${
                 orientation === 'landscape'
-                  ? 'w-full max-w-[1100px] min-h-[670px] p-3 sm:p-3.5 text-[8px]'
-                  : 'w-full max-w-[780px] min-h-[880px] p-3 sm:p-3.5 text-[8px]'
+                  ? 'w-full max-w-[1100px] h-[730px] min-h-[730px] p-3 sm:p-3.5 text-[8px]'
+                  : 'w-full max-w-[800px] h-[1040px] min-h-[1040px] p-3 sm:p-4 text-[8px]'
               }`}
               style={{
                 color: '#000000',
@@ -576,7 +585,7 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
               }}
             >
               {/* ══════════ 1. RESMİ ANTET & BAŞLIK ══════════ */}
-              <div className="border-b-2 border-black pb-1 mb-1.5">
+              <div className="border-b-2 border-black pb-1 mb-1.5 shrink-0">
                 <div className="flex items-start justify-between border-b border-black pb-0.5 mb-1">
                   <div className="text-left">
                     <div className="text-[9.5px] font-black uppercase tracking-wider text-black">
@@ -629,26 +638,30 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
               {/* ══════════ 2. HAFTALIK MATRİS TABLOSU ══════════ */}
               {orientation === 'landscape' && landscapeLayoutMode === 'weekdays_weekend' ? (
                 /* YATAY DÜZEN: HAFTAİÇİ ÜSTTE (5 GÜN) + HAFTASONU ALTTA (2 GÜN) */
-                <div className="space-y-1 mb-1.5">
-                  <div className="grid grid-cols-5 gap-1">
-                    {WEEKDAYS.map((day) => renderDayCard(day, 'min-h-[82px]'))}
+                <div className="flex-1 flex flex-col justify-between gap-1 mb-1.5 min-h-0">
+                  <div className="flex-1 min-h-0">
+                    <div className="grid grid-cols-5 gap-1 h-full">
+                      {WEEKDAYS.map((day) => renderDayCard(day))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-1">
-                    {WEEKEND.map((day) => renderDayCard(day, 'min-h-[78px]'))}
+                  <div className="flex-1 min-h-0">
+                    <div className="grid grid-cols-2 gap-1 h-full">
+                      {WEEKEND.map((day) => renderDayCard(day))}
+                    </div>
                   </div>
                 </div>
               ) : orientation === 'landscape' && landscapeLayoutMode === '7cols' ? (
                 /* YATAY DÜZEN: 7 GÜN YAN YANA (7 SÜTUN) */
-                <div className="mb-1.5">
-                  <div className="grid grid-cols-7 gap-1">
-                    {DAYS.map((day) => renderDayCard(day, 'min-h-[165px]'))}
+                <div className="flex-1 mb-1.5 min-h-0">
+                  <div className="grid grid-cols-7 gap-1 h-full">
+                    {DAYS.map((day) => renderDayCard(day))}
                   </div>
                 </div>
               ) : (
                 /* DİKEY DÜZEN (2 SÜTUNLU 7 GÜN) */
-                <div className="mb-1.5">
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {DAYS.map((day) => renderDayCard(day, 'min-h-[105px]'))}
+                <div className="flex-1 mb-1.5 min-h-0">
+                  <div className="grid grid-cols-2 gap-1.5 h-full">
+                    {DAYS.map((day) => renderDayCard(day))}
                   </div>
                 </div>
               )}
