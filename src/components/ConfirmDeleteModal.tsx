@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, Trash2, ShieldAlert, X } from 'lucide-react';
 
 interface ConfirmDeleteModalProps {
@@ -35,12 +36,12 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
     onClose();
   };
 
-  return (
+  const modalContent = (
     <div 
-      className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-150">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-150 my-auto">
         
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -140,4 +141,6 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

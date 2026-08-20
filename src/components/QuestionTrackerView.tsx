@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   CheckSquare, 
   Plus, 
@@ -1707,12 +1708,12 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
       </div>
 
       {/* ── 5. REDESIGNED MODAL: ADD / EDIT QUESTION LOG ── */}
-      {showAddModal && (
+      {showAddModal && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
+          className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}
         >
-          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col relative overflow-hidden modal-dialog-card">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col relative overflow-hidden modal-dialog-card my-auto">
             
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-800 pb-3.5 shrink-0">
@@ -1998,7 +1999,8 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 2-Step Confirmation Modal for Question Log Deletion */}
