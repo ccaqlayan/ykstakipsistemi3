@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Target, 
   Plus, 
@@ -452,8 +453,8 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
 
   // Branch Exam Form
   const [examDate, setExamDate] = useState(new Date().toISOString().split('T')[0]);
-  const [examSubject, setExamSubject] = useState(YKS_SUBJECTS.AYT[0]);
-  const [examType, setExamType] = useState<'TYT' | 'AYT' | 'YDT'>('AYT');
+  const [examSubject, setExamSubject] = useState(YKS_SUBJECTS.TYT[0]);
+  const [examType, setExamType] = useState<'TYT' | 'AYT' | 'YDT'>('TYT');
   const [publisher, setPublisher] = useState('');
   const [correct, setCorrect] = useState<number | string>('');
   const [wrong, setWrong] = useState<number | string>('');
@@ -1255,8 +1256,8 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   const handleOpenAddExamModal = () => {
     setEditingExam(null);
     setExamDate(new Date().toISOString().split('T')[0]);
-    setExamType('AYT');
-    setExamSubject(YKS_SUBJECTS.AYT[0]);
+    setExamType('TYT');
+    setExamSubject(YKS_SUBJECTS.TYT[0]);
     setPublisher('');
     setCorrect('');
     setWrong('');
@@ -2489,12 +2490,12 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       />
 
       {/* ⚠️ Doğru Cevap Eksik / Kör Tekrar Bilgilendirme Modalı (Site Temasına Uygun) */}
-      {repetitionWarningModal?.isOpen && (
+      {repetitionWarningModal?.isOpen && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
+          className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) setRepetitionWarningModal(null); }}
         >
-          <div className="bg-slate-900 border border-amber-500/30 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl shadow-amber-950/40 space-y-4 animate-scale-in relative overflow-hidden">
+          <div className="bg-slate-900 border border-amber-500/30 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl shadow-amber-950/40 space-y-4 animate-scale-in relative overflow-hidden my-auto modal-dialog-card">
             {/* Glow background accent */}
             <div className="absolute -top-12 -right-12 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
             
@@ -2573,7 +2574,37 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── FLOATING ACTION BUTTON (+ FAB) ── */}
+      {activeSubTab === 'branch_errors' ? (
+        <button
+          onClick={handleOpenAddErrorModal}
+          id="fab-add-branch-error-btn"
+          aria-label="Hata Defterine Soru Ekle"
+          title="Hata Defterine Soru Ekle"
+          className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 z-40 bg-gradient-to-tr from-rose-600 via-pink-600 to-rose-500 hover:from-rose-500 hover:to-pink-500 text-white p-3.5 sm:px-5 sm:py-3.5 rounded-full sm:rounded-2xl shadow-[0_10px_25px_rgba(244,63,94,0.45)] border border-rose-400/40 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 group ring-4 ring-rose-500/20 backdrop-blur-md"
+        >
+          <Plus className="w-6 h-6 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:rotate-90 stroke-[2.5]" />
+          <span className="hidden sm:inline font-bold text-sm tracking-wide text-white drop-shadow-sm">
+            Hata Defterine Ekle
+          </span>
+        </button>
+      ) : (
+        <button
+          onClick={handleOpenAddExamModal}
+          id="fab-add-branch-exam-btn"
+          aria-label="Yeni Branş Denemesi Gir"
+          title="Yeni Branş Denemesi Gir"
+          className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 z-40 bg-gradient-to-tr from-indigo-600 via-purple-600 to-indigo-500 hover:from-indigo-500 hover:to-purple-500 text-white p-3.5 sm:px-5 sm:py-3.5 rounded-full sm:rounded-2xl shadow-[0_10px_25px_rgba(99,102,241,0.45)] border border-indigo-400/40 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 group ring-4 ring-indigo-500/20 backdrop-blur-md"
+        >
+          <Plus className="w-6 h-6 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:rotate-90 stroke-[2.5]" />
+          <span className="hidden sm:inline font-bold text-sm tracking-wide text-white drop-shadow-sm">
+            Yeni Branş Denemesi
+          </span>
+        </button>
       )}
 
     </div>

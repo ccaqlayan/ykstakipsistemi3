@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Youtube, 
   Plus, 
@@ -1919,12 +1920,12 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
       )}
 
       {/* ── 5. MODAL: ADD YOUTUBE VIDEO OR PLAYLIST ── */}
-      {showAddModal && (
+      {showAddModal && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
+          className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}
         >
-          <div className="bg-slate-900/95 border border-red-500/30 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar relative">
+          <div className="bg-slate-900/95 border border-red-500/30 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar relative my-auto modal-dialog-card">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3.5">
               <div className="flex items-center space-x-3">
                 <div className="p-3 bg-gradient-to-br from-red-600 to-rose-600 text-white rounded-2xl shadow-lg shadow-red-600/30">
@@ -2093,11 +2094,12 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── 6. MODAL: DETAYLI VIDEO & PLAYLIST İNCELEME PENCERESİ (BÜYÜYEREK AÇILAN) ── */}
-      {selectedDetailVideo && (() => {
+      {selectedDetailVideo && typeof document !== 'undefined' && createPortal((() => {
         const vid = videos.find(v => v.id === selectedDetailVideo.id) || selectedDetailVideo;
         const isPlaylist = isPlaylistItem(vid);
         const firstSubUrl = vid.playlistVideos?.[0]?.videoUrl;
@@ -2119,10 +2121,10 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
 
         return (
           <div 
-            className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
+            className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
             onClick={(e) => { if (e.target === e.currentTarget) { setSelectedDetailVideo(null); setDetailPlaylistSearch(''); } }}
           >
-            <div className="animate-scale-in bg-slate-900/95 border border-red-500/30 rounded-3xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar relative">
+            <div className="animate-scale-in bg-slate-900/95 border border-red-500/30 rounded-3xl max-w-2xl sm:max-w-3xl w-full p-5 sm:p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar relative my-auto modal-dialog-card">
               
               {/* Modal Header */}
               <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-4">
@@ -2498,7 +2500,7 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
             </div>
           </div>
         );
-      })()}
+      })(), document.body)}
 
       {/* 2-Step Confirmation Modal for YouTube Video Deletion */}
       <ConfirmDeleteModal
@@ -2513,6 +2515,20 @@ export const YouTubeTrackerView: React.FC<YouTubeTrackerViewProps> = ({
         }}
         onClose={() => setDeletingVideo(null)}
       />
+
+      {/* ── FLOATING ACTION BUTTON (+ FAB) ── */}
+      <button
+        onClick={() => setShowAddModal(true)}
+        id="fab-add-youtube-video-btn"
+        aria-label="Yeni YouTube Dersi Ekle"
+        title="Yeni YouTube Dersi Ekle"
+        className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 z-40 bg-gradient-to-tr from-red-600 via-rose-600 to-red-500 hover:from-red-500 hover:to-rose-500 text-white p-3.5 sm:px-5 sm:py-3.5 rounded-full sm:rounded-2xl shadow-[0_10px_25px_rgba(239,68,68,0.45)] border border-red-400/40 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 group ring-4 ring-red-500/20 backdrop-blur-md"
+      >
+        <Plus className="w-6 h-6 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:rotate-90 stroke-[2.5]" />
+        <span className="hidden sm:inline font-bold text-sm tracking-wide text-white drop-shadow-sm">
+          Yeni YouTube Dersi
+        </span>
+      </button>
 
     </div>
   );

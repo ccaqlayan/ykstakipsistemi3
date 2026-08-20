@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Printer, 
   X, 
@@ -44,6 +45,8 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
   routines = [],
   weekDaysMap
 }) => {
+  if (!isOpen) return null;
+
   const defaultInstitutionName = React.useMemo(() => {
     if (profile?.highSchool && profile.highSchool.trim()) {
       const cleanSchool = profile.highSchool.trim().toUpperCase();
@@ -343,10 +346,10 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
     );
   };
 
-  return (
+  const modalContent = (
     <div
       id="study-plan-print-modal-backdrop"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-200"
     >
       <style>{`
         @page {
@@ -768,4 +771,6 @@ export const StudyPlannerPrintModal: React.FC<StudyPlannerPrintModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   Edit3, 
@@ -255,15 +256,15 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
     }
   }, [dailyStudyLogModalData]);
 
-  return (
+  const modalContent = (
     <>
       {/* MODAL 1: ADD NEW TASK */}
       {showAddModal && (
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}
         >
-          <div className="bg-slate-900 backdrop-blur-2xl border border-slate-700 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-slate-900 backdrop-blur-2xl border border-slate-700 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 my-auto modal-dialog-card">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-black text-white">Yeni Çalışma Görevi Ekle</h3>
               <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white">
@@ -1926,4 +1927,6 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
       )}
     </>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

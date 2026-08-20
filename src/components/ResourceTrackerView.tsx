@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   BookOpenCheck, 
@@ -1833,12 +1834,12 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
       )}
 
       {/* MODAL: ADD NEW RESOURCE BOOK WITH STEP-BY-STEP PROGRESSIVE DISCLOSURE */}
-      {showAddModal && (
+      {showAddModal && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
+          className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}
         >
-          <div className="bg-slate-900/95 border border-indigo-500/30 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl shadow-indigo-950/50 space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar relative">
+          <div className="bg-slate-900/95 border border-indigo-500/30 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl shadow-indigo-950/50 space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar relative my-auto modal-dialog-card">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
               <div className="flex items-center space-x-3">
                 <div className="p-3 bg-gradient-to-br from-indigo-600 via-purple-600 to-fuchsia-600 text-white rounded-2xl shadow-lg shadow-indigo-600/30">
@@ -2101,16 +2102,17 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
               )}
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* MODAL: EDIT RESOURCE BOOK */}
-      {editingResource && (
+      {editingResource && typeof document !== 'undefined' && createPortal(
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
+          className="fixed inset-0 z-[100] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in"
           onClick={(e) => { if (e.target === e.currentTarget) setEditingResource(null); }}
         >
-          <div className="bg-slate-900/95 border border-indigo-500/30 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl shadow-indigo-950/50 space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <div className="bg-slate-900/95 border border-indigo-500/30 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl shadow-indigo-950/50 space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar my-auto modal-dialog-card">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <div className="flex items-center space-x-3">
                 <div className="p-2.5 bg-gradient-to-br from-indigo-600 to-fuchsia-600 text-white rounded-2xl shadow-md">
@@ -2250,7 +2252,8 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 2-Step Confirmation Modal for Resource Deletion */}
@@ -2266,6 +2269,29 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
         }}
         onClose={() => setDeletingResource(null)}
       />
+
+      {/* ── FLOATING ACTION BUTTON (+ FAB) ── */}
+      <button
+        onClick={() => {
+          setExamType('');
+          setSubject('');
+          setBookTitle('');
+          setPublisher('');
+          setSelectedInitialTopics([]);
+          setNotes('');
+          setShowSuggestions(false);
+          setShowAddModal(true);
+        }}
+        id="fab-add-resource-btn"
+        aria-label="Yeni Kaynak Kitap Ekle"
+        title="Yeni Kaynak Kitap Ekle"
+        className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 z-40 bg-gradient-to-tr from-indigo-600 via-purple-600 to-indigo-500 hover:from-indigo-500 hover:to-purple-500 text-white p-3.5 sm:px-5 sm:py-3.5 rounded-full sm:rounded-2xl shadow-[0_10px_25px_rgba(99,102,241,0.45)] border border-indigo-400/40 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 group ring-4 ring-indigo-500/20 backdrop-blur-md"
+      >
+        <Plus className="w-6 h-6 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:rotate-90 stroke-[2.5]" />
+        <span className="hidden sm:inline font-bold text-sm tracking-wide text-white drop-shadow-sm">
+          Yeni Kaynak Ekle
+        </span>
+      </button>
 
     </div>
   );

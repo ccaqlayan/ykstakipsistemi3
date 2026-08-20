@@ -1574,8 +1574,19 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
         detailedSubSubjectsMeta={DETAILED_SUB_SUBJECTS_META}
       />
 
-
-      {/* Obsolete modal replaced by beautiful full-screen sub-view */}
+      {/* ── FLOATING ACTION BUTTON (+ FAB) ── */}
+      <button
+        onClick={() => setShowAddModal(true)}
+        id="fab-add-general-mock-btn"
+        aria-label="Yeni Genel Deneme Ekle"
+        title="Yeni Genel Deneme Ekle"
+        className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 z-40 bg-gradient-to-tr from-indigo-600 via-purple-600 to-indigo-500 hover:from-indigo-500 hover:to-purple-500 text-white p-3.5 sm:px-5 sm:py-3.5 rounded-full sm:rounded-2xl shadow-[0_10px_25px_rgba(99,102,241,0.45)] border border-indigo-400/40 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2 group ring-4 ring-indigo-500/20 backdrop-blur-md"
+      >
+        <Plus className="w-6 h-6 sm:w-5 sm:h-5 transition-transform duration-300 group-hover:rotate-90 stroke-[2.5]" />
+        <span className="hidden sm:inline font-bold text-sm tracking-wide text-white drop-shadow-sm">
+          Yeni Genel Deneme
+        </span>
+      </button>
 
     </div>
   );
