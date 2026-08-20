@@ -63,6 +63,9 @@ interface StudyPlannerStatsViewProps {
   dailyStudyLogs?: Record<string, DailyStudyTimeLog>;
   today?: DayOfWeek;
   openDailyStudyLogModal?: (day: DayOfWeek) => void;
+  onSaveDailyStudyLog?: (dateKey: string, log: DailyStudyTimeLog | null) => void;
+  onApplyPastWeekToCurrent?: (weekLabel: string) => void;
+  onApplyPastWeekToNext?: (weekLabel: string) => void;
   getSubjectTheme?: (subject: string) => any;
   currentWeekLabel?: string;
   onInitiateApplyPastWeek?: (weekLabel: string) => void;
@@ -92,7 +95,8 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
   openDailyStudyLogModal,
   getSubjectTheme,
   currentWeekLabel,
-  onInitiateApplyPastWeek
+  onInitiateApplyPastWeek,
+  onApplyPastWeekToNext
 }) => {
   // Active Week Chart State & Settings
   const [activeChartType, setActiveChartType] = useState<'bar' | 'area' | 'line'>('bar');
@@ -1772,6 +1776,18 @@ export const StudyPlannerStatsView: React.FC<StudyPlannerStatsViewProps> = ({
                         >
                           <Copy className="w-3.5 h-3.5" />
                           <span>Bu Planı Güncel Haftaya Uygula</span>
+                        </button>
+                      )}
+
+                      {onApplyPastWeekToNext && (
+                        <button
+                          type="button"
+                          onClick={() => onApplyPastWeekToNext(activeHistoryWeek)}
+                          className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-purple-950/60 hover:bg-purple-600/30 text-purple-300 hover:text-white border border-purple-500/40 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer shrink-0"
+                          title="Bu haftanın ders programı şablonunu gelecek (önümüzdeki) haftaya aktar"
+                        >
+                          <Copy className="w-3.5 h-3.5 text-purple-400" />
+                          <span>Gelecek Haftaya Uygula</span>
                         </button>
                       )}
 

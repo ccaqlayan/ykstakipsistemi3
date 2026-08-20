@@ -100,10 +100,13 @@ interface StudyPlannerModalsProps {
 
   applyPastWeekModalData: {
     weekLabel: string;
+    targetWeekLabel?: string;
+    targetWeekTitle?: string;
     pastPlans: StudyPlanItem[];
     currentPlansCount: number;
+    onApply?: (choice: 'merge' | 'replace') => void;
   } | null;
-  setApplyPastWeekModalData: (val: { weekLabel: string; pastPlans: StudyPlanItem[]; currentPlansCount: number } | null) => void;
+  setApplyPastWeekModalData: (val: any) => void;
   handleApplyPastWeekToCurrent: (targetPastWeekLabel: string, choice: 'merge' | 'replace') => void;
 
   showTaskTypeModal: boolean;
@@ -1324,10 +1327,10 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
                 </div>
                 <div>
                   <h3 className="text-base font-black text-white">
-                    Güncel Haftaya Plan Aktarımı
+                    {applyPastWeekModalData.targetWeekTitle || `${applyPastWeekModalData.targetWeekLabel || 'Güncel Haftaya'} Plan Aktarımı`}
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Geçmiş hafta ders programını bu haftaya uygulama tercihi
+                    Seçilen haftanın ders programını hedef haftaya uygulama tercihi
                   </p>
                 </div>
               </div>
@@ -1343,21 +1346,25 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
             {/* Info Box */}
             <div className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2 text-xs">
               <div className="flex items-center justify-between text-slate-300 font-bold">
-                <span>Aktarılacak Plan:</span>
+                <span>Kaynak Plan:</span>
                 <span className="text-indigo-300 font-mono font-black">{applyPastWeekModalData.weekLabel}</span>
+              </div>
+              <div className="flex items-center justify-between text-slate-300 font-bold">
+                <span>Hedef Hafta:</span>
+                <span className="text-emerald-300 font-mono font-black">{applyPastWeekModalData.targetWeekLabel || 'Güncel Hafta'}</span>
               </div>
               <div className="flex items-center justify-between text-slate-300 font-bold">
                 <span>Aktarılacak Görev Sayısı:</span>
                 <span className="text-purple-300 font-mono font-black">{applyPastWeekModalData.pastPlans.length} Ders</span>
               </div>
               <div className="flex items-center justify-between text-amber-300 font-bold pt-1 border-t border-slate-800">
-                <span>Güncel Haftada Ekli Görev:</span>
+                <span>Hedef Haftada Ekli Görev:</span>
                 <span className="text-amber-300 font-mono font-black">{applyPastWeekModalData.currentPlansCount} Ders</span>
               </div>
             </div>
 
             <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-xs text-amber-200 leading-relaxed">
-              ⚠️ <strong>Dikkat:</strong> Güncel haftanızda zaten <strong>{applyPastWeekModalData.currentPlansCount} adet görev</strong> bulunuyor. Bu geçmiş planı nasıl uygulamak istersiniz?
+              ⚠️ <strong>Dikkat:</strong> Hedef haftanızda ({applyPastWeekModalData.targetWeekLabel || 'Güncel Hafta'}) zaten <strong>{applyPastWeekModalData.currentPlansCount} adet görev</strong> bulunuyor. Bu planı nasıl uygulamak istersiniz?
             </div>
 
             {/* Choice Options */}
@@ -1366,7 +1373,11 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  handleApplyPastWeekToCurrent(applyPastWeekModalData.weekLabel, 'merge');
+                  if (applyPastWeekModalData.onApply) {
+                    applyPastWeekModalData.onApply('merge');
+                  } else {
+                    handleApplyPastWeekToCurrent(applyPastWeekModalData.weekLabel, 'merge');
+                  }
                   setApplyPastWeekModalData(null);
                 }}
                 className="p-4 bg-slate-950 hover:bg-slate-800/90 border border-indigo-500/30 hover:border-indigo-400 rounded-2xl text-left transition-all group cursor-pointer flex items-start space-x-3.5"
@@ -1379,7 +1390,7 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
                     Mevcut Görevlerin Üzerine Ekle (Birleştir)
                   </h4>
                   <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                    Bu haftada önceden eklediğiniz görevleri korur, seçtiğiniz haftanın derslerini günlerine ilave olarak ekler.
+                    Hedef haftada önceden eklediğiniz görevleri korur, seçtiğiniz haftanın derslerini günlerine ilave olarak ekler.
                   </p>
                 </div>
               </button>
@@ -1388,7 +1399,11 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  handleApplyPastWeekToCurrent(applyPastWeekModalData.weekLabel, 'replace');
+                  if (applyPastWeekModalData.onApply) {
+                    applyPastWeekModalData.onApply('replace');
+                  } else {
+                    handleApplyPastWeekToCurrent(applyPastWeekModalData.weekLabel, 'replace');
+                  }
                   setApplyPastWeekModalData(null);
                 }}
                 className="p-4 bg-slate-950 hover:bg-slate-800/90 border border-amber-500/30 hover:border-amber-400 rounded-2xl text-left transition-all group cursor-pointer flex items-start space-x-3.5"
@@ -1401,7 +1416,7 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
                     Mevcut Görevleri Temizle ve Bu Planı Uygula (Sıfırla & Değiştir)
                   </h4>
                   <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                    Bu haftadaki mevcut görevleri temizler ve sadece seçtiğiniz haftanın programını temiz bir şablon olarak kurar.
+                    Hedef haftadaki mevcut görevleri temizler ve sadece seçtiğiniz haftanın programını temiz bir şablon olarak kurar.
                   </p>
                 </div>
               </button>

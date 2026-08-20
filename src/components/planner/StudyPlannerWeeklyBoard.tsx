@@ -58,6 +58,7 @@ interface StudyPlannerWeeklyBoardProps {
   getEffectiveDayStudyMinutes?: (day: DayOfWeek, dateKey?: string) => { minutes: number; isManual: boolean; notes?: string };
   openDailyStudyLogModal?: (day: DayOfWeek) => void;
   onApplyPastWeekToCurrent?: () => void;
+  onApplyCurrentWeekToFuture?: () => void;
 }
 
 export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = ({
@@ -98,7 +99,8 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
   isFutureWeek = false,
   getEffectiveDayStudyMinutes,
   openDailyStudyLogModal,
-  onApplyPastWeekToCurrent
+  onApplyPastWeekToCurrent,
+  onApplyCurrentWeekToFuture
 }) => {
   return (
     <div className="space-y-4">
@@ -136,22 +138,35 @@ export const StudyPlannerWeeklyBoard: React.FC<StudyPlannerWeeklyBoardProps> = (
       )}
 
       {isFutureWeek && (
-        <div className="p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl flex items-center justify-between text-xs text-indigo-300">
+        <div className="p-3 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs text-indigo-300">
           <div className="flex items-center space-x-2">
             <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
             <span><strong>Gelecek Hafta Planı:</strong> Bu hafta için ders ve hedef planlaması yapıyorsunuz. Haftası geldiğinde otomatik aktifleşecektir.</span>
           </div>
-          {openPrintModal && (
-            <button
-              type="button"
-              onClick={openPrintModal}
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 rounded-xl text-xs font-bold transition-all shadow cursor-pointer shrink-0 ml-2"
-              title="Bu haftalık planı resmi siyah-beyaz formatta PDF olarak yazdır"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Yazdır (PDF)</span>
-            </button>
-          )}
+          <div className="flex items-center space-x-2 shrink-0 self-end sm:self-auto">
+            {onApplyCurrentWeekToFuture && (
+              <button
+                type="button"
+                onClick={onApplyCurrentWeekToFuture}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-600/30 cursor-pointer shrink-0 active:scale-95"
+                title="Güncel (bu) haftanın ders programı şablonunu buraya kopyala"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Bu Haftanın Şablonunu Yükle</span>
+              </button>
+            )}
+            {openPrintModal && (
+              <button
+                type="button"
+                onClick={openPrintModal}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/40 rounded-xl text-xs font-bold transition-all shadow cursor-pointer shrink-0"
+                title="Bu haftalık planı resmi siyah-beyaz formatta PDF olarak yazdır"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Yazdır (PDF)</span>
+              </button>
+            )}
+          </div>
         </div>
       )}
 

@@ -374,6 +374,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   // Week navigation states
   const currentMonday = React.useMemo(() => getMonday(new Date()), []);
   const realCurrentWeekLabel = React.useMemo(() => formatWeekLabelWithYear(currentMonday), [currentMonday]);
+  const nextMonday = React.useMemo(() => addWeeks(currentMonday, 1), [currentMonday]);
+  const nextWeekLabel = React.useMemo(() => formatWeekLabelWithYear(nextMonday), [nextMonday]);
   const [selectedMondayDate, setSelectedMondayDate] = useState<Date>(currentMonday);
   const [weekSlideDirection, setWeekSlideDirection] = useState<'next' | 'prev'>('next');
 
@@ -425,14 +427,27 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
       weekLabel: realCurrentWeekLabel
     };
   };
+
+  const getNextWeekPlanDateAndLabel = (targetDay: DayOfWeek) => {
+    const dayIndex = DAYS.indexOf(targetDay);
+    const targetDate = new Date(nextMonday);
+    targetDate.setDate(nextMonday.getDate() + (dayIndex >= 0 ? dayIndex : 0));
+    return {
+      date: getIsoDateString(targetDate),
+      weekLabel: nextWeekLabel
+    };
+  };
   
   const [activeSubTab, setActiveSubTab] = useState<'tracker' | 'history'>('tracker');
   const [selectedHistoryWeek, setSelectedHistoryWeek] = useState<string>('');
   const [historyWeeksPage, setHistoryWeeksPage] = useState<number>(1);
   const [applyPastWeekModalData, setApplyPastWeekModalData] = useState<{
     weekLabel: string;
+    targetWeekLabel?: string;
+    targetWeekTitle?: string;
     pastPlans: StudyPlanItem[];
     currentPlansCount: number;
+    onApply?: (choice: 'merge' | 'replace') => void;
   } | null>(null);
   const [subjectChartScope, setSubjectChartScope] = useState<'total' | 'selected'>('total');
   const [subjectChartMetric, setSubjectChartMetric] = useState<'duration' | 'question'>('duration');
@@ -712,6 +727,91 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     setSelectedMondayDate(currentMonday);
     setActiveSubTab('tracker');
     setQuestionToast(`✨ "${targetPastWeekLabel}" haftasının planı güncel haftanıza (${realCurrentWeekLabel}) başarıyla aktarıldı!`);
+  };
+
+  const handleInitiateApplyPlanToNextWeek = (sourceWeekLabel: string) => {
+    let sourcePlans = getPlansForWeek(sourceWeekLabel);
+    if (isSameWeekLabel(sourceWeekLabel, realCurrentWeekLabel)) {
+      const currentActive = studyPlans.filter(p => !p.archived && (
+        !p.weekLabel || isSameWeekLabel(p.weekLabel, realCurrentWeekLabel)
+      ));
+      if (currentActive.length > 0) {
+        sourcePlans = currentActive;
+      }
+    }
+
+    if (sourcePlans.length === 0) {
+      alert(`"${sourceWeekLabel}" haftasına ait kopyalanacak ders bulunamadı.`);
+      return;
+    }
+
+    const nextWeekPlans = studyPlans.filter(p => !p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, nextWeekLabel));
+
+    if (nextWeekPlans.length === 0) {
+      handleApplyPlanToNextWeek(sourceWeekLabel, 'replace');
+    } else {
+      setApplyPastWeekModalData({
+        weekLabel: sourceWeekLabel,
+        targetWeekLabel: nextWeekLabel,
+        targetWeekTitle: `Gelecek Haftaya (${nextWeekLabel}) Plan Aktarımı`,
+        pastPlans: sourcePlans,
+        currentPlansCount: nextWeekPlans.length,
+        onApply: (choice: 'merge' | 'replace') => handleApplyPlanToNextWeek(sourceWeekLabel, choice)
+      });
+    }
+  };
+
+  const handleApplyPlanToNextWeek = (sourceWeekLabel: string, choice: 'merge' | 'replace') => {
+    if (!onUpdateAllPlans) return;
+
+    let sourcePlans = getPlansForWeek(sourceWeekLabel);
+    if (isSameWeekLabel(sourceWeekLabel, realCurrentWeekLabel)) {
+      const currentActive = studyPlans.filter(p => !p.archived && (
+        !p.weekLabel || isSameWeekLabel(p.weekLabel, realCurrentWeekLabel)
+      ));
+      if (currentActive.length > 0) {
+        sourcePlans = currentActive;
+      }
+    }
+    if (sourcePlans.length === 0) return;
+
+    const newPlansForNextWeek: StudyPlanItem[] = sourcePlans.map(p => {
+      const { date, weekLabel } = getNextWeekPlanDateAndLabel(p.day);
+      return {
+        ...p,
+        id: 'plan-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+        completedMinutes: 0,
+        status: 'pending' as const,
+        reflection: undefined,
+        archived: false,
+        date,
+        weekLabel
+      };
+    });
+
+    let updatedAllPlans: StudyPlanItem[] = [];
+
+    if (choice === 'replace') {
+      const otherPlans = studyPlans.filter(p => {
+        if (p.archived) return true;
+        if (p.weekLabel && isSameWeekLabel(p.weekLabel, nextWeekLabel)) return false;
+        return true;
+      });
+      updatedAllPlans = [...otherPlans, ...newPlansForNextWeek];
+    } else {
+      updatedAllPlans = [...studyPlans, ...newPlansForNextWeek];
+    }
+
+    onUpdateAllPlans(
+      updatedAllPlans,
+      `"${sourceWeekLabel}" planı gelecek haftaya (${nextWeekLabel}) uygulandı (${choice === 'replace' ? 'Sıfırlandı' : 'Birleştirildi'}).`
+    );
+
+    // Switch view to next week tracker
+    setWeekSlideDirection('next');
+    setSelectedMondayDate(nextMonday);
+    setActiveSubTab('tracker');
+    setQuestionToast(`✨ "${sourceWeekLabel}" planı gelecek haftanıza (${nextWeekLabel}) başarıyla aktarıldı!`);
   };
   
   // Helper to get question logs linked to a specific study plan item
@@ -1736,7 +1836,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
           </button>
         </div>
 
-        {/* Right Side: Print Button & Archive Week Button */}
+        {/* Right Side: Print Button & Week Template Copy Buttons */}
         <div className="flex items-center shrink-0 pb-1.5 sm:pb-0 gap-2">
           <button
             type="button"
@@ -1761,8 +1861,89 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
               <span className="hidden sm:inline">Bu Planı Güncel Haftaya Uygula</span>
             </button>
           )}
+
+          {isCurrentWeek && (
+            <button
+              type="button"
+              onClick={() => handleInitiateApplyPlanToNextWeek(realCurrentWeekLabel)}
+              className="inline-flex items-center space-x-1 sm:space-x-1.5 px-2.5 py-1.5 sm:px-4 sm:py-3 bg-purple-950/60 hover:bg-purple-600/30 text-purple-300 hover:text-white border border-purple-500/40 hover:border-purple-400 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition-all shadow-lg active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
+              title="Bu haftanın ders çalışma programını gelecek haftaya kopyalar"
+            >
+              <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 shrink-0" />
+              <span className="sm:hidden">Geleceğe Kopyala</span>
+              <span className="hidden sm:inline">Gelecek Haftaya Kopyala</span>
+            </button>
+          )}
+
+          {isFutureWeek && (
+            <button
+              type="button"
+              onClick={() => handleInitiateApplyPlanToNextWeek(realCurrentWeekLabel)}
+              className="inline-flex items-center space-x-1 sm:space-x-1.5 px-2.5 py-1.5 sm:px-4 sm:py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 active:scale-95 shrink-0 cursor-pointer whitespace-nowrap"
+              title="Güncel (bu) haftanın ders programı şablonunu buraya aktarır"
+            >
+              <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span className="sm:hidden">Şablon Yükle</span>
+              <span className="hidden sm:inline">Bu Haftanın Şablonunu Yükle</span>
+            </button>
+          )}
         </div>
       </div>
+      )}
+
+      {/* SUNDAY / WEEKEND NEXT WEEK PLANNING COACH BANNER */}
+      {!isZenMode && (today === 'Pazar' || today === 'Cumartesi') && isCurrentWeek && activeSubTab === 'tracker' && (
+        <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-indigo-950/90 via-purple-950/70 to-slate-900/90 border border-indigo-500/40 shadow-2xl backdrop-blur-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-start space-x-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shrink-0 mt-0.5 shadow-inner">
+              <CalendarDays className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-black text-indigo-300 uppercase tracking-wider">🎯 Yeni Hafta Planlama Zamanı</span>
+                {studyPlans.filter(p => !p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, nextWeekLabel)).length > 0 ? (
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 font-bold px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                    {studyPlans.filter(p => !p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, nextWeekLabel)).length} Ders Hazır
+                  </span>
+                ) : (
+                  <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-full border border-amber-500/30">
+                    Henüz Planlanmadı
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-300 font-medium leading-relaxed max-w-2xl">
+                {studyPlans.filter(p => !p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, nextWeekLabel)).length === 0 
+                  ? `Önümüzdeki haftanın (${nextWeekLabel}) ders çalışma programını şimdiden hazırlayarak yeni haftaya avantajlı ve motive başlayabilirsin!`
+                  : `Gelecek hafta (${nextWeekLabel}) için şimdiden ${studyPlans.filter(p => !p.archived && p.weekLabel && isSameWeekLabel(p.weekLabel, nextWeekLabel)).length} ders planladın. Planını incelemek veya yeni dersler eklemek için hemen geçiş yapabilirsin.`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 shrink-0 self-end md:self-auto w-full md:w-auto justify-end">
+            <button
+              type="button"
+              onClick={() => handleInitiateApplyPlanToNextWeek(realCurrentWeekLabel)}
+              className="px-3.5 py-2.5 rounded-xl sm:rounded-2xl bg-purple-900/40 hover:bg-purple-900/70 border border-purple-500/40 text-purple-200 text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer flex items-center space-x-1.5"
+              title="Bu haftanın ders programı şablonunu gelecek haftaya kopyalar"
+            >
+              <Copy className="w-3.5 h-3.5 text-purple-400" />
+              <span>Bu Haftayı Gelecek Haftaya Kopyala</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setWeekSlideDirection('next');
+                setSelectedMondayDate(nextMonday);
+              }}
+              className="px-4 py-2.5 rounded-xl sm:rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 active:scale-95 cursor-pointer flex items-center space-x-1.5"
+              title="Önümüzdeki haftanın planlama tablosuna gider"
+            >
+              <span>Gelecek Haftayı Planla</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       )}
 
       {activeSubTab === 'tracker' && (
@@ -2169,6 +2350,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                 getEffectiveDayStudyMinutes={getEffectiveDayStudyMinutes}
                 openDailyStudyLogModal={openDailyStudyLogModal}
                 onApplyPastWeekToCurrent={() => handleInitiateApplyPastWeek(currentWeekLabel)}
+                onApplyCurrentWeekToFuture={() => handleInitiateApplyPlanToNextWeek(realCurrentWeekLabel)}
               />
             </motion.div>
           </AnimatePresence>
@@ -2229,6 +2411,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         getSubjectTheme={getSubjectTheme}
         currentWeekLabel={currentWeekLabel}
         onInitiateApplyPastWeek={handleInitiateApplyPastWeek}
+        onApplyPastWeekToNext={handleInitiateApplyPlanToNextWeek}
       />
 
       {/* ALL MODALS */}
