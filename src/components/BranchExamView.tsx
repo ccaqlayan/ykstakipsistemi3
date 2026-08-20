@@ -1309,6 +1309,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         });
       }
       setEditingExam(null);
+    } else {
       // Find previous branch exam of the same subject for net comparison
       const prevSameSubjectExams = branchExams
         .filter(b => b.subject === examSubject && b.examType === examType)
@@ -1345,7 +1346,12 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     }
 
     setPublisher('');
+    setCorrect('');
+    setWrong('');
+    setEmpty('');
+    setDurationMinutes('');
     setExamNotes('');
+    setIsAnalyzed(false);
     setShowAddExamModal(false);
   };
 

@@ -2255,7 +2255,7 @@ export default function App() {
     updateCurrentStudentData((prev) => ({ ...prev, branchExams: [newItem, ...(prev.branchExams || [])] }));
 
     addAuditAndUndo(
-      `${currentUser?.name || 'Öğrenci'} yeni bir branş denemesi ekledi: ${exam.subject} (${exam.corrects}D ${exam.incorrects}Y ${exam.net} Net).`,
+      `${currentUser?.name || 'Öğrenci'} yeni bir branş denemesi ekledi: ${exam.subject} (${exam.correct ?? exam.corrects ?? 0}D ${exam.wrong ?? exam.incorrects ?? 0}Y ${exam.net} Net).`,
       'exam',
       'add_branch_exam',
       () => {
@@ -2272,7 +2272,7 @@ export default function App() {
     }));
 
     addAuditAndUndo(
-      `${currentUser?.name || 'Öğrenci'} "${updatedExam.subject}" branş denemesi kaydını güncelledi (${updatedExam.corrects}D ${updatedExam.incorrects}Y ${updatedExam.net} Net).`,
+      `${currentUser?.name || 'Öğrenci'} "${updatedExam.subject}" branş denemesi kaydını güncelledi (${updatedExam.correct ?? updatedExam.corrects ?? 0}D ${updatedExam.wrong ?? updatedExam.incorrects ?? 0}Y ${updatedExam.net} Net).`,
       'exam',
       'update_branch_exam',
       () => {
