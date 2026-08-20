@@ -7,6 +7,7 @@ import { MaintenanceView } from './components/MaintenanceView';
 import { ProfileModal } from './components/ProfileModal';
 import { MandatoryPasswordChangeModal } from './components/MandatoryPasswordChangeModal';
 import { StudentPreviewBanner } from './components/StudentPreviewBanner';
+import { OnboardingWizard } from './components/OnboardingWizard';
 
 import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, InstitutionalMockExam, FieldType, DailyStudyTimeLog, StudyPlanItem } from './types';
 import { deleteStorageFile } from './services/storageUpload';
@@ -230,6 +231,21 @@ export default function App() {
   const [celebrationBadge, setCelebrationBadge] = useState<BadgeDefinition | null>(null);
   const [badgeQueue, setBadgeQueue] = useState<BadgeDefinition[]>([]);
   const [showBadgesShowcaseModal, setShowBadgesShowcaseModal] = useState(false);
+
+  // Onboarding Wizard State (Öğrenci ilk defa girdiğinde açılır)
+  const [showOnboardingWizard, setShowOnboardingWizard] = useState<boolean>(() => {
+    if (!currentUser || currentUser.role !== 'student') return false;
+    if (currentUser.hasCompletedOnboarding) return false;
+    return !localStorage.getItem(`yks_onboarding_done_${currentUser.id}`);
+  });
+
+  useEffect(() => {
+    if (currentUser && currentUser.role === 'student' && !currentUser.hasCompletedOnboarding && !localStorage.getItem(`yks_onboarding_done_${currentUser.id}`)) {
+      setShowOnboardingWizard(true);
+    } else {
+      setShowOnboardingWizard(false);
+    }
+  }, [currentUser?.id, currentUser?.hasCompletedOnboarding]);
 
   const handleTabChange = (tab: TabType) => {
     setIsZenMode(false);
@@ -2904,6 +2920,59 @@ export default function App() {
     markMessagesAsReadInFirestore(messageIds, currentUser.id, readAt);
   };
 
+  const handleCompleteOnboarding = (
+    updatedProfile: Partial<StudentProfile>,
+    newResources: ResourceItem[],
+    newRoutines: RoutineItem[]
+  ) => {
+    if (!currentUser) return;
+
+    const currentData = currentStudentData || createEmptyStudentData(currentUser.name, currentUser.className);
+    const nextProfile = {
+      ...currentData.profile,
+      ...updatedProfile
+    };
+    const nextResources = newResources.length > 0 ? [...(currentData.resources || []), ...newResources] : currentData.resources;
+    const nextRoutines = newRoutines.length > 0 ? newRoutines : currentData.routines;
+
+    const updatedStudentData: YKSDataState = {
+      ...currentData,
+      profile: nextProfile,
+      resources: nextResources,
+      routines: nextRoutines
+    };
+
+    const updatedUser: UserAccount = {
+      ...currentUser,
+      hasCompletedOnboarding: true
+    };
+
+    saveStudentDataToFirestore(currentUser.id, updatedStudentData);
+    saveUserToFirestore(updatedUser);
+
+    setGlobalState((prev) => ({
+      ...prev,
+      currentUser: updatedUser,
+      users: (prev.users || []).map((u) => u.id === currentUser.id ? updatedUser : u),
+      studentsData: {
+        ...prev.studentsData,
+        [currentUser.id]: updatedStudentData
+      }
+    }));
+
+    localStorage.setItem(`yks_onboarding_done_${currentUser.id}`, 'true');
+    setShowOnboardingWizard(false);
+
+    setMotivationToast({
+      id: `onboard-${Date.now()}`,
+      type: 'general',
+      title: '🚀 YKS Kurulumu Tamamlandı!',
+      message: 'Hedeflerin, kaynakların ve rutinlerin başarıyla hazırlandı. İyi çalışmalar!',
+      variant: 'emerald',
+      timestamp: Date.now()
+    });
+  };
+
   const unreadMessageCount = currentUser ? (globalState.messages || []).filter(m => isMessageUnreadForUser(m, currentUser)).length : 0;
 
   const isAdmin = currentUser?.role === 'admin';
@@ -3204,6 +3273,16 @@ export default function App() {
           studentData={currentStudentData}
           studentName={currentUser.name}
           onClose={() => setShowBadgesShowcaseModal(false)}
+        />
+      )}
+
+      {/* İlk Giriş Onboarding Sihirbazı */}
+      {showOnboardingWizard && currentUser && currentUser.role === 'student' && !previewStudentUser && (
+        <OnboardingWizard
+          currentUser={currentUser}
+          currentProfile={currentStudentData?.profile || createEmptyStudentData(currentUser.name, currentUser.className).profile}
+          classes={globalState.classes}
+          onComplete={handleCompleteOnboarding}
         />
       )}
 

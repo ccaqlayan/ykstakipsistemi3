@@ -25,6 +25,7 @@ export interface UserAccount {
   lockoutUntil?: string | null;
   isLocked?: boolean;
   mustChangePassword?: boolean;
+  hasCompletedOnboarding?: boolean;
 }
 
 export interface ClassDefinition {
