@@ -55,11 +55,13 @@ export type TabType =
   | 'institutional_mocks';
 
 interface TabItem {
-  id: TabType;
+  id: TabType | '__sep__';
   label: string;
   icon: any;
   highlight?: boolean;
   badge?: string;
+  tooltip?: string;
+  isSeparator?: boolean;
 }
 
 interface SidebarProps {
@@ -99,11 +101,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const studentTabs: TabItem[] = [
     { id: 'dashboard', label: 'Genel Özet', icon: LayoutDashboard },
+    // — HAZIRLIK —
+    { id: '__sep__' as any, label: 'HAZIRLIK', icon: null, isSeparator: true },
     { id: 'subject_progress', label: 'Ders İlerlemelerim', icon: GraduationCap, highlight: true },
     { id: 'routines', label: 'Rutinlerim', icon: CheckCircle2, highlight: true },
     { id: 'planner', label: 'Haftalık Çalışma Planı', icon: CalendarCheck },
     { id: 'questions', label: 'Soru Takibi', icon: CheckSquare },
     { id: 'resources', label: 'Kaynak Takibi', icon: BookOpenCheck },
+    // — ANALİZ —
+    { id: '__sep__' as any, label: 'ANALİZ', icon: null, isSeparator: true },
     { id: 'past_questions', label: 'Çıkmış Sorular', icon: FileSpreadsheet, highlight: true },
     { 
       id: 'errors', 
@@ -111,10 +117,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: BookOpen,
       badge: unresolvedErrorCount > 0 ? `${unresolvedErrorCount}` : undefined
     },
-    { id: 'branches', label: 'Branş Deneme Analizi', icon: Target },
-    { id: 'mocks', label: 'Genel Deneme Analizi', icon: TrendingUp },
+    { 
+      id: 'branches', 
+      label: 'Branş Deneme Analizi', 
+      icon: Target,
+      tooltip: 'Tek bir derse ait kitap/konu bazında yapılan branş denemeleri'
+    },
+    { 
+      id: 'mocks', 
+      label: 'Genel Deneme Analizi', 
+      icon: TrendingUp,
+      tooltip: 'TYT + AYT tüm alanları kapsayan genel deneme sınavları'
+    },
+    // — ARAÇLAR & DESTEK —
+    { id: '__sep__' as any, label: 'ARAÇLAR & DESTEK', icon: null, isSeparator: true },
     { id: 'youtube', label: 'YouTube Ders Takip', icon: Youtube },
-    { id: 'pomodoro', label: 'Pomodoro Sayacı', icon: Timer, highlight: true },
+    { id: 'pomodoro', label: 'Pomodoro Sayıcı', icon: Timer, highlight: true },
     { id: 'recommendations', label: 'Kaynak Önerileri', icon: Sparkles, highlight: true },
     { id: 'ai_coach', label: 'Yapay Zeka Koçu', icon: Bot, highlight: true }
   ];
@@ -224,7 +242,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        {tabs.map((t) => {
+        {tabs.map((t, idx) => {
+          // Separator render
+          if (t.isSeparator) {
+            return (
+              <div key={`sep-${idx}`} className="flex items-center space-x-2 px-1 pt-2 pb-0.5">
+                <div className="h-px flex-1 bg-white/10" />
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">{t.label}</span>
+                <div className="h-px flex-1 bg-white/10" />
+              </div>
+            );
+          }
+
           const Icon = t.icon;
           const isActive = activeTab === t.id;
 
@@ -233,6 +262,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={t.id}
               id={`tab-btn-${t.id}`}
               onClick={() => handleSelectTab(t.id as TabType)}
+              title={t.tooltip || t.label}
               className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-medium transition-all whitespace-nowrap w-full text-left border ${
                 isActive
                   ? isTeacher
