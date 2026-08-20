@@ -96,6 +96,13 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
     return [...currentSubjectTopics].sort((a, b) => b.totalQuestions - a.totalQuestions)[0];
   }, [currentSubjectTopics]);
 
+  // En çok soru çıkan ama henüz çözülmemiş kritik konu
+  const topPendingTopicInSubject = useMemo(() => {
+    const pending = currentSubjectTopics.filter((t) => !isTopicCompleted(t.subject, t.topic));
+    if (pending.length === 0) return null;
+    return [...pending].sort((a, b) => b.totalQuestions - a.totalQuestions)[0];
+  }, [currentSubjectTopics, completedPastTopics]);
+
   // Global Search or Subject Topics List
   const isGlobalSearchActive = searchTerm.trim().length > 0;
 
@@ -496,6 +503,39 @@ export const PastQuestionsView: React.FC<PastQuestionsViewProps> = ({
               </span>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Akıllı Koçluk Öneri Bandı: En Çok Çıkan Çözülmemiş Konu */}
+      {!isGlobalSearchActive && topPendingTopicInSubject && (
+        <div className="bg-gradient-to-r from-indigo-950/70 via-purple-950/50 to-slate-900/80 border border-indigo-500/30 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg backdrop-blur-md">
+          <div className="flex items-start sm:items-center space-x-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0 shadow-md">
+              <Zap className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-black text-amber-350 uppercase tracking-wider text-amber-300">Öncelikli Konu Tavsiyesi</span>
+                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold border border-amber-500/30">
+                  Son 8 Yılda {topPendingTopicInSubject.totalQuestions} Soru
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-200 mt-1">
+                <strong className="text-white font-bold">{topPendingTopicInSubject.topic}</strong> konusunu tamamlayarak {selectedSubject} sınav soru kapsamana 
+                <span className="text-emerald-400 font-bold ml-1">
+                  +%{((topPendingTopicInSubject.totalQuestions / 8 / (totalSubjectExamQuestions || 1)) * 100).toFixed(1)}
+                </span> kazandırabilirsin!
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onTogglePastTopic(`${topPendingTopicInSubject.subject}:${topPendingTopicInSubject.topic}`)}
+            className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 border border-emerald-400/40 transition-all flex items-center space-x-2 shrink-0 cursor-pointer active:scale-95"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            <span>Çözüldü İşaretle</span>
+          </button>
         </div>
       )}
 
