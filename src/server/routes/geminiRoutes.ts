@@ -356,19 +356,57 @@ router.post('/coach-advice', async (req, res) => {
   const settings = customSettings || coachDataSettings;
   const isDilField = profile?.targetField === 'DİL' || profile?.targetField === 'DIL';
   const studentClassName = profile?.className || '';
-  let gradePersonaGuidance = '';
-  if (studentClassName.startsWith('9') || studentClassName.includes('9-') || studentClassName.includes('9.')) {
-    gradePersonaGuidance = 'ÖĞRENCİ KADEMESİ: 9. Sınıf (Lise 1. Yıl - Maarif Modeli). Öncelikli odak: Liseye uyum, düzenli çalışma disiplini, okul yazılı sınavlarında yüksek notlar almak ve OBP (Okul Başarı Puanı) temelini sağlam kurmaktır. Aşırı YKS baskısı yerine konuyu derinlemesine anlama ve okul başarısı odaklı rehberlik yap.';
-  } else if (studentClassName.startsWith('10') || studentClassName.includes('10-') || studentClassName.includes('10.')) {
-    gradePersonaGuidance = 'ÖĞRENCİ KADEMESİ: 10. Sınıf (Lise 2. Yıl - Alan Seçimi & OBP). Öncelikli odak: Alan seçimi farkındalığı (Sayısal/EA/Sözel/Dil), okul yazılı başarı ortalamasını 90+ seviyesinde tutmak ve temel TYT konularında pratik kazanmaktır.';
-  } else if (studentClassName.startsWith('11') || studentClassName.includes('11-') || studentClassName.includes('11.')) {
-    gradePersonaGuidance = 'ÖĞRENCİ KADEMESİ: 11. Sınıf (AYT Temeli & YKS Ön Hazırlık). Öncelikli odak: 11. sınıf alan konularını (AYT belkemiği) eksiksiz öğrenmek, yazılı notlarını yüksek tutmak ve TYT tekrarları yapmaktır.';
-  }
+  const gradeLevel = (() => {
+    const trimmed = (studentClassName || '').trim().toUpperCase();
+    const numMatch = trimmed.match(/^(9|10|11|12)/);
+    if (numMatch) return numMatch[1];
+    if (trimmed.includes('9.') || trimmed.startsWith('9')) return '9';
+    if (trimmed.includes('10.') || trimmed.startsWith('10')) return '10';
+    if (trimmed.includes('11.') || trimmed.startsWith('11')) return '11';
+    if (trimmed.includes('12.') || trimmed.startsWith('12') || trimmed.includes('MEZUN')) return '12';
+    return '12';
+  })();
+
+  const isEarlyHighSchool = gradeLevel === '9' || gradeLevel === '10';
+  const isEleventhGrade = gradeLevel === '11';
 
   try {
-    let prompt = `
-Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) ve Lise Akademik Koçluğu konusunda uzman, motivasyonu yüksek ve analitik bir Rehberlik ve Öğrenci Koçusun.
-${gradePersonaGuidance ? `\n[KADEME REHBERLİK İLKESİ]: ${gradePersonaGuidance}\n` : ''}
+    let prompt = '';
+
+    if (isEarlyHighSchool) {
+      prompt = `
+Sen MEB Türkiye Yüzyılı Maarif Modeli ve lise okul ders başarısı / yazılı sınavları odaklı uzman bir Lise Akademik Koçusun.
+Bu öğrenci ${gradeLevel}. Sınıf kademesindedir.
+ÖNEMLİ KURAL: Öğrenciye KESİNLİKLE erken YKS stresi, AYT neti veya üniversite sıralama baskısı YÜKLEME.
+Öğrencinin birincil akademik hedefleri şunlardır:
+1. Okul derslerini (Matematik, Fizik, Kimya, Biyoloji, Türk Dili ve Edebiyatı, Tarih, Coğrafya vb.) derinlemesine kavramak ve MEB temalarını öğrenmek,
+2. 1. ve 2. dönem okul yazılı sınavlarından 90+ alarak OBP'sini (Ortaöğretim Başarı Puanı) en üst seviyeye çıkarmak,
+3. Düzenli günlük ders çalışma alışkanlığı, ödev tamamlama ve her gün düzenli kitap okuma/paragraf rutini kazanmaktır.
+${gradeLevel === '10' ? '4. 11. sınıfa geçerken doğru alan seçimi (Sayısal, Eşit Ağırlık, Sözel, Dil) farkındalığı kazanmaktır.' : ''}
+
+ÖĞRENCİ BİLGİLERİ:
+- Öğrenci Adı: ${profile?.name || 'Öğrenci'}
+- Okul: ${profile?.highSchool || 'Anadolu Lisesi'}
+- Sınıf: ${studentClassName || `${gradeLevel}. Sınıf`} (${gradeLevel}. Sınıf MEB Maarif Modeli)
+- Alan İlgisi: ${profile?.targetField || 'SAY'}
+`;
+    } else if (isEleventhGrade) {
+      prompt = `
+Sen 11. Sınıf Akademik Başarı ve 1. Aşama (TYT) Temel Ön Hazırlık Koçusun.
+Bu öğrenci 11. Sınıf kademesindedir.
+Öğrencinin iki temel akademik hedefi vardır:
+1. 11. sınıf okul derslerini (Matematik, Fizik, Kimya, Biyoloji veya Edebiyat/Tarih/Coğrafya) eksiksiz öğrenip okul yazılı sınavlarında 90+ alarak OBP ortalamasını korumak (11. sınıf konuları AYT'nin temelini oluşturur),
+2. 1. Aşama (TYT) için temel ön hazırlık yapmak (düzenli problem, paragraf rutini ve 9-10. sınıf temel eksiklerini hafif tempoyla toparlamak).
+
+ÖĞRENCİ BİLGİLERİ:
+- Öğrenci Adı: ${profile?.name || 'Öğrenci'}
+- Okul: ${profile?.highSchool || 'Anadolu Lisesi'}
+- Sınıf: ${studentClassName || '11. Sınıf'} (11. Sınıf Lise & TYT Ön Hazırlık)
+- Alanı: ${profile?.targetField || 'SAY'}
+`;
+    } else {
+      prompt = `
+Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) derece hazırlık konusunda uzman, motivasyonu yüksek ve analitik bir Rehberlik ve Öğrenci Koçusun.
 ${isDilField ? 'NOT: Bu öğrenci YKS DİL (YDT) alanındadır. Haftalık reçete ve analizlerinde YDT 80 soru ile TYT dengesine özel odaklan.' : ''}
 
 ÖĞRENCİ BİLGİLERİ:
@@ -380,15 +418,16 @@ ${isDilField ? 'NOT: Bu öğrenci YKS DİL (YDT) alanındadır. Haftalık reçet
 - Hedef Sıralama: ${profile?.targetRank || 5000}
 - Hedef Netler: TYT ${profile?.targetTYTNet || 100} Net, ${isDilField ? `YDT (${profile?.targetLanguage || 'İngilizce'}) ${profile?.targetYDTNet || 75} Net` : `AYT ${profile?.targetAYTNet || 70} Net`}
 `;
+    }
 
-    if (settings.generalMocks?.enabled !== false) {
+    if (settings.generalMocks?.enabled !== false && !isEarlyHighSchool) {
       const limit = settings.generalMocks?.limit || 3;
-      prompt += `\nSON GENEL DENEME NETLERİ:\n${JSON.stringify(summarizeMocksForPrompt(generalMocks, limit))}\n`;
+      prompt += `\nSON DENEME NETLERİ:\n${JSON.stringify(summarizeMocksForPrompt(generalMocks, limit))}\n`;
     }
 
     if (settings.topicErrors?.enabled !== false) {
       const limit = settings.topicErrors?.limit || 8;
-      prompt += `\nEKSİK / YANLIŞ YAPILAN KONULAR (YANLIŞ TABLOSU):\n${JSON.stringify(summarizeErrorsForPrompt(topicErrors, limit))}\n`;
+      prompt += `\nEKSİK / YANLIŞ YAPILAN KONULAR (HATA TABLOSU):\n${JSON.stringify(summarizeErrorsForPrompt(topicErrors, limit))}\n`;
     }
 
     if (settings.questionLogs?.enabled !== false) {
@@ -398,7 +437,7 @@ ${isDilField ? 'NOT: Bu öğrenci YKS DİL (YDT) alanındadır. Haftalık reçet
 
     if (settings.routines?.enabled !== false) {
       const limit = settings.routines?.limit || 3;
-      prompt += `\nSON RUTİN VERİLERİ:\n${JSON.stringify(summarizeRoutinesForPrompt(routines, limit))}\n`;
+      prompt += `\nSON RUTİN VERİLERİ (KİTAP / PROBLEM / DERS RUTİNLERİ):\n${JSON.stringify(summarizeRoutinesForPrompt(routines, limit))}\n`;
     }
 
     if (settings.studyPlanSummary?.enabled !== false) {
@@ -409,14 +448,14 @@ ${isDilField ? 'NOT: Bu öğrenci YKS DİL (YDT) alanındadır. Haftalık reçet
       prompt += `\nKAYNAK TAKİBİ VE ÇÖZÜLME ÖZETİ:\n${JSON.stringify(summarizeResourcesForPrompt(resources))}\n`;
     }
 
-    if (settings.branchExams?.enabled !== false) {
+    if (settings.branchExams?.enabled !== false && !isEarlyHighSchool) {
       const limit = settings.branchExams?.limit || 3;
       prompt += `\nSON BRANŞ DENEMELERİ:\n${JSON.stringify(summarizeBranchExamsForPrompt(branchExams, limit))}\n`;
     }
 
     if (settings.institutionalMocks?.enabled !== false) {
       const limit = settings.institutionalMocks?.limit || 3;
-      prompt += `\nSON KURUMSAL DENEMELER:\n${JSON.stringify(summarizeInstitutionalMocksForPrompt(institutionalMocks, limit))}\n`;
+      prompt += `\nSON KURUMSAL / KDS DENEME VE YAZILI SONUÇLARI:\n${JSON.stringify(summarizeInstitutionalMocksForPrompt(institutionalMocks, limit))}\n`;
     }
 
     if (settings.youtubeTracker?.enabled !== false) {
@@ -449,7 +488,52 @@ ${isDilField ? 'NOT: Bu öğrenci YKS DİL (YDT) alanındadır. Haftalık reçet
       prompt += `\n## ÖĞRENCİNİN DUYGUSAL/MOTİVASYON DURUMU (ZORUNLU KULLANİLA)\nStres Seviyesi: ${stressProfile.stressLevel} (Skor: ${stressProfile.score}/100)\nDurum Özeti: ${stressProfile.summary}\nTON YÖNERGESİ — BU KURALI MUTLAKA UYGULA:\n${guide}\n`;
     }
 
-    prompt += `
+    if (isEarlyHighSchool) {
+      prompt += `
+Lütfen bu verileri detaylıca analiz et ve öğrenciye özel Türkçe Lise Okul Dersleri ve Yazılı Hazırlık Koçluk Raporu üret.
+Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
+{
+  "generalEvaluation": "${gradeLevel}. sınıf düzeyine uygun okul ders başarısı, yazılı sınav hazırlığı ve çalışma disiplini değerlendirmesi (2-3 cümle)",
+  "strengths": ["Güçlü olunan 3 lise dersi veya konu alanı"],
+  "weakAreas": ["Okul yazılılarında ve derslerde acil toparlanması gereken 2-3 zayıf konu"],
+  "actionPlan": ["Bu hafta okul ders başarısını ve yazılı hazırlığını artıracak 4 somut aksiyon adımı"],
+  "motivationalQuote": "${gradeLevel}. sınıf lise başarısı ve azim için ilham verici motive edici söz",
+  "weeklyPrescription": [
+    {
+      "subject": "Ders Adı (Örn: Matematik, Fizik, Kimya, Biyoloji, Türk Dili ve Edebiyatı vb.)",
+      "targetQuestions": 150,
+      "focusTopics": ["Konu 1", "Konu 2"],
+      "actionType": "question_solving",
+      "description": "Bu hafta bu derste hangi MEB kazanımına odaklanmalı, yazılı sınav için nasıl çalışmalı?",
+      "priority": "high"
+    }
+  ]
+}
+      `;
+    } else if (isEleventhGrade) {
+      prompt += `
+Lütfen bu verileri detaylıca analiz et ve öğrenciye özel Türkçe 11. Sınıf Akademik Başarı ve 1. Aşama (TYT) Ön Hazırlık Koçluk Raporu üret.
+Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
+{
+  "generalEvaluation": "11. sınıf okul dersleri, OBP ve 1. Aşama (TYT) ön hazırlık dengesi değerlendirmesi (2-3 cümle)",
+  "strengths": ["11. sınıf dersleri ve temel çalışmalarda güçlü olunan 3 alan"],
+  "weakAreas": ["Geliştirilmesi gereken 11. sınıf konuları veya TYT ön hazırlık eksikleri"],
+  "actionPlan": ["11. sınıf ders başarısı + 1. aşama ön hazırlık için 4 somut aksiyon adımı"],
+  "motivationalQuote": "11. sınıf öğrencisi için güçlü bir lise & gelecek motivasyon sözü",
+  "weeklyPrescription": [
+    {
+      "subject": "Ders Adı (Örn: 11. Sınıf Matematik, Fizik, TYT Paragraf/Problem vb.)",
+      "targetQuestions": 200,
+      "focusTopics": ["Konu 1", "Konu 2"],
+      "actionType": "question_solving",
+      "description": "11. sınıf yazılı başarısı veya TYT temel ön hazırlığı için haftalık hedef açıklaması",
+      "priority": "high"
+    }
+  ]
+}
+      `;
+    } else {
+      prompt += `
 Lütfen bu verileri detaylıca analiz et ve öğrenciye özel Türkçe YKS Koçluk Raporu ve Haftalık Çalışma Reçetesi üret.
 Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
 {
@@ -486,7 +570,8 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
     ]
   }
 }
-    `;
+      `;
+    }
 
     const targetModel = featureModelConfig['AI_COACH_STUDENT'] || 'SYSTEM_DEFAULT';
     const unifiedResult = await executeAiUnifiedRequest({
@@ -806,20 +891,44 @@ ${gradeNote ? `${gradeNote}\n` : ''}- Alan: ${profile?.targetField || 'SAY'} ${i
       }).join('\n') + '\n';
     }
 
-    const prompt = isTeacherMode ? `
-Sen Türkiye YKS hazırlık süreçlerinde uzman, zeki, analitik ve pedagojik vizyonu yüksek bir YKS Sınıf Rehberliği ve Okul Koçluk Danışmanısın.
-Karşındaki kişi bir Sınıf Rehber Öğretmeni / Okul Rehberlik Uzmanıdır ve seçili sınıf (${classContext?.className || '12-A SAY'}) hakkında senden pedagojik, akademik ve etüt planlama tavsiyesi almaktadır.
+    const isStudentGrade9or10 = (studentClass.startsWith('9') || studentClass.startsWith('10') || studentClass.includes('9-') || studentClass.includes('10-') || studentClass.includes('9.') || studentClass.includes('10.'));
+    const isStudentGrade11 = (studentClass.startsWith('11') || studentClass.includes('11-') || studentClass.includes('11.'));
+
+    let studentPrompt = '';
+    if (isStudentGrade9or10) {
+      studentPrompt = `
+Sen MEB Türkiye Yüzyılı Maarif Modeli lise okul ders başarısı, 1. ve 2. dönem yazılı sınavları ve OBP hazırlığı konusunda uzman, cana yakın, motive edici, sabırlı ve tecrübeli bir Lise Akademik Koçu ve Mentorüsün.
+Karşındaki öğrenci ${studentClass || 'Lise'} kademesindedir.
 
 ${contextPrompt}
 ${formattedHistory}
-ÖĞRETMENİN YENİ MESAJI:
+ÖĞRENCİNİN YENİ MESAJI:
 "${message}"
 
-GÖREVİN VE YANIT KURALLARIN:
-1. Öğretmenin seçili sınıfa ait akademik gidişat, etüt açılması gereken konular, sınıf motivasyonu, seviye gruplaması ve rehberlik taktikleri konusundaki sorusuna net, analitik, uygulanabilir ve profesyonel çözümler sun.
-2. Sınıfın ortak hata konuları ve deneme net ortalamaları üzerinden nokta atışı öneriler ver.
-3. Samimi, saygılı, mesleki dayanışma içeren yapıcı bir üslup kullan. Yanıtını zengin, okunaklı Markdown formatında döndür.
-` : `
+KESİN VE TAVİZSİZ KOÇLUK KURALLARI (ÇOK ÖNEMLİ):
+1. ÖĞRENCİYE ASLA ERKEN YKS BASKISI VEYA AYT NET STRESİ YÜKLEME.
+2. Öğrencinin asıl hedefi: Okul derslerini (Matematik, Fizik, Kimya, Biyoloji, Türk Dili ve Edebiyatı, Tarih, Coğrafya vb.) çok iyi öğrenmek, yazılı sınavlardan 90+ alarak OBP'sini (Ortaöğretim Başarı Puanı) en yüksekte tutmak, ödevlerini düzenli yapmak ve her gün düzenli kitap/paragraf okumaktır. (10. sınıfta ise ayrıca 11. sınıfa geçerken alan seçimi farkındalığı sağla).
+3. Ders dışı gereksiz sohbetlere girmeden öğrenciyi okul derslerine, yazılı sınav ipuçlarına ve düzenli çalışma rutinlerine motive et.
+4. Samimi, enerjik, yapıcı ve profesyonel bir Türkçe kullan. Zengin ve okunabilir Markdown formatında yanıt ver.
+`;
+    } else if (isStudentGrade11) {
+      studentPrompt = `
+Sen 11. Sınıf Akademik Başarı ve 1. Aşama (TYT) Temel Ön Hazırlık Koçusun.
+Karşındaki öğrenci 11. Sınıftadır.
+
+${contextPrompt}
+${formattedHistory}
+ÖĞRENCİNİN YENİ MESAJI:
+"${message}"
+
+KESİN VE TAVİZSİZ KOÇLUK KURALLARI (ÇOK ÖNEMLİ):
+1. 11. sınıf okul dersleri başarısı ve yazılı sınavlar (OBP) birinci önceliktir çünkü 11. sınıf konuları AYT'nin belkemiğidir.
+2. Aynı zamanda 1. Aşama (TYT) için temel ön hazırlık desteği ver (düzenli problem, paragraf rutini, 9-10 eksiklerini hafif tempoyla tamamlama).
+3. Erken AYT paniği yerine 11. sınıf konularını sağlam öğrenmesini sağla.
+4. Samimi, enerjik, yapıcı ve profesyonel bir Türkçe kullan. Zengin ve okunabilir Markdown formatında yanıt ver.
+`;
+    } else {
+      studentPrompt = `
 Sen Türkiye YKS (${profile?.targetField === 'DİL' || profile?.targetField === 'DIL' ? 'TYT ve YDT Yabancı Dil' : 'TYT ve AYT'}) sınavına hazırlanan öğrencilere rehberlik eden, cana yakın, son derece motive edici, analitik, taktiksel, tavizsiz ve tecrübeli bir Yapay Zeka YKS Öğrenci Koçu ve Mentorüsün.
 
 ${contextPrompt}
@@ -834,6 +943,22 @@ KESİN VE TAVİZSİZ KOÇLUK KURALLARI (ÇOK ÖNEMLİ):
 4. ÖĞRENCİYİ DERSE MOTİVE EDECEK SOMUT VE ETKİLİ YÖNTEMLER DENE (Pomodoro, soru kotası, hedef hatırlatma).
 5. Samimi, enerjik, kararlı, yapıcı ve profesyonel bir Türkçe kullan. Zengin ve okunabilir Markdown formatında metin döndür.
 `;
+    }
+
+    const prompt = isTeacherMode ? `
+Sen Türkiye YKS hazırlık süreçlerinde uzman, zeki, analitik ve pedagojik vizyonu yüksek bir YKS Sınıf Rehberliği ve Okul Koçluk Danışmanısın.
+Karşındaki kişi bir Sınıf Rehber Öğretmeni / Okul Rehberlik Uzmanıdır ve seçili sınıf (${classContext?.className || '12-A SAY'}) hakkında senden pedagojik, akademik ve etüt planlama tavsiyesi almaktadır.
+
+${contextPrompt}
+${formattedHistory}
+ÖĞRETMENİN YENİ MESAJI:
+"${message}"
+
+GÖREVİN VE YANIT KURALLARIN:
+1. Öğretmenin seçili sınıfa ait akademik gidişat, etüt açılması gereken konular, sınıf motivasyonu, seviye gruplaması ve rehberlik taktikleri konusundaki sorusuna net, analitik, uygulanabilir ve profesyonel çözümler sun.
+2. Sınıfın ortak hata konuları ve deneme net ortalamaları üzerinden nokta atışı öneriler ver.
+3. Samimi, saygılı, mesleki dayanışma içeren yapıcı bir üslup kullan. Yanıtını zengin, okunaklı Markdown formatında döndür.
+` : studentPrompt;
 
     const targetModel = featureModelConfig['AI_COACH_CHAT'] || featureModelConfig['AI_COACH_STUDENT'] || 'SYSTEM_DEFAULT';
     const unifiedResult = await executeAiUnifiedRequest({

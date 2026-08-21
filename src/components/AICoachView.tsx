@@ -81,6 +81,27 @@ const DEFAULT_QUICK_PROMPTS = [
   '📐 Matematik netlerimi +10 artırmak için hangi konulara odaklanmalıyım?'
 ];
 
+const GRADE_9_QUICK_PROMPTS = [
+  '📚 Okul yazılı sınavlarına (1. ve 2. sınavlar) nasıl çalışmalıyım?',
+  '📝 Matematik ve Fen derslerindeki konu açıklarımı nasıl kapatabilirim?',
+  '⏱️ Günlük ders çalışma ve ödev rutinimi nasıl planlamalıyım?',
+  '🎯 9. sınıf not ortalamamı (OBP) 90+ üstünde tutmak için taktik verir misin?'
+];
+
+const GRADE_10_QUICK_PROMPTS = [
+  '📐 10. sınıf yazılı sınavlarında yüksek not almak için nasıl bir program yapmalıyım?',
+  '🎯 11. sınıfa geçerken alan seçimi (Sayısal, EA, Sözel, Dil) için tavsiyelerin neler?',
+  '🧠 Zorlandığım Fizik / Kimya / Matematik konularını en iyi nasıl kavrarım?',
+  '⚡ Okul dersleri ile birlikte temel problem ve paragraf rutinini nasıl götürmeliyim?'
+];
+
+const GRADE_11_QUICK_PROMPTS = [
+  '🎯 11. sınıf ders başarımı yüksek tutarken 1. aşama (TYT) ön hazırlığına nasıl başlamalıyım?',
+  '📐 11. sınıf Matematik ve Fen/Edebiyat konularını AYT temeli için nasıl sağlamlaştırırım?',
+  '⏱️ Haftalık çalışma planımda okul yazılıları ile TYT tekrarlarını nasıl dengelemeliyim?',
+  '📝 Okulda yapılan KDS / Kurumsal denemelerde netlerimi nasıl artırırım?'
+];
+
 const DIL_QUICK_PROMPTS = [
   '⚡ YDT Reading (Okuma) parçalarında hızlanmak için ne yapmalıyım?',
   '🎯 YDT Vocabulary ve Phrasal Verbs ezberini nasıl kalıcı hale getirebilirim?',
@@ -103,6 +124,22 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
 }) => {
   const isTeacher = !previewStudentUser && (currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor' || currentUser?.role === 'teacher' || currentUser?.role === 'admin');
   const isSchoolCounselor = !previewStudentUser && (currentUser?.role === 'school_counselor' || currentUser?.role === 'admin');
+
+  // --- Kademe Tespiti ---
+  const effectiveUser = previewStudentUser || currentUser;
+  const gradeLevel = useMemo(() => {
+    const rawClass = (effectiveUser?.className || state.profile?.className || '').toUpperCase().trim();
+    if (rawClass.includes('MEZUN')) return 'mezun';
+    if (rawClass.startsWith('9') || rawClass.includes('9-') || rawClass.includes('9.')) return '9';
+    if (rawClass.startsWith('10') || rawClass.includes('10-') || rawClass.includes('10.')) return '10';
+    if (rawClass.startsWith('11') || rawClass.includes('11-') || rawClass.includes('11.')) return '11';
+    return '12';
+  }, [effectiveUser?.className, state.profile?.className]);
+
+  const isGrade9 = gradeLevel === '9';
+  const isGrade10 = gradeLevel === '10';
+  const isGrade11 = gradeLevel === '11';
+  const isEarlyHighSchool = isGrade9 || isGrade10;
 
   // --- Stres / Motivasyon Profili ---
   const [manualMood, setManualMood] = useState<'tired' | 'okay' | 'ready' | null>(() => {
@@ -134,11 +171,9 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
     } catch {}
   };
 
-  // Stres seviyesine göre uyarlanmış hızlı soru butonları
+  // Stres seviyesine ve KADEMEYE göre uyarlanmış hızlı soru butonları
   const adaptedQuickPrompts = useMemo(() => {
     if (isTeacher) return DEFAULT_QUICK_PROMPTS;
-    const isDil = (state.profile?.targetField as string) === 'DİL' || (state.profile?.targetField as string) === 'DIL';
-    const basePrompts = isDil ? DIL_QUICK_PROMPTS : DEFAULT_QUICK_PROMPTS;
     if (stressProfile.stressLevel === 'burnt_out') {
       return [
         '🫶 Çok yorgunum, bugün için küçük bir başlangıç noktası önerir misin?',
@@ -148,13 +183,26 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
       ];
     }
     if (stressProfile.stressLevel === 'mildly_stressed') {
+      const base = isGrade9 
+        ? GRADE_9_QUICK_PROMPTS 
+        : isGrade10 
+        ? GRADE_10_QUICK_PROMPTS 
+        : isGrade11 
+        ? GRADE_11_QUICK_PROMPTS 
+        : ((state.profile?.targetField as string) === 'DİL' || (state.profile?.targetField as string) === 'DIL') 
+        ? DIL_QUICK_PROMPTS 
+        : DEFAULT_QUICK_PROMPTS;
       return [
         '💛 Biraz yorgunum ama devam etmek istiyorum — nereden başlamalıyım?',
-        ...basePrompts.slice(0, 3),
+        ...base.slice(0, 3),
       ];
     }
-    return basePrompts;
-  }, [stressProfile.stressLevel, isTeacher, state.profile?.targetField]);
+    if (isGrade9) return GRADE_9_QUICK_PROMPTS;
+    if (isGrade10) return GRADE_10_QUICK_PROMPTS;
+    if (isGrade11) return GRADE_11_QUICK_PROMPTS;
+    const isDil = (state.profile?.targetField as string) === 'DİL' || (state.profile?.targetField as string) === 'DIL';
+    return isDil ? DIL_QUICK_PROMPTS : DEFAULT_QUICK_PROMPTS;
+  }, [stressProfile.stressLevel, isTeacher, isGrade9, isGrade10, isGrade11, state.profile?.targetField]);
 
   const [activeTab, setActiveTab] = useState<AICoachTab>('report');
 
@@ -174,11 +222,23 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
       const saved = localStorage.getItem(`yks_ai_coach_chat_${currentUser?.id || 'guest'}`);
       if (saved) return JSON.parse(saved);
     } catch { }
+
+    const studentName = currentUser?.name || state.profile?.name || 'Şampiyon';
+    let welcomeText = `Merhaba ${studentName}! 👋 Ben senin kişisel YKS Koçun ve Mentorunum. Soru çözümlerini, deneme netlerini ve yanlış yaptığın konuları yakından takip ediyorum. Hedeflediğin ${state.profile?.targetUniversity || 'üniversite'} ve derece için YKS hazırlığı, ders çalışma taktikleri ve motivasyon konusunda aklına takılan her şeyi bana sorabilirsin! Masanın başına geçmeye hazır mısın? 🚀`;
+    
+    if (isGrade9) {
+      welcomeText = `Merhaba ${studentName}! 👋 Ben senin 9. Sınıf Lise Koçunum. MEB Türkiye Yüzyılı Maarif Modeli müfredatında okul derslerin, 1. ve 2. dönem yazılı sınavların, OBP not ortalaman ve çalışma rutinlerin konusunda sana yardımcı olmak için buradayım. Matematik, Fizik, Kimya, Biyoloji, Edebiyat ve diğer derslerdeki konular, ödevler veya sınav taktikleri hakkında merak ettiğin her şeyi bana sorabilirsin! 📚✨`;
+    } else if (isGrade10) {
+      welcomeText = `Merhaba ${studentName}! 👋 Ben senin 10. Sınıf Lise Koçun ve Akademik Danışmanınım. Okul derslerin, yazılı sınavların, OBP başarın ve 11. sınıfa geçerken yapacağın alan seçimi (Sayısal, Eşit Ağırlık, Sözel, Dil) konusunda sana rehberlik etmek için buradayım. Derslerdeki eksiklerin ve çalışma planın hakkında aklına takılan her şeyi bana sorabilirsin! 🚀`;
+    } else if (isGrade11) {
+      welcomeText = `Merhaba ${studentName}! 👋 Ben senin 11. Sınıf Akademik ve YKS Ön Hazırlık Koçunum. 11. sınıf okul derslerinin başarısı, yazılı sınavların ve 1. Aşama (TYT) temelini sağlamlaştırma sürecinde yanındayım. Hem okul derslerinde en yüksek ortalamayı yakalamak hem de YKS'ye güçlü bir ön hazırlık yapmak için her zaman bana danışabilirsin! 🎯`;
+    }
+
     return [
       {
         id: 'msg-welcome',
         sender: 'ai',
-        text: `Merhaba ${currentUser?.name || state.profile?.name || 'Şampiyon'}! 👋 Ben senin kişisel YKS Koçun ve Mentorunum. Soru çözümlerini, deneme netlerini ve yanlış yaptığın konuları yakından takip ediyorum. Hedeflediğin ${state.profile?.targetUniversity || 'üniversite'} ve derece için YKS hazırlığı, ders çalışma taktikleri ve motivasyon konusunda aklına takılan her şeyi bana sorabilirsin! Masanın başına geçmeye hazır mısın? 🚀`,
+        text: welcomeText,
         timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
       }
     ];
@@ -194,7 +254,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
       {
         id: 'msg-class-welcome',
         sender: 'ai',
-        text: `Merhaba Değerli Hocam! 👋 Ben ${selectedClass} sınıfının YKS Sınıf Rehberliği ve Koçluk Danışmanıyım. Sınıfınızın soru çözümlerini, deneme net ortalamalarını ve en çok hata yapılan ortak konularını analiz ediyorum. Sınıf genelinde etüt planlama, ders bazlı eksik giderme, seviye gruplandırma ve motivasyon stratejileri hakkında aklınıza takılan her şeyi bana sorabilirsiniz! 🚀`,
+        text: `Merhaba Değerli Hocam! 👋 Ben ${selectedClass} sınıfının Sınıf Rehberliği ve Koçluk Danışmanıyım. Sınıfınızın soru çözümlerini, deneme/yazılı ortalamalarını ve en çok hata yapılan ortak konularını analiz ediyorum. Sınıf genelinde etüt planlama, ders bazlı eksik giderme, seviye gruplandırma ve motivasyon stratejileri hakkında aklınıza takılan her şeyi bana sorabilirsiniz! 🚀`,
         timestamp: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
       }
     ];
@@ -281,7 +341,12 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
       return;
     }
 
-    let speechText = `YKS Koçluk Raporu ve Durum Değerlendirmesi. ${advice.generalEvaluation || ''}. `;
+    const reportTitle = isEarlyHighSchool 
+      ? 'Lise Okul Dersleri ve Yazılı Hazırlık Koçluk Raporu.' 
+      : isGrade11 
+      ? '11. Sınıf Akademik ve TYT Ön Hazırlık Koçluk Raporu.' 
+      : 'YKS Koçluk Raporu ve Durum Değerlendirmesi.';
+    let speechText = `${reportTitle} ${advice.generalEvaluation || ''}. `;
     if (advice.strengths && advice.strengths.length > 0) {
       speechText += `Öne çıkan güçlü yönleriniz: ${advice.strengths.join('. ')}. `;
     }
@@ -1012,14 +1077,34 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
           <div>
             <div className="flex items-center space-x-2 text-purple-300 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1">
               <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>Yapay Zeka Destekli YKS {isTeacher ? 'Sınıf & Okul Rehberlik' : 'Bireysel Öğrenci'} Koçluk Merkezi</span>
+              <span>
+                {isTeacher 
+                  ? 'Yapay Zeka Destekli Sınıf & Okul Rehberlik Koçluk Merkezi' 
+                  : isEarlyHighSchool 
+                  ? `Lise Koçu (Yapay Zeka) • ${gradeLevel}. Sınıf MEB Maarif Modeli`
+                  : isGrade11
+                  ? 'Lise Koçu (Yapay Zeka) • 11. Sınıf Akademik & YKS Ön Hazırlık'
+                  : 'Yapay Zeka Destekli YKS Bireysel Öğrenci Koçluk Merkezi'
+                }
+              </span>
             </div>
             <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight">
-              {isTeacher ? `${selectedClass} Sınıfı Yapay Zeka Koçluk Analizi` : 'Kişiselleştirilmiş Yapay Zeka YKS Çalışma Analizi'}
+              {isTeacher 
+                ? `${selectedClass} Sınıfı Yapay Zeka Koçluk Analizi` 
+                : isEarlyHighSchool
+                ? 'Lise Akademik Koçu & Okul Dersleri Rehberi'
+                : isGrade11
+                ? '11. Sınıf Akademik Koçu & 1. Aşama (TYT) Ön Hazırlık Rehberi'
+                : 'Kişiselleştirilmiş Yapay Zeka YKS Çalışma Analizi'
+              }
             </h1>
             <p className="text-slate-300 text-xs mt-1 max-w-2xl leading-relaxed">
               {isTeacher
                 ? `${selectedClass} sınıfındaki ${classStudents.length} öğrencinin soru günlükleri, deneme netleri ve ortak hata havuzu üzerinden analitik rehberlik ve etüt planı üretir.`
+                : isEarlyHighSchool
+                ? 'Okul derslerinde başarı, 1. ve 2. dönem yazılı sınavlarına hazırlık, OBP not ortalamasını yükseltme ve düzenli çalışma alışkanlığı için kişiselleştirilmiş rehberin.'
+                : isGrade11
+                ? '11. sınıf okul dersleri ve yazılı sınavlarında en yüksek OBP\'yi hedeflerken, 1. Aşama (TYT) temelini sağlamlaştıran ve AYT altyapısını kuran kişiselleştirilmiş rehberin.'
                 : 'Soru çözüm verilerini, deneme netlerini ve Hata Defterindeki eksik konularını analiz ederek kişisel çalışma reçetesi ve canlı rehberlik sunar.'
               }
             </p>
@@ -1078,7 +1163,14 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 text-purple-200" />
-                    <span>Yeni Koçluk Raporu & Reçete Üret</span>
+                    <span>
+                      {isEarlyHighSchool 
+                        ? 'Yeni Lise Ders Koçluk Raporu Üret' 
+                        : isGrade11 
+                        ? 'Yeni 11. Sınıf & Ön Hazırlık Raporu Üret' 
+                        : 'Yeni Koçluk Raporu & Reçete Üret'
+                      }
+                    </span>
                   </>
                 )}
               </button>
@@ -1392,9 +1484,18 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
                         <h3 className="text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center space-x-2">
                           <ListTodo className="w-4 h-4 text-purple-400" />
-                          <span>Haftalık YKS Çalışma & Soru Reçetesi</span>
+                          <span>
+                            {isEarlyHighSchool 
+                              ? 'Haftalık Okul Dersleri & Yazılıya Hazırlık Reçetesi' 
+                              : isGrade11 
+                              ? '11. Sınıf Ders & 1. Aşama (TYT) Ön Hazırlık Reçetesi' 
+                              : 'Haftalık YKS Çalışma & Soru Reçetesi'
+                            }
+                          </span>
                         </h3>
-                        <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">Kişiye Özel Haftalık Kota</span>
+                        <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">
+                          {isEarlyHighSchool ? 'MEB Maarif Modeli Haftalık Kota' : isGrade11 ? '11. Sınıf & TYT Haftalık Kota' : 'Kişiye Özel Haftalık Kota'}
+                        </span>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1440,7 +1541,14 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                     <div className="bg-slate-950 border border-indigo-500/30 p-4 sm:p-5 rounded-2xl space-y-3 mt-4">
                       <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center space-x-2">
                         <Zap className="w-4 h-4" />
-                        <span>YKS Koçunun Bu Haftaki 4 Temel Aksiyon Adımı</span>
+                        <span>
+                          {isEarlyHighSchool 
+                            ? 'Lise Koçunun Bu Haftaki 4 Temel Aksiyon Adımı' 
+                            : isGrade11 
+                            ? 'Akademik Koçun Bu Haftaki 4 Temel Aksiyon Adımı' 
+                            : 'YKS Koçunun Bu Haftaki 4 Temel Aksiyon Adımı'
+                          }
+                        </span>
                       </h3>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -1472,7 +1580,12 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                 <div className="max-w-md mx-auto space-y-1.5">
                   <h3 className="text-sm sm:text-base font-bold text-white">Henüz Bir Koçluk Raporu Üretilmedi</h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Soru çözümlerini, deneme netlerini ve Hata Defterindeki eksik konularını analiz ederek kişisel çalışma reçetesi almak için yukarıdaki butona tıkla.
+                    {isEarlyHighSchool
+                      ? 'Okul dersleri soru çözümlerini, yazılı sınav notlarını ve Hata Defterindeki eksik konularını analiz ederek kişisel çalışma reçetesi almak için yukarıdaki butona tıkla.'
+                      : isGrade11
+                      ? '11. sınıf derslerini ve 1. Aşama (TYT) ön hazırlık durumunu analiz ederek kişisel çalışma reçetesi almak için yukarıdaki butona tıkla.'
+                      : 'Soru çözümlerini, deneme netlerini ve Hata Defterindeki eksik konularını analiz ederek kişisel çalışma reçetesi almak için yukarıdaki butona tıkla.'
+                    }
                   </p>
                 </div>
               </div>
@@ -1493,12 +1606,25 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
               </div>
               <div className="min-w-0">
                 <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
-                  <span className="truncate">{isTeacher ? `${selectedClass} Sınıf Rehberliği Danışmanı` : 'YKS Koçu ile Canlı Danışmanlık'}</span>
+                  <span className="truncate">
+                    {isTeacher 
+                      ? `${selectedClass} Sınıf Rehberliği Danışmanı` 
+                      : isEarlyHighSchool
+                      ? 'Lise Koçu ile Canlı Danışmanlık (Okul Dersleri)'
+                      : isGrade11
+                      ? '11. Sınıf & TYT Ön Hazırlık Danışmanı'
+                      : 'YKS Koçu ile Canlı Danışmanlık'
+                    }
+                  </span>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                 </h3>
                 <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
                   {isTeacher
                     ? `${selectedClass} sınıfı için taktik ve plan danışın`
+                    : isEarlyHighSchool
+                    ? 'Okul dersleri, yazılı sınavlar, MEB kazanımları ve ödevler hakkında sorularını sor'
+                    : isGrade11
+                    ? '11. sınıf dersleri, yazılılar ve 1. aşama (TYT) ön hazırlık taktikleri hakkında sorularını sor'
                     : 'YKS stratejisi ve motivasyon konusunda sorularını sor'
                   }
                 </p>
@@ -1662,7 +1788,16 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
             {chatLoading && (
               <div className="flex items-center space-x-2 text-xs text-purple-300 bg-slate-950 p-3 rounded-2xl border border-slate-800 w-fit animate-pulse">
                 <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-400" />
-                <span>YKS Koçunuz yanıt hazırlıyor...</span>
+                <span>
+                  {isTeacher 
+                    ? 'Sınıf Koçluk Danışmanı yanıt hazırlıyor...' 
+                    : isEarlyHighSchool 
+                    ? 'Lise Koçunuz yanıt hazırlıyor...' 
+                    : isGrade11 
+                    ? '11. Sınıf Koçunuz yanıt hazırlıyor...' 
+                    : 'YKS Koçunuz yanıt hazırlıyor...'
+                  }
+                </span>
               </div>
             )}
             <div ref={chatBottomRef} />
@@ -1680,7 +1815,15 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
               type="text"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              placeholder={isTeacher ? `${selectedClass} sınıfı için bir rehberlik sorusu sorun...` : 'YKS koçuna bir soru sor veya taktik iste...'}
+              placeholder={
+                isTeacher 
+                  ? `${selectedClass} sınıfı için bir rehberlik sorusu sorun...` 
+                  : isEarlyHighSchool 
+                  ? 'Lise koçuna okul dersleri, yazılı sınavlar veya ödevlerinle ilgili bir soru sor...' 
+                  : isGrade11 
+                  ? '11. sınıf dersleri, yazılılar veya TYT ön hazırlık hakkında koçuna danış...' 
+                  : 'YKS koçuna bir soru sor veya taktik iste...'
+              }
               disabled={chatLoading}
               className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-colors"
             />
@@ -1846,7 +1989,14 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-400" />
-                <span>YKS Koçluk Rapor Detayı ({selectedDetailAdvice.timestamp})</span>
+                <span>
+                  {isEarlyHighSchool 
+                    ? 'Lise Koçluk Rapor Detayı' 
+                    : isGrade11 
+                    ? '11. Sınıf & Ön Hazırlık Rapor Detayı' 
+                    : 'YKS Koçluk Rapor Detayı'
+                  } ({selectedDetailAdvice.timestamp})
+                </span>
               </h3>
               <button onClick={() => setSelectedDetailAdvice(null)} className="text-slate-400 hover:text-white p-1 cursor-pointer">
                 <X className="w-5 h-5" />
