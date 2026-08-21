@@ -884,10 +884,24 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   const renderDifficultyBadge = (difficultyValue: number, text?: string) => {
     let colorClass = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
 
-    // Strip star characters and extract only clean level text (e.g. "Kolay", "Orta", etc.)
+    // Strip star characters, question marks, and format clean level text (e.g. "1.5/5 Başlangıç", "2/5 Kolay - Orta", etc.)
     let cleanLabel = '';
     if (text) {
-      cleanLabel = text.replace(/[⭐☆★*]/g, '').replace(/[()]/g, '').trim();
+      // Remove any ? and star characters
+      let cleaned = text.replace(/[\?⭐☆★*]/g, '').trim();
+      
+      // Replace )( or ) ( with a space
+      cleaned = cleaned.replace(/\)\s*\(/g, ') ').replace(/\s+/g, ' ').trim();
+      
+      // Match patterns like "(1.5/5) (Başlangıç)" or "(1.5/5) Başlangıç" or "1.5/5Başlangıç" or "1.5/5 Başlangıç"
+      const matchWithScore = cleaned.match(/(?:(?:\()?(\d+(?:\.\d+)?\/5)(?:\))?)?\s*(?:\()?([^\(\)]+)(?:\))?/);
+      if (matchWithScore && matchWithScore[1] && matchWithScore[2]) {
+        const score = matchWithScore[1].replace(/[\(\)]/g, '').trim();
+        const label = matchWithScore[2].replace(/[\(\)]/g, '').trim();
+        cleanLabel = `${score} ${label}`;
+      } else {
+        cleanLabel = cleaned.replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim();
+      }
     }
     if (!cleanLabel) {
       if (difficultyValue <= 1) cleanLabel = 'Kolay';
