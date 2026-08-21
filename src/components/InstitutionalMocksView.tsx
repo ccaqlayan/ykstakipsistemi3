@@ -451,7 +451,7 @@ export const InstitutionalMocksView: React.FC<InstitutionalMocksViewProps> = ({
           {/* Exam Type Filters */}
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center space-x-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
-              {['ALL', 'TYT', 'AYT', 'LGS', 'KDS'].map((type) => (
+              {['ALL', 'TYT', 'AYT', 'KDS'].map((type) => (
                 <button
                   key={type}
                   type="button"
