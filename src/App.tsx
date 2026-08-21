@@ -496,8 +496,7 @@ export default function App() {
     };
 
     const resolvedTab = tabMapping[intent] || targetTab || 'dashboard';
-    setActiveTab(resolvedTab as any);
-
+    
     // Doğrudan hızlı kayıt (Eğer seçildiyse ve soru kaydı eksiksizse)
     if (directSave && intent === 'QUESTION_LOG' && fields.subject && fields.totalQuestions) {
       const correct = Number(fields.correct) || 0;
@@ -524,14 +523,26 @@ export default function App() {
       return;
     }
 
-    // Hedef pencereye önceden doldurulmuş alanları aktar
-    setTimeout(() => {
-      window.dispatchEvent(
-        new CustomEvent('yks_smart_add_prefill', {
-          detail: { intent, targetTab: resolvedTab, fields }
-        })
-      );
-    }, 150);
+    // Hedef pencere için cache ve event dispatch mekanizması
+    (window as any).__lastSmartAddPrefill = {
+      intent,
+      targetTab: resolvedTab,
+      fields,
+      timestamp: Date.now()
+    };
+
+    handleTabChange(resolvedTab as TabType);
+
+    // Olası mount/render gecikmelerini karşılamak için çoklu tetikleme
+    [50, 150, 300].forEach((delay) => {
+      setTimeout(() => {
+        window.dispatchEvent(
+          new CustomEvent('yks_smart_add_prefill', {
+            detail: { intent, targetTab: resolvedTab, fields }
+          })
+        );
+      }, delay);
+    });
   };
 
   useEffect(() => {

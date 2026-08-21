@@ -1024,6 +1024,62 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   const [notes, setNotes] = useState('');
   const [targetDaysForAdd, setTargetDaysForAdd] = useState<DayOfWeek[]>([today]);
 
+  // ── AI SMART ADD PREFILL EVENT & MOUNT CACHE LISTENER ──
+  useEffect(() => {
+    const applyPrefill = (detail: any) => {
+      if (!detail || detail.intent !== 'STUDY_PLAN') return;
+      const f = detail.fields || {};
+
+      let targetDay: DayOfWeek = selectedDay || today;
+      if (f.date) {
+        try {
+          const d = new Date(f.date);
+          const dayNames: DayOfWeek[] = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+          targetDay = dayNames[d.getDay()] || targetDay;
+        } catch {}
+      }
+
+      setTargetDaysForAdd([targetDay]);
+      setSelectedDay(targetDay);
+
+      if (f.subject) {
+        setSubject(f.subject);
+      }
+      if (f.topicName) {
+        setTopic(f.topicName);
+      }
+      if (f.durationMinutes) {
+        setPlannedMinutes(Number(f.durationMinutes) || 60);
+      }
+      if (f.totalQuestions) {
+        setTargetQuestionCount(Number(f.totalQuestions) || '');
+      }
+
+      const noteParts: string[] = [];
+      if (f.time) noteParts.push(`Saat: ${f.time}`);
+      if (f.notes) noteParts.push(f.notes);
+      if (noteParts.length > 0) {
+        setNotes(noteParts.join(' - '));
+      }
+
+      setActiveSubTab('tracker');
+      setShowAddModal(true);
+    };
+
+    const cached = (window as any).__lastSmartAddPrefill;
+    if (cached && cached.intent === 'STUDY_PLAN' && Date.now() - cached.timestamp < 3500) {
+      applyPrefill(cached);
+      delete (window as any).__lastSmartAddPrefill;
+    }
+
+    const handleSmartAddPrefill = (e: any) => {
+      applyPrefill(e.detail);
+    };
+
+    window.addEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
+    return () => window.removeEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
+  }, [today, selectedDay]);
+
   // Add YouTube Video Task Modal States
   const [showAddVideoModal, setShowAddVideoModal] = useState(false);
   const [targetDayForAddVideo, setTargetDayForAddVideo] = useState<DayOfWeek>(today);

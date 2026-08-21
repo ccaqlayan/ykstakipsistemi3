@@ -233,6 +233,39 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   const [notes, setNotes] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  // ── AI SMART ADD PREFILL EVENT & MOUNT CACHE LISTENER ──
+  React.useEffect(() => {
+    const applyPrefill = (detail: any) => {
+      if (!detail || detail.intent !== 'RESOURCE_BOOK') return;
+      const f = detail.fields || {};
+
+      if (f.subject) {
+        setSubject(f.subject);
+        if (f.subject.startsWith('AYT')) setExamType('AYT');
+        else if (f.subject.startsWith('TYT')) setExamType('TYT');
+      }
+      if (f.publisher) setPublisher(f.publisher);
+      if (f.notes) setBookTitle(f.notes);
+      else if (f.topicName) setBookTitle(`${f.topicName} Soru Bankası`);
+
+      setTrackerTab('resources');
+      setShowAddModal(true);
+    };
+
+    const cached = (window as any).__lastSmartAddPrefill;
+    if (cached && cached.intent === 'RESOURCE_BOOK' && Date.now() - cached.timestamp < 3500) {
+      applyPrefill(cached);
+      delete (window as any).__lastSmartAddPrefill;
+    }
+
+    const handleSmartAddPrefill = (e: any) => {
+      applyPrefill(e.detail);
+    };
+
+    window.addEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
+    return () => window.removeEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
+  }, []);
+
   // Edit State
   const [editingResource, setEditingResource] = useState<ResourceItem | null>(null);
   const [editBookTitle, setEditBookTitle] = useState('');

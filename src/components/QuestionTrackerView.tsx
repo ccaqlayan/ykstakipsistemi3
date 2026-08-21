@@ -296,10 +296,9 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     setCurrentPage(1);
   }, [filterExamType, filterSubject, searchQuery, pageSize]);
 
-  // ── AI SMART ADD PREFILL EVENT LISTENER ──
+  // ── AI SMART ADD PREFILL EVENT & MOUNT CACHE LISTENER ──
   useEffect(() => {
-    const handleSmartAddPrefill = (e: any) => {
-      const detail = e.detail;
+    const applyPrefill = (detail: any) => {
       if (!detail || detail.intent !== 'QUESTION_LOG') return;
 
       const f = detail.fields || {};
@@ -323,6 +322,16 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
 
       setEditingLogId(null);
       setShowAddModal(true);
+    };
+
+    const cached = (window as any).__lastSmartAddPrefill;
+    if (cached && cached.intent === 'QUESTION_LOG' && Date.now() - cached.timestamp < 3500) {
+      applyPrefill(cached);
+      delete (window as any).__lastSmartAddPrefill;
+    }
+
+    const handleSmartAddPrefill = (e: any) => {
+      applyPrefill(e.detail);
     };
 
     window.addEventListener('yks_smart_add_prefill', handleSmartAddPrefill);

@@ -543,12 +543,10 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   const [sortOption, setSortOption] = useState<string>('NEWEST');
   const [filterMatchStatus, setFilterMatchStatus] = useState<string>('ALL');
 
-  // ── AI SMART ADD PREFILL EVENT LISTENER ──
+  // ── AI SMART ADD PREFILL EVENT & MOUNT CACHE LISTENER ──
   useEffect(() => {
-    const handleSmartAddPrefill = (e: any) => {
-      const detail = e.detail;
+    const applyPrefill = (detail: any) => {
       if (!detail) return;
-
       const f = detail.fields || {};
 
       if (detail.intent === 'TOPIC_ERROR') {
@@ -581,6 +579,16 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
         if (f.notes) setExamNotes(f.notes);
         setShowAddExamModal(true);
       }
+    };
+
+    const cached = (window as any).__lastSmartAddPrefill;
+    if (cached && (cached.intent === 'TOPIC_ERROR' || cached.intent === 'BRANCH_EXAM') && Date.now() - cached.timestamp < 3500) {
+      applyPrefill(cached);
+      delete (window as any).__lastSmartAddPrefill;
+    }
+
+    const handleSmartAddPrefill = (e: any) => {
+      applyPrefill(e.detail);
     };
 
     window.addEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
