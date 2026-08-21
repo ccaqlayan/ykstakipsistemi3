@@ -30,7 +30,8 @@ import {
   Table,
   Layers,
   LayoutGrid,
-  Check
+  Check,
+  Printer
 } from 'lucide-react';
 import { TopicErrorItem, BranchExam, ResourceItem, GeneralMockExam, UserAccount } from '../../types';
 import { 
@@ -103,6 +104,7 @@ interface BranchErrorsTabProps {
   previewStudentUser?: UserAccount | null;
   onStartRepetitionSession?: (questions?: TopicErrorItem[]) => void;
   onOpenRepetitionSettings?: () => void;
+  onOpenErrorExamPrint?: () => void;
 }
 
 export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
@@ -138,6 +140,7 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
   previewStudentUser,
   onStartRepetitionSession,
   onOpenRepetitionSettings,
+  onOpenErrorExamPrint,
 }) => {
   const [activeAiErrorItem, setActiveAiErrorItem] = useState<TopicErrorItem | null>(null);
   const [isAnalyzingActiveError, setIsAnalyzingActiveError] = useState(false);
@@ -411,7 +414,19 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
             </p>
           </div>
 
-          <div className="hidden sm:flex items-center space-x-3 shrink-0 z-10">
+          <div className="hidden sm:flex items-center space-x-2.5 shrink-0 z-10">
+            {onOpenErrorExamPrint && (
+              <button
+                type="button"
+                onClick={onOpenErrorExamPrint}
+                className="bg-slate-800/90 hover:bg-slate-750 text-indigo-300 hover:text-white text-xs font-bold px-4 py-3 rounded-2xl transition-all shadow-lg border border-indigo-500/30 flex items-center justify-center space-x-2 cursor-pointer group hover:border-indigo-400"
+                title="Hata defterindeki sorulardan özel test hazırla ve PDF/yazıcı çıktısı al"
+              >
+                <Printer className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+                <span>📄 Test Oluştur & Yazdır</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => openAddErrorModal()}
@@ -452,7 +467,19 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center space-x-2 w-full sm:w-auto justify-end shrink-0">
+            <div className="flex items-center space-x-2 w-full sm:w-auto justify-end shrink-0 flex-wrap">
+              {onOpenErrorExamPrint && (
+                <button
+                  type="button"
+                  onClick={onOpenErrorExamPrint}
+                  className="p-2.5 bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 hover:text-white rounded-xl border border-indigo-500/30 transition-all cursor-pointer shadow-sm flex items-center space-x-1.5 text-xs font-bold"
+                  title="Tekrar Sorularından Test Kitapçığı Hazırla ve Yazdır"
+                >
+                  <Printer className="w-4 h-4 text-indigo-400" />
+                  <span className="hidden md:inline">Test Çıktısı Al</span>
+                </button>
+              )}
+
               {onOpenRepetitionSettings && (
                 <button
                   type="button"

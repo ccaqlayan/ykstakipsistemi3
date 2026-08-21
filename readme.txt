@@ -99,6 +99,7 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
   * SpacedRepetitionModal.tsx     : Aralıklı Tekrar (Spaced Repetition) kör/ipuçsuz soru çözme ve şık işaretleme modalı
   * RepetitionSettingsModal.tsx   : Aralıklı Tekrar gün aralıkları ve aşama özelleştirme modalı
   * RepetitionAlertModal.tsx      : Girişte tekrar zamanı gelen soruları bildiren hatırlatma penceresi
+  * ErrorExamPrintModal.tsx       : Hata defteri sorularından özel deneme testi oluşturma, canlı A4 önizleme ve PDF/baskı alma modalı
 
 [3.7. Toplu Kurumsal Deneme İçe Aktarma (Bulk Import)]
 - Main Orchestrator : src/components/BulkExamImportView.tsx

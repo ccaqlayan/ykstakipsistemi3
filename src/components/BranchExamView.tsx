@@ -63,6 +63,7 @@ import { ImageCropperModal } from './common/ImageCropperModal';
 import { SpacedRepetitionModal } from './branch/SpacedRepetitionModal';
 import { RepetitionSettingsModal } from './branch/RepetitionSettingsModal';
 import { RepetitionAlertModal } from './branch/RepetitionAlertModal';
+import { ErrorExamPrintModal } from './branch/ErrorExamPrintModal';
 import { 
   getDueRepetitionQuestions, 
   calculateNextReviewDate, 
@@ -450,6 +451,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   const [editingError, setEditingError] = useState<TopicErrorItem | null>(null);
   const [editingExam, setEditingExam] = useState<BranchExam | null>(null);
   const [deletingItem, setDeletingItem] = useState<{ type: 'error' | 'exam'; id: string; title: string } | null>(null);
+  const [showErrorExamPrintModal, setShowErrorExamPrintModal] = useState(false);
 
   // Branch Exam Form
   const [examDate, setExamDate] = useState(new Date().toISOString().split('T')[0]);
@@ -2314,6 +2316,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
             setShowRepetitionModal(true);
           }}
           onOpenRepetitionSettings={() => setShowRepetitionSettingsModal(true)}
+          onOpenErrorExamPrint={() => setShowErrorExamPrintModal(true)}
         />
       )}
 
@@ -2495,6 +2498,14 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
           setRepetitionSessionQuestions(validList);
           setShowRepetitionModal(true);
         }}
+      />
+
+      {/* 📄 Hata Tekrar Denemesi & Soru Kitapçığı Yazdırma / PDF Modalı */}
+      <ErrorExamPrintModal
+        isOpen={showErrorExamPrintModal}
+        onClose={() => setShowErrorExamPrintModal(false)}
+        topicErrors={topicErrors}
+        currentUser={previewStudentUser || currentUser}
       />
 
       {/* ⚠️ Doğru Cevap Eksik / Kör Tekrar Bilgilendirme Modalı (Site Temasına Uygun) */}

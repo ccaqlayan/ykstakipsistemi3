@@ -771,7 +771,8 @@ body.modal-open .mobile-bottom-nav {
   }
 
   /* Sadece yazdırma belgesi kapsayıcısını ve çocuklarını görünür yap */
-  #study-plan-print-document {
+  #study-plan-print-document,
+  #error-exam-print-document {
     box-shadow: none !important;
     border: none !important;
     background-color: #ffffff !important;
@@ -780,6 +781,16 @@ body.modal-open .mobile-bottom-nav {
     page-break-after: avoid !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+
+  .print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .print-page-break {
+    page-break-before: always !important;
+    break-before: page !important;
   }
 
   /* Kenarlıkların ve arka planların baskıda kesinlikle silinmemesi için kurallar */
