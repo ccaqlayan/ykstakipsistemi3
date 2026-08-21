@@ -138,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     // 9, 10, 11 ve 12 tüm sınıflar için Kurumsal Deneme Karnesi
     { 
       id: 'institutional_mocks', 
-      label: isEarlyGrade ? 'Kurumsal Deneme Karnesi' : 'Kurumsal Deneme Takip', 
+      label: isEarlyGrade ? 'Kurumsal Deneme Karnesi' : 'Kurumsal Deneme Karnelerim', 
       icon: BarChart3, 
       highlight: true,
       tooltip: 'Okulda yapılan kurumsal deneme/KDS karneleri ve konu analizleri'
