@@ -25,7 +25,8 @@ import {
   BookOpen,
   Sliders,
   BarChart3,
-  Heart
+  Heart,
+  Compass
 } from 'lucide-react';
 import { UserAccount } from '../types';
 import { YildizLisesiLogo } from './YildizLisesiLogo';
@@ -55,7 +56,8 @@ export type TabType =
   | 'messages'
   | 'audit_logs'
   | 'institutional_mocks'
-  | 'parent_portal';
+  | 'parent_portal'
+  | 'preference_simulator';
 
 interface TabItem {
   id: TabType | '__sep__';
@@ -172,6 +174,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'pomodoro', label: 'Pomodoro Sayıcı', icon: Timer, highlight: true },
     { id: 'recommendations', label: isEarlyGrade ? 'Seviyeli Kaynak Önerileri' : 'Kaynak Önerileri', icon: Sparkles, highlight: true },
     { id: 'ai_coach', label: isEarlyGrade ? 'Lise Koçu (Yapay Zeka)' : 'Yapay Zeka Koçu', icon: Bot, highlight: true },
+    { id: 'preference_simulator', label: isEarlyGrade ? 'Alan Seçim & Tercih Robotu' : 'YÖK Atlas Tercih Robotu', icon: Compass, highlight: true },
     { id: 'parent_portal', label: 'Veli Bilgilendirme Portalı', icon: Heart, highlight: true }
   ];
 
@@ -185,6 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'past_questions', label: 'Çıkmış Sorular', icon: FileSpreadsheet, highlight: true },
     { id: 'recommendations', label: 'Öneriler & Tavsiyeler', icon: Sparkles, highlight: true },
     { id: 'ai_coach', label: 'YKS Yapay Zeka Koçu', icon: Bot, highlight: true },
+    { id: 'preference_simulator', label: 'YÖK Atlas Tercih Robotu', icon: Compass, highlight: true },
     ...(isAdmin ? [{ id: 'teacher_system' as TabType, label: 'Sistem Yönetimi', icon: Sliders, highlight: true }] : []),
     { id: 'audit_logs', label: 'Ayak İzi (İşlem Geçmişi)', icon: Footprints, highlight: true }
   ];

@@ -15,13 +15,15 @@ import {
   ArrowUpRight,
   BarChart2,
   Share2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Compass
 } from 'lucide-react';
 import { SchoolExam, StudentProfile, UserAccount, YKSDataState } from '../types';
 import { SchoolExamModal } from './school_exams/SchoolExamModal';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { OfficialStudentReportCardModal } from './reports/OfficialStudentReportCardModal';
 import { BulkImportSchoolExamsModal } from './import/BulkImportSchoolExamsModal';
+import { FieldSelectionAdvisorModal } from './advisor/FieldSelectionAdvisorModal';
 import { getGradeLevel, getGradeDisplayName } from '../utils/gradeUtils';
 import { GRADE9_SUBJECT_NAMES } from '../data/curriculum/grade9';
 import { GRADE10_SUBJECT_NAMES } from '../data/curriculum/grade10';
@@ -58,6 +60,7 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showReportCardModal, setShowReportCardModal] = useState(false);
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
+  const [showAdvisorModal, setShowAdvisorModal] = useState(false);
   const [editingExam, setEditingExam] = useState<SchoolExam | null>(null);
   const [deletingExamId, setDeletingExamId] = useState<string | null>(null);
   const [isTargetGpaModalOpen, setIsTargetGpaModalOpen] = useState(false);
@@ -220,6 +223,18 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
+            {/* 11. Sınıf Alan Seçimi Rehberi (9 & 10. Sınıflar İçin) */}
+            {(gradeLevel === '9' || gradeLevel === '10') && (
+              <button
+                onClick={() => setShowAdvisorModal(true)}
+                className="px-3.5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold rounded-2xl shadow-lg shadow-indigo-600/30 transition-all flex items-center space-x-1.5 cursor-pointer active:scale-95"
+                title="9 ve 10. sınıf yazılı notlarınıza göre 11. sınıf alan seçimi tavsiyesi alın"
+              >
+                <Compass className="w-4 h-4 text-amber-300" />
+                <span>11. Sınıf Alan Seçimi Rehberi</span>
+              </button>
+            )}
+
             {/* Official Report Card Button */}
             <button
               onClick={() => setShowReportCardModal(true)}
@@ -688,6 +703,29 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
           allUsers={allUsers}
           classes={classes}
           onApplyBulkSchoolExams={onApplyBulkSchoolExams}
+        />
+      )}
+
+      {/* 11. Sınıf Alan Seçimi Karar Destek Modalı */}
+      {showAdvisorModal && (
+        <FieldSelectionAdvisorModal
+          isOpen={showAdvisorModal}
+          onClose={() => setShowAdvisorModal(false)}
+          student={currentUser}
+          studentData={studentData || {
+            profile,
+            schoolExams,
+            questionLogs: [],
+            studyPlans: [],
+            topicErrors: [],
+            resources: [],
+            generalMocks: [],
+            branchExams: [],
+            pastExams: [],
+            youtubeVideos: [],
+            coachAdvices: [],
+            sheetsStatus: { isConnected: false }
+          }}
         />
       )}
     </div>

@@ -140,7 +140,13 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
   * src/services/offlineSyncService.ts                : İnternetsiz çalışma ve Firestore çift yönlü senkronizasyon motoru
   * src/components/common/PwaInstallBanner.tsx        : PWA ana ekrana ekleme ve çevrimdışı durum göstergesi
 
-[3.11. Bağımsız Diğer Ekranlar (Independent Views)]
+[3.11. YÖK Atlas Tercih Robotu & 11. Sınıf Alan Seçim Rehberi (Preference & Advisor)]
+- Main Orchestrator : src/components/preference/PreferenceSimulatorView.tsx
+- Modüller :
+  * src/data/yokAtlasPrograms.ts                      : 2024-2025 güncel taban sıralamaları, puanlar ve netler veritabanı
+  * src/components/advisor/FieldSelectionAdvisorModal.tsx: 9 ve 10. sınıflar için yazılı notu ve kariyer anketli 11. Sınıf Alan Seçim Karar Destek Modalı
+
+[3.12. Bağımsız Diğer Ekranlar (Independent Views)]
 - src/components/AICoachView.tsx               : Bireysel öğrenci ve sınıf genel Yapay Zeka Koç Raporu.
 - src/components/AdminMessageManagement.tsx   : Yönetici toplu mesaj gönderme ve mesaj denetim paneli.
 - src/components/AuditLogsView.tsx             : Sistem İşlem Zaman Çizelgesi (Ayak İzi izleme alanı).

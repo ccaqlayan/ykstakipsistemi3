@@ -22,6 +22,7 @@ import { RecommendationsView } from '../RecommendationsView';
 import { MessagesView } from '../MessagesView';
 import { SchoolExamsView } from '../SchoolExamsView';
 import { ParentPortalView } from '../parent/ParentPortalView';
+import { PreferenceSimulatorView } from '../preference/PreferenceSimulatorView';
 import { SchoolExam } from '../../types';
 import { UndoItem } from './AppTypes';
 
@@ -580,6 +581,17 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           coachUser={globalState.users.find(u => u.role === 'class_teacher' || u.role === 'school_counselor')}
           currentUser={currentUser}
           onSendMessage={handleSendMessage}
+        />
+      )}
+
+      {activeTab === 'preference_simulator' && (
+        <PreferenceSimulatorView
+          student={previewStudentUser || currentUser}
+          studentData={currentStudentData}
+          currentUser={currentUser}
+          onSavePreferences={(prefs) => {
+            // Save preferences
+          }}
         />
       )}
     </>
