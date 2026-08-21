@@ -34,6 +34,7 @@ import { saveRecommendationToFirestore, deleteRecommendationFromFirestore } from
 import { uploadChannelAvatar } from '../services/storageUpload';
 import { compressImageFile } from '../utils/imageCompressor';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { getGradeLevel, isEarlyHighSchool } from '../utils/gradeUtils';
 
 interface RecommendationsViewProps {
   onAddVideo: (vid: Omit<YouTubeVideoItem, 'id'>) => void;
@@ -58,6 +59,7 @@ interface RecommendationsViewProps {
     targetUserName?: string,
     metadata?: any
   ) => void;
+  gradeLevel?: string;
 }
 
 const RECOMMENDED_CHANNELS: RecommendedChannel[] = [
@@ -221,8 +223,12 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   onToggleFavoriteBook,
   currentUser,
   customRecommendations = { channels: [], books: [] },
-  onAddAuditLog
+  onAddAuditLog,
+  gradeLevel,
 }) => {
+  const effectiveGradeLevel = gradeLevel || getGradeLevel(currentUser?.className);
+  const isEarly = isEarlyHighSchool(effectiveGradeLevel as any);
+
   const [activeTab, setActiveTab] = useState<'youtube' | 'books'>('books');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [selectedSubject, setSelectedSubject] = useState<string>('Matematik');
@@ -597,6 +603,48 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
     );
   };
 
+  // --- Book Classification Helpers ---
+  const is9thGradeBook = (b: RecommendedBook): boolean => {
+    const cat = b.category || '';
+    const name = b.name || '';
+    const reason = b.reason || '';
+    return cat.includes('9.') || cat.includes('9. Sınıf') || name.includes('9.') || name.includes('9. Sınıf') || (cat.includes('Maarif') && !cat.includes('10.') && !cat.includes('11.'));
+  };
+
+  const is10thGradeBook = (b: RecommendedBook): boolean => {
+    const cat = b.category || '';
+    const name = b.name || '';
+    const reason = b.reason || '';
+    return cat.includes('10.') || cat.includes('10. Sınıf') || name.includes('10.') || name.includes('10. Sınıf');
+  };
+
+  const is11thGradeBook = (b: RecommendedBook): boolean => {
+    const cat = b.category || '';
+    const name = b.name || '';
+    const reason = b.reason || '';
+    return cat.includes('11.') || cat.includes('11. Sınıf') || name.includes('11.') || name.includes('11. Sınıf');
+  };
+
+  const isTytBook = (b: RecommendedBook): boolean => {
+    const cat = b.category || '';
+    const name = b.name || '';
+    if (is9thGradeBook(b) || is10thGradeBook(b) || is11thGradeBook(b)) return false;
+    if (cat.includes('TYT') || name.includes('TYT')) return true;
+    if (cat.includes('Paragraf') || cat.includes('Problem') || cat.includes('Dil Bilgisi')) return true;
+    if (['Kelime', 'Gramer', 'Skills', 'Okuma'].includes(cat)) return true;
+    if (!cat.includes('AYT') && !cat.includes('YDT')) return true;
+    return false;
+  };
+
+  const isAytBook = (b: RecommendedBook): boolean => {
+    const cat = b.category || '';
+    const name = b.name || '';
+    if (is9thGradeBook(b) || is10thGradeBook(b) || is11thGradeBook(b)) return false;
+    if (cat.includes('AYT') || cat.includes('YDT') || name.includes('AYT') || name.includes('YDT')) return true;
+    if (b.subject === 'Dil' && !['Kelime', 'Gramer', 'Skills', 'Okuma'].includes(cat)) return true;
+    return false;
+  };
+
   const handleToggleBookFollow = (book: RecommendedBook) => {
     const tracked = getTrackedBook(book.publisher, book.name);
     if (tracked) {
@@ -607,6 +655,17 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         setTimeout(() => setSuccessToast(null), 3000);
       }
     } else {
+      const examTypeVal: 'GRADE_9' | 'GRADE_10' | 'GRADE_11' | 'TYT' | 'AYT' | 'YDT' = 
+        is9thGradeBook(book) 
+          ? 'GRADE_9' 
+          : is10thGradeBook(book) 
+          ? 'GRADE_10' 
+          : is11thGradeBook(book) 
+          ? 'GRADE_11' 
+          : (book.category.includes('AYT') || book.category.includes('YDT') || book.subject === 'Dil') 
+          ? (book.subject === 'Dil' ? 'YDT' : 'AYT') 
+          : 'TYT';
+
       onAddResource({
         subject: book.subject,
         bookTitle: book.name,
@@ -614,7 +673,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         totalUnits: 10,
         completedUnits: 0,
         status: 'not_started',
-        examType: (book.category.includes('AYT') || book.category.includes('YDT') || book.subject === 'Dil') ? (book.subject === 'Dil' ? 'YDT' : 'AYT') : 'TYT',
+        examType: examTypeVal,
         notes: `Tavsiyelerden eklendi: Seviye: ${book.difficulty}. ${book.reason}`
       });
       setSuccessToast(`"${book.publisher} - ${book.name}" kaynağı başarıyla kaynaklarınıza eklendi!`);
@@ -651,6 +710,38 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
       .map(bk => ({ ...bk, isCustom: true }))
   ];
 
+  // --- Grade-Scoped Books Pool ---
+  const gradeScopedBooks = useMemo(() => {
+    if (effectiveGradeLevel === '9') {
+      return allBooks.filter(b => is9thGradeBook(b));
+    }
+    if (effectiveGradeLevel === '10') {
+      return allBooks.filter(b => is10thGradeBook(b));
+    }
+    if (effectiveGradeLevel === '11') {
+      // 11. sınıf ve 1. Aşama Sınavı (TYT) kaynakları (paragraf ve problemler dahil)
+      return allBooks.filter(b => is11thGradeBook(b) || isTytBook(b));
+    }
+    // 12. sınıf ve mezun -> sadece TYT ve AYT kaynakları (paragraf ve problemler dahil)
+    return allBooks.filter(b => isTytBook(b) || isAytBook(b));
+  }, [allBooks, effectiveGradeLevel]);
+
+  // --- Grade-Scoped Subjects ---
+  const availableSubjects = useMemo(() => {
+    if (isEarly) {
+      // 9 ve 10: Geometri (Matematik içinde) ve Dil dersleri gizli
+      return SUBJECTS.filter(s => s.value !== 'Geometri' && s.value !== 'Dil');
+    }
+    return SUBJECTS;
+  }, [isEarly]);
+
+  // Otomatik ders düzeltme (9-10 için Geometri/Dil seçiliyse Matematik'e al)
+  React.useEffect(() => {
+    if (isEarly && (selectedSubject === 'Geometri' || selectedSubject === 'Dil')) {
+      setSelectedSubject('Matematik');
+    }
+  }, [isEarly, selectedSubject]);
+
   const parseSubscriberTextToNumber = (text: string): number => {
     if (!text) return 0;
     const clean = text.trim().toLowerCase();
@@ -668,13 +759,13 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   // --- Dynamic Sub-Categories for the active subject ---
   const availableCategoriesForSubject = useMemo(() => {
     const cats = new Set<string>();
-    allBooks
+    gradeScopedBooks
       .filter(b => b.subject === selectedSubject)
       .forEach(b => {
         if (b.category && b.category.trim()) cats.add(b.category.trim());
       });
     return Array.from(cats);
-  }, [allBooks, selectedSubject]);
+  }, [gradeScopedBooks, selectedSubject]);
 
   // Reset category filter when subject changes
   React.useEffect(() => {
@@ -710,7 +801,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   }, [allChannels, selectedSubject, showOnlyFollowed, searchQuery, channelSortOrder, followedChannels]);
 
   const displayedBooks = useMemo(() => {
-    return allBooks.filter(book => {
+    return gradeScopedBooks.filter(book => {
       const bookKey = `${book.publisher} - ${book.name}`;
       const isFav = favoriteBooks.includes(bookKey);
       const isAdded = isBookAdded(book.publisher, book.name);
@@ -745,22 +836,11 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
       }
 
       // Exam / Grade Type filter
-      if (selectedExamType === '9') {
-        const is9 = book.category.includes('9.') || book.name.includes('9.') || book.reason?.includes('9.') || book.category.includes('Maarif');
-        if (!is9) return false;
-      } else if (selectedExamType === '10') {
-        const is10 = book.category.includes('10.') || book.name.includes('10.') || book.reason?.includes('10.');
-        if (!is10) return false;
-      } else if (selectedExamType === '11') {
-        const is11 = book.category.includes('11.') || book.name.includes('11.') || book.reason?.includes('11.');
-        if (!is11) return false;
-      } else if (selectedExamType === 'TYT') {
-        const isTyt = book.category.includes('TYT') || ['Kelime', 'Gramer', 'Skills', 'Okuma'].includes(book.category);
-        if (!isTyt) return false;
-      } else if (selectedExamType === 'AYT') {
-        const isAytOrDil = book.category.includes('AYT') || book.category.includes('YDT') || book.subject === 'Dil';
-        if (!isAytOrDil) return false;
-      }
+      if (selectedExamType === '9' && !is9thGradeBook(book)) return false;
+      if (selectedExamType === '10' && !is10thGradeBook(book)) return false;
+      if (selectedExamType === '11' && !is11thGradeBook(book)) return false;
+      if (selectedExamType === 'TYT' && !isTytBook(book)) return false;
+      if (selectedExamType === 'AYT' && !isAytBook(book)) return false;
 
       // Difficulty level filter
       if (difficultyFilter !== 'all') {
@@ -783,7 +863,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
       return a.difficultyValue - b.difficultyValue;
     });
   }, [
-    allBooks, 
+    gradeScopedBooks, 
     selectedSubject, 
     selectedCategory, 
     selectedExamType, 
@@ -798,8 +878,8 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   ]);
 
   const totalFollowedChannels = allChannels.filter(c => isChannelAdded(c.name)).length;
-  const totalFollowedBooks = allBooks.filter(b => isBookAdded(b.publisher, b.name)).length;
-  const totalFavoriteBooks = allBooks.filter(b => favoriteBooks.includes(`${b.publisher} - ${b.name}`)).length;
+  const totalFollowedBooks = gradeScopedBooks.filter(b => isBookAdded(b.publisher, b.name)).length;
+  const totalFavoriteBooks = gradeScopedBooks.filter(b => favoriteBooks.includes(`${b.publisher} - ${b.name}`)).length;
 
   const renderDifficultyBadge = (difficultyValue: number, text?: string) => {
     let colorClass = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
@@ -864,13 +944,35 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-[11px] font-bold">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>YKS Derece Tavsiyeleri & İçerik Rehberi</span>
+              <span>
+                {effectiveGradeLevel === '9'
+                  ? '9. Sınıf MEB Maarif Modeli Kaynak Rehberi'
+                  : effectiveGradeLevel === '10'
+                  ? '10. Sınıf MEB Maarif Modeli Kaynak Rehberi'
+                  : effectiveGradeLevel === '11'
+                  ? '11. Sınıf & 1. Aşama Sınavı Kaynak Rehberi'
+                  : 'YKS Derece Tavsiyeleri & İçerik Rehberi'}
+              </span>
             </div>
             <h1 id="recommendations-title" className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-2.5">
-              <span>YKS Kaynak & Eğitim Tavsiyeleri</span>
+              <span>
+                {effectiveGradeLevel === '9'
+                  ? '9. Sınıf Kaynak Önerileri'
+                  : effectiveGradeLevel === '10'
+                  ? '10. Sınıf Kaynak Önerileri'
+                  : effectiveGradeLevel === '11'
+                  ? '11. Sınıf & 1. Aşama Kaynak Önerileri'
+                  : 'Kaynak Önerileri'}
+              </span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-              Hedefine en uygun YouTube eğitim kanallarını ve seviyelendirilmiş, popüler YKS kaynak kitap önerilerini keşfet; tek tıkla çalışma listene ekle.
+              {effectiveGradeLevel === '9'
+                ? '9. sınıf MEB Maarif Modeli müfredatınıza en uygun YouTube eğitim kanallarını ve seviyelendirilmiş kaynak kitap önerilerini keşfedin; tek tıkla çalışma listenize ekleyin.'
+                : effectiveGradeLevel === '10'
+                ? '10. sınıf MEB Maarif Modeli müfredatınıza en uygun YouTube eğitim kanallarını ve seviyelendirilmiş kaynak kitap önerilerini keşfedin; tek tıkla çalışma listenize ekleyin.'
+                : effectiveGradeLevel === '11'
+                ? '11. sınıf müfredatı ve 1. Aşama Sınavı (TYT) hazırlıklarınıza en uygun YouTube kanallarını ve seviyelendirilmiş kaynak kitap önerilerini keşfedin.'
+                : 'Hedefinize en uygun YouTube eğitim kanallarını ve seviyelendirilmiş, popüler YKS (TYT-AYT) kaynak kitap önerilerini keşfedin; tek tıkla çalışma listenize ekleyin.'}
             </p>
           </div>
 
@@ -923,7 +1025,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
                 ? 'bg-white/20 text-white border-white/30'
                 : 'bg-slate-800 text-slate-200 border-slate-700'
             }`}>
-              {allBooks.length}
+              {gradeScopedBooks.length}
             </span>
           </button>
 
@@ -990,7 +1092,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={activeTab === 'books' ? "Kitap adı, yayınevi veya konu ara (Örn: Reader at Work, Bilgi Sarmal, Dil)..." : "YouTube kanal adı veya ders ara..."}
+              placeholder={activeTab === 'books' ? "Kitap adı, yayınevi veya konu ara (Örn: Mikro Orijinal, Bilgi Sarmal, 345)..." : "YouTube kanal adı veya ders ara..."}
               className="w-full bg-slate-950 border border-slate-800 focus:border-purple-500 rounded-2xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
             />
             {searchQuery && (
@@ -1046,15 +1148,15 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
               <span>Ders Seçimi</span>
             </span>
             <span className="text-[11px] text-purple-300 font-bold">
-              {selectedSubject} ({activeTab === 'books' ? allBooks.filter(b => b.subject === selectedSubject).length : allChannels.filter(c => c.subject === selectedSubject).length} Kaynak)
+              {selectedSubject} ({activeTab === 'books' ? gradeScopedBooks.filter(b => b.subject === selectedSubject).length : allChannels.filter(c => c.subject === selectedSubject).length} Kaynak)
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 w-full">
-            {SUBJECTS.map((sub) => {
+            {availableSubjects.map((sub) => {
               const isSelected = selectedSubject === sub.value && !showOnlyFollowed;
               const subCount = activeTab === 'books' 
-                ? allBooks.filter(b => b.subject === sub.value).length 
+                ? gradeScopedBooks.filter(b => b.subject === sub.value).length 
                 : allChannels.filter(c => c.subject === sub.value).length;
 
               return (
@@ -1092,35 +1194,71 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         {activeTab === 'books' && (
           <div className="pt-3 border-t border-slate-800/80 space-y-3">
             {/* Kademe & Sınav Filtresi */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] uppercase font-extrabold text-slate-400 shrink-0 flex items-center gap-1 mr-1">
-                <GraduationCap className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Hedef Kademe:</span>
-              </span>
-              {[
-                { id: 'Tümü', label: 'Tüm Kademeler' },
-                { id: '9', label: '9. Sınıf (Maarif)' },
-                { id: '10', label: '10. Sınıf (Maarif)' },
-                { id: '11', label: '11. Sınıf (Alan)' },
-                { id: 'TYT', label: 'TYT' },
-                { id: 'AYT', label: 'AYT / YDT' },
-              ].map(f => {
-                const isSelected = selectedExamType === f.id;
-                return (
-                  <button
-                    key={f.id}
-                    onClick={() => setSelectedExamType(f.id as any)}
-                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
-                      isSelected
-                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-md'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                );
-              })}
-            </div>
+            {isEarly ? (
+              <div className="flex items-center space-x-2">
+                <span className="text-[10px] uppercase font-extrabold text-slate-400 shrink-0 flex items-center gap-1">
+                  <GraduationCap className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Müfredat:</span>
+                </span>
+                <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[11px] font-bold text-emerald-300">
+                  {effectiveGradeLevel}. Sınıf MEB Maarif Modeli Kaynakları
+                </span>
+              </div>
+            ) : effectiveGradeLevel === '11' ? (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[10px] uppercase font-extrabold text-slate-400 shrink-0 flex items-center gap-1 mr-1">
+                  <GraduationCap className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Hedef Kapsam:</span>
+                </span>
+                {[
+                  { id: 'Tümü', label: 'Tümü (11. Sınıf + 1. Aşama)' },
+                  { id: '11', label: '11. Sınıf Müfredatı' },
+                  { id: 'TYT', label: '1. Aşama (TYT)' },
+                ].map(f => {
+                  const isSelected = selectedExamType === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => setSelectedExamType(f.id as any)}
+                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
+                        isSelected
+                          ? 'bg-emerald-600 border-emerald-500 text-white shadow-md'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[10px] uppercase font-extrabold text-slate-400 shrink-0 flex items-center gap-1 mr-1">
+                  <GraduationCap className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Hedef Kapsam:</span>
+                </span>
+                {[
+                  { id: 'Tümü', label: 'Tüm YKS Kaynakları' },
+                  { id: 'TYT', label: 'TYT (1. Aşama)' },
+                  { id: 'AYT', label: 'AYT / YDT (2. Aşama)' },
+                ].map(f => {
+                  const isSelected = selectedExamType === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => setSelectedExamType(f.id as any)}
+                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
+                        isSelected
+                          ? 'bg-emerald-600 border-emerald-500 text-white shadow-md'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Dynamic Sub-Category Tabs (e.g. Kelime, Gramer, Skills, Okuma, Deneme) - Wrapped without scrollbar */}
             <div className="flex flex-wrap items-center gap-1.5">

@@ -172,7 +172,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: '__sep__' as any, label: 'ARAÇLAR & DESTEK', icon: null, isSeparator: true },
     { id: 'youtube', label: 'YouTube Ders Takip', icon: Youtube },
     { id: 'pomodoro', label: 'Pomodoro Sayıcı', icon: Timer, highlight: true },
-    { id: 'recommendations', label: isEarlyGrade ? 'Seviyeli Kaynak Önerileri' : 'Kaynak Önerileri', icon: Sparkles, highlight: true },
+    { id: 'recommendations', label: 'Kaynak Önerileri', icon: Sparkles, highlight: true },
     { id: 'ai_coach', label: isEarlyGrade ? 'Lise Koçu (Yapay Zeka)' : 'Yapay Zeka Koçu', icon: Bot, highlight: true },
     { id: 'preference_simulator', label: isEarlyGrade ? 'Alan Seçim & Tercih Robotu' : 'YÖK Atlas Tercih Robotu', icon: Compass, highlight: true },
     { id: 'parent_portal', label: 'Veli Bilgilendirme Portalı', icon: Heart, highlight: true }

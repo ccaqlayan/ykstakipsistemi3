@@ -25,6 +25,7 @@ import { ParentPortalView } from '../parent/ParentPortalView';
 import { PreferenceSimulatorView } from '../preference/PreferenceSimulatorView';
 import { SchoolExam } from '../../types';
 import { UndoItem } from './AppTypes';
+import { getGradeLevel } from '../../utils/gradeUtils';
 
 interface AppTabRouterProps {
   activeTab: string;
@@ -541,6 +542,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           currentUser={currentUser}
           customRecommendations={globalState.customRecommendations || { channels: [], books: [] }}
           onAddAuditLog={addAuditAndUndo}
+          gradeLevel={getGradeLevel(currentStudentData.profile?.className || currentUser?.className)}
         />
       )}
 
