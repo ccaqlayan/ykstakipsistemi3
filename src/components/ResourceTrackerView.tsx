@@ -211,9 +211,43 @@ const COURSE_TOPICS_MAPPING: Record<string, string[]> = {
 const getTopicsForSelectedDers = (dersFilter: string, examTypeFilter: string, gradeLevel: string = '12'): { key: string; topics: string[] }[] => {
   if (gradeLevel === '9' || gradeLevel === '10' || gradeLevel === '11') {
     const cur = getCurriculumForGrade(gradeLevel as any);
+    const dUpper = dersFilter.toUpperCase().trim();
+    const dLower = dersFilter.toLowerCase().trim();
+
+    // 1. Direct or case-insensitive match (e.g. "Matematik" -> "MATEMATİK" or "11. Sınıf Matematik")
+    const directKey = Object.keys(cur).find(k => k.toUpperCase() === dUpper || k.toLowerCase() === dLower);
+    if (directKey && cur[directKey] && cur[directKey].length > 0) {
+      return [{ key: directKey, topics: cur[directKey] }];
+    }
+
+    // 2. Specific grade aliases for 9 & 10
+    if (gradeLevel === '9' || gradeLevel === '10') {
+      if (dLower.includes('matematik') || dLower.includes('geometri')) return [{ key: 'MATEMATİK', topics: cur['MATEMATİK'] || [] }];
+      if (dLower.includes('edebiyat') || dLower.includes('türkçe') || dLower.includes('türk dili')) return [{ key: 'TÜRK DİLİ VE EDEBİYATI', topics: cur['TÜRK DİLİ VE EDEBİYATI'] || [] }];
+      if (dLower.includes('fizik')) return [{ key: 'FİZİK', topics: cur['FİZİK'] || [] }];
+      if (dLower.includes('kimya')) return [{ key: 'KİMYA', topics: cur['KİMYA'] || [] }];
+      if (dLower.includes('biyoloji')) return [{ key: 'BİYOLOJİ', topics: cur['BİYOLOJİ'] || [] }];
+      if (dLower.includes('tarih')) return [{ key: 'TARİH', topics: cur['TARİH'] || [] }];
+      if (dLower.includes('coğrafya')) return [{ key: 'COĞRAFYA', topics: cur['COĞRAFYA'] || [] }];
+      if (dLower.includes('felsefe') && cur['FELSEFE']) return [{ key: 'FELSEFE', topics: cur['FELSEFE'] || [] }];
+      if (dLower.includes('din')) return [{ key: 'DİN KÜLTÜRÜ', topics: cur['DİN KÜLTÜRÜ'] || [] }];
+    }
+
+    // 3. Specific grade aliases for 11
+    if (gradeLevel === '11') {
+      if (dLower.includes('matematik')) return [{ key: '11. Sınıf Matematik', topics: cur['11. Sınıf Matematik'] || [] }];
+      if (dLower.includes('fizik')) return [{ key: '11. Sınıf Fizik', topics: cur['11. Sınıf Fizik'] || [] }];
+      if (dLower.includes('kimya')) return [{ key: '11. Sınıf Kimya', topics: cur['11. Sınıf Kimya'] || [] }];
+      if (dLower.includes('biyoloji')) return [{ key: '11. Sınıf Biyoloji', topics: cur['11. Sınıf Biyoloji'] || [] }];
+      if (dLower.includes('edebiyat') || dLower.includes('türkçe') || dLower.includes('türk dili')) return [{ key: '11. Sınıf Türk Dili ve Edebiyatı', topics: cur['11. Sınıf Türk Dili ve Edebiyatı'] || [] }];
+      if (dLower.includes('tarih')) return [{ key: '11. Sınıf Tarih', topics: cur['11. Sınıf Tarih'] || [] }];
+      if (dLower.includes('coğrafya')) return [{ key: '11. Sınıf Coğrafya', topics: cur['11. Sınıf Coğrafya'] || [] }];
+      if (dLower.includes('felsefe')) return [{ key: '11. Sınıf Felsefe', topics: cur['11. Sınıf Felsefe'] || [] }];
+    }
+
+    // 4. Fallback fuzzy contains match
     const matchedKeys = Object.keys(cur).filter(k => {
       const kLower = k.toLowerCase();
-      const dLower = dersFilter.toLowerCase();
       return kLower.includes(dLower) || dLower.includes(kLower);
     });
     if (matchedKeys.length > 0) {
@@ -661,21 +695,64 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   };
 
   // Helper matching lists and matchers
-  const DERS_FILTERS = [
-    { value: 'all', label: 'Tüm Dersler' },
-    { value: 'all_tyt', label: 'Tüm TYT Dersleri' },
-    { value: 'all_ayt', label: 'Tüm AYT Dersleri' },
-    { value: 'Matematik', label: 'Matematik' },
-    { value: 'Geometri', label: 'Geometri' },
-    { value: 'Türkçe', label: 'Türkçe / Edebiyat' },
-    { value: 'Fizik', label: 'Fizik' },
-    { value: 'Kimya', label: 'Kimya' },
-    { value: 'Biyoloji', label: 'Biyoloji' },
-    { value: 'Tarih', label: 'Tarih' },
-    { value: 'Coğrafya', label: 'Coğrafya' },
-    { value: 'Felsefe', label: 'Felsefe' },
-    { value: 'Din Kültürü', label: 'Din Kültürü' }
-  ];
+  // Helper matching lists and matchers
+  const DERS_FILTERS = React.useMemo(() => {
+    if (gradeLevel === '9') {
+      return [
+        { value: 'all', label: 'Tüm 9. Sınıf Dersleri' },
+        { value: 'Matematik', label: 'Matematik' },
+        { value: 'Türk Dili ve Edebiyatı', label: 'Türk Dili ve Edebiyatı' },
+        { value: 'Fizik', label: 'Fizik' },
+        { value: 'Kimya', label: 'Kimya' },
+        { value: 'Biyoloji', label: 'Biyoloji' },
+        { value: 'Tarih', label: 'Tarih' },
+        { value: 'Coğrafya', label: 'Coğrafya' },
+        { value: 'Din Kültürü', label: 'Din Kültürü' }
+      ];
+    }
+    if (gradeLevel === '10') {
+      return [
+        { value: 'all', label: 'Tüm 10. Sınıf Dersleri' },
+        { value: 'Matematik', label: 'Matematik' },
+        { value: 'Türk Dili ve Edebiyatı', label: 'Türk Dili ve Edebiyatı' },
+        { value: 'Fizik', label: 'Fizik' },
+        { value: 'Kimya', label: 'Kimya' },
+        { value: 'Biyoloji', label: 'Biyoloji' },
+        { value: 'Tarih', label: 'Tarih' },
+        { value: 'Coğrafya', label: 'Coğrafya' },
+        { value: 'Felsefe', label: 'Felsefe' },
+        { value: 'Din Kültürü', label: 'Din Kültürü' }
+      ];
+    }
+    if (gradeLevel === '11') {
+      return [
+        { value: 'all', label: 'Tüm 11. Sınıf Dersleri' },
+        { value: '11. Sınıf Matematik', label: '11. Sınıf Matematik' },
+        { value: '11. Sınıf Fizik', label: '11. Sınıf Fizik' },
+        { value: '11. Sınıf Kimya', label: '11. Sınıf Kimya' },
+        { value: '11. Sınıf Biyoloji', label: '11. Sınıf Biyoloji' },
+        { value: '11. Sınıf Türk Dili ve Edebiyatı', label: '11. Sınıf Edebiyat' },
+        { value: '11. Sınıf Tarih', label: '11. Sınıf Tarih' },
+        { value: '11. Sınıf Coğrafya', label: '11. Sınıf Coğrafya' },
+        { value: '11. Sınıf Felsefe', label: '11. Sınıf Felsefe' }
+      ];
+    }
+    return [
+      { value: 'all', label: 'Tüm Dersler' },
+      { value: 'all_tyt', label: 'Tüm TYT Dersleri' },
+      { value: 'all_ayt', label: 'Tüm AYT Dersleri' },
+      { value: 'Matematik', label: 'Matematik' },
+      { value: 'Geometri', label: 'Geometri' },
+      { value: 'Türkçe', label: 'Türkçe / Edebiyat' },
+      { value: 'Fizik', label: 'Fizik' },
+      { value: 'Kimya', label: 'Kimya' },
+      { value: 'Biyoloji', label: 'Biyoloji' },
+      { value: 'Tarih', label: 'Tarih' },
+      { value: 'Coğrafya', label: 'Coğrafya' },
+      { value: 'Felsefe', label: 'Felsefe' },
+      { value: 'Din Kültürü', label: 'Din Kültürü' }
+    ];
+  }, [gradeLevel]);
 
   const matchesDersSubject = (
     bookOrSubject: string | { subject: string; examType?: string; bookTitle?: string },
@@ -710,13 +787,13 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
       return subLower.includes('ayt') || subLower.includes('edebiyat') || titleLower.includes('ayt');
     }
 
-    if (fLower === 'türkçe') {
+    if (fLower === 'türkçe' || fLower.includes('edebiyat') || fLower.includes('türk dili')) {
       return subLower.includes('türkçe') || subLower.includes('edebiyat') || subLower.includes('türk dili') || subLower.includes('paragraf');
     }
     if (fLower === 'matematik') {
       return subLower.includes('matematik') || subLower.includes('problem');
     }
-    if (fLower === 'din kültürü') {
+    if (fLower === 'din kültürü' || fLower.includes('din')) {
       return subLower.includes('din') || subLower.includes('manevi');
     }
 
@@ -752,7 +829,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   let grandTotalTopics = 0;
   let grandCompletedTopics = 0;
   filteredResources.forEach(res => {
-    const topics = getTopicsForResource(res.subject, res.examType);
+    const topics = getTopicsForResource(res.subject, res.examType, gradeLevel);
     const total = topics.length > 0 ? topics.length : res.totalUnits;
     const completed = res.completedTopics ? res.completedTopics.length : res.completedUnits;
     grandTotalTopics += total;
@@ -762,7 +839,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   const overallPercent = grandTotalTopics > 0 ? Math.round((grandCompletedTopics / grandTotalTopics) * 100) : 0;
 
   const isSpecificCourseSelected = selectedDersFilter !== 'all' && selectedDersFilter !== 'all_tyt' && selectedDersFilter !== 'all_ayt' && selectedDersFilter !== 'none';
-  const courseTopicsData = isSpecificCourseSelected ? getTopicsForSelectedDers(selectedDersFilter, selectedExamTypeFilter) : [];
+  const courseTopicsData = isSpecificCourseSelected ? getTopicsForSelectedDers(selectedDersFilter, selectedExamTypeFilter, gradeLevel) : [];
   const totalCourseTopicsCount = courseTopicsData.reduce((acc, current) => acc + current.topics.length, 0);
 
   // Count books for Sınav Türü buttons (TYT, AYT, Tümü)
@@ -985,7 +1062,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
           onClick={() => {
             setTrackerTab('topics');
             if (selectedExamTypeFilter === 'all') {
-              setSelectedExamTypeFilter('TYT');
+              setSelectedExamTypeFilter(gradeLevel === '9' ? 'GRADE_9' : gradeLevel === '10' ? 'GRADE_10' : gradeLevel === '11' ? 'GRADE_11' : 'TYT');
             }
             if (['all', 'all_tyt', 'all_ayt'].includes(selectedDersFilter)) {
               setSelectedDersFilter('none');
@@ -1017,12 +1094,18 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                 onChange={(e) => {
                   const val = e.target.value;
                   setSelectedDersFilter(val);
-                  if (val === 'all') {
-                    setSelectedExamTypeFilter('all');
-                  } else if (val === 'all_tyt') {
-                    setSelectedExamTypeFilter('TYT');
-                  } else if (val === 'all_ayt') {
-                    setSelectedExamTypeFilter('AYT');
+                  if (isEarly || gradeLevel === '11') {
+                    if (val === 'all') {
+                      setSelectedExamTypeFilter('all');
+                    }
+                  } else {
+                    if (val === 'all') {
+                      setSelectedExamTypeFilter('all');
+                    } else if (val === 'all_tyt') {
+                      setSelectedExamTypeFilter('TYT');
+                    } else if (val === 'all_ayt') {
+                      setSelectedExamTypeFilter('AYT');
+                    }
                   }
                 }}
                 className="w-full bg-slate-950 text-slate-200 text-sm font-semibold rounded-xl border border-slate-800 px-4 py-3 focus:outline-none focus:border-indigo-500 cursor-pointer appearance-none transition-colors"
@@ -1052,76 +1135,88 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
             </div>
           </div>
 
-          {/* Sınav Türü */}
+          {/* Sınav Türü / Müfredat Kapsamı */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-fuchsia-500"></span>
-              <span>Sınav Türü</span>
+              <span>{isEarly || gradeLevel === '11' ? 'Müfredat Kapsamı' : 'Sınav Türü'}</span>
             </label>
-            <div className={`flex bg-slate-950 p-1 rounded-xl border border-slate-800 h-[46px] items-center ${trackerTab === 'topics' ? 'grid grid-cols-2' : ''}`}>
-              <button
-                onClick={() => {
-                  setSelectedExamTypeFilter('TYT');
-                  if (['all', 'all_tyt', 'all_ayt'].includes(selectedDersFilter)) {
-                    setSelectedDersFilter('all_tyt');
-                  }
-                }}
-                className={`flex-1 h-full text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  selectedExamTypeFilter === 'TYT'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900/50'
-                }`}
-              >
-                <span>TYT</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                  selectedExamTypeFilter === 'TYT' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
-                }`}>
-                  {getExamTypeBookCount('TYT')}
+            {isEarly || gradeLevel === '11' ? (
+              <div className="flex bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 h-[46px] items-center justify-between">
+                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{gradeLevel}. Sınıf MEB Müfredatı</span>
                 </span>
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedExamTypeFilter('AYT');
-                  if (['all', 'all_tyt', 'all_ayt'].includes(selectedDersFilter)) {
-                    setSelectedDersFilter('all_ayt');
-                  }
-                }}
-                className={`flex-1 h-full text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                  selectedExamTypeFilter === 'AYT'
-                    ? 'bg-fuchsia-600 text-white shadow-md'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900/50'
-                }`}
-              >
-                <span>AYT</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                  selectedExamTypeFilter === 'AYT' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
-                }`}>
-                  {getExamTypeBookCount('AYT')}
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-bold">
+                  {filteredResources.length} Kaynak
                 </span>
-              </button>
-              {trackerTab !== 'topics' && (
+              </div>
+            ) : (
+              <div className={`flex bg-slate-950 p-1 rounded-xl border border-slate-800 h-[46px] items-center ${trackerTab === 'topics' ? 'grid grid-cols-2' : ''}`}>
                 <button
                   onClick={() => {
-                    setSelectedExamTypeFilter('all');
+                    setSelectedExamTypeFilter('TYT');
                     if (['all', 'all_tyt', 'all_ayt'].includes(selectedDersFilter)) {
-                      setSelectedDersFilter('all');
+                      setSelectedDersFilter('all_tyt');
                     }
                   }}
                   className={`flex-1 h-full text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    selectedExamTypeFilter === 'all'
-                      ? 'bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white shadow-md'
+                    selectedExamTypeFilter === 'TYT'
+                      ? 'bg-indigo-600 text-white shadow-md'
                       : 'text-slate-400 hover:text-white hover:bg-slate-900/50'
                   }`}
                 >
-                  <span>Tümü</span>
+                  <span>TYT</span>
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                    selectedExamTypeFilter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                    selectedExamTypeFilter === 'TYT' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
                   }`}>
-                    {getExamTypeBookCount('all')}
+                    {getExamTypeBookCount('TYT')}
                   </span>
                 </button>
-              )}
-            </div>
+                <button
+                  onClick={() => {
+                    setSelectedExamTypeFilter('AYT');
+                    if (['all', 'all_tyt', 'all_ayt'].includes(selectedDersFilter)) {
+                      setSelectedDersFilter('all_ayt');
+                    }
+                  }}
+                  className={`flex-1 h-full text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    selectedExamTypeFilter === 'AYT'
+                      ? 'bg-fuchsia-600 text-white shadow-md'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-900/50'
+                  }`}
+                >
+                  <span>AYT</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                    selectedExamTypeFilter === 'AYT' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    {getExamTypeBookCount('AYT')}
+                  </span>
+                </button>
+                {trackerTab !== 'topics' && (
+                  <button
+                    onClick={() => {
+                      setSelectedExamTypeFilter('all');
+                      if (['all', 'all_tyt', 'all_ayt'].includes(selectedDersFilter)) {
+                        setSelectedDersFilter('all');
+                      }
+                    }}
+                    className={`flex-1 h-full text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      selectedExamTypeFilter === 'all'
+                        ? 'bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-900/50'
+                    }`}
+                  >
+                    <span>Tümü</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
+                      selectedExamTypeFilter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
+                    }`}>
+                      {getExamTypeBookCount('all')}
+                    </span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
