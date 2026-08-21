@@ -988,7 +988,7 @@ export default function App() {
       currentUser: user,
       auditLogs: [loginAuditItem, ...(prev.auditLogs || [])],
       studentsData: user.role === 'student' && !prev.studentsData[user.id] 
-        ? { ...prev.studentsData, [user.id]: createEmptyStudentData(user.name, user.className) }
+        ? { ...prev.studentsData, [user.id]: resolveStudentData(user, prev.studentsData) }
         : prev.studentsData
     }));
   };

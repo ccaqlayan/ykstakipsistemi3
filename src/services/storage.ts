@@ -94,8 +94,26 @@ export function loadGlobalState(): AppGlobalState {
     return {
       ...INITIAL_GLOBAL_STATE,
       ...parsed,
-      users: parsed.users && parsed.users.length > 0 ? parsed.users : DEMO_USERS,
-      classes: parsed.classes && parsed.classes.length > 0 ? parsed.classes : DEMO_CLASSES,
+      users: (() => {
+        const storedUsers = Array.isArray(parsed.users) ? parsed.users : [];
+        const storedMap = new Map(storedUsers.map((u: any) => [u.id, u]));
+        DEMO_USERS.forEach(du => {
+          if (!storedMap.has(du.id)) {
+            storedMap.set(du.id, du);
+          }
+        });
+        return Array.from(storedMap.values());
+      })(),
+      classes: (() => {
+        const storedClasses = Array.isArray(parsed.classes) ? parsed.classes : [];
+        const classMap = new Map(storedClasses.map((c: any) => [c.id, c]));
+        DEMO_CLASSES.forEach(dc => {
+          if (!classMap.has(dc.id)) {
+            classMap.set(dc.id, dc);
+          }
+        });
+        return Array.from(classMap.values());
+      })(),
       studentsData: parsed.studentsData || {},
       programTemplates: parsed.programTemplates && parsed.programTemplates.length > 0 
         ? parsed.programTemplates 

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { UserAccount, UserRole } from '../types';
 import { YildizLisesiLogo } from './YildizLisesiLogo';
-import { DEFAULT_AVATAR } from '../data/initialData';
+import { DEFAULT_AVATAR, DEMO_USERS } from '../data/initialData';
 import { APP_VERSION } from '../version';
 
 
@@ -203,7 +203,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
       // Fallback to local users list
     }
 
-    const found = users.find(u => (u.email || '').trim().toLowerCase() === demoUserEmail.trim().toLowerCase());
+    const found = users.find(u => (u.email || '').trim().toLowerCase() === demoUserEmail.trim().toLowerCase())
+      || DEMO_USERS.find(u => (u.email || '').trim().toLowerCase() === demoUserEmail.trim().toLowerCase());
     if (found) {
       onLoginSuccess(found);
     } else {

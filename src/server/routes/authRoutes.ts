@@ -12,6 +12,7 @@ import {
   registrationRequestTimestamps,
   sendEmailHelper
 } from '../config';
+import { DEMO_USERS } from '../../data/initialData';
 
 const router = Router();
 
@@ -115,6 +116,18 @@ router.post('/login', async (req, res) => {
         targetUser = { id: d.id, ...u };
       }
     });
+
+    if (!targetUser) {
+      const demoUser = DEMO_USERS.find(u => (u.email || '').trim().toLowerCase() === cleanEmail);
+      if (demoUser) {
+        targetUser = { ...demoUser };
+        try {
+          await setDoc(doc(db, 'users', demoUser.id), demoUser, { merge: true });
+        } catch (seedErr) {
+          console.warn('Auto-seed demo user into firestore failed:', seedErr);
+        }
+      }
+    }
     
     if (!targetUser) {
       return res.status(401).json({ success: false, error: 'Bu e-posta adresiyle kayıtlı bir kullanıcı bulunamadı.' });
