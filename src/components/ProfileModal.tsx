@@ -9,6 +9,7 @@ import { UNIVERSITIES } from '../data/universities';
 import { DEPARTMENTS } from '../data/departments';
 import { uploadProfileAvatar } from '../services/storageUpload';
 import { ImageCropperModal } from './common/ImageCropperModal';
+import { getGradeLevel, isEarlyHighSchool } from '../utils/gradeUtils';
 
 interface ProfileModalProps {
   currentUser: UserAccount;
@@ -80,6 +81,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   onClose
 }) => {
   const isTeacher = currentUser.role === 'class_teacher' || currentUser.role === 'school_counselor' || currentUser.role === 'teacher';
+  const gradeLevel = getGradeLevel(currentUser.className);
+  const isEarly = isEarlyHighSchool(gradeLevel);
 
   // Basic info states
   const [name, setName] = useState(currentUser.name || profile?.name || '');
@@ -262,14 +265,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         name: (name || '').trim(),
         highSchool: (highSchool || '').trim(),
         className: currentUser.className,
-        targetField,
-        targetUniversity: (targetUniversity || '').trim(),
-        targetDepartment: (targetDepartment || '').trim(),
-        targetRank: Number(targetRank) || 0,
-        targetTYTNet: Number(targetTYTNet) || 0,
-        targetAYTNet: targetField === 'DİL' ? (Number(targetYDTNet) || Number(targetAYTNet) || 0) : (Number(targetAYTNet) || 0),
-        targetYDTNet: targetField === 'DİL' ? (Number(targetYDTNet) || Number(targetAYTNet) || 0) : undefined,
-        targetLanguage: targetField === 'DİL' ? targetLanguage : undefined,
+        targetField: isEarly ? undefined : targetField,
+        targetUniversity: isEarly ? '' : (targetUniversity || '').trim(),
+        targetDepartment: isEarly ? '' : (targetDepartment || '').trim(),
+        targetRank: isEarly ? 0 : (Number(targetRank) || 0),
+        targetTYTNet: isEarly ? 0 : (Number(targetTYTNet) || 0),
+        targetAYTNet: isEarly ? 0 : (targetField === 'DİL' ? (Number(targetYDTNet) || Number(targetAYTNet) || 0) : (Number(targetAYTNet) || 0)),
+        targetYDTNet: isEarly ? undefined : (targetField === 'DİL' ? (Number(targetYDTNet) || Number(targetAYTNet) || 0) : undefined),
+        targetLanguage: isEarly ? undefined : (targetField === 'DİL' ? targetLanguage : undefined),
         coachName: profile?.coachName || 'Rehberlik Servisi',
         coachNotes: profile?.coachNotes || '',
         avatarUrl: avatarUrl.trim(),
@@ -596,11 +599,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           )}
 
           {/* Student specific target fields */}
+          {/* Student specific target fields */}
           {!isTeacher && (
             <div className="space-y-3 pt-2 border-t border-white/10">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
                 <Target className="w-3.5 h-3.5 text-indigo-400" />
-                <span>YKS Hedef ve Okul Bilgileri</span>
+                <span>{isEarly ? 'Okul & Başarı Bilgileri' : 'YKS Hedef ve Okul Bilgileri'}</span>
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -625,153 +629,183 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Hazırlık Alanı</label>
-                  <select
-                    value={targetField}
-                    onChange={(e) => setTargetField(e.target.value as FieldType)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none font-bold text-indigo-400 min-h-[48px] sm:min-h-0 cursor-pointer"
-                  >
-                    <option value="SAY">Sayısal (SAY)</option>
-                    <option value="EA">Eşit Ağırlık (EA)</option>
-                    <option value="SÖZ">Sözel (SÖZ)</option>
-                    <option value="DİL">Dil (DİL)</option>
-                  </select>
-                </div>
-
-                {/* Target University */}
-                <div className="relative">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Hedef Üniversite</label>
-                  <input
-                    type="text"
-                    value={targetUniversity}
-                    onChange={(e) => {
-                      setTargetUniversity(e.target.value);
-                      setShowUniSuggestions(true);
-                    }}
-                    onFocus={() => setShowUniSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowUniSuggestions(false), 200)}
-                    placeholder="Ör: İstanbul Teknik Üniversitesi"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
-                  />
-                  {showUniSuggestions && filteredUniversities.length > 0 && (
-                    <div className="absolute z-20 left-0 right-0 mt-1 bg-slate-900 border border-indigo-500/30 rounded-xl shadow-2xl max-h-40 overflow-y-auto">
-                      {filteredUniversities.map((uni, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onMouseDown={() => {
-                            setTargetUniversity(uni);
-                            setShowUniSuggestions(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-indigo-600/30 hover:text-white transition-colors border-b border-white/5 last:border-0"
-                        >
-                          {uni}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Target Department */}
-                <div className="relative">
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Hedef Bölüm</label>
-                  <input
-                    type="text"
-                    value={targetDepartment}
-                    onChange={(e) => {
-                      setTargetDepartment(e.target.value);
-                      setShowDeptSuggestions(true);
-                    }}
-                    onFocus={() => setShowDeptSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowDeptSuggestions(false), 200)}
-                    placeholder="Ör: Bilgisayar Mühendisliği"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
-                  />
-                  {showDeptSuggestions && filteredDepartments.length > 0 && (
-                    <div className="absolute z-20 left-0 right-0 mt-1 bg-slate-900 border border-indigo-500/30 rounded-xl shadow-2xl max-h-40 overflow-y-auto">
-                      {filteredDepartments.map((dept, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onMouseDown={() => {
-                            setTargetDepartment(dept);
-                            setShowDeptSuggestions(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-indigo-600/30 hover:text-white transition-colors border-b border-white/5 last:border-0"
-                        >
-                          {dept}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Target Nets & Rank */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">Hedef Sıralama</label>
-                  <input
-                    type="number"
-                    placeholder="Ör: 5000"
-                    value={targetRank}
-                    onChange={(e) => setTargetRank(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">Hedef TYT Net</label>
-                  <input
-                    type="number"
-                    placeholder="Ör: 100"
-                    value={targetTYTNet}
-                    onChange={(e) => setTargetTYTNet(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
-                  />
-                </div>
-                {targetField === 'DİL' ? (
+                {isEarly && (
                   <div>
-                    <label className="block text-[11px] font-semibold text-sky-400 mb-1 flex items-center justify-between">
-                      <span>Hedef YDT Net</span>
-                      <span className="text-[9px] text-sky-500 font-mono">/ 80</span>
-                    </label>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Hedef Yıl Sonu Başarı Puanı (OBP)</label>
                     <input
                       type="number"
-                      max="80"
-                      placeholder="Ör: 75"
-                      value={targetYDTNet}
-                      onChange={(e) => setTargetYDTNet(e.target.value)}
-                      className="w-full bg-sky-950/20 border border-sky-500/40 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-sky-300 focus:outline-none focus:border-sky-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">Hedef AYT Net</label>
-                    <input
-                      type="number"
-                      placeholder="Ör: 70"
-                      value={targetAYTNet}
-                      onChange={(e) => setTargetAYTNet(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
+                      step="0.1"
+                      placeholder="Ör: 90.0"
+                      value={highSchoolGpa}
+                      onChange={(e) => setHighSchoolGpa(e.target.value)}
+                      className="w-full bg-white/5 border border-emerald-500/30 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-emerald-300 font-bold focus:outline-none focus:border-emerald-400 min-h-[48px] sm:min-h-0 font-mono"
                     />
                   </div>
                 )}
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 mb-1">OBP (Lise Ort.)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    placeholder="Ör: 88.5"
-                    value={highSchoolGpa}
-                    onChange={(e) => setHighSchoolGpa(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
-                  />
-                </div>
+
+                {!isEarly && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Hazırlık Alanı</label>
+                      <select
+                        value={targetField}
+                        onChange={(e) => setTargetField(e.target.value as FieldType)}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none font-bold text-indigo-400 min-h-[48px] sm:min-h-0 cursor-pointer"
+                      >
+                        <option value="SAY">Sayısal (SAY)</option>
+                        <option value="EA">Eşit Ağırlık (EA)</option>
+                        <option value="SÖZ">Sözel (SÖZ)</option>
+                        <option value="DİL">Dil (DİL)</option>
+                      </select>
+                    </div>
+
+                    {/* Target University */}
+                    <div className="relative">
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Hedef Üniversite</label>
+                      <input
+                        type="text"
+                        value={targetUniversity}
+                        onChange={(e) => {
+                          setTargetUniversity(e.target.value);
+                          setShowUniSuggestions(true);
+                        }}
+                        onFocus={() => setShowUniSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowUniSuggestions(false), 200)}
+                        placeholder="Ör: İstanbul Teknik Üniversitesi"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
+                      />
+                      {showUniSuggestions && filteredUniversities.length > 0 && (
+                        <div className="absolute z-20 left-0 right-0 mt-1 bg-slate-900 border border-indigo-500/30 rounded-xl shadow-2xl max-h-40 overflow-y-auto">
+                          {filteredUniversities.map((uni, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onMouseDown={() => {
+                                setTargetUniversity(uni);
+                                setShowUniSuggestions(false);
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-indigo-600/30 hover:text-white transition-colors border-b border-white/5 last:border-0"
+                            >
+                              {uni}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Target Department */}
+                    <div className="relative">
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Hedef Bölüm</label>
+                      <input
+                        type="text"
+                        value={targetDepartment}
+                        onChange={(e) => {
+                          setTargetDepartment(e.target.value);
+                          setShowDeptSuggestions(true);
+                        }}
+                        onFocus={() => setShowDeptSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowDeptSuggestions(false), 200)}
+                        placeholder="Ör: Bilgisayar Mühendisliği"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
+                      />
+                      {showDeptSuggestions && filteredDepartments.length > 0 && (
+                        <div className="absolute z-20 left-0 right-0 mt-1 bg-slate-900 border border-indigo-500/30 rounded-xl shadow-2xl max-h-40 overflow-y-auto">
+                          {filteredDepartments.map((dept, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onMouseDown={() => {
+                                setTargetDepartment(dept);
+                                setShowDeptSuggestions(false);
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-indigo-600/30 hover:text-white transition-colors border-b border-white/5 last:border-0"
+                            >
+                              {dept}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
 
+              {/* Ara Sınıf Bilgilendirme Notu */}
+              {isEarly && (
+                <div className="bg-indigo-950/30 border border-indigo-500/25 rounded-2xl p-3.5 text-xs text-indigo-200 flex items-start space-x-2.5">
+                  <Sparkles className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-white">Ara Sınıf Odak Bilgisi:</strong> 9 ve 10. sınıflarda YKS alan ve üniversite seçimi yerine MEB Maarif müfredatındaki okul yazılıları, düzenli konu tekrarları ve yıl sonu OBP puanı hedeflenir. Alan seçimi 11. sınıfa geçerken yapılacaktır.
+                  </div>
+                </div>
+              )}
+
+              {/* Target Nets & Rank (Sadece 11, 12 ve Mezun Kademelerinde) */}
+              {!isEarly && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">Hedef Sıralama</label>
+                    <input
+                      type="number"
+                      placeholder="Ör: 5000"
+                      value={targetRank}
+                      onChange={(e) => setTargetRank(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">Hedef TYT Net</label>
+                    <input
+                      type="number"
+                      placeholder="Ör: 100"
+                      value={targetTYTNet}
+                      onChange={(e) => setTargetTYTNet(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
+                    />
+                  </div>
+                  {targetField === 'DİL' ? (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-sky-400 mb-1 flex items-center justify-between">
+                        <span>Hedef YDT Net</span>
+                        <span className="text-[9px] text-sky-500 font-mono">/ 80</span>
+                      </label>
+                      <input
+                        type="number"
+                        max="80"
+                        placeholder="Ör: 75"
+                        value={targetYDTNet}
+                        onChange={(e) => setTargetYDTNet(e.target.value)}
+                        className="w-full bg-sky-950/20 border border-sky-500/40 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-sky-300 focus:outline-none focus:border-sky-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-400 mb-1">Hedef AYT Net</label>
+                      <input
+                        type="number"
+                        placeholder="Ör: 70"
+                        value={targetAYTNet}
+                        onChange={(e) => setTargetAYTNet(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">OBP (Lise Ort.)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="Ör: 88.5"
+                      value={highSchoolGpa}
+                      onChange={(e) => setHighSchoolGpa(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0 text-center font-mono font-bold"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* DİL Öğrencisine Özel Sınav Dili Seçimi (Diğer alanlarda tamamen gizli) */}
-              {targetField === 'DİL' && (
+              {!isEarly && targetField === 'DİL' && (
                 <div className="bg-sky-950/30 border border-sky-500/25 rounded-2xl p-3 flex items-center justify-between gap-3 animate-fade-in">
                   <div className="flex items-center space-x-2">
                     <span className="text-base">🌐</span>

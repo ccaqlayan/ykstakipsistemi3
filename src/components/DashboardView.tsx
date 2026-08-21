@@ -564,6 +564,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {showTargetModal && (
         <TargetModal
           profile={profile}
+          gradeLevel={gradeLevel}
           onSave={(updatedProfile) => {
             if (onUpdateStudentProfile) {
               onUpdateStudentProfile(updatedProfile);

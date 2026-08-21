@@ -41,36 +41,48 @@ export const DashboardTargetBanner: React.FC<DashboardTargetBannerProps> = ({
         <div>
           <div className="flex items-center space-x-1.5 sm:space-x-2 text-indigo-300 text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-0.5 sm:mb-1">
             <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400" />
-            <span>{isEarlyGrade ? `${getGradeDisplayName(gradeLevel)} Başarı Hedef Tablosu` : 'YKS Derece Hedef Tablosu'}</span>
+            <span>{isEarlyGrade ? `${getGradeDisplayName(gradeLevel)} MEB Maarif & Okul Başarı Paneli` : 'YKS Derece Hedef Tablosu'}</span>
           </div>
-          <div className="flex items-center space-x-2 sm:space-x-3 my-0.5 sm:my-1">
-            <UniversityLogo 
-              universityName={profile.targetUniversity} 
-              sizeClassName="w-6 h-6 sm:w-10 sm:h-10 shrink-0" 
-              opacityClassName="opacity-90 hover:opacity-100" 
-            />
-            <h1 className="text-lg sm:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-300 tracking-tight target-uni-title">
-              {profile.targetUniversity || (isEarlyGrade ? 'Hedef Üniversite / Vizyon' : 'Üniversite Hedefi')}
-            </h1>
-          </div>
-          <p className="text-slate-300 text-[10px] sm:text-sm mt-0.5 sm:mt-1 flex items-center flex-nowrap whitespace-nowrap overflow-hidden gap-1 sm:gap-2">
-            <span className="truncate">{profile.targetDepartment || (isEarlyGrade ? 'Düşünülen Meslek / Bölüm' : 'Bölüm Hedefi')}</span>
-            <span className="shrink-0">•</span>
-            {isEarlyGrade ? (
-              <span className="text-emerald-400 font-semibold font-mono shrink-0">
-                Hedef OBP: {targetGpa.toFixed(1)} (+{estimatedObpBoost} Puan Katkı)
-              </span>
-            ) : (
-              <span className="text-emerald-400 font-semibold font-mono shrink-0">
-                Hedef Sıralama: {profile.targetRank && profile.targetRank > 0 ? `#${profile.targetRank.toLocaleString('tr-TR')}` : 'Belirlenmedi'}
-              </span>
-            )}
-            {profile.targetField && (
-              <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-md font-bold font-mono shrink-0">
-                {profile.targetField}
-              </span>
-            )}
-          </p>
+
+          {isEarlyGrade ? (
+            <div className="my-1 sm:my-1.5">
+              <h1 className="text-lg sm:text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-300 tracking-tight">
+                {profile.highSchool || 'Anadolu Lisesi'}
+              </h1>
+              <p className="text-slate-300 text-xs sm:text-sm mt-0.5 flex items-center gap-2">
+                <span className="font-semibold text-indigo-300">{profile.className || `${gradeLevel}. Sınıf`}</span>
+                <span>•</span>
+                <span className="text-emerald-400 font-semibold font-mono">
+                  Hedef Yıl Sonu OBP: {targetGpa.toFixed(1)} (+{estimatedObpBoost} Puan YKS Katkısı)
+                </span>
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center space-x-2 sm:space-x-3 my-0.5 sm:my-1">
+                <UniversityLogo 
+                  universityName={profile.targetUniversity} 
+                  sizeClassName="w-6 h-6 sm:w-10 sm:h-10 shrink-0" 
+                  opacityClassName="opacity-90 hover:opacity-100" 
+                />
+                <h1 className="text-lg sm:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-300 tracking-tight target-uni-title">
+                  {profile.targetUniversity || 'Üniversite Hedefi'}
+                </h1>
+              </div>
+              <p className="text-slate-300 text-[10px] sm:text-sm mt-0.5 sm:mt-1 flex items-center flex-nowrap whitespace-nowrap overflow-hidden gap-1 sm:gap-2">
+                <span className="truncate">{profile.targetDepartment || 'Bölüm Hedefi'}</span>
+                <span className="shrink-0">•</span>
+                <span className="text-emerald-400 font-semibold font-mono shrink-0">
+                  Hedef Sıralama: {profile.targetRank && profile.targetRank > 0 ? `#${profile.targetRank.toLocaleString('tr-TR')}` : 'Belirlenmedi'}
+                </span>
+                {profile.targetField && (
+                  <span className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-md font-bold font-mono shrink-0">
+                    {profile.targetField}
+                  </span>
+                )}
+              </p>
+            </>
+          )}
         </div>
 
         {/* Right side stats */}
