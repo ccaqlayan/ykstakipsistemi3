@@ -237,6 +237,18 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
     }
   }, []);
 
+  // ── AI SMART ADD PREFILL EVENT LISTENER ──
+  useEffect(() => {
+    const handleSmartAddPrefill = (e: any) => {
+      const detail = e.detail;
+      if (!detail || detail.intent !== 'GENERAL_MOCK') return;
+      setShowAddModal(true);
+    };
+
+    window.addEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
+    return () => window.removeEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
+  }, []);
+
   const saveVisibleCharts = (newConfig: typeof visibleCharts) => {
     setVisibleCharts(newConfig);
     try {

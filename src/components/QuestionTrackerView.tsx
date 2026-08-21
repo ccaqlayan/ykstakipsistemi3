@@ -296,6 +296,39 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
     setCurrentPage(1);
   }, [filterExamType, filterSubject, searchQuery, pageSize]);
 
+  // ── AI SMART ADD PREFILL EVENT LISTENER ──
+  useEffect(() => {
+    const handleSmartAddPrefill = (e: any) => {
+      const detail = e.detail;
+      if (!detail || detail.intent !== 'QUESTION_LOG') return;
+
+      const f = detail.fields || {};
+      if (f.subject) {
+        setSubject(f.subject);
+        if (f.subject.startsWith('AYT')) setExamType('AYT');
+        else if (f.subject.startsWith('YDT')) setExamType('YDT');
+        else setExamType('TYT');
+      }
+
+      if (f.totalQuestions !== undefined && f.totalQuestions !== '') {
+        setSolvedCount(f.totalQuestions);
+        setTargetCount(f.totalQuestions);
+      }
+      if (f.correct !== undefined && f.correct !== '') setCorrectCount(f.correct);
+      if (f.wrong !== undefined && f.wrong !== '') setWrongCount(f.wrong);
+      if (f.empty !== undefined && f.empty !== '') setEmptyCount(f.empty);
+      if (f.durationMinutes !== undefined && f.durationMinutes !== '') setDurationMinutes(f.durationMinutes);
+      if (f.date) setDate(f.date);
+      if (f.notes) setNotes(f.notes);
+
+      setEditingLogId(null);
+      setShowAddModal(true);
+    };
+
+    window.addEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
+    return () => window.removeEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
+  }, []);
+
   // Chart Filters
   const [chartExamType, setChartExamType] = useState<'ALL' | 'TYT' | 'AYT'>('ALL');
   const [chartSubject, setChartSubject] = useState<string>('ALL');

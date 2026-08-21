@@ -130,6 +130,7 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - src/components/AdminMessageManagement.tsx   : Yönetici toplu mesaj gönderme ve mesaj denetim paneli.
 - src/components/AuditLogsView.tsx             : Sistem İşlem Zaman Çizelgesi (Ayak İzi izleme alanı).
 - src/components/ConfirmDeleteModal.tsx        : Evrensel silme onay penceresi.
+- src/components/common/GlobalAiSmartAddModal.tsx: Yapay Zeka destekli Akıllı Hızlı Ekle (Smart Add / Intent Dispatcher) komut paleti modalı.
 - src/components/common/ImageCropperModal.tsx  : Mobil ve dokunmatik uyumlu, 90° döndürme destekli görsel kırpma (crop) modalı.
 - src/components/GoogleSheetsView.tsx          : Google Tabloları bağlantı ve veri senkronizasyonu.
 - src/components/LoginView.tsx                 : Kullanıcı giriş ve hesap oluşturma ekranı.
@@ -164,7 +165,7 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - src/server/config.ts        : Port, Firebase Admin, Gemini AI ve dosya yükleme yolları yapılandırması.
 - src/server/routes/authRoutes.ts  : `/api/auth/*` (Login, Register, Logout, Password Reset, Google OAuth2, 6 Haneli E-posta Kod Doğrulama).
 - src/server/routes/sheetsRoutes.ts: `/api/sheets/*` (Google Tablosu otomatik oluşturma ve canlı veri aktarma).
-- src/server/routes/geminiRoutes.ts: `/api/gemini/*` (Yapay Zeka Bireysel/Sınıf Koçu, Soru Çözücü, Çeldirici Analizi, Benzer Soru Üretici, Rozet Entegrasyonu).
+- src/server/routes/geminiRoutes.ts: `/api/gemini/*` (Yapay Zeka Bireysel/Sınıf Koçu, Soru Çözücü, Çeldirici Analizi, Benzer Soru Üretici, Akıllı Hızlı Ekleme / Niyet Ayrıştırıcı, Rozet Entegrasyonu).
 - src/server/routes/systemRoutes.ts: `/api/*` (Storage istatistikleri, YouTube playlist scraper, Fotoğraf Yükleme/Silme, Admin Mesaj Yönetimi, Wikipedia Proxy).
 - src/server/routes/updaterRoutes.ts: `/api/system/updater/*` (GitHub sürümleri, otomatik güncelleme, anlık yedek alma, log akışı ve rollback).
 - src/server/routes/emergencyRecoveryRoute.ts: `/emergency-restore` (Bağımsız, standalone acil durum felaket kurtarma HTML ve API rotası).

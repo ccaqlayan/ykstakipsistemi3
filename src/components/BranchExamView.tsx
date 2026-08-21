@@ -543,6 +543,50 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   const [sortOption, setSortOption] = useState<string>('NEWEST');
   const [filterMatchStatus, setFilterMatchStatus] = useState<string>('ALL');
 
+  // ── AI SMART ADD PREFILL EVENT LISTENER ──
+  useEffect(() => {
+    const handleSmartAddPrefill = (e: any) => {
+      const detail = e.detail;
+      if (!detail) return;
+
+      const f = detail.fields || {};
+
+      if (detail.intent === 'TOPIC_ERROR') {
+        setActiveSubTab('errors');
+        setEditingError(null);
+        if (f.subject) setErrorSubject(f.subject);
+        if (f.topicName) {
+          setTopicName(f.topicName);
+          setIsCustomTopic(true);
+        }
+        if (f.publisher) setErrorPublisher(f.publisher);
+        if (f.errorReason) setErrorReason(f.errorReason as any);
+        if (f.notes) setSolutionNotes(f.notes);
+        setShowAddErrorModal(true);
+      } else if (detail.intent === 'BRANCH_EXAM') {
+        setActiveSubTab('branch_list');
+        setEditingExam(null);
+        if (f.subject) {
+          setExamSubject(f.subject);
+          if (f.subject.startsWith('AYT')) setExamType('AYT');
+          else if (f.subject.startsWith('YDT')) setExamType('YDT');
+          else setExamType('TYT');
+        }
+        if (f.publisher) setPublisher(f.publisher);
+        if (f.correct !== undefined && f.correct !== '') setCorrect(f.correct);
+        if (f.wrong !== undefined && f.wrong !== '') setWrong(f.wrong);
+        if (f.empty !== undefined && f.empty !== '') setEmpty(f.empty);
+        if (f.durationMinutes !== undefined && f.durationMinutes !== '') setDurationMinutes(f.durationMinutes);
+        if (f.date) setExamDate(f.date);
+        if (f.notes) setExamNotes(f.notes);
+        setShowAddExamModal(true);
+      }
+    };
+
+    window.addEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
+    return () => window.removeEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
+  }, []);
+
   // Topic tips state
   const [activeTipTopic, setActiveTipTopic] = useState<{ subject: string; topicName: string } | null>(null);
   const [tipLoading, setTipLoading] = useState<boolean>(false);

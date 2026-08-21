@@ -158,3 +158,71 @@ export async function sendAICoachChatMessage(
   }
   return { reply: data.reply, aiUsage: data.aiUsage };
 }
+
+export interface SmartAddParsedFields {
+  subject?: string;
+  topicName?: string;
+  publisher?: string;
+  totalQuestions?: number;
+  correct?: number;
+  wrong?: number;
+  empty?: number;
+  net?: number;
+  durationMinutes?: number;
+  date?: string;
+  time?: string;
+  errorReason?: string;
+  examType?: string;
+  bookName?: string;
+  routineTitle?: string;
+  notes?: string;
+  [key: string]: any;
+}
+
+export interface SmartAddParsedResult {
+  intent: 'QUESTION_LOG' | 'TOPIC_ERROR' | 'BRANCH_EXAM' | 'GENERAL_MOCK' | 'STUDY_PLAN' | 'STUDY_SESSION' | 'RESOURCE_BOOK' | 'ROUTINE';
+  targetTab: 'questions' | 'errors' | 'branches' | 'mocks' | 'planner' | 'study' | 'resources' | 'routines';
+  confidence: number;
+  summary: string;
+  explanation?: string;
+  fields: SmartAddParsedFields;
+}
+
+export async function parseUserQuickAddIntent(
+  prompt: string,
+  currentUser?: UserAccount | null
+): Promise<{ data: SmartAddParsedResult; aiUsage?: any }> {
+  const todayDate = new Date().toISOString().split('T')[0];
+
+  const res = await fetch('/api/gemini/parse-intent', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt,
+      todayDate,
+      userName: currentUser?.name || 'Öğrenci',
+      userEmail: currentUser?.email || '',
+      userRole: currentUser?.role || 'student',
+      userId: currentUser?.id || ''
+    })
+  });
+
+  if (!res.ok) {
+    let errorMsg = 'Yapay zeka niyet analizi yapılamadı.';
+    try {
+      const errData = await res.json();
+      if (errData && errData.error) {
+        errorMsg = errData.error;
+      }
+    } catch {
+      // Fallback
+    }
+    throw new Error(errorMsg);
+  }
+
+  const result = await res.json();
+  if (result.error) {
+    throw new Error(result.error);
+  }
+  return { data: result.data, aiUsage: result.aiUsage };
+}

@@ -2200,4 +2200,130 @@ ${pagesText.map((p: any, idx: number) => `--- SAYFA ${p.pageIndex || (idx + 1)} 
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/gemini/parse-intent
+// Doğal dil ile söylenen veri ekleme niyetini (Soru, Hata, Branş/Genel Deneme,
+// Ders Programı, vb.) analiz edip hedef modül ve doldurulacak alanları çıkaran yapay zeka motoru.
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/parse-intent', async (req, res) => {
+  if (!isAiEnabledOrRespond(res)) return;
+
+  try {
+    const { prompt: userPrompt, todayDate } = req.body;
+    if (!userPrompt || typeof userPrompt !== 'string' || !userPrompt.trim()) {
+      return res.status(400).json({ error: 'Lütfen eklemek istediğiniz işlemi belirten bir metin giriniz.' });
+    }
+
+    const currentDateStr = todayDate || new Date().toISOString().split('T')[0];
+
+    const systemPrompt = `Sen Türkiye'deki YKS (TYT / AYT / YDT) sınavına hazırlanan öğrenciler için geliştirilmiş YKS Takip Sistemi'nin "Akıllı Veri Giriş ve Niyet Ayrıştırıcı" Yapay Zeka Asistanısın.
+
+GÖREVİN:
+Kullanıcının doğal dille yazdığı cümleyi analiz edip:
+1. Hangi modüle veri eklemek istediğini (intent & targetTab) belirlemek.
+2. Cümledeki tüm verileri (ders, konu, doğru, yanlış, boş, net, süre, yayın, tarih, notlar vb.) çıkarıp yapılandırılmış JSON nesnesine dönüştürmek.
+
+BUGÜNÜN TARİHİ: ${currentDateStr}
+
+MÜMKÜN NİYETLER (intents):
+- "QUESTION_LOG": Soru çözüm kaydı (Örn: "Bugün TYT Matematikten 50 soru çözdüm 42 doğru 5 yanlış 45 dk")
+  targetTab: "questions"
+- "TOPIC_ERROR": Hata defteri / yanlış yapılan soru kaydı (Örn: "AYT Fizik elektrostatik konusunda hata yaptım ekleyelim", "Türevden yanlışım var hata defterine atalım")
+  targetTab: "errors"
+- "BRANCH_EXAM": Branş denemesi kaydı (Örn: "345 TYT Türkçe branş denemesi çözdüm 35 doğru 4 yanlış 45 dakika sürdü", "Apotemi AYT Matematik denemesi 32 net")
+  targetTab: "branches"
+- "GENERAL_MOCK": Genel deneme sınavı (TYT/AYT) kaydı (Örn: "Özdebir Türkiye Geneli TYT Denemesi netlerim: Türkçe 32, Sosyal 15, Mat 30, Fen 16", "3D AYT denemesi çözdüm")
+  targetTab: "mocks"
+- "STUDY_PLAN": Haftalık ders çalışma programına görev/plan ekleme (Örn: "Yarın saat 14:00'te Geometri üçgenler tekrarı yapalım", "Pazartesi günü Paragraf ve Problem koy")
+  targetTab: "planner"
+- "STUDY_SESSION": Ders çalışma süresi / kronometre kaydı (Örn: "Bugün 3 saat Matematik, 2 saat Fizik çalıştım")
+  targetTab: "study"
+- "RESOURCE_BOOK": Kaynak kitap ekleme (Örn: "Apotemi AYT Kimya Organik soru bankası aldım ekleyelim")
+  targetTab: "resources"
+- "ROUTINE": Günlük rutin / alışkanlık ekleme (Örn: "Her gün 20 paragraf çözme rutini ekle")
+  targetTab: "routines"
+
+DERS ADI STANDARTLARI (subject):
+- "TYT Türkçe", "TYT Matematik", "TYT Geometri", "TYT Fizik", "TYT Kimya", "TYT Biyoloji", "TYT Tarih", "TYT Coğrafya", "TYT Felsefe", "TYT Din Kültürü"
+- "AYT Matematik", "AYT Geometri", "AYT Fizik", "AYT Kimya", "AYT Biyoloji", "AYT Edebiyat", "AYT Tarih-1", "AYT Tarih-2", "AYT Coğrafya-1", "AYT Coğrafya-2", "AYT Felsefe Grubu", "AYT Din Kültürü"
+- "YDT İngilizce", "YDT Almanca", "YDT Fransızca"
+Eğer sadece "Matematik" denmişse ve bağlam net değilse varsayılan "TYT Matematik" veya "AYT Matematik" olarak uygun olanı seç.
+
+SAYISAL KURALLAR:
+- Doğru (correct), Yanlış (wrong), Boş (empty), Toplam Soru (totalQuestions) sayılarını hesapla veya çıkar.
+- Net hesaplama kuralı: net = correct - (wrong * 0.25).
+- Süre: Dakika cinsine çevir (durationMinutes). Örn: "1.5 saat" -> 90, "45 dk" -> 45.
+- Tarih: "bugün" -> ${currentDateStr}, "dün" -> 1 gün öncesi, "yarın" -> 1 gün sonrası.
+
+YANIT FORMATI:
+SADECE aşağıdaki JSON şemasına tam uyan geçerli bir JSON nesnesi döndür, markdown formatlama (kod bloğu) dışında hiçbir metin yazma:
+
+{
+  "intent": "QUESTION_LOG" | "TOPIC_ERROR" | "BRANCH_EXAM" | "GENERAL_MOCK" | "STUDY_PLAN" | "STUDY_SESSION" | "RESOURCE_BOOK" | "ROUTINE",
+  "targetTab": "questions" | "errors" | "branches" | "mocks" | "planner" | "study" | "resources" | "routines",
+  "confidence": 0.95,
+  "summary": "Kısa ve anlaşılır Türkçe özet başlık (Örn: TYT Matematik 50 Soru Çözümü)",
+  "explanation": "Tespit edilen işlem hakkında 1 cümlelik açıklama",
+  "fields": {
+    "subject": "TYT Matematik",
+    "topicName": "Fonksiyonlar (Varsa)",
+    "publisher": "345 Yayınları (Varsa)",
+    "totalQuestions": 50,
+    "correct": 42,
+    "wrong": 5,
+    "empty": 3,
+    "net": 40.75,
+    "durationMinutes": 45,
+    "date": "${currentDateStr}",
+    "time": "14:00 (Varsa)",
+    "errorReason": "Dikkat Hatası (Varsa)",
+    "examType": "TYT (Varsa)",
+    "bookName": "Kitap adı (Varsa)",
+    "routineTitle": "Rutin başlığı (Varsa)",
+    "notes": "Ek not veya açıklama"
+  }
+}
+
+KULLANICININ GİRDİĞİ METİN:
+"${userPrompt}"`;
+
+    const targetModel = featureModelConfig['SMART_ADD_INTENT'] || 'SYSTEM_DEFAULT';
+
+    const unifiedResult = await executeAiUnifiedRequest({
+      prompt: systemPrompt,
+      requireJson: true,
+      featureKey: 'SMART_ADD_INTENT',
+      modelOverride: targetModel,
+      maxTokens: 2048
+    });
+
+    const parsedData = cleanAndParseJson(unifiedResult.text);
+    const { userName, userRole, userId } = resolveUserInfo(req.body);
+
+    const usageRecord = recordApiUsage({
+      featureKey: 'SMART_ADD_INTENT',
+      featureName: 'Yapay Zeka ile Akıllı Hızlı Ekleme',
+      category: 'AI_COACH',
+      provider: unifiedResult.providerUsed,
+      modelUsed: unifiedResult.modelUsed,
+      promptTokens: unifiedResult.promptTokens || Math.ceil(systemPrompt.length / 4),
+      candidatesTokens: unifiedResult.candidatesTokens || Math.ceil((unifiedResult.text || '').length / 4),
+      promptText: userPrompt,
+      responseText: unifiedResult.text,
+      userId,
+      userName,
+      userRole
+    });
+
+    res.json({
+      success: true,
+      data: parsedData,
+      aiUsage: usageRecord
+    });
+  } catch (err: any) {
+    console.error('AI parse intent error:', err);
+    res.status(500).json({ error: formatGeminiErrorMessage(err, 'Yapay zeka niyet analizi sırasında bir hata oluştu.') });
+  }
+});
+
 export default router;

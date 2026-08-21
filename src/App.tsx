@@ -8,6 +8,7 @@ import { ProfileModal } from './components/ProfileModal';
 import { MandatoryPasswordChangeModal } from './components/MandatoryPasswordChangeModal';
 import { StudentPreviewBanner } from './components/StudentPreviewBanner';
 import { OnboardingWizard } from './components/OnboardingWizard';
+import { GlobalAiSmartAddModal } from './components/common/GlobalAiSmartAddModal';
 
 import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, InstitutionalMockExam, FieldType, DailyStudyTimeLog, StudyPlanItem, ResourceItem, RoutineItem } from './types';
 import { deleteStorageFile } from './services/storageUpload';
@@ -473,6 +474,65 @@ export default function App() {
 
   const latestUndoItem = undoStack[undoStack.length - 1];
   const canUndoForNavbar = latestUndoItem ? (currentTime - (latestUndoItem.createdAt || 0)) < 60000 : false;
+
+  // ✨ Yapay Zeka ile Akıllı Hızlı Ekleme (Smart Add Modal) State & Handler
+  const [isSmartAddModalOpen, setIsSmartAddModalOpen] = useState<boolean>(false);
+
+  const handleDispatchSmartAdd = (
+    intent: string,
+    targetTab: string,
+    fields: Record<string, any>,
+    directSave: boolean
+  ) => {
+    const tabMapping: Record<string, string> = {
+      QUESTION_LOG: 'questions',
+      TOPIC_ERROR: 'errors',
+      BRANCH_EXAM: 'branches',
+      GENERAL_MOCK: 'mocks',
+      STUDY_PLAN: 'planner',
+      STUDY_SESSION: 'study',
+      RESOURCE_BOOK: 'resources',
+      ROUTINE: 'routines'
+    };
+
+    const resolvedTab = tabMapping[intent] || targetTab || 'dashboard';
+    setActiveTab(resolvedTab as any);
+
+    // Doğrudan hızlı kayıt (Eğer seçildiyse ve soru kaydı eksiksizse)
+    if (directSave && intent === 'QUESTION_LOG' && fields.subject && fields.totalQuestions) {
+      const correct = Number(fields.correct) || 0;
+      const wrong = Number(fields.wrong) || 0;
+      const empty = Number(fields.empty) || Math.max(0, Number(fields.totalQuestions) - (correct + wrong));
+
+      handleAddQuestionLog({
+        date: fields.date || new Date().toISOString().split('T')[0],
+        examType: (fields.subject.startsWith('AYT') ? 'AYT' : fields.subject.startsWith('YDT') ? 'YDT' : 'TYT') as any,
+        subject: fields.subject,
+        targetCount: Number(fields.totalQuestions),
+        solvedCount: Number(fields.totalQuestions),
+        correctCount: correct,
+        wrongCount: wrong,
+        emptyCount: empty,
+        durationMinutes: Number(fields.durationMinutes) || 0,
+        notes: fields.notes || 'AI ile hızlı eklendi.'
+      });
+
+      setLastToast({
+        id: 'toast-' + Date.now(),
+        message: `✨ ${fields.subject} ${fields.totalQuestions} soru çözümü başarıyla kaydedildi.`
+      });
+      return;
+    }
+
+    // Hedef pencereye önceden doldurulmuş alanları aktar
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent('yks_smart_add_prefill', {
+          detail: { intent, targetTab: resolvedTab, fields }
+        })
+      );
+    }, 150);
+  };
 
   useEffect(() => {
     if (lastToast) {
@@ -3086,6 +3146,7 @@ export default function App() {
           onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
           unreadMessageCount={unreadMessageCount}
           onOpenMessages={() => setActiveTab('messages')}
+          onOpenSmartAddModal={() => setIsSmartAddModalOpen(true)}
           theme={theme}
           onToggleTheme={handleToggleTheme}
           alwaysShowMenuButton={activeTab === 'bulk_exam_import' || activeTab === 'teacher_system'}
@@ -3285,6 +3346,14 @@ export default function App() {
           onComplete={handleCompleteOnboarding}
         />
       )}
+
+      {/* ✨ Yapay Zeka ile Akıllı Hızlı Ekle (Smart Add Modal) */}
+      <GlobalAiSmartAddModal
+        isOpen={isSmartAddModalOpen}
+        onClose={() => setIsSmartAddModalOpen(false)}
+        currentUser={currentUser}
+        onDispatchAction={handleDispatchSmartAdd}
+      />
 
     </div>
   );

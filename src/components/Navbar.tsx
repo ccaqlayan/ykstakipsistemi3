@@ -32,6 +32,7 @@ interface NavbarProps {
   onToggleMobileMenu?: () => void;
   unreadMessageCount?: number;
   onOpenMessages?: () => void;
+  onOpenSmartAddModal?: () => void;
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
   alwaysShowMenuButton?: boolean;
@@ -53,6 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleMobileMenu,
   unreadMessageCount = 0,
   onOpenMessages,
+  onOpenSmartAddModal,
   theme = 'dark',
   onToggleTheme,
   alwaysShowMenuButton = false
@@ -131,8 +133,25 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           {/* Right Actions & Profile */}
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center space-x-2 sm:space-x-2.5">
             
+            {/* ✨ Yapay Zeka ile Hızlı Ekle Butonu */}
+            {onOpenSmartAddModal && !isPreviewMode && (
+              <button
+                onClick={onOpenSmartAddModal}
+                id="navbar-ai-smart-add-btn"
+                title="Yapay Zeka ile Akıllı Hızlı Ekle (Ctrl + K)"
+                className="flex items-center space-x-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-indigo-500/25 via-purple-500/25 to-fuchsia-500/25 text-indigo-200 hover:text-white border border-indigo-400/40 hover:border-indigo-300 shadow-md shadow-indigo-500/15 hover:shadow-indigo-500/30 backdrop-blur-md transition-all cursor-pointer group shrink-0"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300" />
+                <span className="hidden sm:inline">AI ile Ekle</span>
+                <span className="sm:hidden font-bold">AI</span>
+                <kbd className="hidden lg:inline-block px-1.5 py-0.2 bg-slate-900/80 border border-slate-700 text-slate-400 rounded text-[9px] font-mono">
+                  Ctrl K
+                </kbd>
+              </button>
+            )}
+
             {/* Geri Al (Undo) Button */}
             {canUndo && onUndo && !isPreviewMode && (
               <button
