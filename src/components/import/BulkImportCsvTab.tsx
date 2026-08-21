@@ -42,7 +42,7 @@ export const BulkImportCsvTab: React.FC<BulkImportCsvTabProps> = ({
 }) => {
   const [examTitle, setExamTitle] = useState('');
   const [examDate, setExamDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [examType, setExamType] = useState<'TYT' | 'AYT' | 'Ara Sınıf'>('TYT');
+  const [examType, setExamType] = useState<'TYT' | 'AYT' | '9. Sınıf KDS' | '10. Sınıf KDS' | '11. Sınıf KDS' | 'Ara Sınıf' | string>('TYT');
   const [rawText, setRawText] = useState('');
   const [parsedRows, setParsedRows] = useState<ParsedStudentRow[]>([]);
   const [isParsing, setIsParsing] = useState(false);
@@ -779,11 +779,21 @@ export const BulkImportCsvTab: React.FC<BulkImportCsvTabProps> = ({
                 const val = e.target.value;
                 setExamTitle(val);
                 const upper = val.toUpperCase();
-                if (upper.includes('AYT')) setExamType('AYT');
-                else if (upper.includes('TYT')) setExamType('TYT');
-                else if (upper.includes('LGS') || upper.includes('ARA')) setExamType('Ara Sınıf');
+                if (upper.includes('9. SINIF') || upper.includes('9.SINIF') || upper.includes('9-KDS') || upper.includes('9_KDS') || upper.includes('9KDS')) {
+                  setExamType('9. Sınıf KDS');
+                } else if (upper.includes('10. SINIF') || upper.includes('10.SINIF') || upper.includes('10-KDS') || upper.includes('10_KDS') || upper.includes('10KDS')) {
+                  setExamType('10. Sınıf KDS');
+                } else if (upper.includes('11. SINIF') || upper.includes('11.SINIF') || upper.includes('11-KDS') || upper.includes('11_KDS') || upper.includes('11KDS')) {
+                  setExamType('11. Sınıf KDS');
+                } else if (upper.includes('AYT')) {
+                  setExamType('AYT');
+                } else if (upper.includes('TYT')) {
+                  setExamType('TYT');
+                } else if (upper.includes('LGS') || upper.includes('ARA') || upper.includes('KDS')) {
+                  setExamType('Ara Sınıf');
+                }
               }}
-              placeholder="Ör: BILGI_SARMAL_AYT_TG_4"
+              placeholder="Ör: 9_SINIF_KDS_1 veya BILGI_SARMAL_AYT_TG_4"
               className="w-full bg-slate-950 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-medium"
             />
           </div>
@@ -794,12 +804,15 @@ export const BulkImportCsvTab: React.FC<BulkImportCsvTabProps> = ({
             </label>
             <select
               value={examType}
-              onChange={(e) => setExamType(e.target.value as 'TYT' | 'AYT' | 'Ara Sınıf')}
+              onChange={(e) => setExamType(e.target.value)}
               className="w-full bg-slate-950 border border-white/10 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-bold"
             >
-              <option value="TYT">TYT</option>
-              <option value="AYT">AYT</option>
-              <option value="Ara Sınıf">Ara Sınıf</option>
+              <option value="TYT">TYT (YKS 1. Oturum)</option>
+              <option value="AYT">AYT (YKS 2. Oturum)</option>
+              <option value="9. Sınıf KDS">9. Sınıf KDS (Maarif Modeli)</option>
+              <option value="10. Sınıf KDS">10. Sınıf KDS (Maarif Modeli)</option>
+              <option value="11. Sınıf KDS">11. Sınıf KDS (Ara Sınıf)</option>
+              <option value="Ara Sınıf">Genel Ara Sınıf Denemesi</option>
             </select>
           </div>
 

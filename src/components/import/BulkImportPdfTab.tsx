@@ -484,7 +484,10 @@ export const BulkImportPdfTab: React.FC<BulkImportPdfTabProps> = ({
             >
               <option value="TYT">TYT (Temel Yeterlilik Testi)</option>
               <option value="AYT">AYT (Alan Yeterlilik Testi)</option>
-              <option value="Ara Sınıf">Ara Sınıf KDS / Deneme</option>
+              <option value="9. Sınıf KDS">9. Sınıf KDS (Maarif Modeli)</option>
+              <option value="10. Sınıf KDS">10. Sınıf KDS (Maarif Modeli)</option>
+              <option value="11. Sınıf KDS">11. Sınıf KDS (Ara Sınıf)</option>
+              <option value="Ara Sınıf">Genel Ara Sınıf Denemesi</option>
             </select>
           </div>
         </div>

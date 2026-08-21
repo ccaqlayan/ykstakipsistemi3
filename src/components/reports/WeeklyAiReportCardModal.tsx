@@ -23,9 +23,16 @@ import {
   Square
 } from 'lucide-react';
 import { speechService, isSpeechSynthesisSupported } from '../../services/speechService';
-import { UserAccount, StudentProfile, QuestionLog, GeneralMockExam, StudyPlanItem } from '../../types';
+import { UserAccount, StudentProfile, QuestionLog, GeneralMockExam, StudyPlanItem, SchoolExam } from '../../types';
 import { generateWeeklyAiReportCard, WeeklyReportCardData } from '../../services/geminiService';
 import { formatDisplayDate } from '../../utils/dateUtils';
+import { 
+  getGradeLevel, 
+  calculateAverageForSemester, 
+  calculateObpContribution, 
+  getDiplomaHonorBadge,
+  GradeLevel
+} from '../../utils/gradeUtils';
 
 interface WeeklyAiReportCardModalProps {
   isOpen: boolean;
@@ -35,6 +42,8 @@ interface WeeklyAiReportCardModalProps {
   questionLogs?: QuestionLog[];
   generalMocks?: GeneralMockExam[];
   studyPlans?: StudyPlanItem[];
+  schoolExams?: SchoolExam[];
+  gradeLevel?: GradeLevel;
   currentWeekLabel?: string;
 }
 
@@ -46,6 +55,8 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
   questionLogs = [],
   generalMocks = [],
   studyPlans = [],
+  schoolExams = [],
+  gradeLevel,
   currentWeekLabel = 'Bu Hafta'
 }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -63,15 +74,28 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
     };
   }, []);
 
+  const studentGrade = gradeLevel || getGradeLevel(profile?.className || currentUser?.className);
+  const isGrade9or10 = studentGrade === '9' || studentGrade === '10';
+  const isGrade11 = studentGrade === '11';
+  const isAraSinif = isGrade9or10 || isGrade11;
+
+  const sem1Avg = calculateAverageForSemester(schoolExams || [], 1);
+  const sem2Avg = calculateAverageForSemester(schoolExams || [], 2);
+  const currentGpa = sem2Avg > 0 ? Number(((sem1Avg + sem2Avg) / 2).toFixed(2)) : sem1Avg;
+  const honorBadge = getDiplomaHonorBadge(currentGpa);
+  const obpContribution = calculateObpContribution(currentGpa);
+
   const studentName = profile?.name || currentUser?.name || 'Öğrenci';
-  const targetField = profile?.targetField || 'SAY';
-  const targetGoal = profile?.targetUniversity && profile?.targetDepartment 
-    ? `${profile.targetUniversity} - ${profile.targetDepartment}` 
-    : (profile?.targetRank ? `Hedef #${profile.targetRank}` : 'İlk 20.000');
+  const targetField = isGrade9or10 ? `Maarif Modeli (${studentGrade}. Sınıf)` : (profile?.targetField || 'SAY');
+  const targetGoal = isAraSinif && profile?.schoolGpaTarget 
+    ? `Hedef OBP: ${profile.schoolGpaTarget}` 
+    : (profile?.targetUniversity && profile?.targetDepartment 
+      ? `${profile.targetUniversity} - ${profile.targetDepartment}` 
+      : (profile?.targetRank ? `Hedef #${profile.targetRank}` : 'İlk 20.000'));
 
   const getStorageKey = () => {
     const userIdentifier = currentUser?.id || profile?.name || 'student';
-    return `yks_weekly_ai_report_card_${userIdentifier}_${currentWeekLabel}`;
+    return `yks_weekly_ai_report_card_${userIdentifier}_${currentWeekLabel}_${studentGrade}`;
   };
 
   const getStoredReport = () => {
@@ -135,22 +159,33 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
         ydtNet: m.ydt?.net || 0
       }));
 
+    const schoolExamsSummary = (schoolExams && schoolExams.length > 0)
+      ? schoolExams.map(e => `- ${e.semester}. Dönem ${e.examNumber}. Yazılı: ${e.subject} -> ${e.score}/100 ${e.classAverage !== undefined ? `(Sınıf Ort: ${e.classAverage})` : ''}`).join('\n')
+      : undefined;
+
     return {
       studentName,
       targetField,
       targetGoal,
       weekLabel: currentWeekLabel,
+      gradeLevel: studentGrade,
+      schoolExamsSummary,
+      targetGpa: profile?.schoolGpaTarget,
+      obpScore: currentGpa > 0 ? (currentGpa * 5).toFixed(1) : undefined,
       weeklyStats: {
         totalSolved,
-        targetSolved: 1500,
-        completionRate: Math.min(100, Math.round((totalSolved / 1500) * 100)),
+        targetSolved: isAraSinif ? 600 : 1500,
+        completionRate: Math.min(100, Math.round((totalSolved / (isAraSinif ? 600 : 1500)) * 100)),
         totalStudyHours,
         mistakeCount: totalWrong,
         pekiştirilenHataCount: Math.round(totalWrong * 0.6)
       },
       subjectBreakdown,
       latestMocks,
-      topMistakeTopics: [
+      topMistakeTopics: isAraSinif ? [
+        { subject: `${studentGrade}. Sınıf Matematik`, topic: 'Kavram Pekiştirme', count: 3 },
+        { subject: `${studentGrade}. Sınıf Fizik`, topic: 'Temel Denklemler', count: 2 }
+      ] : [
         { subject: 'AYT Matematik', topic: 'Türev & İntegral', count: 6 },
         { subject: 'AYT Fizik', topic: 'Elektrostatik', count: 4 }
       ]
@@ -706,7 +741,7 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
               </div>
             </div>
 
-            {/* 2. Tahmini Sıralama Bandı Kartı */}
+            {/* 2. Tahmini Başarı Bandı Kartı */}
             <div className="p-5 bg-gradient-to-r from-cyan-950/60 via-slate-900 to-indigo-950/60 border border-cyan-500/30 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center space-x-3.5">
                 <div className="p-3 bg-cyan-500/20 rounded-2xl border border-cyan-400/40 text-cyan-300 shrink-0">
@@ -714,13 +749,19 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
                 </div>
                 <div>
                   <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block">
-                    🎯 YKS TAHMİNİ BAŞARI BANDI ({targetField})
+                    {isGrade9or10 
+                      ? `🎯 ${studentGrade}. SINIF MAARİF MODELİ BAŞARI & OBP BANDI` 
+                      : isGrade11 
+                      ? `🎯 11. SINIF YAZILI & YKS TEMEL BANDI` 
+                      : `🎯 YKS TAHMİNİ BAŞARI BANDI (${targetField})`}
                   </span>
                   <div className="flex items-baseline space-x-2">
                     <span className="text-xl sm:text-2xl font-black text-white font-mono">
                       {reportData.estimatedRankBand}
                     </span>
-                    <span className="text-xs text-cyan-200/80 font-semibold">Sıralama Aralığı</span>
+                    <span className="text-xs text-cyan-200/80 font-semibold">
+                      {isAraSinif ? 'Başarı Aralığı' : 'Sıralama Aralığı'}
+                    </span>
                   </div>
                   <p className="text-xs text-slate-400 mt-0.5">
                     {reportData.rankBandExplanation}
@@ -729,10 +770,72 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
               </div>
 
               <div className="text-right shrink-0">
-                <span className="text-[10px] text-slate-400 block font-semibold">Hedeflenen Alan / Bölüm</span>
+                <span className="text-[10px] text-slate-400 block font-semibold">
+                  {isAraSinif ? 'Hedef Diploma / OBP' : 'Hedeflenen Alan / Bölüm'}
+                </span>
                 <strong className="text-sm text-indigo-300 font-bold block">{targetGoal}</strong>
               </div>
             </div>
+
+            {/* Ara Sınıflar İçin Okul Yazılıları & OBP Başarı Tablosu */}
+            {isAraSinif && schoolExams && schoolExams.length > 0 && (
+              <div className="p-5 bg-slate-950/70 border border-indigo-500/30 rounded-2xl space-y-3 shadow-lg">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                  <div className="flex items-center space-x-2">
+                    <Award className="w-4 h-4 text-amber-400" />
+                    <h4 className="text-xs font-black text-white uppercase tracking-wider">
+                      Okul Yazılı Sınavları & OBP Durumu
+                    </h4>
+                  </div>
+                  {honorBadge && (
+                    <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-[10px] font-black">
+                      🏆 {honorBadge}
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="bg-slate-900/90 p-2.5 rounded-xl border border-white/5 text-center">
+                    <span className="text-[10px] text-slate-400 font-semibold block">1. Dönem Ort.</span>
+                    <strong className="text-sm font-black text-white font-mono">{sem1Avg > 0 ? sem1Avg : '-'}</strong>
+                  </div>
+                  <div className="bg-slate-900/90 p-2.5 rounded-xl border border-white/5 text-center">
+                    <span className="text-[10px] text-slate-400 font-semibold block">2. Dönem Ort.</span>
+                    <strong className="text-sm font-black text-white font-mono">{sem2Avg > 0 ? sem2Avg : '-'}</strong>
+                  </div>
+                  <div className="bg-slate-900/90 p-2.5 rounded-xl border border-white/5 text-center">
+                    <span className="text-[10px] text-slate-400 font-semibold block">Tahmini OBP</span>
+                    <strong className="text-sm font-black text-indigo-400 font-mono">{currentGpa > 0 ? (currentGpa * 5).toFixed(1) : '-'}</strong>
+                  </div>
+                  <div className="bg-slate-900/90 p-2.5 rounded-xl border border-white/5 text-center">
+                    <span className="text-[10px] text-slate-400 font-semibold block">YKS Katkısı</span>
+                    <strong className="text-sm font-black text-emerald-400 font-mono">+{obpContribution} Puan</strong>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1">
+                  {schoolExams.slice(0, 6).map((exam) => {
+                    const diff = typeof exam.classAverage === 'number' ? Number((exam.score - exam.classAverage).toFixed(1)) : null;
+                    return (
+                      <div key={exam.id} className="bg-slate-900/80 p-2.5 rounded-xl border border-white/5 flex items-center justify-between text-xs">
+                        <div>
+                          <div className="text-[10px] text-slate-400">{exam.semester}. Dönem • {exam.examNumber}. Yazılı</div>
+                          <div className="font-bold text-white text-xs">{exam.subject}</div>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-black text-emerald-400 font-mono text-sm">{exam.score}</span>
+                          {diff !== null && (
+                            <span className={`block text-[9.5px] font-bold ${diff >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {diff >= 0 ? `+${diff}` : diff} Sınıf
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* 3. Güçlü Yönler & Kritik Gelişim Alanları Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

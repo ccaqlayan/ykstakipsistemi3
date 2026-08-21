@@ -95,6 +95,7 @@ interface StudyPlannerViewProps {
   youtubeVideos?: YouTubeVideoItem[];
   topicStatuses?: Record<string, 'Çalışmadım' | 'Erteledim' | 'Zor Geldi' | 'Çalıştım' | 'Uzmanlaştım'>;
   completedPastTopics?: string[];
+  schoolExams?: any[];
   dailyStudyLogs?: Record<string, DailyStudyTimeLog>;
   onSaveDailyStudyLog?: (dateKey: string, log: DailyStudyTimeLog | null) => void;
 }
@@ -349,6 +350,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   youtubeVideos = [],
   topicStatuses,
   completedPastTopics,
+  schoolExams = [],
   dailyStudyLogs,
   onSaveDailyStudyLog
 }) => {
@@ -2706,7 +2708,9 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
           currentUser={currentUser}
           profile={profile}
           questionLogs={questionLogs}
+          generalMocks={generalMocks}
           studyPlans={studyPlans}
+          schoolExams={schoolExams}
           currentWeekLabel={currentWeekLabel}
         />
       )}

@@ -2502,14 +2502,24 @@ router.post('/generate-weekly-report-card', async (req, res) => {
       weeklyStats,
       subjectBreakdown,
       latestMocks,
-      topMistakeTopics
+      topMistakeTopics,
+      gradeLevel,
+      schoolExamsSummary,
+      targetGpa,
+      obpScore
     } = req.body;
+
+    const isGrade9or10 = gradeLevel === '9' || gradeLevel === '10';
+    const isGrade11 = gradeLevel === '11';
 
     const studentInfo = `ÖĞRENCİ BİLGİLERİ:
 - İsim: ${studentName || 'Öğrenci'}
+- Sınıf Kademesi: ${gradeLevel ? `${gradeLevel}. Sınıf` : '12. Sınıf / YKS'}
 - Alan: ${targetField || 'SAY'}
-- Hedef / Üniversite: ${targetGoal || 'İlk 20.000'}
+- Hedef / Üniversite / OBP: ${targetGoal || (targetGpa ? `Hedef OBP: ${targetGpa}` : 'İlk 20.000')}
 - Değerlendirilen Hafta: ${weekLabel || 'Bu Hafta'}
+${schoolExamsSummary ? `- Okul Yazılı Sınavları & OBP Durumu:\n${schoolExamsSummary}` : ''}
+${obpScore ? `- Güncel OBP / Diploma Tahmini: ${obpScore}` : ''}
 
 HAFTALIK İSTATİSTİKLER:
 - Toplam Çözülen Soru: ${weeklyStats?.totalSolved || 0} / Hedef: ${weeklyStats?.targetSolved || 0}
@@ -2521,22 +2531,34 @@ HAFTALIK İSTATİSTİKLER:
 DERSLERE GÖRE DAĞILIM:
 ${(subjectBreakdown || []).map((s: any) => `- ${s.subject}: ${s.solved} soru (${s.correct} Doğru, ${s.wrong} Yanlış, %${s.accuracy || 0} Başarı)`).join('\n') || 'Veri bulunmuyor.'}
 
-SON DENEME SINAVI SONUÇLARI:
-${(latestMocks || []).map((m: any) => `- ${m.title || m.date}: TYT ${m.tytNet || 0} Net, AYT ${m.aytNet || 0} Net, YDT ${m.ydtNet || 0} Net`).join('\n') || 'Henüz deneme verisi girilmemiş.'}
+SON DENEME / KDS SINAVI SONUÇLARI:
+${(latestMocks || []).map((m: any) => `- ${m.title || m.date}: TYT/KDS Net: ${m.tytNet || 0}, AYT Net: ${m.aytNet || 0}`).join('\n') || 'Henüz deneme verisi girilmemiş.'}
 
 EN ÇOK HATA YAPILAN / TEKRAR BEKLEYEN KONULAR:
 ${(topMistakeTopics || []).map((t: any) => `- ${t.subject} - ${t.topic} (${t.count} Hata)`).join('\n') || 'Kritik hata birikimi yok.'}`;
 
-    const systemPrompt = `Sen Türkiye'nin en tecrübeli, pedagojik ve stratejik YKS Uzman Koçu ve Rehberlik Danışmanısın.
-Görevin aşağıdaki öğrenci verilerini analiz ederek öğrenciye moral veren, gerçekçi, motivasyon artıran ve nokta atışı stratejiler sunan bir "Haftalık Yapay Zeka Başarı Karnesi" hazırlamaktır.
+    const systemPrompt = `Sen Türkiye'nin en tecrübeli, pedagojik ve stratejik Lise & YKS Uzman Koçu ve Rehberlik Danışmanısın.
+Görevin aşağıdaki öğrenci verilerini analiz ederek öğrenciye ve velisine moral veren, gerçekçi, motivasyon artıran ve nokta atışı stratejiler sunan bir "Haftalık Yapay Zeka Başarı Karnesi" hazırlamaktır.
 
 ${studentInfo}
 
 ÖNEMLİ DEĞERLENDİRME KRİTERLERİ:
+${isGrade9or10 ? `
+1. Tahmini Başarı Bandı (estimatedRankBand): Bu öğrenci 9 veya 10. sınıf öğrencisidir (MEB Türkiye Yüzyılı Maarif Modeli). YKS genel sıralaması yerine "Takdir Belgesi Bandı (88 - 94 OBP)" veya "Teşekkür Belgesi Bandı (76 - 84 OBP)" gibi yazılı sınav ve OBP odaklı başarı bandı belirle.
+2. Güçlü Yönler: Öğrencinin bu hafta ivme kazandığı okul derslerini veya düzenli soru çözme alışkanlığını takdir et.
+3. Kritik Gelişim Alanları: Yaklaşan 1. veya 2. dönem yazılı sınavları için en kritik 2 ders/konu tavsiyesi ver.
+4. Altın Stratejiler: Okul yazılılarına hazırlık, Maarif Modeli kavram pekiştirmesi ve günlük düzenli tekrar için 3 uygulanabilir madde yaz.
+` : isGrade11 ? `
+1. Tahmini Başarı Bandı (estimatedRankBand): 11. sınıf öğrencisi için "Yüksek OBP & İlk 25.000 YKS Temeli" gibi hem okul yazılı başarısı hem de YKS temelini yansıtan bir bant belirle.
+2. Güçlü Yönler: 11. sınıf alan derslerindeki kavrayışını ve soru çözümlerini öne çıkar.
+3. Kritik Gelişim Alanları: 11. sınıf okul dersleri ve TYT tekrarı için 2 kritik alan belirle.
+4. Altın Stratejiler: 11. sınıf derslerini yüksek tutarak OBP'yi koruma ve TYT temelini güçlendirme amaçlı 3 strateji yaz.
+` : `
 1. Tahmini Sıralama Bandı: Öğrencinin netlerine, alanına ve soru temposuna göre gerçekçi bir YKS Türkiye Sıralaması bandı tahmin et (Örn: "12.000 - 18.000" veya "35.000 - 48.000").
 2. Güçlü Yönler: Öğrencinin bu hafta ivme kazandığı en güçlü 2 alanı takdir et.
 3. Kritik Gelişim Alanları: En çok hata yaptığı veya net artışı için en kritik 2 konuyu net tavsiyelerle belirt.
 4. Altın Stratejiler: Gelecek hafta için uygulanabilir, net 3 madde halinde eylem adımı yaz.
+`}
 
 YANIT FORMATI:
 SADECE aşağıdaki JSON şemasına tam uyan geçerli bir JSON nesnesi döndür, markdown formatlama (kod bloğu) dışında hiçbir metin yazma:

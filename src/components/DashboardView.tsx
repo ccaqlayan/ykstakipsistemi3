@@ -556,6 +556,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           questionLogs={questionLogs}
           generalMocks={generalMocks}
           studyPlans={studyPlans}
+          schoolExams={state.schoolExams}
         />
       )}
 

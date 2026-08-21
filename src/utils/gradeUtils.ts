@@ -1,4 +1,16 @@
+import { SchoolExam } from '../types';
+
 export type GradeLevel = '9' | '10' | '11' | '12' | 'mezun';
+
+/**
+ * Belirli bir döneme ait yazılı sınavların aritmetik ortalamasını hesaplar.
+ */
+export function calculateAverageForSemester(exams: SchoolExam[], semester: 1 | 2): number {
+  const semExams = (exams || []).filter(e => e.semester === semester);
+  if (semExams.length === 0) return 0;
+  const total = semExams.reduce((sum, e) => sum + (e.score || 0), 0);
+  return Number((total / semExams.length).toFixed(1));
+}
 
 /**
  * Sınıf isminden (Örn: "9-A", "10-B SAY", "11-C EA", "12-A", "Mezun") kademe seviyesini çözer.

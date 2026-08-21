@@ -250,11 +250,56 @@ export const SubjectTopicsTab: React.FC<SubjectTopicsTabProps> = ({
                             const resourceCount = groupRelevantResources.length;
                             const solvedInResources = groupRelevantResources.filter((r: any) => (r.completedTopics || []).includes(topicName)).length;
                             const resourceProgressPercent = resourceCount > 0 ? Math.round((solvedInResources / resourceCount) * 100) : 0;
+                            const isThemeHeader = /^\d+\.\s*(Tema|ÜNİTE|Ünite):/i.test(topicName);
+                            const isSubTopic = /^\d+\.\d+/.test(topicName);
+
+                            if (isThemeHeader) {
+                              return (
+                                <div 
+                                  key={idx} 
+                                  className="mt-3 first:mt-0 bg-gradient-to-r from-indigo-950/70 via-slate-900/90 to-purple-950/60 border border-indigo-500/30 p-3.5 rounded-2xl flex items-center justify-between gap-3 shadow-lg"
+                                >
+                                  <div className="flex items-center space-x-2.5 min-w-0">
+                                    <div className="p-1.5 bg-indigo-500/20 text-indigo-400 rounded-xl border border-indigo-500/30 shrink-0">
+                                      <BookMarked className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                                        MEB Maarif Modeli Teması
+                                      </span>
+                                      <h5 className="text-xs sm:text-sm font-black text-white mt-0.5 truncate">{topicName}</h5>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-2 shrink-0">
+                                    {onUpdateTopicStatus ? (
+                                      <select
+                                        value={topicStatuses[topicName] || (completedPastTopics.includes(topicName) ? 'Çalıştım' : 'Çalışmadım')}
+                                        onChange={(e) => onUpdateTopicStatus(topicName, e.target.value as any, true)}
+                                        className={`text-[10px] font-bold px-2 py-1 rounded-xl border bg-slate-950/90 cursor-pointer focus:outline-none transition-all shadow-sm ${badge.color}`}
+                                        title="Tema durumunu değiştir"
+                                      >
+                                        <option value="Çalışmadım" className="bg-slate-900 text-slate-300">⚪ Çalışmadım</option>
+                                        <option value="Erteledim" className="bg-slate-900 text-amber-400">🟡 Erteledim</option>
+                                        <option value="Zor Geldi" className="bg-slate-900 text-rose-400">🔴 Zor Geldi</option>
+                                        <option value="Çalıştım" className="bg-slate-900 text-indigo-400">🔵 Çalıştım</option>
+                                        <option value="Uzmanlaştım" className="bg-slate-900 text-emerald-400">⭐ Uzmanlaştım</option>
+                                      </select>
+                                    ) : (
+                                      <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${badge.color}`}>
+                                        {badge.label}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            }
 
                             return (
                               <div 
                                 key={idx} 
-                                className="bg-slate-900/60 hover:bg-slate-850/80 border border-slate-800/80 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 transition-all"
+                                className={`bg-slate-900/60 hover:bg-slate-850/80 border border-slate-800/80 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 transition-all ${
+                                  isSubTopic ? 'sm:ml-4 border-l-2 border-l-indigo-500/40 bg-slate-950/50' : ''
+                                }`}
                               >
                                 <div className="flex items-center space-x-3 min-w-0">
                                   <span className="text-xs font-mono text-slate-500 w-5 text-right font-bold shrink-0">{idx + 1}.</span>

@@ -378,6 +378,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           youtubeVideos={currentStudentData.youtubeVideos || []}
           topicStatuses={currentStudentData.topicStatuses}
           completedPastTopics={currentStudentData.completedPastTopics}
+          schoolExams={currentStudentData.schoolExams}
           dailyStudyLogs={currentStudentData.dailyStudyLogs || {}}
           onSaveDailyStudyLog={handleSaveDailyStudyLog}
         />

@@ -622,6 +622,29 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
                   onChange={(e) => setTestTitle(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white font-bold focus:outline-none focus:border-indigo-400"
                 />
+                {/* Hızlı Başlık Şablonları */}
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {[
+                    `YKS Hata Testi - ${todayFormatted}`,
+                    `9. Sınıf Yazılı Hazırlık Testi - ${todayFormatted}`,
+                    `10. Sınıf Yazılı Hazırlık Testi - ${todayFormatted}`,
+                    `11. Sınıf Yazılı Hazırlık Testi - ${todayFormatted}`,
+                    `Kazanım Pekiştirme Denemesi - ${todayFormatted}`
+                  ].map((preset, pIdx) => (
+                    <button
+                      key={pIdx}
+                      type="button"
+                      onClick={() => setTestTitle(preset)}
+                      className={`text-[9.5px] px-2 py-0.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                        testTitle === preset
+                          ? 'bg-indigo-600/40 text-indigo-200 border-indigo-500/50'
+                          : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                      }`}
+                    >
+                      {preset.split(' - ')[0]}
+                    </button>
+                  ))}
+                </div>
 
                 <label className="text-[11px] font-bold text-slate-300 pt-1 block">Kurum / Alt Başlık:</label>
                 <input
