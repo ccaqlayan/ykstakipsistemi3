@@ -24,7 +24,8 @@ import {
   CheckCircle2,
   BookOpen,
   Sliders,
-  BarChart3
+  BarChart3,
+  Heart
 } from 'lucide-react';
 import { UserAccount } from '../types';
 import { YildizLisesiLogo } from './YildizLisesiLogo';
@@ -53,7 +54,8 @@ export type TabType =
   | 'ai_coach' 
   | 'messages'
   | 'audit_logs'
-  | 'institutional_mocks';
+  | 'institutional_mocks'
+  | 'parent_portal';
 
 interface TabItem {
   id: TabType | '__sep__';
@@ -169,7 +171,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'youtube', label: 'YouTube Ders Takip', icon: Youtube },
     { id: 'pomodoro', label: 'Pomodoro Sayıcı', icon: Timer, highlight: true },
     { id: 'recommendations', label: isEarlyGrade ? 'Seviyeli Kaynak Önerileri' : 'Kaynak Önerileri', icon: Sparkles, highlight: true },
-    { id: 'ai_coach', label: isEarlyGrade ? 'Lise Koçu (Yapay Zeka)' : 'Yapay Zeka Koçu', icon: Bot, highlight: true }
+    { id: 'ai_coach', label: isEarlyGrade ? 'Lise Koçu (Yapay Zeka)' : 'Yapay Zeka Koçu', icon: Bot, highlight: true },
+    { id: 'parent_portal', label: 'Veli Bilgilendirme Portalı', icon: Heart, highlight: true }
   ];
 
   const teacherTabs: TabItem[] = [

@@ -133,7 +133,14 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
   * OfficialStudentReportCardModal.tsx: MEB Maarif ve YKS uyumlu, A4 formatında yazdırılabilir/PDF kaydedilebilir resmi öğrenci gelişim karnesi modalı
   * ClassComparisonModal.tsx      : 9, 10, 11, 12 ve Mezun kademelerinin başarı, soru çözümü ve erken uyarı radarını kıyaslayan analitik modalı
 
-[3.10. Bağımsız Diğer Ekranlar (Independent Views)]
+[3.10. Veli Bilgilendirme Portalı & Çevrimdışı PWA (Parent & Offline Support)]
+- Main Orchestrator : src/components/parent/ParentPortalView.tsx
+- Modüller :
+  * src/components/parent/ParentWhatsAppReportModal.tsx: Veliye tek tıkla zengin WhatsApp bülteni oluşturma modalı
+  * src/services/offlineSyncService.ts                : İnternetsiz çalışma ve Firestore çift yönlü senkronizasyon motoru
+  * src/components/common/PwaInstallBanner.tsx        : PWA ana ekrana ekleme ve çevrimdışı durum göstergesi
+
+[3.11. Bağımsız Diğer Ekranlar (Independent Views)]
 - src/components/AICoachView.tsx               : Bireysel öğrenci ve sınıf genel Yapay Zeka Koç Raporu.
 - src/components/AdminMessageManagement.tsx   : Yönetici toplu mesaj gönderme ve mesaj denetim paneli.
 - src/components/AuditLogsView.tsx             : Sistem İşlem Zaman Çizelgesi (Ayak İzi izleme alanı).

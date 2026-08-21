@@ -52,10 +52,12 @@ import {
   Maximize2,
   Minimize2,
   Star,
-  Printer
+  Printer,
+  Share2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { OfficialStudentReportCardModal } from '../reports/OfficialStudentReportCardModal';
+import { ParentWhatsAppReportModal } from '../parent/ParentWhatsAppReportModal';
 import { 
   getMonday, 
   formatWeekLabelWithYear, 
@@ -233,6 +235,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
   const [selectedTemplateToApplyInInspect, setSelectedTemplateToApplyInInspect] = React.useState<StudyProgramTemplate | null>(null);
   const [applyTemplateModeInInspect, setApplyTemplateModeInInspect] = React.useState<'overwrite' | 'merge'>('merge');
   const [showReportCardModal, setShowReportCardModal] = React.useState<boolean>(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     if (isPlannerFullscreen) {
@@ -330,11 +333,20 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
 
           <div className="flex items-center space-x-2 shrink-0">
             <button
-              onClick={() => setShowReportCardModal(true)}
+              onClick={() => setShowWhatsAppModal(true)}
               className="bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 font-bold text-xs px-3 py-2 rounded-2xl transition-all border border-emerald-500/40 flex items-center space-x-1.5 shadow-md shadow-emerald-600/20 cursor-pointer active:scale-95"
+              title="Öğrencinin haftalık durumunu veliye WhatsApp formatında gönderin"
+            >
+              <Share2 className="w-4 h-4 text-emerald-300" />
+              <span>Veliye WhatsApp</span>
+            </button>
+
+            <button
+              onClick={() => setShowReportCardModal(true)}
+              className="bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 font-bold text-xs px-3 py-2 rounded-2xl transition-all border border-indigo-500/40 flex items-center space-x-1.5 shadow-md shadow-indigo-600/20 cursor-pointer active:scale-95"
               title="Öğrencinin A4 formatındaki resmi gelişim ve koçluk karnesini yazdırın / PDF olarak indirin"
             >
-              <Printer className="w-4 h-4 text-emerald-300" />
+              <Printer className="w-4 h-4 text-indigo-300" />
               <span>Koçluk Karnesi (A4)</span>
             </button>
 
@@ -4298,6 +4310,17 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
           onClose={() => setShowReportCardModal(false)}
           student={selectedStudentUser}
           studentData={studentData}
+        />
+      )}
+
+      {/* Parent WhatsApp Report Modal */}
+      {showWhatsAppModal && (
+        <ParentWhatsAppReportModal
+          isOpen={showWhatsAppModal}
+          onClose={() => setShowWhatsAppModal(false)}
+          student={selectedStudentUser}
+          studentData={studentData}
+          coachUser={teacher}
         />
       )}
     </div>

@@ -9,6 +9,7 @@ import { MandatoryPasswordChangeModal } from './components/MandatoryPasswordChan
 import { StudentPreviewBanner } from './components/StudentPreviewBanner';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { GlobalAiSmartAddModal } from './components/common/GlobalAiSmartAddModal';
+import { PwaInstallBanner } from './components/common/PwaInstallBanner';
 
 import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, ClassFieldType, InstitutionalMockExam, FieldType, DailyStudyTimeLog, StudyPlanItem, ResourceItem, RoutineItem, SchoolExam } from './types';
 import { getGradeLevel, GradeLevel } from './utils/gradeUtils';
@@ -3567,6 +3568,9 @@ export default function App() {
         currentUser={currentUser}
         onDispatchAction={handleDispatchSmartAdd}
       />
+
+      {/* 📲 PWA Yükleme & Çevrimdışı/Senkronizasyon Göstergesi */}
+      <PwaInstallBanner />
 
     </div>
   );

@@ -21,6 +21,7 @@ import { AICoachView } from '../AICoachView';
 import { RecommendationsView } from '../RecommendationsView';
 import { MessagesView } from '../MessagesView';
 import { SchoolExamsView } from '../SchoolExamsView';
+import { ParentPortalView } from '../parent/ParentPortalView';
 import { SchoolExam } from '../../types';
 import { UndoItem } from './AppTypes';
 
@@ -570,6 +571,16 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
             onMarkAsRead={handleMarkAsRead}
           />
         )
+      )}
+
+      {activeTab === 'parent_portal' && (
+        <ParentPortalView
+          student={previewStudentUser || currentUser}
+          studentData={currentStudentData}
+          coachUser={globalState.users.find(u => u.role === 'class_teacher' || u.role === 'school_counselor')}
+          currentUser={currentUser}
+          onSendMessage={handleSendMessage}
+        />
       )}
     </>
   );
