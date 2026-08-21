@@ -15,10 +15,13 @@ import {
   Zap,
   HardDrive,
   Sparkles,
-  Radio
+  Radio,
+  Download,
+  Upload
 } from 'lucide-react';
 import { StorageStatsResponse } from './SystemTypes';
 import { getStorageDeliveryMode, setStorageDeliveryMode, StorageDeliveryMode } from '../../services/storageUpload';
+import { exportDataAsJSON, importDataFromJSON, loadGlobalState } from '../../services/storage';
 import { db } from '../../services/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
@@ -529,6 +532,71 @@ export const SystemStorageTab: React.FC<SystemStorageTabProps> = ({
             <h4 className="font-bold text-white text-sm">Depolama Sağlık Taraması</h4>
             <p className="text-xs text-slate-400 mt-1">Firestore döküman indekslerini ve dosya bütünlüğünü doğrulayın.</p>
           </button>
+        </div>
+      </div>
+
+      {/* FULL SYSTEM DATABASE BACKUP & RESTORE */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md space-y-4">
+        <div className="flex items-center space-x-3 pb-3 border-b border-slate-800">
+          <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
+            <HardDrive className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="font-bold text-white text-base">Tam Sistem Veritabanı Yedeği (JSON Snapshot)</h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Tüm kullanıcıları, sınıfları, denemeleri, öğrenci verilerini ve ayak izi loglarını tek tıkla yedekleyin veya geri yükleyin.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+          <button
+            type="button"
+            onClick={() => {
+              const state = loadGlobalState();
+              exportDataAsJSON(state);
+            }}
+            className="p-5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-emerald-500/40 rounded-2xl text-left transition-all group cursor-pointer flex items-start space-x-4 shadow-md"
+          >
+            <div className="p-3 bg-emerald-600/20 text-emerald-400 rounded-2xl group-hover:scale-110 transition-transform shrink-0">
+              <Download className="w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="font-bold text-white text-sm">Veritabanı Yedeğini İndir (JSON)</h4>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Tüm sistem verilerini zaman damgalı JSON dosyası olarak bilgisayarınıza indirin.
+              </p>
+            </div>
+          </button>
+
+          <label className="p-5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500/40 rounded-2xl text-left transition-all group cursor-pointer flex items-start space-x-4 shadow-md">
+            <input
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (!window.confirm('Bu yedek dosyasını yüklemek mevcut veritabanını güncelleyecektir. Onaylıyor musunuz?')) return;
+                try {
+                  await importDataFromJSON(file);
+                  alert('Sistem veritabanı başarıyla geri yüklendi. Sayfa yenileniyor.');
+                  window.location.reload();
+                } catch (err: any) {
+                  alert('Yedek yükleme hatası: ' + err.message);
+                }
+              }}
+            />
+            <div className="p-3 bg-indigo-600/20 text-indigo-400 rounded-2xl group-hover:scale-110 transition-transform shrink-0">
+              <Upload className="w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="font-bold text-white text-sm">Yedekten Geri Yükle (JSON Restore)</h4>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Daha önce indirdiğiniz bir sistem yedeği JSON dosyasını seçerek verileri geri yükleyin.
+              </p>
+            </div>
+          </label>
         </div>
       </div>
     </div>

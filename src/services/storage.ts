@@ -223,8 +223,29 @@ export function exportDataAsJSON(data: any): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `YKS_Takip_Yedek_${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `YKS_Takip_Sistem_Yedegi_${new Date().toISOString().split('T')[0]}.json`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+export function importDataFromJSON(file: File): Promise<AppGlobalState> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const parsed = JSON.parse(text);
+        if (!parsed.users || !parsed.classes) {
+          throw new Error('Geçersiz yedek dosyası formatı. users veya classes alanı eksik.');
+        }
+        saveGlobalState(parsed);
+        resolve(parsed);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error('Dosya okunamadı.'));
+    reader.readAsText(file);
+  });
 }
 

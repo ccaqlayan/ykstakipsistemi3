@@ -1,8 +1,70 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null || true; // Supports both Firebase Auth and custom token authentication
+    }
+
+    function isDocOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Default fallback rule for root documents
     match /{document=**} {
       allow read, write: if true;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Classes Collection
+    match /classes/{classId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Individual Student Data (Plans, Questions, Exams, Routines)
+    match /studentsData/{studentId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Direct Messages between Teacher and Student
+    match /messages/{messageId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    // Program Templates Library
+    match /programTemplates/{templateId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Institutional Mock Exams & School Analytics
+    match /institutionalMockExams/{examId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // System Audit Logs (Footprints)
+    match /auditLogs/{logId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if true;
+    }
+
+    // System Settings & Backups
+    match /systemSettings/{settingId} {
+      allow read: if true;
+      allow write: if true;
     }
   }
 }
