@@ -4,13 +4,15 @@ import { X, Clock, Settings, Plus, Trash2, RotateCcw, Check, Sparkles } from 'lu
 import { 
   getUserRepetitionIntervals, 
   saveUserRepetitionIntervals, 
-  DEFAULT_REPETITION_INTERVALS 
+  DEFAULT_REPETITION_INTERVALS,
+  getIncludeRevisedInRepetition,
+  saveIncludeRevisedInRepetition
 } from '../../services/spacedRepetition';
 
 interface RepetitionSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave?: (newIntervals: number[]) => void;
+  onSave?: (newIntervals: number[], includeRevised?: boolean) => void;
 }
 
 export const RepetitionSettingsModal: React.FC<RepetitionSettingsModalProps> = ({
@@ -19,6 +21,7 @@ export const RepetitionSettingsModal: React.FC<RepetitionSettingsModalProps> = (
   onSave
 }) => {
   const [intervals, setIntervals] = useState<number[]>(() => getUserRepetitionIntervals());
+  const [includeRevised, setIncludeRevised] = useState<boolean>(() => getIncludeRevisedInRepetition());
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   if (!isOpen) return null;
@@ -42,6 +45,7 @@ export const RepetitionSettingsModal: React.FC<RepetitionSettingsModalProps> = (
 
   const handleResetDefaults = () => {
     setIntervals(DEFAULT_REPETITION_INTERVALS);
+    setIncludeRevised(false);
   };
 
   const handleApplyPreset = (preset: number[]) => {
@@ -50,7 +54,8 @@ export const RepetitionSettingsModal: React.FC<RepetitionSettingsModalProps> = (
 
   const handleSave = () => {
     saveUserRepetitionIntervals(intervals);
-    if (onSave) onSave(intervals);
+    saveIncludeRevisedInRepetition(includeRevised);
+    if (onSave) onSave(intervals, includeRevised);
     setSavedSuccess(true);
     setTimeout(() => {
       setSavedSuccess(false);
@@ -172,6 +177,53 @@ export const RepetitionSettingsModal: React.FC<RepetitionSettingsModalProps> = (
               <span>Yeni Tekrar Aşaması Ekle</span>
             </button>
           )}
+        </div>
+
+        {/* Tekrar Edilmiş Hatalar Dahil Etme Ayarı */}
+        <div className="bg-slate-950/70 border border-slate-800/90 rounded-2xl p-3 sm:p-3.5 space-y-2">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                <label 
+                  htmlFor="include-revised-toggle" 
+                  className="text-xs font-bold text-slate-200 cursor-pointer"
+                >
+                  Tekrar Edilmiş Hataları da Hatırlat
+                </label>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold ${
+                  includeRevised 
+                    ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40' 
+                    : 'bg-slate-800 text-slate-400 border border-slate-700'
+                }`}>
+                  {includeRevised ? 'Açık' : 'Kapalı (Varsayılan)'}
+                </span>
+              </div>
+              <p className="text-[10.5px] text-slate-400 leading-snug">
+                {includeRevised
+                  ? `Hata kaydı "Tekrar Edildi" olsa bile, ${intervals.length} tekrar aşaması dolana kadar kör tekrara dahil edilir.`
+                  : `Hata kaydı "Tekrar Edildi" olarak işaretlenen sorular kör tekrarda ve hatırlatıcılarda karşınıza çıkmaz.`}
+              </p>
+            </div>
+
+            {/* Toggle Switch */}
+            <button
+              id="include-revised-toggle"
+              type="button"
+              role="switch"
+              aria-checked={includeRevised}
+              onClick={() => setIncludeRevised(!includeRevised)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+                includeRevised ? 'bg-indigo-600' : 'bg-slate-700'
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                  includeRevised ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
         </div>
 
         {/* Action Buttons */}

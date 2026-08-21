@@ -37,6 +37,7 @@ import {
   getDueRepetitionQuestions, 
   isQuestionDue, 
   getUserRepetitionIntervals,
+  getIncludeRevisedInRepetition,
   getTodayDateString,
   calculateNextReviewDate,
   addDaysToDate,
@@ -467,7 +468,12 @@ export const BranchErrorsTab: React.FC<BranchErrorsTabProps> = ({
               {onStartRepetitionSession && (
                 <button
                   type="button"
-                  onClick={() => onStartRepetitionSession(dueQuestions.length > 0 ? dueQuestions : topicErrors.filter(e => !!e.imageUrl))}
+                  onClick={() => {
+                    const incRev = getIncludeRevisedInRepetition();
+                    const intervals = getUserRepetitionIntervals();
+                    const fallbackList = topicErrors.filter(e => Boolean(e.imageUrl) && (incRev ? (e.repetitionStage ?? 0) < intervals.length : !e.revised));
+                    onStartRepetitionSession(dueQuestions.length > 0 ? dueQuestions : fallbackList);
+                  }}
                   className="px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-black rounded-xl shadow-lg shadow-purple-600/30 flex items-center space-x-1.5 transition-all cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-purple-200" />

@@ -3,6 +3,7 @@ import { TopicErrorItem, RepetitionLog } from '../types';
 export const DEFAULT_REPETITION_INTERVALS = [1, 3, 7]; // 1. gün, 3. gün, 7. gün
 
 export const STORAGE_KEY_INTERVALS = 'spaced_repetition_intervals';
+export const STORAGE_KEY_INCLUDE_REVISED = 'spaced_repetition_include_revised';
 
 /**
  * Kullanıcının belirlediği veya varsayılan tekrar aralıklarını getirir.
@@ -31,6 +32,30 @@ export const saveUserRepetitionIntervals = (intervals: number[]): void => {
     localStorage.setItem(STORAGE_KEY_INTERVALS, JSON.stringify(clean.length > 0 ? clean : DEFAULT_REPETITION_INTERVALS));
   } catch (e) {
     console.error('Error saving spaced repetition intervals:', e);
+  }
+};
+
+/**
+ * Tekrar edilmiş (revised) hataların da tüm aşamalar (örn: 3 tekrar) tamamlanana kadar
+ * kör tekrara dahil edilip edilmeyeceği ayarını getirir (Varsayılan: false / dahil edilmez).
+ */
+export const getIncludeRevisedInRepetition = (): boolean => {
+  try {
+    return localStorage.getItem(STORAGE_KEY_INCLUDE_REVISED) === 'true';
+  } catch (e) {
+    console.error('Error reading include revised in repetition setting:', e);
+    return false;
+  }
+};
+
+/**
+ * Tekrar edilmiş hataların tüm aşamalar tamamlanana kadar tekrara dahil edilmesi ayarını kaydeder.
+ */
+export const saveIncludeRevisedInRepetition = (include: boolean): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY_INCLUDE_REVISED, include ? 'true' : 'false');
+  } catch (e) {
+    console.error('Error saving include revised in repetition setting:', e);
   }
 };
 
@@ -96,10 +121,16 @@ export const calculateNextReviewDate = (
 export const isQuestionDue = (
   errorItem: TopicErrorItem,
   intervals: number[] = getUserRepetitionIntervals(),
-  todayStr: string = getTodayDateString()
+  todayStr: string = getTodayDateString(),
+  includeRevised: boolean = getIncludeRevisedInRepetition()
 ): boolean => {
   // Sadece fotoğrafı olan sorular aralıklı tekrar sistemine dahil edilir
   if (!errorItem.imageUrl || errorItem.imageUrl.trim() === '') {
+    return false;
+  }
+
+  // Tekrar edilmiş (revised) hatalar: Varsayılan olarak (includeRevised = false iken) kör tekrarda çıkmaz
+  if (errorItem.revised && !includeRevised) {
     return false;
   }
 
@@ -134,10 +165,11 @@ export const isQuestionDue = (
  */
 export const getDueRepetitionQuestions = (
   topicErrors: TopicErrorItem[],
-  intervals: number[] = getUserRepetitionIntervals()
+  intervals: number[] = getUserRepetitionIntervals(),
+  includeRevised: boolean = getIncludeRevisedInRepetition()
 ): TopicErrorItem[] => {
   const todayStr = getTodayDateString();
-  return topicErrors.filter(err => isQuestionDue(err, intervals, todayStr));
+  return topicErrors.filter(err => isQuestionDue(err, intervals, todayStr, includeRevised));
 };
 
 /**
@@ -251,12 +283,15 @@ export interface RepetitionStageInfo {
 export const getRepetitionStageInfo = (
   item: TopicErrorItem,
   intervals: number[] = getUserRepetitionIntervals(),
-  todayStr: string = getTodayDateString()
+  todayStr: string = getTodayDateString(),
+  includeRevised: boolean = getIncludeRevisedInRepetition()
 ): RepetitionStageInfo => {
   const stage = item.repetitionStage ?? (item.repetitionHistory ? item.repetitionHistory.length : 0);
   const totalStages = intervals.length;
-  const isCompleted = !!item.revised || stage >= totalStages;
-  const isDue = isQuestionDue(item, intervals, todayStr);
+  // includeRevised aktif ise yalnızca stage >= totalStages durumunda pekiştirildi sayılır.
+  // Varsayılan modda (includeRevised = false), item.revised === true veya stage >= totalStages olduğunda tamamlandı kabul edilir.
+  const isCompleted = includeRevised ? stage >= totalStages : (!!item.revised || stage >= totalStages);
+  const isDue = isQuestionDue(item, intervals, todayStr, includeRevised);
   const tomorrowStr = addDaysToDate(todayStr, 1);
 
   if (isCompleted) {

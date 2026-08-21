@@ -526,6 +526,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
   const [showRepetitionModal, setShowRepetitionModal] = useState<boolean>(false);
   const [repetitionSessionQuestions, setRepetitionSessionQuestions] = useState<TopicErrorItem[]>([]);
   const [showRepetitionSettingsModal, setShowRepetitionSettingsModal] = useState<boolean>(false);
+  const [repetitionSettingsVer, setRepetitionSettingsVer] = useState<number>(0);
   const [showAlertModal, setShowAlertModal] = useState<boolean>(false);
   const [repetitionWarningModal, setRepetitionWarningModal] = useState<{
     isOpen: boolean;
@@ -587,7 +588,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       setShowAlertModal(true);
       sessionStorage.setItem('repetition_alert_dismissed_session', 'true');
     }
-  }, [topicErrors, previewStudentUser]);
+  }, [topicErrors, previewStudentUser, repetitionSettingsVer]);
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -2472,6 +2473,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
       <RepetitionSettingsModal
         isOpen={showRepetitionSettingsModal}
         onClose={() => setShowRepetitionSettingsModal(false)}
+        onSave={() => setRepetitionSettingsVer(v => v + 1)}
       />
 
       {/* 🔔 Giriş / Sayfa Açılış Tekrar Hatırlatma Modalı */}
