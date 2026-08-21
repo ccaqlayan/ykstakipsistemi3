@@ -299,7 +299,13 @@ export default function App() {
   }, [theme]);
 
   const handleToggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    if (typeof (document as any).startViewTransition === 'function') {
+      (document as any).startViewTransition(() => {
+        setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+      });
+    } else {
+      setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    }
   };
 
   // PWA & Device Detection State
