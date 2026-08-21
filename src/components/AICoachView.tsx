@@ -30,8 +30,14 @@ import {
   BookOpen,
   GraduationCap,
   Award,
-  Layers
+  Layers,
+  Volume2,
+  VolumeX,
+  Square,
+  Play,
+  Headphones
 } from 'lucide-react';
+import { speechService, isSpeechSynthesisSupported } from '../services/speechService';
 import { 
   YKSDataState, 
   AICoachAdvice, 
@@ -203,6 +209,140 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
   const [typewriterMsgId, setTypewriterMsgId] = useState<string | null>(null);
   const [typewriterText, setTypewriterText] = useState('');
   const typewriterRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // --- AI Sesli Koç (Speech Synthesis) State ---
+  const [isAutoSpeakEnabled, setIsAutoSpeakEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('yks_ai_auto_speak') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [speechRate, setSpeechRate] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('yks_ai_speech_rate');
+      return saved ? parseFloat(saved) : 1.0;
+    } catch {
+      return 1.0;
+    }
+  });
+
+  const [activeSpeakingId, setActiveSpeakingId] = useState<string | null>(null);
+
+  const toggleAutoSpeak = () => {
+    const next = !isAutoSpeakEnabled;
+    setIsAutoSpeakEnabled(next);
+    try {
+      localStorage.setItem('yks_ai_auto_speak', String(next));
+    } catch {}
+    if (!next) {
+      speechService.stop();
+      setActiveSpeakingId(null);
+    }
+  };
+
+  const cycleSpeechRate = () => {
+    const rates = [1.0, 1.2, 1.4, 0.9];
+    const currentIndex = rates.indexOf(speechRate);
+    const nextRate = rates[(currentIndex + 1) % rates.length];
+    setSpeechRate(nextRate);
+    try {
+      localStorage.setItem('yks_ai_speech_rate', String(nextRate));
+    } catch {}
+    if (activeSpeakingId) {
+      speechService.stop();
+      setActiveSpeakingId(null);
+    }
+  };
+
+  const handleSpeakMessage = (msgId: string, text: string) => {
+    if (activeSpeakingId === msgId) {
+      speechService.stop();
+      setActiveSpeakingId(null);
+      return;
+    }
+
+    setActiveSpeakingId(msgId);
+    speechService.speak(text, {
+      id: msgId,
+      rate: speechRate,
+      onStart: () => setActiveSpeakingId(msgId),
+      onEnd: () => setActiveSpeakingId(null),
+      onError: () => setActiveSpeakingId(null)
+    });
+  };
+
+  const handleSpeakReport = (advice: AICoachAdvice) => {
+    const reportId = 'report-latest';
+    if (activeSpeakingId === reportId) {
+      speechService.stop();
+      setActiveSpeakingId(null);
+      return;
+    }
+
+    let speechText = `YKS Koçluk Raporu ve Durum Değerlendirmesi. ${advice.generalEvaluation || ''}. `;
+    if (advice.strengths && advice.strengths.length > 0) {
+      speechText += `Öne çıkan güçlü yönleriniz: ${advice.strengths.join('. ')}. `;
+    }
+    if (advice.weakAreas && advice.weakAreas.length > 0) {
+      speechText += `Öncelikli geliştirilmesi gereken alanlar: ${advice.weakAreas.join('. ')}. `;
+    }
+    if (advice.weeklyPrescription && advice.weeklyPrescription.length > 0) {
+      speechText += `Haftalık çalışma reçetesi: `;
+      advice.weeklyPrescription.forEach((item, idx) => {
+        const topicsStr = Array.isArray(item.focusTopics) && item.focusTopics.length > 0 ? item.focusTopics.join(', ') : '';
+        speechText += `${idx + 1}. madde: ${item.subject} dersi ${topicsStr ? `${topicsStr} konusu için ` : ''}${item.targetQuestions ? `${item.targetQuestions} soru hedefi.` : ''} Tavsiye: ${item.description || ''}. `;
+      });
+    }
+
+    setActiveSpeakingId(reportId);
+    speechService.speak(speechText, {
+      id: reportId,
+      rate: speechRate,
+      onStart: () => setActiveSpeakingId(reportId),
+      onEnd: () => setActiveSpeakingId(null),
+      onError: () => setActiveSpeakingId(null)
+    });
+  };
+
+  const handleSpeakClassReport = (advice: ClassAICoachAdvice) => {
+    const reportId = 'report-class-latest';
+    if (activeSpeakingId === reportId) {
+      speechService.stop();
+      setActiveSpeakingId(null);
+      return;
+    }
+
+    let speechText = `${selectedClass} Sınıfı Rehberlik ve Durum Değerlendirmesi. ${advice.generalEvaluation || ''}. `;
+    if (advice.strengths && advice.strengths.length > 0) {
+      speechText += `Sınıfın güçlü yönleri: ${advice.strengths.join('. ')}. `;
+    }
+    if (advice.weakAreas && advice.weakAreas.length > 0) {
+      speechText += `Müdahale edilecek alanlar: ${advice.weakAreas.join('. ')}. `;
+    }
+
+    setActiveSpeakingId(reportId);
+    speechService.speak(speechText, {
+      id: reportId,
+      rate: speechRate,
+      onStart: () => setActiveSpeakingId(reportId),
+      onEnd: () => setActiveSpeakingId(null),
+      onError: () => setActiveSpeakingId(null)
+    });
+  };
+
+  // Ses motoru temizlik (unmount & tab switch)
+  useEffect(() => {
+    return () => {
+      speechService.stop();
+    };
+  }, []);
+
+  useEffect(() => {
+    speechService.stop();
+    setActiveSpeakingId(null);
+  }, [activeTab]);
 
   useEffect(() => {
     fetch('/api/gemini/model-settings')
@@ -738,6 +878,18 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
         }
       }, INTERVAL);
 
+      // Otomatik Seslendir açıksa sesli oku
+      if (isAutoSpeakEnabled) {
+        setActiveSpeakingId(aiMsg.id);
+        speechService.speak(fullText, {
+          id: aiMsg.id,
+          rate: speechRate,
+          onStart: () => setActiveSpeakingId(aiMsg.id),
+          onEnd: () => setActiveSpeakingId(null),
+          onError: () => setActiveSpeakingId(null)
+        });
+      }
+
     } catch (err: any) {
       const errMsg: AICoachChatMessage = { 
         id: 'msg-err-' + Date.now(), 
@@ -951,9 +1103,34 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                         </p>
                       )}
                     </div>
-                    <span className="text-[11px] font-mono text-purple-300 bg-purple-500/20 px-2.5 py-1 rounded-full border border-purple-500/30 shrink-0 self-start sm:self-center">
-                      Rapor Tarihi: {activeClassAdvice.timestamp}
-                    </span>
+                    <div className="flex items-center space-x-2 shrink-0 self-start sm:self-center">
+                      {isSpeechSynthesisSupported() && (
+                        <button
+                          onClick={() => handleSpeakClassReport(activeClassAdvice)}
+                          className={`flex items-center space-x-1.5 text-xs px-3 py-1 rounded-xl border font-semibold transition-all cursor-pointer ${
+                            activeSpeakingId === 'report-class-latest'
+                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
+                              : 'bg-purple-600/20 text-purple-300 border-purple-500/30 hover:bg-purple-600/30'
+                          }`}
+                          title="Sınıf raporunu sesli dinle"
+                        >
+                          {activeSpeakingId === 'report-class-latest' ? (
+                            <>
+                              <Square className="w-3.5 h-3.5 fill-rose-400 text-rose-400" />
+                              <span>Durdur</span>
+                            </>
+                          ) : (
+                            <>
+                              <Volume2 className="w-3.5 h-3.5 text-purple-400" />
+                              <span>Sesli Dinle</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                      <span className="text-[11px] font-mono text-purple-300 bg-purple-500/20 px-2.5 py-1 rounded-full border border-purple-500/30">
+                        Rapor Tarihi: {activeClassAdvice.timestamp}
+                      </span>
+                    </div>
                   </div>
 
                   <p className="text-xs sm:text-sm text-slate-200 leading-relaxed bg-slate-950 p-4 rounded-2xl border border-slate-800">
@@ -1099,9 +1276,34 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                       <Sparkles className="w-4 h-4 text-purple-400" />
                       <span>Genel Gidişat ve Durum Değerlendirmesi</span>
                     </h2>
-                    <span className="text-[11px] font-mono text-purple-300 font-bold bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full self-start sm:self-center">
-                      Rapor Tarihi: {latestAdvice.timestamp}
-                    </span>
+                    <div className="flex items-center space-x-2 self-start sm:self-center">
+                      {isSpeechSynthesisSupported() && (
+                        <button
+                          onClick={() => handleSpeakReport(latestAdvice)}
+                          className={`flex items-center space-x-1.5 text-xs px-3 py-1 rounded-xl border font-semibold transition-all cursor-pointer ${
+                            activeSpeakingId === 'report-latest'
+                              ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
+                              : 'bg-purple-600/20 text-purple-300 border-purple-500/30 hover:bg-purple-600/30'
+                          }`}
+                          title="Raporu ve reçeteyi sesli koçtan dinle"
+                        >
+                          {activeSpeakingId === 'report-latest' ? (
+                            <>
+                              <Square className="w-3.5 h-3.5 fill-rose-400 text-rose-400" />
+                              <span>Durdur</span>
+                            </>
+                          ) : (
+                            <>
+                              <Volume2 className="w-3.5 h-3.5 text-purple-400" />
+                              <span>Raporu Sesli Dinle</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                      <span className="text-[11px] font-mono text-purple-300 font-bold bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full">
+                        Rapor Tarihi: {latestAdvice.timestamp}
+                      </span>
+                    </div>
                   </div>
 
                   <p className="text-xs sm:text-sm text-slate-200 leading-relaxed bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
@@ -1263,14 +1465,43 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
               </div>
             </div>
 
-            <button
-              onClick={handleClearChat}
-              className="text-xs text-slate-400 hover:text-rose-400 p-2 rounded-xl hover:bg-slate-950 border border-slate-800 transition-all cursor-pointer flex items-center space-x-1.5"
-              title="Sohbeti Sıfırla"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Temizle</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              {isSpeechSynthesisSupported() && (
+                <div className="flex items-center space-x-1 bg-slate-950 border border-slate-800 rounded-xl p-1">
+                  <button
+                    onClick={toggleAutoSpeak}
+                    className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      isAutoSpeakEnabled
+                        ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                    title={isAutoSpeakEnabled ? 'Otomatik sesli okuma açık' : 'Otomatik sesli okumayı aç'}
+                  >
+                    {isAutoSpeakEnabled ? <Volume2 className="w-3.5 h-3.5 text-purple-400 animate-pulse" /> : <VolumeX className="w-3.5 h-3.5 text-slate-500" />}
+                    <span className="hidden sm:inline">{isAutoSpeakEnabled ? 'Sesli Koç: Açık' : 'Sesli Koç: Kapalı'}</span>
+                  </button>
+
+                  {isAutoSpeakEnabled && (
+                    <button
+                      onClick={cycleSpeechRate}
+                      className="text-[10px] font-mono font-bold text-purple-300 bg-purple-950/60 hover:bg-purple-900/60 px-1.5 py-0.5 rounded border border-purple-500/30 transition-all cursor-pointer"
+                      title="Konuşma hızını değiştir (1.0x, 1.2x, 1.4x, 0.9x)"
+                    >
+                      {speechRate}x
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <button
+                onClick={handleClearChat}
+                className="text-xs text-slate-400 hover:text-rose-400 p-2 rounded-xl hover:bg-slate-950 border border-slate-800 transition-all cursor-pointer flex items-center space-x-1.5"
+                title="Sohbeti Sıfırla"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Temizle</span>
+              </button>
+            </div>
           </div>
 
           {/* 🧠 Stres Durumu Banner & Check-In Widget (sadece öğrenci modunda) */}
@@ -1351,11 +1582,41 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                       <span className="inline-block w-0.5 h-3.5 bg-purple-400 ml-0.5 align-middle animate-pulse" />
                     )}
                   </p>
-                  {(msg.sender !== 'ai' || msg.id !== typewriterMsgId) && (
-                    <span className={`text-[9px] block mt-1.5 text-right font-mono ${msg.sender === 'user' ? 'text-purple-200' : 'text-slate-500'}`}>
+
+                  {/* AI Mesajı için Dinle / Durdur Butonu ve Zaman Damgası */}
+                  <div className={`flex items-center ${msg.sender === 'ai' ? 'justify-between' : 'justify-end'} mt-2 pt-1.5 border-t ${msg.sender === 'user' ? 'border-purple-500/20' : 'border-slate-800/60'}`}>
+                    {msg.sender === 'ai' && isSpeechSynthesisSupported() && (
+                      <button
+                        onClick={() => handleSpeakMessage(msg.id, msg.text)}
+                        className={`flex items-center space-x-1 text-[10px] px-2 py-0.5 rounded-lg border transition-all cursor-pointer font-medium ${
+                          activeSpeakingId === msg.id
+                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-sm'
+                            : 'bg-slate-900 text-purple-300 border-purple-500/30 hover:bg-purple-950/50 hover:text-purple-200'
+                        }`}
+                        title={activeSpeakingId === msg.id ? 'Seslendirmeyi Durdur' : 'Sesli Dinle'}
+                      >
+                        {activeSpeakingId === msg.id ? (
+                          <>
+                            <Square className="w-2.5 h-2.5 fill-rose-400 text-rose-400" />
+                            <span>Durdur</span>
+                            <span className="flex items-center space-x-0.5 ml-1">
+                              <span className="w-0.5 h-2 bg-rose-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                              <span className="w-0.5 h-3 bg-rose-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                              <span className="w-0.5 h-1.5 bg-rose-400 rounded-full animate-bounce" />
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Volume2 className="w-2.5 h-2.5 text-purple-400" />
+                            <span>Dinle</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                    <span className={`text-[9px] font-mono ${msg.sender === 'user' ? 'text-purple-200' : 'text-slate-500'}`}>
                       {msg.timestamp}
                     </span>
-                  )}
+                  </div>
                 </div>
               </div>
             ))}

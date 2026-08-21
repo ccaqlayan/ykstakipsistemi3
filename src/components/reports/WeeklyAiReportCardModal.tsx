@@ -17,8 +17,12 @@ import {
   RefreshCw,
   Copy,
   ChevronRight,
-  GraduationCap
+  GraduationCap,
+  Volume2,
+  VolumeX,
+  Square
 } from 'lucide-react';
+import { speechService, isSpeechSynthesisSupported } from '../../services/speechService';
 import { UserAccount, StudentProfile, QuestionLog, GeneralMockExam, StudyPlanItem } from '../../types';
 import { generateWeeklyAiReportCard, WeeklyReportCardData } from '../../services/geminiService';
 import { formatDisplayDate } from '../../utils/dateUtils';
@@ -51,6 +55,13 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
   const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
   const [lastGeneratedDate, setLastGeneratedDate] = useState<string | null>(null);
   const [dailyLimitWarning, setDailyLimitWarning] = useState<string | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+
+  useEffect(() => {
+    return () => {
+      speechService.stop();
+    };
+  }, []);
 
   const studentName = profile?.name || currentUser?.name || 'Öğrenci';
   const targetField = profile?.targetField || 'SAY';
@@ -469,6 +480,25 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
     setTimeout(() => setCopySuccess(false), 2500);
   };
 
+  const handleToggleSpeakReportCard = () => {
+    if (!reportData) return;
+    if (isSpeaking) {
+      speechService.stop();
+      setIsSpeaking(false);
+      return;
+    }
+
+    let speechText = `Haftalık Yapay Zeka Başarı Karnesi. Öğrenci: ${studentName}. Haftalık başarı puanı: 100 üzerinden ${reportData.overallScore}. Tahmini YKS Sıralama Bandı: ${reportData.estimatedRankBand}. Genel Değerlendirme: ${reportData.overallEvaluation}. Gelecek Hafta Stratejileri: ${reportData.goldenActionStrategies.join('. ')}. Koç Motivasyon Mesajı: ${reportData.coachMotivationNote}.`;
+
+    setIsSpeaking(true);
+    speechService.speak(speechText, {
+      id: 'weekly-report-card',
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false),
+      onError: () => setIsSpeaking(false)
+    });
+  };
+
   const formatDateTimeDisplay = (isoString?: string | null) => {
     if (!isoString) return '';
     try {
@@ -526,6 +556,31 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
           <div className="flex items-center space-x-2">
             {reportData && (
               <>
+                {isSpeechSynthesisSupported() && (
+                  <button
+                    type="button"
+                    onClick={handleToggleSpeakReportCard}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-1.5 cursor-pointer border ${
+                      isSpeaking
+                        ? 'bg-rose-600/30 text-rose-300 border-rose-500/50 animate-pulse'
+                        : 'bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border-purple-500/40'
+                    }`}
+                    title={isSpeaking ? 'Seslendirmeyi Durdur' : 'Karneyi Sesli Dinle'}
+                  >
+                    {isSpeaking ? (
+                      <>
+                        <Square className="w-3.5 h-3.5 fill-rose-400 text-rose-400" />
+                        <span>Durdur</span>
+                      </>
+                    ) : (
+                      <>
+                        <Volume2 className="w-3.5 h-3.5 text-purple-300" />
+                        <span className="hidden sm:inline">Sesli Dinle</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={handleShareWhatsApp}
