@@ -25,7 +25,8 @@ import {
   SlidersHorizontal,
   Layers,
   ArrowUpDown,
-  BookMarked
+  BookMarked,
+  GraduationCap
 } from 'lucide-react';
 import { YouTubeVideoItem, ResourceItem, UserAccount, RecommendedChannel, RecommendedBook } from '../types';
 import { RECOMMENDED_BOOKS } from '../data/books';
