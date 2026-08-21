@@ -414,6 +414,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
         <QuestionTrackerView
           questionLogs={currentStudentData.questionLogs}
           targetField={currentStudentData.profile?.targetField}
+          currentUser={previewStudentUser || currentUser}
           onAddLog={handleAddQuestionLog}
           onUpdateLog={handleUpdateQuestionLog}
           onDeleteLog={handleDeleteQuestionLog}
@@ -426,6 +427,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           resources={currentStudentData.resources}
           pastExams={currentStudentData.pastExams}
           targetField={currentStudentData.profile?.targetField}
+          currentUser={previewStudentUser || currentUser}
           onAddResource={handleAddResource}
           onUpdateResource={handleUpdateResource}
           onDeleteResource={handleDeleteResource}

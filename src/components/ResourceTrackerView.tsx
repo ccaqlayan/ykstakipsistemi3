@@ -23,15 +23,18 @@ import {
   LayoutGrid,
   Table
 } from 'lucide-react';
-import { ResourceItem, PastExamItem, FieldType } from '../types';
+import { ResourceItem, PastExamItem, FieldType, UserAccount } from '../types';
 import { YKS_SUBJECTS, YKS_CURRICULUM_TOPICS } from '../data/initialData';
 import { RECOMMENDED_BOOKS, RecommendedBook } from '../data/books';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { getGradeLevel, isEarlyHighSchool } from '../utils/gradeUtils';
+import { getCurriculumForGrade } from '../data/curriculum';
 
 interface ResourceTrackerViewProps {
   resources: ResourceItem[];
   pastExams: PastExamItem[];
   targetField?: FieldType;
+  currentUser?: UserAccount;
   onAddResource: (res: Omit<ResourceItem, 'id'>) => void;
   onUpdateResource: (res: ResourceItem) => void;
   onDeleteResource: (id: string) => void;
@@ -170,6 +173,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   resources,
   pastExams,
   targetField,
+  currentUser,
   onAddResource,
   onUpdateResource,
   onDeleteResource,
@@ -180,6 +184,9 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   initialTrackerTab,
   initialDersFilter
 }) => {
+  const gradeLevel = getGradeLevel(currentUser?.className);
+  const isEarly = isEarlyHighSchool(gradeLevel);
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [deletingResource, setDeletingResource] = useState<{ id: string; title: string } | null>(null);
   

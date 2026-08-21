@@ -49,9 +49,13 @@ import {
   ReferenceLine,
   LabelList
 } from 'recharts';
-import { QuestionLog, FieldType } from '../types';
+import { QuestionLog, FieldType, UserAccount } from '../types';
 import { YKS_SUBJECTS } from '../data/initialData';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { getGradeLevel, isEarlyHighSchool } from '../utils/gradeUtils';
+import { GRADE9_SUBJECT_NAMES } from '../data/curriculum/grade9';
+import { GRADE10_SUBJECT_NAMES } from '../data/curriculum/grade10';
+import { GRADE11_SUBJECT_NAMES } from '../data/curriculum/grade11';
 
 const SUBJECT_COLORS: Record<string, string> = {
   // TYT Subjects
@@ -254,6 +258,7 @@ const PRESET_KEYS = ['ALL', 'TYT_ALL', 'AYT_ALL', 'TYT_FEN', 'TYT_SOSYAL', 'AYT_
 interface QuestionTrackerViewProps {
   questionLogs: QuestionLog[];
   targetField?: FieldType;
+  currentUser?: UserAccount;
   onAddLog: (log: Omit<QuestionLog, 'id'>) => void;
   onUpdateLog: (log: QuestionLog) => void;
   onDeleteLog: (id: string) => void;
@@ -263,19 +268,50 @@ interface QuestionTrackerViewProps {
 export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
   questionLogs,
   targetField,
+  currentUser,
   onAddLog,
   onUpdateLog,
   onDeleteLog,
   theme = 'dark'
 }) => {
+  const gradeLevel = getGradeLevel(currentUser?.className);
+  const isEarly = isEarlyHighSchool(gradeLevel);
+  const isGrade11 = gradeLevel === '11';
+
+  const availableExamTypes = useMemo(() => {
+    if (gradeLevel === '9') return [{ id: 'GRADE_9', label: '9. Sınıf Müfredatı' }, { id: 'TYT', label: 'TYT (Temel Hazırlık)' }];
+    if (gradeLevel === '10') return [{ id: 'GRADE_10', label: '10. Sınıf Müfredatı' }, { id: 'TYT', label: 'TYT (Temel Hazırlık)' }];
+    if (gradeLevel === '11') return [{ id: 'GRADE_11', label: '11. Sınıf Alan Dersleri' }, { id: 'TYT', label: 'TYT' }];
+    return [{ id: 'TYT', label: 'TYT' }, { id: 'AYT', label: 'AYT' }, { id: 'YDT', label: 'YDT' }];
+  }, [gradeLevel]);
+
+  const getSubjectsForExamType = (type: string): string[] => {
+    if (type === 'GRADE_9') return GRADE9_SUBJECT_NAMES;
+    if (type === 'GRADE_10') return GRADE10_SUBJECT_NAMES;
+    if (type === 'GRADE_11') return GRADE11_SUBJECT_NAMES;
+    if (type === 'AYT') return YKS_SUBJECTS.AYT;
+    if (type === 'YDT') return YKS_SUBJECTS.YDT;
+    return YKS_SUBJECTS.TYT;
+  };
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [deletingLog, setDeletingLog] = useState<{ id: string; title: string } | null>(null);
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
 
   // Form states
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [examType, setExamType] = useState<'TYT' | 'AYT' | 'YDT'>('TYT');
-  const [subject, setSubject] = useState(YKS_SUBJECTS.TYT[0]);
+  const [examType, setExamType] = useState<string>(() => {
+    if (gradeLevel === '9') return 'GRADE_9';
+    if (gradeLevel === '10') return 'GRADE_10';
+    if (gradeLevel === '11') return 'GRADE_11';
+    return 'TYT';
+  });
+  const [subject, setSubject] = useState<string>(() => {
+    if (gradeLevel === '9') return GRADE9_SUBJECT_NAMES[0] || 'Matematik';
+    if (gradeLevel === '10') return GRADE10_SUBJECT_NAMES[0] || 'Matematik';
+    if (gradeLevel === '11') return GRADE11_SUBJECT_NAMES[0] || '11. Sınıf Matematik';
+    return YKS_SUBJECTS.TYT[0];
+  });
   const [targetCount, setTargetCount] = useState<number | ''>('');
   const [solvedCount, setSolvedCount] = useState<number | ''>('');
   const [correctCount, setCorrectCount] = useState<number | ''>('');
@@ -1808,22 +1844,20 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Sınav Türü *</label>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">Müfredat / Sınav Türü *</label>
                   <select
                     value={examType}
                     onChange={(e) => {
-                      const val = e.target.value as 'TYT' | 'AYT' | 'YDT';
+                      const val = e.target.value;
                       setExamType(val);
-                      setSubject(YKS_SUBJECTS[val][0]);
+                      const subjs = getSubjectsForExamType(val);
+                      if (subjs.length > 0) setSubject(subjs[0]);
                     }}
                     className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 sm:py-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500 transition-all cursor-pointer min-h-[48px] sm:min-h-0"
                   >
-                    <option value="TYT">TYT</option>
-                    {targetField === 'DİL' || (targetField as string) === 'DIL' ? (
-                      <option value="YDT">YDT (Yabancı Dil)</option>
-                    ) : (
-                      <option value="AYT">AYT</option>
-                    )}
+                    {availableExamTypes.map((t) => (
+                      <option key={t.id} value={t.id}>{t.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1836,7 +1870,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
                   onChange={(e) => setSubject(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-3.5 py-3 sm:py-2.5 text-xs font-bold text-white focus:outline-none focus:border-indigo-500 transition-all cursor-pointer min-h-[48px] sm:min-h-0"
                 >
-                  {YKS_SUBJECTS[examType].map((s) => (
+                  {getSubjectsForExamType(examType).map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
