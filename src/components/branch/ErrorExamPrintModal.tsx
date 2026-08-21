@@ -78,6 +78,8 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
   const [solutionAreaSize, setSolutionAreaSize] = useState<'none' | 'compact' | 'normal' | 'large'>('normal');
   const [answerKeyMode, setAnswerKeyMode] = useState<'qr' | 'table' | 'both' | 'none'>('qr');
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
+  const [includePerQuestionQr, setIncludePerQuestionQr] = useState<boolean>(true);
+  const [letterQrMap, setLetterQrMap] = useState<Record<string, string>>({});
   const [includeOpticalBubbles, setIncludeOpticalBubbles] = useState<boolean>(true);
   const [includeTopicMeta, setIncludeTopicMeta] = useState<boolean>(true);
   const [includeErrorReason, setIncludeErrorReason] = useState<boolean>(false);
@@ -148,7 +150,30 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
     return topicErrors.filter(item => selectedIds.has(item.id));
   }, [topicErrors, selectedIds]);
 
-  // ── QR KOD CEVAP ANAHTARI ÜRETİMİ (OFFLINE DATA URL) ──
+  // ── TEK HARFLİK MİNİ SORU KAREKODLARI (A, B, C, D, E) ──
+  useEffect(() => {
+    const letters = ['A', 'B', 'C', 'D', 'E', '-'];
+    const promises = letters.map(async (letter) => {
+      const url = await QRCode.toDataURL(letter, {
+        width: 100,
+        margin: 1,
+        errorCorrectionLevel: 'L',
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
+      });
+      return [letter, url] as const;
+    });
+
+    Promise.all(promises).then(entries => {
+      const map: Record<string, string> = {};
+      entries.forEach(([l, u]) => { map[l] = u; });
+      setLetterQrMap(map);
+    }).catch(console.error);
+  }, []);
+
+  // ── TOPLU QR KOD CEVAP ANAHTARI ÜRETİMİ (KISA VE ÖZ: "1-C 2-A 3-D ...") ──
   useEffect(() => {
     if (answerKeyMode === 'qr' || answerKeyMode === 'both') {
       if (selectedQuestions.length === 0) {
@@ -156,27 +181,22 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
         return;
       }
 
-      const lines: string[] = [
-        `📋 ${testTitle.toUpperCase()}`,
-        `Aday: ${studentName} • ${selectedQuestions.length} Soru`,
-        `Tarih: ${formatDisplayDate(todayStr)}`,
-        '----------------------------------------',
-      ];
-
-      selectedQuestions.forEach((q, idx) => {
-        const qNum = idx + 1;
+      const compactItems = selectedQuestions.map((q, idx) => {
         const correctRaw = q.correctOption || q.aiSolutionCorrectAnswer || '';
         const correctLetter = extractOptionLetter(correctRaw) || '-';
-        lines.push(`${qNum}. ${correctLetter}  (${q.subject} • ${q.topicName})`);
+        return `${idx + 1}-${correctLetter}`;
       });
 
-      lines.push('----------------------------------------');
-      lines.push('YKS Takip Sistemi • Pekiştirme Testi');
+      // 5'li gruplar halinde temiz ve okunaklı satırlar
+      const lines: string[] = [];
+      for (let i = 0; i < compactItems.length; i += 5) {
+        lines.push(compactItems.slice(i, i + 5).join('   '));
+      }
 
       const qrText = lines.join('\n');
 
       QRCode.toDataURL(qrText, {
-        width: 240,
+        width: 180,
         margin: 1,
         errorCorrectionLevel: 'M',
         color: {
@@ -187,7 +207,7 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
         .then(url => setQrCodeDataUrl(url))
         .catch(err => console.error('QR code generation error:', err));
     }
-  }, [selectedQuestions, testTitle, studentName, answerKeyMode, todayStr]);
+  }, [selectedQuestions, answerKeyMode]);
 
   if (!isOpen) return null;
 
@@ -744,6 +764,16 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
                 <label className="flex items-center space-x-2 cursor-pointer font-medium">
                   <input
                     type="checkbox"
+                    checked={includePerQuestionQr}
+                    onChange={(e) => setIncludePerQuestionQr(e.target.checked)}
+                    className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0 cursor-pointer"
+                  />
+                  <span>Her Sorunun Altına Mini Cevap Karekodu Ekle (Anlık Kontrol)</span>
+                </label>
+
+                <label className="flex items-center space-x-2 cursor-pointer font-medium">
+                  <input
+                    type="checkbox"
                     checked={includeOpticalBubbles}
                     onChange={(e) => setIncludeOpticalBubbles(e.target.checked)}
                     className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0 cursor-pointer"
@@ -812,23 +842,18 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
                   </p>
                 </div>
 
-                {/* Sağ Bölüm: QR Kod Cevap Anahtarı (Göz Kaymasını Önleyen Gizli Sistem) & Öğrenci Bilgisi */}
+                {/* Sağ Bölüm: Kompakt QR Kod Cevap Anahtarı (Göz Kaymasını Önleyen Gizli Sistem) & Öğrenci Bilgisi */}
                 <div className="flex items-center space-x-2 shrink-0">
                   {(answerKeyMode === 'qr' || answerKeyMode === 'both') && qrCodeDataUrl && (
-                    <div className="border border-slate-400 rounded-lg p-1.5 bg-slate-50 flex items-center space-x-2 shrink-0">
+                    <div className="border border-slate-400 rounded-lg p-1 bg-slate-50 flex items-center space-x-1.5 shrink-0 shadow-sm" title="Tüm cevapları içeren toplu karekod">
                       <img
                         src={qrCodeDataUrl}
-                        alt="Cevap Anahtarı Karekodu"
-                        className="w-14 h-14 object-contain rounded border border-slate-300 bg-white shrink-0"
+                        alt="Toplu Cevap Karekodu"
+                        className="w-10 h-10 object-contain rounded border border-slate-300 bg-white shrink-0"
                       />
-                      <div className="space-y-0.5 text-[9px] max-w-[90px]">
-                        <div className="font-black text-black uppercase flex items-center gap-0.5">
-                          <QrCode className="w-2.5 h-2.5 text-indigo-600" />
-                          <span>Cevaplar</span>
-                        </div>
-                        <p className="text-slate-500 leading-tight">
-                          Telefon kameranızla okutun.
-                        </p>
+                      <div className="text-[8.5px] leading-tight max-w-[65px]">
+                        <strong className="text-black font-black block">Cevaplar</strong>
+                        <span className="text-slate-500 font-mono text-[7.5px]">Toplu QR</span>
                       </div>
                     </div>
                   )}
@@ -846,7 +871,7 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
                 {selectedQuestions.map((q, index) => {
                   const qNum = index + 1;
                   const correctRaw = q.correctOption || q.aiSolutionCorrectAnswer || '';
-                  const correctLetter = extractOptionLetter(correctRaw);
+                  const correctLetter = extractOptionLetter(correctRaw) || '-';
 
                   return (
                     <div 
@@ -896,20 +921,39 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
                         </div>
                       )}
 
-                      {/* Optik Kodlama Kutucukları */}
-                      {includeOpticalBubbles && (
+                      {/* Optik Kodlama Kutucukları & Mini Soru Karekodu */}
+                      {(includeOpticalBubbles || includePerQuestionQr) && (
                         <div className="flex items-center justify-between pt-1 text-[10px] text-slate-600">
-                          <span className="font-bold text-[9px] text-slate-400">Cevabınız:</span>
-                          <div className="flex items-center space-x-1.5 font-bold font-mono">
-                            {['A', 'B', 'C', 'D', 'E'].map(opt => (
-                              <span
-                                key={opt}
-                                className="w-4 h-4 rounded-full border border-slate-400 text-slate-700 flex items-center justify-center text-[9px]"
-                              >
-                                {opt}
-                              </span>
-                            ))}
-                          </div>
+                          {includeOpticalBubbles ? (
+                            <div className="flex items-center space-x-1.5">
+                              <span className="font-bold text-[9px] text-slate-400">Cevabınız:</span>
+                              <div className="flex items-center space-x-1 font-bold font-mono">
+                                {['A', 'B', 'C', 'D', 'E'].map(opt => (
+                                  <span
+                                    key={opt}
+                                    className="w-4 h-4 rounded-full border border-slate-400 text-slate-700 flex items-center justify-center text-[9px]"
+                                  >
+                                    {opt}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ) : <div />}
+
+                          {includePerQuestionQr && (
+                            <div className="flex items-center space-x-1 bg-slate-50 border border-slate-300 rounded px-1 py-0.5 shrink-0" title={`Soru ${qNum} cevabını kameranızla okutun`}>
+                              {letterQrMap[correctLetter] ? (
+                                <img
+                                  src={letterQrMap[correctLetter]}
+                                  alt={`Soru ${qNum} QR`}
+                                  className="w-6 h-6 object-contain bg-white rounded"
+                                />
+                              ) : (
+                                <span className="text-[8px] font-bold text-slate-500 font-mono">{correctLetter}</span>
+                              )}
+                              <span className="text-[7.5px] font-bold text-slate-500 font-mono">Cevap QR</span>
+                            </div>
+                          )}
                         </div>
                       )}
 
