@@ -67,9 +67,14 @@ export interface StudentProfile {
 export interface SchoolExam {
   id: string;
   semester: 1 | 2; // 1. Dönem / 2. Dönem
-  examNumber: 1 | 2; // 1. Yazılı / 2. Yazılı
+  examNumber?: 1 | 2; // 1. Yazılı / 2. Yazılı (geriye dönük uyumluluk)
   subject: string; // 'Matematik', 'Fizik', 'Türk Dili ve Edebiyatı' vb.
-  score: number; // 0 - 100 arası not
+  score: number; // 1. Sınav veya Ana Not (0 - 100)
+  written2?: number; // 2. Sınav (0 - 100)
+  perf1?: number; // 1. Performans / Sözlü Notu (0 - 100)
+  perf2?: number; // 2. Performans / Sözlü Notu (0 - 100)
+  project?: number; // Proje Notu (0 - 100)
+  weeklyHours?: number; // Haftalık ders saati (ağırlık / kredi)
   date: string; // YYYY-MM-DD
   notes?: string;
   topicsCovered?: string[];
