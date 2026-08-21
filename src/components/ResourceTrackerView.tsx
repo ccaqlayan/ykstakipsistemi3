@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -403,6 +403,34 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   const [selectedInitialTopics, setSelectedInitialTopics] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const bookSuggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Close book suggestions dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    if (!showSuggestions) return;
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (bookSuggestionsRef.current && !bookSuggestionsRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showSuggestions]);
 
   // ── AI SMART ADD PREFILL EVENT & MOUNT CACHE LISTENER ──
   React.useEffect(() => {
@@ -2222,7 +2250,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                   </div>
 
                   {/* Kitap Adı Input with Autocomplete */}
-                  <div className="relative">
+                  <div className="relative" ref={bookSuggestionsRef}>
                     <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
                       <span>Kitap Adı *</span>
                       <span className="text-[10px] text-indigo-400 font-medium">Canlı Otomatik Tamamlama</span>
@@ -2266,7 +2294,20 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                         <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-slate-900 border border-indigo-500/40 rounded-2xl p-2 shadow-2xl space-y-1 backdrop-blur-xl animate-in fade-in duration-200 max-h-56 overflow-y-auto">
                           <div className="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider flex items-center justify-between border-b border-slate-800 pb-1">
                             <span>Arama Önerileri ({subject})</span>
-                            <span className="text-indigo-400 font-mono">{matchedRecs.length} Öneri</span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-indigo-400 font-mono">{matchedRecs.length} Öneri</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowSuggestions(false);
+                                }}
+                                className="text-slate-500 hover:text-slate-300 p-0.5 rounded transition-colors text-[10px] font-bold cursor-pointer"
+                                title="Önerileri Kapat"
+                              >
+                                ✕
+                              </button>
+                            </div>
                           </div>
                           {matchedRecs.map((rec, idx) => (
                             <div
