@@ -157,6 +157,17 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => window.removeEventListener('yks_settings_updated', handleUpdate);
   }, []);
 
+  const getShortSchoolName = (name: string): string => {
+    if (!name) return 'YILDIZ A.L.';
+    return name
+      .replace(/anadolu lisesi/gi, 'A.L.')
+      .replace(/fen lisesi/gi, 'F.L.')
+      .replace(/mesleki ve teknik anadolu lisesi/gi, 'MTAL')
+      .replace(/imam hatip lisesi/gi, 'İHL')
+      .replace(/sosyal bilimler lisesi/gi, 'SBL')
+      .trim();
+  };
+
   return (
     <header className="bg-white/5 backdrop-blur-xl border-b border-white/10 text-slate-100 sticky top-0 z-30 shadow-lg shadow-black/20 font-sans">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
@@ -185,11 +196,16 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <YildizLisesiLogo className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 drop-shadow-lg" />
             <div>
-              <div className="flex items-center space-x-2">
-                <span className="font-bold text-sm sm:text-lg text-white tracking-tight truncate max-w-[130px] sm:max-w-none">
+              <div className="flex items-center space-x-1.5 sm:space-x-2">
+                {/* Mobilde kısa okul adı (Örn: YILDIZ A.L.) */}
+                <span className="font-bold text-xs sm:text-lg text-white tracking-tight sm:hidden truncate max-w-[110px]">
+                  {getShortSchoolName(currentSchoolName)}
+                </span>
+                {/* Masaüstü ve tablette tam okul adı */}
+                <span className="font-bold text-sm sm:text-lg text-white tracking-tight hidden sm:inline truncate sm:max-w-none">
                   {currentSchoolName}
                 </span>
-                <span className={`text-[10px] sm:text-xs px-2 sm:px-2.5 py-0.5 rounded-full border font-bold uppercase tracking-wider hidden xs:inline-block ${
+                <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 rounded-full border font-bold uppercase tracking-wider hidden xs:inline-block ${
                   isPreviewMode
                     ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
                     : isSchoolCounselor
@@ -388,7 +404,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={!isPreviewMode ? onOpenProfile : undefined}
                 id="student-profile-btn"
                 title={isPreviewMode ? 'Öğrenci Önizleme Modu' : 'Profil ve Hedefleri Düzenle'}
-                className={`flex items-center space-x-2.5 backdrop-blur-md border px-3 py-1.5 rounded-2xl transition-all shadow-md group ${
+                className={`flex items-center sm:space-x-2.5 backdrop-blur-md border p-1 sm:px-3 sm:py-1.5 rounded-2xl transition-all shadow-md group shrink-0 ${
                   isPreviewMode ? 'bg-amber-500/10 border-amber-500/30 cursor-default' : 'bg-white/10 hover:bg-white/15 border-white/15'
                 }`}
               >
@@ -396,7 +412,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <img 
                     src={effectiveUser.avatarUrl} 
                     alt={effectiveUser.name} 
-                    className="w-7 h-7 rounded-full object-cover border border-indigo-400/50 shadow-sm shrink-0" 
+                    className="w-7 h-7 sm:w-7 sm:h-7 rounded-full object-cover border border-indigo-400/50 shadow-sm shrink-0" 
                     onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                   />
                 ) : null}
@@ -419,7 +435,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={onOpenProfile}
                 id="teacher-profile-btn"
                 title="Öğretmen Profilini Düzenle"
-                className="flex items-center space-x-2 bg-fuchsia-500/10 hover:bg-fuchsia-500/20 border border-fuchsia-500/30 px-3 py-1.5 rounded-2xl transition-all shadow-md text-left group"
+                className="flex items-center sm:space-x-2 bg-fuchsia-500/10 hover:bg-fuchsia-500/20 border border-fuchsia-500/30 p-1 sm:px-3 sm:py-1.5 rounded-2xl transition-all shadow-md text-left group shrink-0"
               >
                 {currentUser?.avatarUrl ? (
                   <img 
