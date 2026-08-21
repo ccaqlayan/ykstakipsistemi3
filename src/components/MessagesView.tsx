@@ -34,14 +34,43 @@ import {
   MessageSquarePlus,
   Pencil
 } from 'lucide-react';
+import { UserAccount, DirectMessage, ClassDefinition, UserRole } from '../types';
+import { uploadMessageAttachment } from '../services/storageUpload';
+import { 
+  isUserOnline, 
+  getUserLastSeenText, 
+  getExactLastSeenText, 
+  isStudentActive, 
+  getStatusConfig, 
+  isMessageUnreadForUser,
+  getUserCreationTime
+} from '../utils/statusUtils';
+import { getUserColor } from '../utils/colorUtils';
+import { playNotificationSound } from '../utils/soundUtils';
+import { subscribeToPresence } from '../services/firebase';
 
 // Helper function to resolve messages belonging to a given contact / channel
-const getContactMessages = (contact: UserAccount, allMessages: DirectMessage[], currentUserId: string, currentUserRole: string): DirectMessage[] => {
+const getContactMessages = (
+  contact: UserAccount,
+  allMessages: DirectMessage[],
+  currentUserId: string,
+  currentUserRole: string,
+  currentUserCreatedAt?: number
+): DirectMessage[] => {
   if (!contact || !contact.id) return [];
   
   if (contact.id === 'broadcast-all') {
     return allMessages.filter(m => {
       if (!m || !m.receiverId) return false;
+
+      // Filter out broadcast announcements sent before user registered / joined
+      if (currentUserCreatedAt && currentUserCreatedAt > 0 && currentUserRole !== 'admin' && m.senderId !== currentUserId) {
+        const msgTime = m.timestampMs || (m.timestamp ? new Date(m.timestamp).getTime() : 0);
+        if (msgTime > 0 && msgTime < currentUserCreatedAt) {
+          return false;
+        }
+      }
+
       if (m.receiverId === 'broadcast-all') return true;
       if (m.receiverId === 'broadcast-students') {
         return currentUserRole === 'student' || currentUserRole === 'admin' || currentUserRole === 'school_counselor' || m.senderId === currentUserId;
@@ -57,7 +86,18 @@ const getContactMessages = (contact: UserAccount, allMessages: DirectMessage[], 
   }
 
   if (contact.id.startsWith('class-group-')) {
-    return allMessages.filter(m => m && m.receiverId === contact.id);
+    return allMessages.filter(m => {
+      if (!m || m.receiverId !== contact.id) return false;
+
+      // Filter out group messages sent before user registered / joined
+      if (currentUserCreatedAt && currentUserCreatedAt > 0 && currentUserRole !== 'admin' && m.senderId !== currentUserId) {
+        const msgTime = m.timestampMs || (m.timestamp ? new Date(m.timestamp).getTime() : 0);
+        if (msgTime > 0 && msgTime < currentUserCreatedAt) {
+          return false;
+        }
+      }
+      return true;
+    });
   }
 
   return allMessages.filter(m => 
@@ -69,12 +109,6 @@ const getContactMessages = (contact: UserAccount, allMessages: DirectMessage[], 
      (m.senderId === contact.id && m.receiverId === currentUserId))
   );
 };
-import { UserAccount, DirectMessage, ClassDefinition, UserRole } from '../types';
-import { uploadMessageAttachment } from '../services/storageUpload';
-import { isUserOnline, getUserLastSeenText, getExactLastSeenText, isStudentActive, getStatusConfig, isMessageUnreadForUser } from '../utils/statusUtils';
-import { getUserColor } from '../utils/colorUtils';
-import { playNotificationSound } from '../utils/soundUtils';
-import { subscribeToPresence } from '../services/firebase';
 
 // Client-side automatic image compression helper (max 1000px dimension, ~50-100KB output)
 const compressImageFile = (file: File, maxDimension = 1000, quality = 0.65): Promise<{ dataUrl: string; originalKb: number; compressedKb: number }> => {
@@ -343,6 +377,8 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     return 'Gönderildi (Sunucuya ulaştı)';
   };
 
+  const userCreationTime = useMemo(() => getUserCreationTime(currentUser), [currentUser]);
+
   const allUsersWithPresence = useMemo(() => {
     return allUsers.map(u => ({
       ...u,
@@ -484,11 +520,11 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     const otherContacts = allowedContacts.filter(c => c.id !== 'broadcast-all');
 
     otherContacts.sort((a, b) => {
-      const msgsA = getContactMessages(a, messages, currentUser.id, currentUser.role);
-      const msgsB = getContactMessages(b, messages, currentUser.id, currentUser.role);
+      const msgsA = getContactMessages(a, messages, currentUser.id, currentUser.role, userCreationTime);
+      const msgsB = getContactMessages(b, messages, currentUser.id, currentUser.role, userCreationTime);
 
-      const unreadA = msgsA.filter(m => isMessageUnreadForUser(m, currentUser)).length;
-      const unreadB = msgsB.filter(m => isMessageUnreadForUser(m, currentUser)).length;
+      const unreadA = msgsA.filter(m => isMessageUnreadForUser(m, currentUser, classes)).length;
+      const unreadB = msgsB.filter(m => isMessageUnreadForUser(m, currentUser, classes)).length;
 
       if (unreadA > 0 && unreadB === 0) return -1;
       if (unreadB > 0 && unreadA === 0) return 1;
@@ -506,7 +542,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     });
 
     return broadcastContact ? [broadcastContact, ...otherContacts] : otherContacts;
-  }, [allowedContacts, messages, currentUser.id, currentUser.role]);
+  }, [allowedContacts, messages, currentUser.id, currentUser.role, userCreationTime, classes]);
 
   // Filter contacts for main sidebar:
   // - Show broadcast-all ALWAYS at the top
@@ -516,7 +552,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     return sortedAllowedContacts.filter(c => {
       const isBroadcast = c.id === 'broadcast-all';
       const isSelected = selectedContactId === c.id;
-      const contactMsgs = getContactMessages(c, messages, currentUser.id, currentUser.role);
+      const contactMsgs = getContactMessages(c, messages, currentUser.id, currentUser.role, userCreationTime);
       const hasMessages = contactMsgs.length > 0;
 
       // Do NOT show "henüz mesaj yok" contacts in main active contacts list
@@ -539,7 +575,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
 
       return true;
     });
-  }, [sortedAllowedContacts, messages, currentUser.id, currentUser.role, searchTerm, activeFilter, selectedContactId]);
+  }, [sortedAllowedContacts, messages, currentUser.id, currentUser.role, userCreationTime, searchTerm, activeFilter, selectedContactId]);
 
   // Set default selected contact to top contact in filteredContacts if not explicitly selected or missing
   useEffect(() => {
@@ -581,7 +617,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   // Messages between current user and active contact
   const conversationMessages = useMemo(() => {
     if (!activeContact) return [];
-    const filtered = getContactMessages(activeContact, messages, currentUser.id, currentUser.role);
+    const filtered = getContactMessages(activeContact, messages, currentUser.id, currentUser.role, userCreationTime);
 
     // Deduplicate by msg.id to ensure React unique key warnings are never triggered
     const seen = new Set<string>();
@@ -593,7 +629,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
       seen.add(m.id);
       return true;
     });
-  }, [messages, currentUser.id, currentUser.role, activeContact]);
+  }, [messages, currentUser.id, currentUser.role, userCreationTime, activeContact]);
 
   // Sliced messages for incremental load (last 5 messages initially)
   const displayedMessages = useMemo(() => {
@@ -639,13 +675,13 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   useEffect(() => {
     if (!activeContact) return;
     const unreadReceivedIds = conversationMessages
-      .filter(m => isMessageUnreadForUser(m, currentUser))
+      .filter(m => isMessageUnreadForUser(m, currentUser, classes))
       .map(m => m.id);
 
     if (unreadReceivedIds.length > 0) {
       onMarkAsRead(unreadReceivedIds);
     }
-  }, [activeContact, conversationMessages, currentUser, onMarkAsRead]);
+  }, [activeContact, conversationMessages, currentUser, classes, onMarkAsRead]);
 
   // Play sound for new incoming messages globally on this view
   useEffect(() => {
@@ -914,11 +950,11 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 const isSelected = selectedContactId === contact.id;
 
                 // Find last message
-                const contactMsgs = getContactMessages(contact, messages, currentUser.id, currentUser.role);
+                const contactMsgs = getContactMessages(contact, messages, currentUser.id, currentUser.role, userCreationTime);
                 const lastMsg = contactMsgs.length > 0 ? contactMsgs[contactMsgs.length - 1] : null;
 
                 // Unread count
-                const unreadCount = contactMsgs.filter(m => isMessageUnreadForUser(m, currentUser)).length;
+                const unreadCount = contactMsgs.filter(m => isMessageUnreadForUser(m, currentUser, classes)).length;
 
                 return (
                   <button

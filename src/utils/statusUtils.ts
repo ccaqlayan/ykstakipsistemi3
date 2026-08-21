@@ -1,12 +1,46 @@
-import { UserAccount, DirectMessage } from '../types';
+import { UserAccount, DirectMessage, ClassDefinition } from '../types';
+
+/**
+ * Resolves the creation or registration timestamp (in ms) of a user account.
+ */
+export function getUserCreationTime(user: UserAccount | null | undefined): number {
+  if (!user) return 0;
+  if (user.createdAt) {
+    const t = new Date(user.createdAt).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  if ((user as any).registeredAt) {
+    const t = new Date((user as any).registeredAt).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  if ((user as any).joinedAt) {
+    const t = new Date((user as any).joinedAt).getTime();
+    if (!isNaN(t) && t > 0) return t;
+  }
+  // If id has format student-<timestamp> or teacher-<timestamp>
+  if (user.id) {
+    const parts = user.id.split('-');
+    if (parts.length >= 2) {
+      const num = Number(parts[1]);
+      if (!isNaN(num) && num > 1600000000000 && num < 2500000000000) {
+        return num;
+      }
+    }
+  }
+  return 0;
+}
 
 /**
  * Robustly evaluate whether a message is unread for a specific user account.
  */
-export function isMessageUnreadForUser(m: DirectMessage | null | undefined, user: UserAccount | null | undefined): boolean {
+export function isMessageUnreadForUser(
+  m: DirectMessage | null | undefined,
+  user: UserAccount | null | undefined,
+  classes?: ClassDefinition[]
+): boolean {
   if (!m || !user || !m.senderId || m.senderId === user.id) return false;
 
-  // If user has already read the message via readBy array
+  // 0. If user has already read the message via readBy array
   if (m.readBy && Array.isArray(m.readBy)) {
     const isReadByThisUser = m.readBy.some(r => {
       if (!r || !r.userId) return false;
@@ -22,13 +56,63 @@ export function isMessageUnreadForUser(m: DirectMessage | null | undefined, user
     if (isReadByThisUser) return false;
   }
 
-  // 1. Group Chat
+  const userCreatedAt = getUserCreationTime(user);
+  const msgTime = m.timestampMs || (m.timestamp ? new Date(m.timestamp).getTime() : 0);
+
+  // 1. Group Chat (class-group-...)
   if (m.receiverId?.startsWith('class-group-')) {
+    const rawGroupId = m.receiverId.replace('class-group-', '').trim();
+    const role = user.role;
+
+    let isMember = false;
+    if (role === 'admin' || role === 'school_counselor') {
+      isMember = true;
+    } else if (role === 'student') {
+      const userClass = (user.className || '').trim().toLowerCase();
+      if (classes && classes.length > 0) {
+        const userClassDef = classes.find(c => (c.name || '').trim().toLowerCase() === userClass);
+        if (userClassDef && (userClassDef.id === rawGroupId || userClassDef.name.toLowerCase() === rawGroupId.toLowerCase())) {
+          isMember = true;
+        }
+      }
+      if (!isMember && userClass) {
+        const target = rawGroupId.toLowerCase();
+        if (target === userClass || target.includes(userClass) || userClass.includes(target)) {
+          isMember = true;
+        }
+      }
+    } else if (role === 'teacher' || role === 'class_teacher') {
+      const assigned = (user.assignedClassNames || []).map(c => c.trim().toLowerCase());
+      if (classes && classes.length > 0) {
+        const matchingClassDefs = classes.filter(c => 
+          assigned.includes(c.name.toLowerCase()) || c.assignedTeacherIds?.includes(user.id)
+        );
+        if (matchingClassDefs.some(c => c.id === rawGroupId || c.name.toLowerCase() === rawGroupId.toLowerCase())) {
+          isMember = true;
+        }
+      }
+      if (!isMember) {
+        const target = rawGroupId.toLowerCase();
+        if (assigned.some(c => c === target || target.includes(c) || c.includes(target))) {
+          isMember = true;
+        }
+      }
+    }
+
+    if (!isMember) return false;
+
+    // Filter out group messages sent before user registered/joined
+    if (userCreatedAt > 0 && role !== 'admin') {
+      if (msgTime > 0 && msgTime < userCreatedAt) {
+        return false;
+      }
+    }
+
     return true; // Not read by user yet
   }
 
   // 2. Broadcast Channel
-  if (m.receiverId?.startsWith('broadcast-')) {
+  if (m.receiverId?.startsWith('broadcast-') || m.receiverId === 'broadcast-all') {
     const role = user.role;
     let relevant = false;
     if (m.receiverId === 'broadcast-all') relevant = true;
@@ -37,6 +121,14 @@ export function isMessageUnreadForUser(m: DirectMessage | null | undefined, user
     if (m.receiverId === 'broadcast-counselors' && (role === 'school_counselor' || role === 'admin' || role === 'class_teacher' || role === 'teacher')) relevant = true;
 
     if (!relevant) return false;
+
+    // Filter out broadcast announcements sent before user registered/joined
+    if (userCreatedAt > 0 && role !== 'admin') {
+      if (msgTime > 0 && msgTime < userCreatedAt) {
+        return false;
+      }
+    }
+
     return true; // Not read by user yet
   }
 

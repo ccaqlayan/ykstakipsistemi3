@@ -173,7 +173,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
       className: regClassName,
       title: `${regClassName} Öğrencisi`,
       status: 'pending',
-      avatarUrl: DEFAULT_AVATAR
+      avatarUrl: DEFAULT_AVATAR,
+      createdAt: new Date().toISOString()
     };
 
     onCreateAccount(newUser);

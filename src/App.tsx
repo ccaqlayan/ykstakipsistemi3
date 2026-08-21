@@ -996,7 +996,11 @@ export default function App() {
 
   const handleCreateAccount = (newUserData: Omit<UserAccount, 'id'>) => {
     const newId = (newUserData.role === 'student' ? 'student-' : 'teacher-') + Date.now();
-    const newUser: UserAccount = { ...newUserData, id: newId };
+    const newUser: UserAccount = {
+      ...newUserData,
+      id: newId,
+      createdAt: newUserData.createdAt || new Date().toISOString()
+    };
 
     saveUserToFirestore(newUser);
 
@@ -3238,7 +3242,7 @@ export default function App() {
     });
   };
 
-  const unreadMessageCount = currentUser ? (globalState.messages || []).filter(m => isMessageUnreadForUser(m, currentUser)).length : 0;
+  const unreadMessageCount = currentUser ? (globalState.messages || []).filter(m => isMessageUnreadForUser(m, currentUser, globalState.classes)).length : 0;
 
   const isAdmin = currentUser?.role === 'admin';
   const isTeacher = currentUser?.role === 'teacher' || currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor';

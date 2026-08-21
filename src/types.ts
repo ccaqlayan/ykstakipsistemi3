@@ -26,6 +26,7 @@ export interface UserAccount {
   isLocked?: boolean;
   mustChangePassword?: boolean;
   hasCompletedOnboarding?: boolean;
+  createdAt?: string;
 }
 
 export type ClassFieldType = FieldType | 'ORTAK';
