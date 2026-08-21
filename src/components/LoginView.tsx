@@ -248,40 +248,111 @@ export const LoginView: React.FC<LoginViewProps> = ({
         </div>
 
         {/* Quick Demo Access Bar */}
-        <div className="mb-6 p-3.5 bg-indigo-950/60 border border-indigo-500/30 rounded-2xl space-y-2">
+        <div className="mb-6 p-4 bg-slate-900/90 border border-indigo-500/30 rounded-3xl space-y-3 shadow-xl backdrop-blur-md">
           <div className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider flex items-center justify-between">
-            <span className="flex items-center space-x-1">
+            <span className="flex items-center space-x-1.5">
               <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Hızlı Demo Girişi (1-Tık)</span>
+              <span>Hızlı Demo Giriş İstasyonu (1-Tık)</span>
             </span>
-            <span className="text-[10px] bg-indigo-500/30 px-2 py-0.5 rounded text-indigo-200">Şifre: 123</span>
+            <span className="text-[10px] bg-indigo-500/20 border border-indigo-500/30 px-2 py-0.5 rounded-full text-indigo-200 font-mono">Şifre: 123</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickDemo('ahmet@okul.edu.tr')}
-              className="py-2 px-2.5 bg-indigo-600/80 hover:bg-indigo-500 text-white rounded-xl text-[11px] font-semibold transition-all border border-indigo-400/40 flex items-center justify-center space-x-1 shadow-md shadow-indigo-600/20 cursor-pointer"
-            >
-              <GraduationCap className="w-3.5 h-3.5" />
-              <span>1. Öğrenci</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickDemo('elif.hoca@okul.edu.tr')}
-              className="py-2 px-2.5 bg-fuchsia-600/80 hover:bg-fuchsia-500 text-white rounded-xl text-[11px] font-semibold transition-all border border-fuchsia-400/40 flex items-center justify-center space-x-1 shadow-md shadow-fuchsia-600/20 cursor-pointer"
-            >
-              <UserCheck className="w-3.5 h-3.5" />
-              <span>2. Sınıf Reh. Öğr.</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickDemo('demo.rehber@yksdemo.local')}
-              className="py-2 px-2.5 bg-purple-600/80 hover:bg-purple-500 text-white rounded-xl text-[11px] font-semibold transition-all border border-purple-400/40 flex items-center justify-center space-x-1 shadow-md shadow-purple-600/20 cursor-pointer"
-            >
-              <School className="w-3.5 h-3.5" />
-              <span>3. Okul Reh. Öğr.</span>
-            </button>
+          {/* Kademe Öğrencileri */}
+          <div className="space-y-1.5">
+            <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center space-x-1">
+              <GraduationCap className="w-3 h-3 text-emerald-400" />
+              <span>Örnek Öğrenciler (Tüm Kademeler)</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('eren.9a@okul.edu.tr')}
+                className="py-1.5 px-2 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 rounded-xl text-[10.5px] font-bold transition-all flex items-center justify-between cursor-pointer"
+                title="9. Sınıf Maarif Modeli - Eren Aydın (9-A)"
+              >
+                <span>9. Sınıf (Maarif)</span>
+                <span className="text-[9px] bg-emerald-500/20 px-1 py-0.2 rounded font-normal">Eren</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('selin.10a@okul.edu.tr')}
+                className="py-1.5 px-2 bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 rounded-xl text-[10.5px] font-bold transition-all flex items-center justify-between cursor-pointer"
+                title="10. Sınıf Maarif Modeli - Selin Yılmaz (10-A)"
+              >
+                <span>10. Sınıf (Maarif)</span>
+                <span className="text-[9px] bg-cyan-500/20 px-1 py-0.2 rounded font-normal">Selin</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('kerem.11a@okul.edu.tr')}
+                className="py-1.5 px-2 bg-purple-500/15 hover:bg-purple-500/25 border border-purple-500/30 text-purple-300 rounded-xl text-[10.5px] font-bold transition-all flex items-center justify-between cursor-pointer"
+                title="11. Sınıf Sayısal - Kerem Yıldız (11-A SAY)"
+              >
+                <span>11. Sınıf (Alan)</span>
+                <span className="text-[9px] bg-purple-500/20 px-1 py-0.2 rounded font-normal">Kerem</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('ahmet@okul.edu.tr')}
+                className="py-1.5 px-2 bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-300 rounded-xl text-[10.5px] font-bold transition-all flex items-center justify-between cursor-pointer"
+                title="12. Sınıf SAY - Ahmet Yılmaz (12-A SAY)"
+              >
+                <span>12. Sınıf (YKS)</span>
+                <span className="text-[9px] bg-indigo-500/20 px-1 py-0.2 rounded font-normal">Ahmet</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('mehmet@okul.edu.tr')}
+                className="py-1.5 px-2 bg-blue-500/15 hover:bg-blue-500/25 border border-blue-500/30 text-blue-300 rounded-xl text-[10.5px] font-bold transition-all flex items-center justify-between cursor-pointer"
+                title="12. Sınıf EA - Mehmet Demir (12-B EA)"
+              >
+                <span>12. Sınıf (EA)</span>
+                <span className="text-[9px] bg-blue-500/20 px-1 py-0.2 rounded font-normal">Mehmet</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('mert.mezun@okul.edu.tr')}
+                className="py-1.5 px-2 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 rounded-xl text-[10.5px] font-bold transition-all flex items-center justify-between cursor-pointer"
+                title="Mezun Sayısal Derece Grubu - Mert Aksoy"
+              >
+                <span>Mezun (Derece)</span>
+                <span className="text-[9px] bg-amber-500/20 px-1 py-0.2 rounded font-normal">Mert</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Rehberlik & Yönetim */}
+          <div className="space-y-1.5 pt-1.5 border-t border-slate-800">
+            <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center space-x-1">
+              <ShieldCheck className="w-3 h-3 text-fuchsia-400" />
+              <span>Rehberlik & Yönetim</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('elif.hoca@okul.edu.tr')}
+                className="py-1.5 px-2 bg-fuchsia-600/20 hover:bg-fuchsia-600/30 text-fuchsia-200 rounded-xl text-[10.5px] font-bold transition-all border border-fuchsia-500/30 flex items-center justify-center space-x-1 cursor-pointer"
+              >
+                <UserCheck className="w-3 h-3" />
+                <span>Sınıf Rehberi</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('demo.rehber@yksdemo.local')}
+                className="py-1.5 px-2 bg-purple-600/20 hover:bg-purple-600/30 text-purple-200 rounded-xl text-[10.5px] font-bold transition-all border border-purple-500/30 flex items-center justify-center space-x-1 cursor-pointer"
+              >
+                <School className="w-3 h-3" />
+                <span>Okul Rehberliği</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('caglayan.mat@gmail.com')}
+                className="py-1.5 px-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-200 rounded-xl text-[10.5px] font-bold transition-all border border-rose-500/30 flex items-center justify-center space-x-1 cursor-pointer"
+              >
+                <ShieldCheck className="w-3 h-3" />
+                <span>Yönetici (Admin)</span>
+              </button>
+            </div>
           </div>
         </div>
 

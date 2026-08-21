@@ -45,7 +45,14 @@ import {
   deleteAllInstitutionalExamsFromFirestore,
   flushPendingFirestoreWrites
 } from './services/firebase';
-import { createEmptyStudentData, DEFAULT_AVATAR } from './data/initialData';
+import { 
+  createEmptyStudentData, 
+  DEFAULT_AVATAR,
+  INITIAL_STUDENT_GRADE9_STATE,
+  INITIAL_STUDENT_GRADE10_STATE,
+  INITIAL_STUDENT_GRADE11_STATE,
+  INITIAL_STUDENT_MEZUN_STATE
+} from './data/initialData';
 import { syncCompletedPlanToYoutubeVideos } from './utils/youtubeUtils';
 import { resolveStudentData } from './utils/studentDataUtils';
 
@@ -83,6 +90,29 @@ export default function App() {
     };
     window.addEventListener('yks_settings_updated', handleSettingsUpdate);
     return () => window.removeEventListener('yks_settings_updated', handleSettingsUpdate);
+  }, []);
+
+  // Demo kademe öğrencilerini ve verilerini tazeleyen özel olay dinleyicisi
+  useEffect(() => {
+    const handleRefreshDemoStudents = () => {
+      setGlobalState((prev) => {
+        const updatedStudents = {
+          ...prev.studentsData,
+          'student-9a': INITIAL_STUDENT_GRADE9_STATE,
+          'student-10a': INITIAL_STUDENT_GRADE10_STATE,
+          'student-11a': INITIAL_STUDENT_GRADE11_STATE,
+          'student-mezun1': INITIAL_STUDENT_MEZUN_STATE
+        };
+        const newState = {
+          ...prev,
+          studentsData: updatedStudents
+        };
+        saveGlobalState(newState);
+        return newState;
+      });
+    };
+    window.addEventListener('yks_refresh_demo_students', handleRefreshDemoStudents);
+    return () => window.removeEventListener('yks_refresh_demo_students', handleRefreshDemoStudents);
   }, []);
 
   // Audit loglarını sadece öğrenci olmayan roller için dinle

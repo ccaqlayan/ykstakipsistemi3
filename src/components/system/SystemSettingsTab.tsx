@@ -14,7 +14,9 @@ import {
   X,
   Wrench,
   Clock,
-  ShieldAlert
+  ShieldAlert,
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { db, setLowDataMode, setLowDataModeIntervalMinutes, getPresenceHeartbeatMinutes, setPresenceHeartbeatMinutes, setPresenceHeartbeatEnabled, sanitizeAndPrepareForFirestore } from '../../services/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -711,6 +713,36 @@ export const SystemSettingsTab: React.FC<SystemSettingsTabProps> = ({
                 }}
               />
             </label>
+          </div>
+
+          {/* DEMO SEED CARD */}
+          <div className="p-4 bg-slate-950 border border-indigo-500/20 rounded-2xl space-y-3">
+            <div className="flex items-center space-x-2 text-indigo-300">
+              <Sparkles className="w-5 h-5" />
+              <h4 className="font-bold text-sm text-white">Örnek Kademe Öğrencilerini & Şubelerini Tazeleyin (Demo Seed)</h4>
+            </div>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              9. Sınıf (Eren Aydın - Maarif), 10. Sınıf (Selin Yılmaz - Maarif), 11. Sınıf (Kerem Yıldız) ve Mezun (Mert Aksoy) örnek öğrenci ve şubelerini sisteme yeniden yükleyin. (Ahmet Yılmaz ve diğer kullanıcı verileri <strong className="text-emerald-400">kesinlikle korunur</strong>).
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm('Örnek ara sınıf (9, 10, 11) ve mezun kademe verilerini tazelemek istiyor musunuz? (Ahmet Yılmaz verisi korunur)')) {
+                  try {
+                    const event = new CustomEvent('yks_refresh_demo_students');
+                    window.dispatchEvent(event);
+                    setSettingsSaveMsg('Örnek kademe öğrencileri ve şubeleri başarıyla tazelendi.');
+                    setTimeout(() => setSettingsSaveMsg(null), 4000);
+                  } catch (e) {
+                    console.error('Demo refresh error:', e);
+                  }
+                }
+              }}
+              className="px-4 py-2 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 font-bold text-xs rounded-xl transition-all cursor-pointer inline-flex items-center space-x-2"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Örnek Kademe Verilerini Yenile</span>
+            </button>
           </div>
         </div>
       </div>

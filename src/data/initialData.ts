@@ -2502,7 +2502,242 @@ export const INITIAL_STUDENT_4_STATE: YKSDataState = {
   }
 };
 
+export const INITIAL_STUDENT_GRADE9_STATE: YKSDataState = {
+  ...INITIAL_STATE,
+  profile: {
+    name: 'Eren Aydın',
+    highSchool: 'Gürsu Yıldız Anadolu Lisesi',
+    className: '9-A (Maarif)',
+    targetField: 'SAY',
+    schoolGpaTarget: 95.0,
+    targetUniversity: 'İstanbul Teknik Üniversitesi',
+    targetDepartment: 'Yazılım Mühendisliği',
+    targetRank: 5000,
+    targetTYTNet: 90,
+    targetAYTNet: 65,
+    coachName: 'Elif Çelik',
+    coachNotes: '9. Sınıf Maarif Modeli temaları ve okul yazılılarına hazırlık odaklı çalışıyor. Matematik ve Fen derslerinde düzenli etüt yapıyor.',
+    avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80'
+  },
+  schoolExams: [
+    { id: 'se-9-1', gradeLevel: '9', semester: 1, examNumber: 1, subject: 'Matematik', score: 88, classAverage: 72, date: '2026-11-10' },
+    { id: 'se-9-2', gradeLevel: '9', semester: 1, examNumber: 2, subject: 'Matematik', score: 92, classAverage: 74, date: '2026-12-20' },
+    { id: 'se-9-3', gradeLevel: '9', semester: 1, examNumber: 1, subject: 'Türk Dili ve Edebiyatı', score: 85, classAverage: 76, date: '2026-11-12' },
+    { id: 'se-9-4', gradeLevel: '9', semester: 1, examNumber: 2, subject: 'Türk Dili ve Edebiyatı', score: 90, classAverage: 78, date: '2026-12-22' },
+    { id: 'se-9-5', gradeLevel: '9', semester: 1, examNumber: 1, subject: 'Fizik', score: 82, classAverage: 68, date: '2026-11-15' },
+    { id: 'se-9-6', gradeLevel: '9', semester: 1, examNumber: 2, subject: 'Fizik', score: 86, classAverage: 70, date: '2026-12-25' },
+    { id: 'se-9-7', gradeLevel: '9', semester: 1, examNumber: 1, subject: 'Kimya', score: 90, classAverage: 70, date: '2026-11-18' },
+    { id: 'se-9-8', gradeLevel: '9', semester: 1, examNumber: 2, subject: 'Kimya', score: 94, classAverage: 72, date: '2026-12-28' },
+    { id: 'se-9-9', gradeLevel: '9', semester: 1, examNumber: 1, subject: 'Biyoloji', score: 88, classAverage: 75, date: '2026-11-20' },
+    { id: 'se-9-10', gradeLevel: '9', semester: 1, examNumber: 2, subject: 'Biyoloji', score: 92, classAverage: 78, date: '2026-12-29' },
+    { id: 'se-9-11', gradeLevel: '9', semester: 1, examNumber: 1, subject: 'Tarih', score: 92, classAverage: 80, date: '2026-11-22' },
+    { id: 'se-9-12', gradeLevel: '9', semester: 1, examNumber: 2, subject: 'Tarih', score: 96, classAverage: 82, date: '2026-12-30' },
+    { id: 'se-9-13', gradeLevel: '9', semester: 1, examNumber: 1, subject: 'Coğrafya', score: 86, classAverage: 74, date: '2026-11-24' },
+    { id: 'se-9-14', gradeLevel: '9', semester: 1, examNumber: 2, subject: 'Coğrafya', score: 90, classAverage: 76, date: '2026-12-31' },
+    { id: 'se-9-15', gradeLevel: '9', semester: 1, examNumber: 1, subject: 'Din Kültürü', score: 95, classAverage: 88, date: '2026-11-26' },
+    { id: 'se-9-16', gradeLevel: '9', semester: 1, examNumber: 2, subject: 'Din Kültürü', score: 100, classAverage: 90, date: '2027-01-05' },
+    { id: 'se-9-17', gradeLevel: '9', semester: 1, examNumber: 1, subject: 'İngilizce', score: 90, classAverage: 80, date: '2026-11-28' },
+    { id: 'se-9-18', gradeLevel: '9', semester: 1, examNumber: 2, subject: 'İngilizce', score: 94, classAverage: 82, date: '2027-01-08' }
+  ],
+  studyPlans: [
+    { id: 'sp-9-1', day: 'Pazartesi', subject: 'Matematik', topic: 'Kümelerde İşlemler', taskType: 'Soru Çözümü', targetQuestionCount: 40, completedQuestionCount: 40, isCompleted: true, plannedMinutes: 50, durationMinutes: 50 },
+    { id: 'sp-9-2', day: 'Salı', subject: 'Fizik', topic: 'Fizik Bilimine Giriş & Vektörler', taskType: 'Konu Çalışması', targetQuestionCount: 30, completedQuestionCount: 30, isCompleted: true, plannedMinutes: 45, durationMinutes: 45 },
+    { id: 'sp-9-3', day: 'Çarşamba', subject: 'Kimya', topic: 'Kimya Disiplinleri ve Maddenin Halleri', taskType: 'Soru Çözümü', targetQuestionCount: 35, completedQuestionCount: 35, isCompleted: true, plannedMinutes: 45, durationMinutes: 45 },
+    { id: 'sp-9-4', day: 'Perşembe', subject: 'Biyoloji', topic: 'Canlıların Ortak Özellikleri & Hücre', taskType: 'Tekrar & Özet', targetQuestionCount: 30, completedQuestionCount: 30, isCompleted: true, plannedMinutes: 40, durationMinutes: 40 },
+    { id: 'sp-9-5', day: 'Cuma', subject: 'Türk Dili ve Edebiyatı', topic: 'Hikâye (Öykü) İncelemesi', taskType: 'Konu Çalışması', targetQuestionCount: 25, completedQuestionCount: 25, isCompleted: true, plannedMinutes: 40, durationMinutes: 40 },
+    { id: 'sp-9-6', day: 'Cumartesi', subject: 'Tarih', topic: 'Tarih ve Zaman Kavramı', taskType: 'Soru Çözümü', targetQuestionCount: 30, completedQuestionCount: 25, isCompleted: false, plannedMinutes: 40, durationMinutes: 35 },
+    { id: 'sp-9-7', day: 'Pazar', subject: 'Coğrafya', topic: 'Doğa ve İnsan Etkileşimi', taskType: 'Tekrar & Özet', targetQuestionCount: 25, completedQuestionCount: 0, isCompleted: false, plannedMinutes: 30, durationMinutes: 0 }
+  ],
+  questionLogs: [
+    { id: 'ql-9-1', date: '2026-08-20', subject: 'Matematik', examType: 'TYT', targetCount: 40, solvedCount: 40, correctCount: 36, wrongCount: 3, emptyCount: 1, netScore: 35.25, timeSpentMinutes: 50 },
+    { id: 'ql-9-2', date: '2026-08-19', subject: 'Fizik', examType: 'TYT', targetCount: 30, solvedCount: 30, correctCount: 27, wrongCount: 2, emptyCount: 1, netScore: 26.5, timeSpentMinutes: 45 },
+    { id: 'ql-9-3', date: '2026-08-18', subject: 'Kimya', examType: 'TYT', targetCount: 35, solvedCount: 35, correctCount: 33, wrongCount: 2, emptyCount: 0, netScore: 32.5, timeSpentMinutes: 45 }
+  ],
+  topicErrors: [
+    { id: 'te-9-1', subject: 'Fizik', topic: 'Vektörler ve Skalerler', note: 'Zıt yönlü bileşke vektör doğrultusunda işaret hatası yapıldı.', count: 2, examType: 'TYT', date: '2026-08-19', isResolved: false },
+    { id: 'te-9-2', subject: 'Matematik', topic: 'Kümeler', note: 'Tümleyen küme eleman sayısında evrensel küme ayrımı unutuldu.', count: 1, examType: 'TYT', date: '2026-08-20', isResolved: true }
+  ]
+};
+
+export const INITIAL_STUDENT_GRADE10_STATE: YKSDataState = {
+  ...INITIAL_STATE,
+  profile: {
+    name: 'Selin Yılmaz',
+    highSchool: 'Gürsu Yıldız Anadolu Lisesi',
+    className: '10-A (Maarif)',
+    targetField: 'SAY',
+    schoolGpaTarget: 90.0,
+    targetUniversity: 'Hacettepe Üniversitesi',
+    targetDepartment: 'Diş Hekimliği',
+    targetRank: 8000,
+    targetTYTNet: 95,
+    targetAYTNet: 68,
+    coachName: 'Elif Çelik',
+    coachNotes: '10. Sınıf Maarif Modeli konularını düzenli takip ediyor. Fonksiyonlar ve Elektrik konularında etüt desteği alıyor.',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+  },
+  schoolExams: [
+    { id: 'se-10-1', gradeLevel: '10', semester: 1, examNumber: 1, subject: 'Matematik', score: 78, classAverage: 66, date: '2026-11-10' },
+    { id: 'se-10-2', gradeLevel: '10', semester: 1, examNumber: 2, subject: 'Matematik', score: 84, classAverage: 68, date: '2026-12-20' },
+    { id: 'se-10-3', gradeLevel: '10', semester: 1, examNumber: 1, subject: 'Türk Dili ve Edebiyatı', score: 86, classAverage: 74, date: '2026-11-12' },
+    { id: 'se-10-4', gradeLevel: '10', semester: 1, examNumber: 2, subject: 'Türk Dili ve Edebiyatı', score: 90, classAverage: 76, date: '2026-12-22' },
+    { id: 'se-10-5', gradeLevel: '10', semester: 1, examNumber: 1, subject: 'Fizik', score: 74, classAverage: 62, date: '2026-11-15' },
+    { id: 'se-10-6', gradeLevel: '10', semester: 1, examNumber: 2, subject: 'Fizik', score: 80, classAverage: 65, date: '2026-12-25' },
+    { id: 'se-10-7', gradeLevel: '10', semester: 1, examNumber: 1, subject: 'Kimya', score: 80, classAverage: 68, date: '2026-11-18' },
+    { id: 'se-10-8', gradeLevel: '10', semester: 1, examNumber: 2, subject: 'Kimya', score: 86, classAverage: 70, date: '2026-12-28' },
+    { id: 'se-10-9', gradeLevel: '10', semester: 1, examNumber: 1, subject: 'Biyoloji', score: 82, classAverage: 72, date: '2026-11-20' },
+    { id: 'se-10-10', gradeLevel: '10', semester: 1, examNumber: 2, subject: 'Biyoloji', score: 88, classAverage: 74, date: '2026-12-29' },
+    { id: 'se-10-11', gradeLevel: '10', semester: 1, examNumber: 1, subject: 'Tarih', score: 84, classAverage: 75, date: '2026-11-22' },
+    { id: 'se-10-12', gradeLevel: '10', semester: 1, examNumber: 2, subject: 'Tarih', score: 88, classAverage: 78, date: '2026-12-30' },
+    { id: 'se-10-13', gradeLevel: '10', semester: 1, examNumber: 1, subject: 'Coğrafya', score: 88, classAverage: 76, date: '2026-11-24' },
+    { id: 'se-10-14', gradeLevel: '10', semester: 1, examNumber: 2, subject: 'Coğrafya', score: 92, classAverage: 78, date: '2026-12-31' },
+    { id: 'se-10-15', gradeLevel: '10', semester: 1, examNumber: 1, subject: 'Felsefe', score: 90, classAverage: 80, date: '2026-11-25' },
+    { id: 'se-10-16', gradeLevel: '10', semester: 1, examNumber: 2, subject: 'Felsefe', score: 95, classAverage: 82, date: '2027-01-04' },
+    { id: 'se-10-17', gradeLevel: '10', semester: 1, examNumber: 1, subject: 'Din Kültürü', score: 95, classAverage: 85, date: '2026-11-26' },
+    { id: 'se-10-18', gradeLevel: '10', semester: 1, examNumber: 2, subject: 'Din Kültürü', score: 95, classAverage: 88, date: '2027-01-05' },
+    { id: 'se-10-19', gradeLevel: '10', semester: 1, examNumber: 1, subject: 'İngilizce', score: 88, classAverage: 78, date: '2026-11-28' },
+    { id: 'se-10-20', gradeLevel: '10', semester: 1, examNumber: 2, subject: 'İngilizce', score: 90, classAverage: 80, date: '2027-01-08' }
+  ],
+  studyPlans: [
+    { id: 'sp-10-1', day: 'Pazartesi', subject: 'Matematik', topic: 'Fonksiyonlar ve Grafik Çizimi', taskType: 'Soru Çözümü', targetQuestionCount: 50, completedQuestionCount: 50, isCompleted: true, plannedMinutes: 60, durationMinutes: 60 },
+    { id: 'sp-10-2', day: 'Salı', subject: 'Fizik', topic: 'Elektrik Akımı ve Devreler', taskType: 'Soru Çözümü', targetQuestionCount: 40, completedQuestionCount: 40, isCompleted: true, plannedMinutes: 50, durationMinutes: 50 },
+    { id: 'sp-10-3', day: 'Çarşamba', subject: 'Kimya', topic: 'Asitler, Bazlar ve Tuzlar', taskType: 'Konu Çalışması', targetQuestionCount: 35, completedQuestionCount: 35, isCompleted: true, plannedMinutes: 45, durationMinutes: 45 },
+    { id: 'sp-10-4', day: 'Perşembe', subject: 'Biyoloji', topic: 'Hücre Bölünmeleri (Mitoz & Mayoz)', taskType: 'Tekrar & Özet', targetQuestionCount: 35, completedQuestionCount: 35, isCompleted: true, plannedMinutes: 45, durationMinutes: 45 },
+    { id: 'sp-10-5', day: 'Cuma', subject: 'Türk Dili ve Edebiyatı', topic: 'Destan ve Efsane Dönemi', taskType: 'Konu Çalışması', targetQuestionCount: 30, completedQuestionCount: 30, isCompleted: true, plannedMinutes: 40, durationMinutes: 40 }
+  ],
+  questionLogs: [
+    { id: 'ql-10-1', date: '2026-08-20', subject: 'Matematik', examType: 'TYT', targetCount: 50, solvedCount: 50, correctCount: 44, wrongCount: 4, emptyCount: 2, netScore: 43.0, timeSpentMinutes: 60 },
+    { id: 'ql-10-2', date: '2026-08-19', subject: 'Fizik', examType: 'TYT', targetCount: 40, solvedCount: 40, correctCount: 35, wrongCount: 3, emptyCount: 2, netScore: 34.25, timeSpentMinutes: 50 }
+  ]
+};
+
+export const INITIAL_STUDENT_GRADE11_STATE: YKSDataState = {
+  ...INITIAL_STATE,
+  profile: {
+    name: 'Kerem Yıldız',
+    highSchool: 'Gürsu Yıldız Anadolu Lisesi',
+    className: '11-A SAY',
+    targetField: 'SAY',
+    schoolGpaTarget: 92.0,
+    targetUniversity: 'İstanbul Teknik Üniversitesi',
+    targetDepartment: 'Bilgisayar Mühendisliği',
+    targetRank: 4500,
+    targetTYTNet: 100,
+    targetAYTNet: 72,
+    coachName: 'Dilek Küçük',
+    coachNotes: '11. Sınıf Alan dersleri (İleri Matematik ve Fizik) çok sağlam gidiyor. TYT Paragraf ve Problem rutini aksatılmıyor.',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
+  },
+  schoolExams: [
+    { id: 'se-11-1', gradeLevel: '11', semester: 1, examNumber: 1, subject: '11. Sınıf Matematik', score: 84, classAverage: 65, date: '2026-11-10' },
+    { id: 'se-11-2', gradeLevel: '11', semester: 1, examNumber: 1, subject: '11. Sınıf Fizik', score: 78, classAverage: 58, date: '2026-11-15' },
+    { id: 'se-11-3', gradeLevel: '11', semester: 1, examNumber: 1, subject: '11. Sınıf Kimya', score: 86, classAverage: 64, date: '2026-11-18' },
+    { id: 'se-11-4', gradeLevel: '11', semester: 1, examNumber: 1, subject: '11. Sınıf Biyoloji', score: 90, classAverage: 70, date: '2026-11-20' },
+    { id: 'se-11-5', gradeLevel: '11', semester: 1, examNumber: 1, subject: '11. Sınıf Türk Dili ve Edebiyatı', score: 88, classAverage: 75, date: '2026-11-12' },
+    { id: 'se-11-6', gradeLevel: '11', semester: 1, examNumber: 1, subject: '11. Sınıf Tarih', score: 90, classAverage: 78, date: '2026-11-22' },
+    { id: 'se-11-7', gradeLevel: '11', semester: 1, examNumber: 1, subject: '11. Sınıf Felsefe', score: 92, classAverage: 80, date: '2026-11-25' }
+  ],
+  generalMocks: [
+    {
+      id: 'gm-11-1',
+      title: '11. Sınıf TYT Başlangıç Tarama Denemesi 1',
+      date: '2026-08-15',
+      tyt: { turkce: 29.5, sosyal: 14.0, mat: 22.5, fen: 8.5, totalNet: 74.5 },
+      ayt: { mat: 0, fen: 0, edebiyatSos1: 0, sos2: 0, totalNet: 0 },
+      estimatedRank: 24500,
+      notes: '11. sınıf başında harika bir TYT temeli.'
+    }
+  ],
+  studyPlans: [
+    { id: 'sp-11-1', day: 'Pazartesi', subject: 'AYT Matematik', topic: 'Trigonometri I', taskType: 'Soru Çözümü', targetQuestionCount: 50, completedQuestionCount: 50, isCompleted: true, plannedMinutes: 60, durationMinutes: 60 },
+    { id: 'sp-11-2', day: 'Salı', subject: 'AYT Fizik', topic: 'Vektörler ve Bağıl Hareket', taskType: 'Soru Çözümü', targetQuestionCount: 40, completedQuestionCount: 40, isCompleted: true, plannedMinutes: 50, durationMinutes: 50 },
+    { id: 'sp-11-3', day: 'Çarşamba', subject: 'AYT Kimya', topic: 'Sıvı Çözeltiler ve Koligatif Özellikler', taskType: 'Konu Çalışması', targetQuestionCount: 35, completedQuestionCount: 35, isCompleted: true, plannedMinutes: 45, durationMinutes: 45 },
+    { id: 'sp-11-4', day: 'Perşembe', subject: 'AYT Biyoloji', topic: 'İnsan Fizyolojisi & Dolaşım Sistemi', taskType: 'Soru Çözümü', targetQuestionCount: 45, completedQuestionCount: 45, isCompleted: true, plannedMinutes: 50, durationMinutes: 50 },
+    { id: 'sp-11-5', day: 'Cuma', subject: 'TYT Türkçe', topic: 'Paragrafta Anlam ve Yapı Rutini', taskType: 'Soru Çözümü', targetQuestionCount: 30, completedQuestionCount: 30, isCompleted: true, plannedMinutes: 35, durationMinutes: 35 }
+  ],
+  questionLogs: [
+    { id: 'ql-11-1', date: '2026-08-20', subject: 'AYT Matematik', examType: 'AYT', targetCount: 50, solvedCount: 50, correctCount: 45, wrongCount: 3, emptyCount: 2, netScore: 44.25, timeSpentMinutes: 60 },
+    { id: 'ql-11-2', date: '2026-08-19', subject: 'AYT Fizik', examType: 'AYT', targetCount: 40, solvedCount: 40, correctCount: 36, wrongCount: 3, emptyCount: 1, netScore: 35.25, timeSpentMinutes: 50 }
+  ]
+};
+
+export const INITIAL_STUDENT_MEZUN_STATE: YKSDataState = {
+  ...INITIAL_STATE,
+  profile: {
+    name: 'Mert Aksoy',
+    highSchool: 'Gürsu Yıldız Anadolu Lisesi Mezunu',
+    className: 'Mezun-1 SAY',
+    targetField: 'SAY',
+    targetUniversity: 'ODTÜ',
+    targetDepartment: 'Elektrik-Elektronik Mühendisliği',
+    targetRank: 500,
+    targetTYTNet: 110,
+    targetAYTNet: 76,
+    coachName: 'Dilek Küçük',
+    coachNotes: 'Mezun tam gün yoğun kamp programında. AYT Fen ve Matematikte deneme soru bankaları bitiriliyor.',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80'
+  },
+  generalMocks: [
+    {
+      id: 'gm-m-1',
+      title: 'TÖDER Türkiye Geneli YKS 1',
+      date: '2026-08-10',
+      tyt: { turkce: 36.5, sosyal: 17.5, mat: 37.0, fen: 12.0, totalNet: 103.0 },
+      ayt: { mat: 37.5, fen: 36.0, edebiyatSos1: 0, sos2: 0, totalNet: 73.5 },
+      estimatedRank: 620,
+      notes: 'Mezun kampı derecesi, hedef #500 için çok iyi düzeyde.'
+    }
+  ],
+  studyPlans: [
+    { id: 'sp-m-1', day: 'Pazartesi', subject: 'AYT Matematik', topic: 'İntegral ve Alan Hesabı', taskType: 'Deneme Çözme', targetQuestionCount: 60, completedQuestionCount: 60, isCompleted: true, plannedMinutes: 70, durationMinutes: 70 },
+    { id: 'sp-m-2', day: 'Salı', subject: 'AYT Fizik', topic: 'Elektromanyetik İndüksiyon & Alternatif Akım', taskType: 'Soru Çözümü', targetQuestionCount: 50, completedQuestionCount: 50, isCompleted: true, plannedMinutes: 60, durationMinutes: 60 },
+    { id: 'sp-m-3', day: 'Çarşamba', subject: 'AYT Kimya', topic: 'Organik Kimya Tepkimeleri', taskType: 'Soru Çözümü', targetQuestionCount: 50, completedQuestionCount: 50, isCompleted: true, plannedMinutes: 60, durationMinutes: 60 },
+    { id: 'sp-m-4', day: 'Perşembe', subject: 'AYT Biyoloji', topic: 'Genden Proteine & Nükleik Asitler', taskType: 'Soru Çözümü', targetQuestionCount: 50, completedQuestionCount: 50, isCompleted: true, plannedMinutes: 55, durationMinutes: 55 },
+    { id: 'sp-m-5', day: 'Cuma', subject: 'TYT Matematik', topic: 'Genel TYT Matematik Branş Denemesi', taskType: 'Deneme Çözme', targetQuestionCount: 40, completedQuestionCount: 40, isCompleted: true, plannedMinutes: 75, durationMinutes: 75 }
+  ],
+  questionLogs: [
+    { id: 'ql-m-1', date: '2026-08-20', subject: 'AYT Matematik', examType: 'AYT', targetCount: 60, solvedCount: 60, correctCount: 56, wrongCount: 3, emptyCount: 1, netScore: 55.25, timeSpentMinutes: 70 },
+    { id: 'ql-m-2', date: '2026-08-19', subject: 'AYT Fizik', examType: 'AYT', targetCount: 50, solvedCount: 50, correctCount: 47, wrongCount: 2, emptyCount: 1, netScore: 46.5, timeSpentMinutes: 60 }
+  ]
+};
+
 export const DEMO_USERS = [
+  {
+    id: 'student-9a',
+    name: 'Eren Aydın',
+    email: 'eren.9a@okul.edu.tr',
+    password: '123',
+    role: 'student' as const,
+    className: '9-A (Maarif)',
+    title: '9. Sınıf Maarif Modeli Öğrencisi',
+    status: 'active' as const,
+    isOnline: true,
+    avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'student-10a',
+    name: 'Selin Yılmaz',
+    email: 'selin.10a@okul.edu.tr',
+    password: '123',
+    role: 'student' as const,
+    className: '10-A (Maarif)',
+    title: '10. Sınıf Maarif Modeli Öğrencisi',
+    status: 'active' as const,
+    isOnline: true,
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'student-11a',
+    name: 'Kerem Yıldız',
+    email: 'kerem.11a@okul.edu.tr',
+    password: '123',
+    role: 'student' as const,
+    className: '11-A SAY',
+    title: '11. Sınıf SAY & TYT Temel Öğrencisi',
+    status: 'active' as const,
+    isOnline: true,
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
+  },
   {
     id: 'student-1',
     name: 'Ahmet Yılmaz',
@@ -2516,16 +2751,28 @@ export const DEMO_USERS = [
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
   },
   {
-    id: 'student-4',
-    name: 'Burak ÇAKIR',
-    email: 'burak@okul.edu.tr',
+    id: 'student-3',
+    name: 'Mehmet Demir',
+    email: 'mehmet@okul.edu.tr',
     password: '123',
     role: 'student' as const,
-    className: '12-A SAY',
-    title: '12. Sınıf SAY Öğrencisi (Yedek)',
+    className: '12-B EA',
+    title: '12. Sınıf EA Öğrencisi',
+    status: 'active' as const,
+    isOnline: false,
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
+  },
+  {
+    id: 'student-mezun1',
+    name: 'Mert Aksoy',
+    email: 'mert.mezun@okul.edu.tr',
+    password: '123',
+    role: 'student' as const,
+    className: 'Mezun-1 SAY',
+    title: 'Mezun SAY Derece Grubu Öğrencisi',
     status: 'active' as const,
     isOnline: true,
-    avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80'
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80'
   },
   {
     id: 'student-2',
@@ -2540,16 +2787,16 @@ export const DEMO_USERS = [
     avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'
   },
   {
-    id: 'student-3',
-    name: 'Mehmet Demir',
-    email: 'mehmet@okul.edu.tr',
+    id: 'student-4',
+    name: 'Burak ÇAKIR',
+    email: 'burak@okul.edu.tr',
     password: '123',
     role: 'student' as const,
-    className: '12-B EA',
-    title: '12. Sınıf EA Öğrencisi',
+    className: '12-A SAY',
+    title: '12. Sınıf SAY Öğrencisi (Yedek)',
     status: 'active' as const,
-    isOnline: false,
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80'
+    isOnline: true,
+    avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80'
   },
   {
     id: 'student-pending-1',
@@ -2568,7 +2815,7 @@ export const DEMO_USERS = [
     email: 'caglayan.mat@gmail.com',
     password: '123',
     role: 'admin' as const,
-    assignedClassNames: ['12-A SAY', '12-B EA', 'Mezun-1'],
+    assignedClassNames: ['9-A (Maarif)', '10-A (Maarif)', '11-A SAY', '12-A SAY', '12-B EA', 'Mezun-1 SAY'],
     title: 'Sistem Yöneticisi',
     status: 'active' as const,
     avatarUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80'
@@ -2579,8 +2826,8 @@ export const DEMO_USERS = [
     email: 'elif.hoca@okul.edu.tr',
     password: '123',
     role: 'class_teacher' as const,
-    assignedClassNames: ['12-A SAY'],
-    title: '12-A SAY Sınıf Rehber Öğretmeni',
+    assignedClassNames: ['9-A (Maarif)', '10-A (Maarif)', '12-A SAY'],
+    title: 'Sınıf Rehber Öğretmeni',
     status: 'active' as const,
     avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
   },
@@ -2590,7 +2837,7 @@ export const DEMO_USERS = [
     email: 'demo.rehber@yksdemo.local',
     password: '123',
     role: 'school_counselor' as const,
-    assignedClassNames: ['12-A SAY', '12-B EA', 'Mezun-1'],
+    assignedClassNames: ['9-A (Maarif)', '10-A (Maarif)', '11-A SAY', '12-A SAY', '12-B EA', 'Mezun-1 SAY'],
     title: 'Okul Rehber Öğretmeni',
     status: 'active' as const,
     avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
@@ -2599,22 +2846,40 @@ export const DEMO_USERS = [
 
 export const DEMO_CLASSES = [
   {
+    id: 'class-9a',
+    name: '9-A (Maarif)',
+    description: '9. Sınıf MEB Türkiye Yüzyılı Maarif Modeli Şubesi',
+    assignedTeacherIds: ['teacher-1', 'teacher-2', 'teacher-3']
+  },
+  {
+    id: 'class-10a',
+    name: '10-A (Maarif)',
+    description: '10. Sınıf MEB Türkiye Yüzyılı Maarif Modeli Şubesi',
+    assignedTeacherIds: ['teacher-1', 'teacher-2', 'teacher-3']
+  },
+  {
+    id: 'class-11a',
+    name: '11-A SAY',
+    description: '11. Sınıf Sayısal Alan Eğitimi & TYT Başlangıç Şubesi',
+    assignedTeacherIds: ['teacher-1', 'teacher-3']
+  },
+  {
     id: 'class-1',
     name: '12-A SAY',
-    description: 'Sayısal Derece Şubesi',
-    assignedTeacherIds: ['teacher-1', 'teacher-2']
+    description: '12. Sınıf Sayısal Derece Şubesi',
+    assignedTeacherIds: ['teacher-1', 'teacher-2', 'teacher-3']
   },
   {
     id: 'class-2',
     name: '12-B EA',
-    description: 'Eşit Ağırlık Hedef Şubesi',
-    assignedTeacherIds: ['teacher-1']
+    description: '12. Sınıf Eşit Ağırlık Hedef Şubesi',
+    assignedTeacherIds: ['teacher-1', 'teacher-3']
   },
   {
     id: 'class-3',
-    name: 'Mezun-1',
-    description: 'Mezun Derece Grubu',
-    assignedTeacherIds: ['teacher-1']
+    name: 'Mezun-1 SAY',
+    description: 'Mezun Sayısal Derece Grubu (Tam Gün Kamp)',
+    assignedTeacherIds: ['teacher-1', 'teacher-3']
   }
 ];
 
