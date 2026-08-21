@@ -119,8 +119,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'dashboard', label: 'Genel Özet', icon: LayoutDashboard },
     // — HAZIRLIK & TAKİP —
     { id: '__sep__' as any, label: 'HAZIRLIK & TAKİP', icon: null, isSeparator: true },
-    { id: 'subject_progress', label: isEarlyGrade ? 'Ders & Konu Takibi' : 'Ders İlerlemelerim', icon: GraduationCap, highlight: true },
-    { id: 'routines', label: 'Rutinlerim', icon: CheckCircle2, highlight: true },
+    { id: 'subject_progress', label: isEarlyGrade ? 'Ders & Konu Takibi' : 'Ders İlerlemelerim', icon: GraduationCap },
+    { id: 'routines', label: 'Rutinlerim', icon: CheckCircle2 },
     { id: 'planner', label: 'Haftalık Çalışma Planı', icon: CalendarCheck },
     { id: 'questions', label: 'Soru Takibi', icon: CheckSquare },
     { id: 'resources', label: 'Kaynak Takibi', icon: BookOpenCheck },
@@ -132,19 +132,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'school_exams' as TabType, 
       label: 'Okul Yazılı Notları', 
       icon: Award, 
-      highlight: true,
       tooltip: '1. ve 2. Dönem okul yazılı sınav notları ve OBP karne hesaplaması'
     }] : []),
-    // 9, 10, 11 ve 12 tüm sınıflar için Kurumsal Deneme Karnesi
-    { 
-      id: 'institutional_mocks', 
-      label: isEarlyGrade ? 'Kurumsal Deneme Karnesi' : 'Kurumsal Deneme Karnelerim', 
-      icon: BarChart3, 
-      highlight: true,
-      tooltip: 'Okulda yapılan kurumsal deneme/KDS karneleri ve konu analizleri'
-    },
     // Sadece 12 ve Mezun için Çıkmış Sorular
-    ...(!isEarlyGrade && !isGrade11 ? [{ id: 'past_questions' as TabType, label: 'Çıkmış Sorular', icon: FileSpreadsheet, highlight: true }] : []),
+    ...(!isEarlyGrade && !isGrade11 ? [{ id: 'past_questions' as TabType, label: 'Çıkmış Sorular', icon: FileSpreadsheet }] : []),
     // Hata Defteri tüm sınıflar için
     { 
       id: 'errors', 
@@ -167,30 +158,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
         tooltip: 'Genel deneme sınavları ve net grafikleri'
       }
     ] : []),
+    // 9, 10, 11 ve 12 tüm sınıflar için Kurumsal Deneme Karnesi (Genel Deneme Analizi altında!)
+    { 
+      id: 'institutional_mocks', 
+      label: isEarlyGrade ? 'Kurumsal Deneme Karnesi' : 'Kurumsal Deneme Karnelerim', 
+      icon: BarChart3, 
+      tooltip: 'Okulda yapılan kurumsal deneme/KDS karneleri ve konu analizleri'
+    },
     
     // — ARAÇLAR & DESTEK —
     { id: '__sep__' as any, label: 'ARAÇLAR & DESTEK', icon: null, isSeparator: true },
     { id: 'youtube', label: 'YouTube Ders Takip', icon: Youtube },
-    { id: 'pomodoro', label: 'Pomodoro Sayıcı', icon: Timer, highlight: true },
-    { id: 'recommendations', label: 'Kaynak Önerileri', icon: Sparkles, highlight: true },
-    { id: 'ai_coach', label: isEarlyGrade ? 'Lise Koçu (Yapay Zeka)' : 'Yapay Zeka Koçu', icon: Bot, highlight: true },
-    { id: 'preference_simulator', label: isEarlyGrade ? 'Alan Seçim & Tercih Robotu' : 'YÖK Atlas Tercih Robotu', icon: Compass, highlight: true },
-    { id: 'parent_portal', label: 'Veli Bilgilendirme Portalı', icon: Heart, highlight: true }
+    { id: 'pomodoro', label: 'Pomodoro Sayıcı', icon: Timer },
+    { id: 'recommendations', label: 'Kaynak Önerileri', icon: Sparkles },
+    { id: 'ai_coach', label: isEarlyGrade ? 'Lise Koçu (Yapay Zeka)' : 'Yapay Zeka Koçu', icon: Bot },
+    { id: 'preference_simulator', label: isEarlyGrade ? 'Alan Seçim & Tercih Robotu' : 'YÖK Atlas Tercih Robotu', icon: Compass },
+    { id: 'parent_portal', label: 'Veli Bilgilendirme Portalı', icon: Heart }
   ];
 
   const teacherTabs: TabItem[] = [
     { id: 'teacher_summary', label: 'Genel Özet', icon: LayoutDashboard },
-    { id: 'teacher_students', label: 'Öğrenci Yönetimi & Takip', icon: Users, highlight: true },
-    ...(isSchoolCounselor ? [{ id: 'teacher_teachers' as TabType, label: 'Öğretmenler & Sınıf Atamaları', icon: UserCheck, highlight: true }] : []),
-    ...(isAdmin ? [{ id: 'bulk_exam_import' as TabType, label: 'Toplu Liste Girişi', icon: FileSpreadsheet, highlight: true }] : []),
-    ...(isSchoolCounselor ? [{ id: 'institutional_mocks' as TabType, label: 'Kurumsal Deneme Takip', icon: BarChart3, highlight: true }] : []),
+    { id: 'teacher_students', label: 'Öğrenci Yönetimi & Takip', icon: Users },
+    ...(isSchoolCounselor ? [{ id: 'teacher_teachers' as TabType, label: 'Öğretmenler & Sınıf Atamaları', icon: UserCheck }] : []),
+    ...(isAdmin ? [{ id: 'bulk_exam_import' as TabType, label: 'Toplu Liste Girişi', icon: FileSpreadsheet }] : []),
+    ...(isSchoolCounselor || isAdmin ? [{ id: 'institutional_mocks' as TabType, label: 'Kurumsal Deneme Takip', icon: BarChart3 }] : []),
     { id: 'teacher_templates', label: 'Çalışma Programı Şablonları', icon: Layers },
-    { id: 'past_questions', label: 'Çıkmış Sorular', icon: FileSpreadsheet, highlight: true },
-    { id: 'recommendations', label: 'Öneriler & Tavsiyeler', icon: Sparkles, highlight: true },
-    { id: 'ai_coach', label: 'YKS Yapay Zeka Koçu', icon: Bot, highlight: true },
-    { id: 'preference_simulator', label: 'YÖK Atlas Tercih Robotu', icon: Compass, highlight: true },
-    ...(isAdmin ? [{ id: 'teacher_system' as TabType, label: 'Sistem Yönetimi', icon: Sliders, highlight: true }] : []),
-    { id: 'audit_logs', label: 'Ayak İzi (İşlem Geçmişi)', icon: Footprints, highlight: true }
+    { id: 'past_questions', label: 'Çıkmış Sorular', icon: FileSpreadsheet },
+    { id: 'recommendations', label: 'Öneriler & Tavsiyeler', icon: Sparkles },
+    { id: 'ai_coach', label: 'YKS Yapay Zeka Koçu', icon: Bot },
+    { id: 'preference_simulator', label: 'YÖK Atlas Tercih Robotu', icon: Compass },
+    ...(isAdmin ? [{ id: 'teacher_system' as TabType, label: 'Sistem Yönetimi', icon: Sliders }] : []),
+    { id: 'audit_logs', label: 'Ayak İzi (İşlem Geçmişi)', icon: Footprints }
   ];
 
   const tabs = isTeacher ? teacherTabs : studentTabs;
@@ -248,14 +246,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {effectiveUser?.avatarUrl ? (
                 <img
                   src={effectiveUser.avatarUrl}
-                  alt={effectiveUser.name}
-                  className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-indigo-500/50 shadow-md"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                  alt={effectiveUser?.name || 'Profil'}
+                  className="w-8 h-8 rounded-xl object-cover ring-1 ring-white/20 shrink-0"
                 />
-              ) : null}
-              {(!effectiveUser?.avatarUrl) && (
-                <div className="w-9 h-9 rounded-full bg-indigo-600/30 border border-indigo-400/40 text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
-                  {effectiveUser?.name ? effectiveUser.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
+              ) : (
+                <div className="w-8 h-8 rounded-xl bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-300 font-bold shrink-0">
+                  <User className="w-4 h-4" />
                 </div>
               )}
               <div className="overflow-hidden">
@@ -308,12 +304,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     ? isTeacher
                     ? 'bg-fuchsia-600/80 backdrop-blur-md text-white shadow-lg shadow-fuchsia-500/30 border-fuchsia-400/40'
                     : 'bg-indigo-600/80 backdrop-blur-md text-white shadow-lg shadow-indigo-500/30 border-indigo-400/40'
-                  : t.highlight
-                  ? 'bg-gradient-to-r from-fuchsia-500/20 to-indigo-500/20 text-fuchsia-200 border-fuchsia-400/30 hover:bg-fuchsia-500/30 backdrop-blur-md'
-                  : 'bg-indigo-500/10 text-indigo-200 border-indigo-500/20 hover:bg-indigo-500/20 hover:text-white backdrop-blur-md'
+                    : 'bg-indigo-500/10 text-indigo-200 border-indigo-500/20 hover:bg-indigo-500/20 hover:text-white backdrop-blur-md'
                 }`}
               >
-                <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : t.highlight ? 'text-fuchsia-300' : 'text-slate-400'}`} />
+                <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                 <span className="flex-1 font-semibold truncate">{t.label}</span>
 
                 {t.badge && (
