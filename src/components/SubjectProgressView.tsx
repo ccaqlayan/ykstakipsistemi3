@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { YKSDataState, FieldType } from '../types';
 import { YKS_CURRICULUM_TOPICS } from '../data/initialData';
+import { getCurriculumForGrade, getCategoryCurriculumKeysForGrade } from '../data/curriculum';
+import { getGradeLevel } from '../utils/gradeUtils';
 import { X, Image as ImageIcon } from 'lucide-react';
 
 // Subcomponent imports
@@ -122,11 +124,20 @@ const SubjectProgressView: React.FC<SubjectProgressViewProps> = ({
 
   // Category statistics
   const categoryStats = useMemo(() => {
+    const gradeLevel = getGradeLevel(state.profile?.className);
+    const currentCurriculum = getCurriculumForGrade(gradeLevel);
+
     return SUBJECT_CATEGORIES.map(category => {
-      // Build topic groups from curriculum
+      // Build topic groups from grade-specific curriculum
+      const effectiveKeys = getCategoryCurriculumKeysForGrade(
+        category.id,
+        gradeLevel,
+        category.curriculumKeys
+      );
+
       const topicGroups: { keyName: string; topics: string[] }[] = [];
-      category.curriculumKeys.forEach(key => {
-        const topics = YKS_CURRICULUM_TOPICS[key];
+      effectiveKeys.forEach(key => {
+        const topics = currentCurriculum[key];
         if (topics && topics.length > 0) {
           topicGroups.push({ keyName: key, topics });
         }

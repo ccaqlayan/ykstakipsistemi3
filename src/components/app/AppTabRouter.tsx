@@ -20,6 +20,8 @@ import { YouTubeTrackerView } from '../YouTubeTrackerView';
 import { AICoachView } from '../AICoachView';
 import { RecommendationsView } from '../RecommendationsView';
 import { MessagesView } from '../MessagesView';
+import { SchoolExamsView } from '../SchoolExamsView';
+import { SchoolExam } from '../../types';
 import { UndoItem } from './AppTypes';
 
 interface AppTabRouterProps {
@@ -100,6 +102,9 @@ interface AppTabRouterProps {
   handleAddGeneralMock: (mock: any) => void;
   handleDeleteGeneralMock: (id: string) => void;
   handleUpdateGeneralMock: (updated: any) => void;
+  handleAddSchoolExam?: (exam: Omit<SchoolExam, 'id'>) => void;
+  handleUpdateSchoolExam?: (exam: SchoolExam) => void;
+  handleDeleteSchoolExam?: (id: string) => void;
   handleAddYouTubeVideo: (vid: any) => void;
   handleUpdateYouTubeVideo: (vid: any) => void;
   handleDeleteYouTubeVideo: (id: string) => void;
@@ -190,6 +195,9 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
   handleAddGeneralMock,
   handleDeleteGeneralMock,
   handleUpdateGeneralMock,
+  handleAddSchoolExam,
+  handleUpdateSchoolExam,
+  handleDeleteSchoolExam,
   handleAddYouTubeVideo,
   handleUpdateYouTubeVideo,
   handleDeleteYouTubeVideo,
@@ -250,10 +258,10 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
         />
       )}
 
-      {/* INSTITUTIONAL MOCKS VIEW (KARNELER & RAPORLAR) */}
-      {activeTab === 'institutional_mocks' && (currentUser.role === 'school_counselor' || currentUser.role === 'admin') && (
+      {/* INSTITUTIONAL MOCKS VIEW (KARNELER & RAPORLAR - 9, 10, 11, 12 TÜM KADEMELER) */}
+      {activeTab === 'institutional_mocks' && (
         <InstitutionalMocksView
-          currentUser={currentUser}
+          currentUser={previewStudentUser || currentUser}
           users={globalState.users}
           classes={globalState.classes}
           studentsData={globalState.studentsData}
@@ -262,6 +270,19 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           onDeleteInstitutionalExam={handleDeleteInstitutionalExam}
           onDeleteAllInstitutionalExams={handleDeleteAllInstitutionalExams}
           onToggleMenu={() => setIsMobileMenuOpen(prev => !prev)}
+        />
+      )}
+
+      {/* OKUL YAZILI SINAV NOTLARI & OBP KARNESİ */}
+      {activeTab === 'school_exams' && (
+        <SchoolExamsView
+          schoolExams={currentStudentData.schoolExams || []}
+          profile={currentStudentData.profile}
+          currentUser={previewStudentUser || currentUser}
+          onAddSchoolExam={handleAddSchoolExam || (() => {})}
+          onUpdateSchoolExam={handleUpdateSchoolExam || (() => {})}
+          onDeleteSchoolExam={handleDeleteSchoolExam || (() => {})}
+          onUpdateProfile={handleUpdateStudentProfile}
         />
       )}
 

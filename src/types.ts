@@ -56,6 +56,20 @@ export interface StudentProfile {
   phone?: string;
   prepSchool?: string;
   schoolNumber?: string;
+  schoolGpaTarget?: number;
+  targetTrack?: 'undecided' | 'SAY' | 'EA' | 'SÖZ' | 'DİL';
+}
+
+export interface SchoolExam {
+  id: string;
+  semester: 1 | 2; // 1. Dönem / 2. Dönem
+  examNumber: 1 | 2; // 1. Yazılı / 2. Yazılı
+  subject: string; // 'Matematik', 'Fizik', 'Türk Dili ve Edebiyatı' vb.
+  score: number; // 0 - 100 arası not
+  date: string; // YYYY-MM-DD
+  notes?: string;
+  topicsCovered?: string[];
+  classAverage?: number;
 }
 
 export type DayOfWeek = 'Pazartesi' | 'Salı' | 'Çarşamba' | 'Perşembe' | 'Cuma' | 'Cumartesi' | 'Pazar';
@@ -526,6 +540,7 @@ export interface YKSDataState {
   quickNotes?: QuickNote[];
   taskTypes?: string[];
   institutionalMocks?: InstitutionalMockExam[];
+  schoolExams?: SchoolExam[];
   dailyStudyLogs?: Record<string, DailyStudyTimeLog>;
   earnedBadges?: EarnedBadge[];
   motivationStats?: MotivationStats;

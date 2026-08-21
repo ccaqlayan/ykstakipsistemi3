@@ -10,7 +10,7 @@ import { StudentPreviewBanner } from './components/StudentPreviewBanner';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { GlobalAiSmartAddModal } from './components/common/GlobalAiSmartAddModal';
 
-import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, InstitutionalMockExam, FieldType, DailyStudyTimeLog, StudyPlanItem, ResourceItem, RoutineItem } from './types';
+import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, InstitutionalMockExam, FieldType, DailyStudyTimeLog, StudyPlanItem, ResourceItem, RoutineItem, SchoolExam } from './types';
 import { deleteStorageFile } from './services/storageUpload';
 import { loadGlobalState, saveGlobalState, exportDataAsJSON, resetToDefaultData } from './services/storage';
 import { isMessageUnreadForUser } from './utils/statusUtils';
@@ -2376,6 +2376,59 @@ export default function App() {
     );
   };
 
+  const handleAddSchoolExam = (exam: Omit<SchoolExam, 'id'>) => {
+    const newItem: SchoolExam = { ...exam, id: 'se-' + Date.now() };
+    const prevExams = currentStudentData.schoolExams || [];
+    updateCurrentStudentData((prev) => ({
+      ...prev,
+      schoolExams: [newItem, ...(prev.schoolExams || [])]
+    }));
+
+    addAuditAndUndo(
+      `${currentUser?.name || 'Öğrenci'} yeni bir okul yazılı notu ekledi: ${exam.subject} (${exam.semester}. Dönem ${exam.examNumber}. Yazılı: ${exam.score} Puan).`,
+      'exam',
+      'add_school_exam',
+      () => {
+        updateCurrentStudentData((prev) => ({ ...prev, schoolExams: prevExams }));
+      }
+    );
+  };
+
+  const handleUpdateSchoolExam = (updatedExam: SchoolExam) => {
+    const prevExams = currentStudentData.schoolExams || [];
+    updateCurrentStudentData((prev) => ({
+      ...prev,
+      schoolExams: (prev.schoolExams || []).map((e) => (e.id === updatedExam.id ? updatedExam : e))
+    }));
+
+    addAuditAndUndo(
+      `${currentUser?.name || 'Öğrenci'} "${updatedExam.subject}" yazılı sınav notunu güncelledi (${updatedExam.score} Puan).`,
+      'exam',
+      'update_school_exam',
+      () => {
+        updateCurrentStudentData((prev) => ({ ...prev, schoolExams: prevExams }));
+      }
+    );
+  };
+
+  const handleDeleteSchoolExam = (id: string) => {
+    const prevExams = currentStudentData.schoolExams || [];
+    const deletedExam = prevExams.find((e) => e.id === id);
+    updateCurrentStudentData((prev) => ({
+      ...prev,
+      schoolExams: (prev.schoolExams || []).filter((e) => e.id !== id)
+    }));
+
+    addAuditAndUndo(
+      `${currentUser?.name || 'Öğrenci'} "${deletedExam?.subject || ''}" yazılı sınav kaydını sildi.`,
+      'exam',
+      'delete_school_exam',
+      () => {
+        updateCurrentStudentData((prev) => ({ ...prev, schoolExams: prevExams }));
+      }
+    );
+  };
+
   const handleUpdateTopicTipsCache = (cacheKey: string, data: { mistakes: Array<{ mistake: string; correction: string }>; tips: string[] }) => {
     updateCurrentStudentData((prev) => ({
       ...prev,
@@ -3291,6 +3344,9 @@ export default function App() {
             handleAddGeneralMock={handleAddGeneralMock}
             handleDeleteGeneralMock={handleDeleteGeneralMock}
             handleUpdateGeneralMock={handleUpdateGeneralMock}
+            handleAddSchoolExam={handleAddSchoolExam}
+            handleUpdateSchoolExam={handleUpdateSchoolExam}
+            handleDeleteSchoolExam={handleDeleteSchoolExam}
             handleAddYouTubeVideo={handleAddYouTubeVideo}
             handleUpdateYouTubeVideo={handleUpdateYouTubeVideo}
             handleDeleteYouTubeVideo={handleDeleteYouTubeVideo}

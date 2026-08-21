@@ -3,6 +3,7 @@ import { Sliders, LayoutGrid, Award } from 'lucide-react';
 import { YKSDataState, StudentProfile, UserAccount, QuickNote } from '../types';
 import { TargetModal } from './TargetModal';
 import { WeeklyAiReportCardModal } from './reports/WeeklyAiReportCardModal';
+import { getGradeLevel } from '../utils/gradeUtils';
 import { 
   DashboardCustomizeModal, 
   DashboardWidgetConfig, 
@@ -291,6 +292,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     ? Math.min(100, Math.round((completedResourceUnits / totalResourceUnits) * 100))
     : 0;
 
+  const gradeLevel = getGradeLevel(profile?.className || currentUser?.className);
+
   // Individual Widget Renderer Switcher
   const renderWidget = (widget: DashboardWidgetConfig) => {
     if (widget.id === 'subject_progress_widget' || widget.id.startsWith('subject_progress')) {
@@ -302,6 +305,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <DashboardCountdownBar 
             daysLeft={daysLeft} 
             timeBreakdown={timeBreakdown} 
+            gradeLevel={gradeLevel}
             onClick={() => setShowReadinessModal(true)} 
           />
         );
@@ -311,6 +315,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             profile={profile} 
             latestTYTNet={latestTYTNet} 
             latestAYTNet={latestAYTNet} 
+            gradeLevel={gradeLevel}
+            schoolExams={state.schoolExams || []}
             onOpenTargetModal={() => setShowTargetModal(true)} 
           />
         );

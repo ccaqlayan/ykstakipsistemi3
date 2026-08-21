@@ -3289,3 +3289,19 @@ export const RECOMMENDED_BOOKS: RecommendedBook[] = [
     isPopular: true
   }
 ];
+
+import { GRADE_RECOMMENDED_BOOKS } from './curriculum/recommendationsData';
+
+const GRADE_MAARIF_BOOKS: RecommendedBook[] = (GRADE_RECOMMENDED_BOOKS || []).map(b => ({
+  subject: b.subject,
+  category: `${b.grade}. Sınıf Maarif Modeli`,
+  publisher: b.publisher,
+  name: b.name,
+  difficulty: b.difficulty,
+  difficultyValue: Math.round(b.difficultyValue),
+  reason: b.reason,
+  isPopular: b.difficultyValue >= 3
+}));
+
+RECOMMENDED_BOOKS.push(...GRADE_MAARIF_BOOKS);
+

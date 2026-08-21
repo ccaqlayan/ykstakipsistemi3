@@ -355,15 +355,26 @@ router.post('/coach-advice', async (req, res) => {
 
   const settings = customSettings || coachDataSettings;
   const isDilField = profile?.targetField === 'DİL' || profile?.targetField === 'DIL';
+  const studentClassName = profile?.className || '';
+  let gradePersonaGuidance = '';
+  if (studentClassName.startsWith('9') || studentClassName.includes('9-') || studentClassName.includes('9.')) {
+    gradePersonaGuidance = 'ÖĞRENCİ KADEMESİ: 9. Sınıf (Lise 1. Yıl - Maarif Modeli). Öncelikli odak: Liseye uyum, düzenli çalışma disiplini, okul yazılı sınavlarında yüksek notlar almak ve OBP (Okul Başarı Puanı) temelini sağlam kurmaktır. Aşırı YKS baskısı yerine konuyu derinlemesine anlama ve okul başarısı odaklı rehberlik yap.';
+  } else if (studentClassName.startsWith('10') || studentClassName.includes('10-') || studentClassName.includes('10.')) {
+    gradePersonaGuidance = 'ÖĞRENCİ KADEMESİ: 10. Sınıf (Lise 2. Yıl - Alan Seçimi & OBP). Öncelikli odak: Alan seçimi farkındalığı (Sayısal/EA/Sözel/Dil), okul yazılı başarı ortalamasını 90+ seviyesinde tutmak ve temel TYT konularında pratik kazanmaktır.';
+  } else if (studentClassName.startsWith('11') || studentClassName.includes('11-') || studentClassName.includes('11.')) {
+    gradePersonaGuidance = 'ÖĞRENCİ KADEMESİ: 11. Sınıf (AYT Temeli & YKS Ön Hazırlık). Öncelikli odak: 11. sınıf alan konularını (AYT belkemiği) eksiksiz öğrenmek, yazılı notlarını yüksek tutmak ve TYT tekrarları yapmaktır.';
+  }
 
   try {
     let prompt = `
-Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) derece derece hazırlık konusunda uzman, motivasyonu yüksek ve analitik bir Rehberlik ve YKS Öğrenci Koçusun.
-${isDilField ? 'NOT: Bu öğrenci YKS DİL (YDT) alanındadır. Haftalık reçete ve analizlerinde YDT 80 soru (Reading, Vocabulary/Phrasal Verbs, Çeviri, Paragraf Tamamlama, Gramer) ile TYT Türkçe & Matematik dengesine özel odaklan.' : ''}
+Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) ve Lise Akademik Koçluğu konusunda uzman, motivasyonu yüksek ve analitik bir Rehberlik ve Öğrenci Koçusun.
+${gradePersonaGuidance ? `\n[KADEME REHBERLİK İLKESİ]: ${gradePersonaGuidance}\n` : ''}
+${isDilField ? 'NOT: Bu öğrenci YKS DİL (YDT) alanındadır. Haftalık reçete ve analizlerinde YDT 80 soru ile TYT dengesine özel odaklan.' : ''}
 
 ÖĞRENCİ BİLGİLERİ:
 - Öğrenci Adı: ${profile?.name || 'Öğrenci'}
 - Okul: ${profile?.highSchool || 'Anadolu Lisesi'}
+- Sınıf: ${studentClassName || '12. Sınıf'}
 - Alanı: ${profile?.targetField || 'SAY'} ${isDilField ? `(Yabancı Dil: ${profile?.targetLanguage || 'İngilizce'})` : ''}
 - Hedef Üniversite & Bölüm: ${profile?.targetUniversity || ''} ${profile?.targetDepartment || ''}
 - Hedef Sıralama: ${profile?.targetRank || 5000}
@@ -646,10 +657,21 @@ KULLANICI: Öğretmen / Okul Rehberlik Uzmanı
 `;
     } else {
       const isDilField = profile?.targetField === 'DİL' || profile?.targetField === 'DIL';
+      const studentClass = profile?.className || '';
+      let gradeNote = '';
+      if (studentClass.startsWith('9') || studentClass.includes('9-')) {
+        gradeNote = '- Kademe: 9. Sınıf (Lise 1 - Maarif Modeli). Öğrencinin odağı lise ders başarısı, yazılı sınavlar ve OBP temelidir.';
+      } else if (studentClass.startsWith('10') || studentClass.includes('10-')) {
+        gradeNote = '- Kademe: 10. Sınıf (Lise 2). Öğrencinin odağı alan seçimi (SAY/EA/SÖZ/DİL) ve yazılı ortalamasıdır.';
+      } else if (studentClass.startsWith('11') || studentClass.includes('11-')) {
+        gradeNote = '- Kademe: 11. Sınıf (AYT Temeli). Öğrencinin odağı 11. sınıf AYT konuları ve yazılılardır.';
+      }
+
       contextPrompt = `
 ÖĞRENCİ PROFİLİ & HEDEFLERİ:
 - İsim: ${profile?.name || 'Öğrenci'}
-- Alan: ${profile?.targetField || 'SAY'} ${isDilField ? `(Yabancı Dil: ${profile?.targetLanguage || 'İngilizce'})` : ''}
+- Sınıf: ${studentClass || '12. Sınıf'}
+${gradeNote ? `${gradeNote}\n` : ''}- Alan: ${profile?.targetField || 'SAY'} ${isDilField ? `(Yabancı Dil: ${profile?.targetLanguage || 'İngilizce'})` : ''}
 - Hedef: ${profile?.targetUniversity || ''} ${profile?.targetDepartment || ''} (Hedef Sıralama: ${profile?.targetRank || 5000})
 - Hedef Netler: TYT ${profile?.targetTYTNet || 100} Net, ${isDilField ? `YDT (${profile?.targetLanguage || 'İngilizce'}) ${profile?.targetYDTNet || 75} Net` : `AYT ${profile?.targetAYTNet || 70} Net`}
 `;

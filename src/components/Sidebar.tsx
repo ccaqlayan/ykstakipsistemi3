@@ -38,6 +38,7 @@ export type TabType =
   | 'teacher_system'
   | 'dashboard' 
   | 'subject_progress'
+  | 'school_exams'
   | 'routines'
   | 'planner' 
   | 'pomodoro'
@@ -99,42 +100,76 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isSchoolCounselor = !isPreviewMode && (currentUser?.role === 'school_counselor' || currentUser?.role === 'admin');
   const isAdmin = !isPreviewMode && currentUser?.role === 'admin';
 
+  // Kademe tespiti
+  const gradeLevel = effectiveUser?.className ? (
+    effectiveUser.className.toUpperCase().includes('MEZUN') ? 'mezun' :
+    effectiveUser.className.startsWith('9') ? '9' :
+    effectiveUser.className.startsWith('10') ? '10' :
+    effectiveUser.className.startsWith('11') ? '11' : '12'
+  ) : '12';
+  const isEarlyGrade = gradeLevel === '9' || gradeLevel === '10';
+  const isGrade11 = gradeLevel === '11';
+
+  // Öğrenci Sekmeleri - Kademeye Göre Dinamik
   const studentTabs: TabItem[] = [
     { id: 'dashboard', label: 'Genel Özet', icon: LayoutDashboard },
-    // — HAZIRLIK —
-    { id: '__sep__' as any, label: 'HAZIRLIK', icon: null, isSeparator: true },
-    { id: 'subject_progress', label: 'Ders İlerlemelerim', icon: GraduationCap, highlight: true },
+    // — HAZIRLIK & TAKİP —
+    { id: '__sep__' as any, label: 'HAZIRLIK & TAKİP', icon: null, isSeparator: true },
+    { id: 'subject_progress', label: isEarlyGrade ? 'Ders & Konu Takibi' : 'Ders İlerlemelerim', icon: GraduationCap, highlight: true },
     { id: 'routines', label: 'Rutinlerim', icon: CheckCircle2, highlight: true },
     { id: 'planner', label: 'Haftalık Çalışma Planı', icon: CalendarCheck },
     { id: 'questions', label: 'Soru Takibi', icon: CheckSquare },
     { id: 'resources', label: 'Kaynak Takibi', icon: BookOpenCheck },
-    // — ANALİZ —
-    { id: '__sep__' as any, label: 'ANALİZ', icon: null, isSeparator: true },
-    { id: 'past_questions', label: 'Çıkmış Sorular', icon: FileSpreadsheet, highlight: true },
+    
+    // — SINAVLAR & ANALİZ —
+    { id: '__sep__' as any, label: 'SINAVLAR & ANALİZ', icon: null, isSeparator: true },
+    // 9, 10 ve 11. sınıflar için Okul Yazılı Notları
+    ...(isEarlyGrade || isGrade11 ? [{ 
+      id: 'school_exams' as TabType, 
+      label: 'Okul Yazılı Notları', 
+      icon: Award, 
+      highlight: true,
+      tooltip: '1. ve 2. Dönem okul yazılı sınav notları ve OBP karne hesaplaması'
+    }] : []),
+    // 9, 10, 11 ve 12 tüm sınıflar için Kurumsal Deneme Karnesi
+    { 
+      id: 'institutional_mocks', 
+      label: isEarlyGrade ? 'Kurumsal Deneme Karnesi' : 'Kurumsal Deneme Takip', 
+      icon: BarChart3, 
+      highlight: true,
+      tooltip: 'Okulda yapılan kurumsal deneme/KDS karneleri ve konu analizleri'
+    },
+    // Sadece 12 ve Mezun için Çıkmış Sorular
+    ...(!isEarlyGrade && !isGrade11 ? [{ id: 'past_questions' as TabType, label: 'Çıkmış Sorular', icon: FileSpreadsheet, highlight: true }] : []),
+    // Hata Defteri tüm sınıflar için
     { 
       id: 'errors', 
       label: 'Hata Defteri', 
       icon: BookOpen,
       badge: unresolvedErrorCount > 0 ? `${unresolvedErrorCount}` : undefined
     },
-    { 
-      id: 'branches', 
-      label: 'Branş Deneme Analizi', 
-      icon: Target,
-      tooltip: 'Tek bir derse ait kitap/konu bazında yapılan branş denemeleri'
-    },
-    { 
-      id: 'mocks', 
-      label: 'Genel Deneme Analizi', 
-      icon: TrendingUp,
-      tooltip: 'TYT + AYT tüm alanları kapsayan genel deneme sınavları'
-    },
+    // 11, 12 ve Mezun için Branş & Genel Denemeler
+    ...(isGrade11 || (!isEarlyGrade && !isGrade11) ? [
+      { 
+        id: 'branches' as TabType, 
+        label: 'Branş Deneme Analizi', 
+        icon: Target,
+        tooltip: 'Tek bir derse ait kitap/konu bazında yapılan branş denemeleri'
+      },
+      { 
+        id: 'mocks' as TabType, 
+        label: isGrade11 ? 'TYT / 11. Sınıf Denemeleri' : 'Genel Deneme Analizi', 
+        icon: TrendingUp,
+        tooltip: 'Genel deneme sınavları ve net grafikleri'
+      }
+    ] : []),
+    
     // — ARAÇLAR & DESTEK —
     { id: '__sep__' as any, label: 'ARAÇLAR & DESTEK', icon: null, isSeparator: true },
     { id: 'youtube', label: 'YouTube Ders Takip', icon: Youtube },
     { id: 'pomodoro', label: 'Pomodoro Sayıcı', icon: Timer, highlight: true },
-    { id: 'recommendations', label: 'Kaynak Önerileri', icon: Sparkles, highlight: true },
-    { id: 'ai_coach', label: 'Yapay Zeka Koçu', icon: Bot, highlight: true }
+    { id: 'recommendations', label: isEarlyGrade ? 'Seviyeli Kaynak Önerileri' : 'Kaynak Önerileri', icon: Sparkles, highlight: true },
+    { id: 'ai_coach', label: isEarlyGrade ? 'Lise Koçu (Yapay Zeka)' : 'Yapay Zeka Koçu', icon: Bot, highlight: true }
   ];
 
   const teacherTabs: TabItem[] = [

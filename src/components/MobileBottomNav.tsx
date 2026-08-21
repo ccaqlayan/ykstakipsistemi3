@@ -71,13 +71,29 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     return () => observer.disconnect();
   }, []);
 
+  const effectiveUser = previewStudentUser || currentUser;
+
+  // Kademe tespiti
+  const gradeLevel = effectiveUser?.className ? (
+    effectiveUser.className.toUpperCase().includes('MEZUN') ? 'mezun' :
+    effectiveUser.className.startsWith('9') ? '9' :
+    effectiveUser.className.startsWith('10') ? '10' :
+    effectiveUser.className.startsWith('11') ? '11' : '12'
+  ) : '12';
+  const isEarlyGrade = gradeLevel === '9' || gradeLevel === '10';
+
   // Student Primary Tabs
-  const isStudentDenemeActive = activeTab === 'branches' || activeTab === 'mocks';
-  const studentMainTabIds: TabType[] = ['dashboard', 'questions', 'branches', 'mocks', 'errors'];
+  const isStudentDenemeActive = isEarlyGrade 
+    ? activeTab === 'school_exams' || activeTab === 'institutional_mocks'
+    : activeTab === 'branches' || activeTab === 'mocks' || activeTab === 'school_exams' || activeTab === 'institutional_mocks';
+    
+  const studentMainTabIds: TabType[] = ['dashboard', 'questions', 'school_exams', 'institutional_mocks', 'branches', 'mocks', 'errors'];
   const isStudentOtherTabActive = !studentMainTabIds.includes(activeTab);
 
   const getStudentOtherTabLabel = (): string => {
     switch (activeTab) {
+      case 'school_exams': return 'Yazılılar';
+      case 'institutional_mocks': return 'Karnem';
       case 'subject_progress': return 'Dersler';
       case 'routines': return 'Rutinler';
       case 'planner': return 'Plan';
@@ -106,9 +122,9 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       isActive: activeTab === 'questions'
     },
     {
-      id: 'branches',
-      label: 'Deneme',
-      icon: Target,
+      id: isEarlyGrade ? 'school_exams' : 'branches',
+      label: isEarlyGrade ? 'Yazılılar' : 'Deneme',
+      icon: isEarlyGrade ? BarChart3 : Target,
       isActive: isStudentDenemeActive
     },
     {

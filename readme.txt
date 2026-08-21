@@ -125,7 +125,12 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
   * SystemStorageTab.tsx          : Disk kullanımı ve Firestore veritabanı kotası alanı
   * SystemVersionTab.tsx          : GitHub sürüm güncelleme, commit geçmişi ve sistem yedekleri yönetimi alanı
 
-[3.9. Bağımsız Diğer Ekranlar (Independent Views)]
+[3.9. Okul Yazılı Sınavları & OBP Karnesi (School Exams)]
+- Main Orchestrator : src/components/SchoolExamsView.tsx
+- Modüller (src/components/school_exams/) :
+  * SchoolExamModal.tsx           : 1. ve 2. Dönem okul yazılı sınav notu ve sınıf ortalaması ekleme/düzenleme modalı
+
+[3.10. Bağımsız Diğer Ekranlar (Independent Views)]
 - src/components/AICoachView.tsx               : Bireysel öğrenci ve sınıf genel Yapay Zeka Koç Raporu.
 - src/components/AdminMessageManagement.tsx   : Yönetici toplu mesaj gönderme ve mesaj denetim paneli.
 - src/components/AuditLogsView.tsx             : Sistem İşlem Zaman Çizelgesi (Ayak İzi izleme alanı).
@@ -193,8 +198,15 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - pastExamData.ts    : ÖSYM geçmiş YKS taban puan ve sıralama verileri.
 - pastQuestionsData.ts: ÖSYM geçmiş yıllara göre konu bazlı soru sayıları.
 - universities.ts    : Türkiye üniversiteler listesi.
+- curriculum/        : Ara sınıflar MEB Maarif Modeli ve lise müfredat/kaynak veri setleri:
+  * index.ts         : getCurriculumForGrade ve getCategoryCurriculumKeysForGrade seçicileri
+  * grade9.ts        : 9. Sınıf Maarif Modeli temaları ve alt konuları
+  * grade10.ts       : 10. Sınıf Maarif Modeli temaları ve alt konuları
+  * grade11.ts       : 11. Sınıf Alan müfredatı
+  * recommendationsData.ts : 9 ve 10. sınıf için 179 adet seviyeli kitap tavsiyesi
 
 [Yardımcı Modüller (src/utils/)]
+- gradeUtils.ts      : Sınıf kademesi tespit (9, 10, 11, 12, Mezun), hedef YKS yılı hesaplayıcı ve OBP formülleri.
 - colorUtils.ts        : Rastgele renk ve badge stil oluşturucuları.
 - dateUtils.ts         : Tarih formatlama ve zaman hesaplayıcılar.
 - imageCompressor.ts   : Görsel boyut küçültme ve Canvas sıkıştırma.
