@@ -490,7 +490,7 @@ export default function App() {
       BRANCH_EXAM: 'branches',
       GENERAL_MOCK: 'mocks',
       STUDY_PLAN: 'planner',
-      STUDY_SESSION: 'study',
+      STUDY_SESSION: 'planner',
       RESOURCE_BOOK: 'resources',
       ROUTINE: 'routines'
     };

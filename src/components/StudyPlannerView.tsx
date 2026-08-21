@@ -1024,62 +1024,6 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   const [notes, setNotes] = useState('');
   const [targetDaysForAdd, setTargetDaysForAdd] = useState<DayOfWeek[]>([today]);
 
-  // ── AI SMART ADD PREFILL EVENT & MOUNT CACHE LISTENER ──
-  useEffect(() => {
-    const applyPrefill = (detail: any) => {
-      if (!detail || detail.intent !== 'STUDY_PLAN') return;
-      const f = detail.fields || {};
-
-      let targetDay: DayOfWeek = selectedDay || today;
-      if (f.date) {
-        try {
-          const d = new Date(f.date);
-          const dayNames: DayOfWeek[] = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
-          targetDay = dayNames[d.getDay()] || targetDay;
-        } catch {}
-      }
-
-      setTargetDaysForAdd([targetDay]);
-      setSelectedDay(targetDay);
-
-      if (f.subject) {
-        setSubject(f.subject);
-      }
-      if (f.topicName) {
-        setTopic(f.topicName);
-      }
-      if (f.durationMinutes) {
-        setPlannedMinutes(Number(f.durationMinutes) || 60);
-      }
-      if (f.totalQuestions) {
-        setTargetQuestionCount(Number(f.totalQuestions) || '');
-      }
-
-      const noteParts: string[] = [];
-      if (f.time) noteParts.push(`Saat: ${f.time}`);
-      if (f.notes) noteParts.push(f.notes);
-      if (noteParts.length > 0) {
-        setNotes(noteParts.join(' - '));
-      }
-
-      setActiveSubTab('tracker');
-      setShowAddModal(true);
-    };
-
-    const cached = (window as any).__lastSmartAddPrefill;
-    if (cached && cached.intent === 'STUDY_PLAN' && Date.now() - cached.timestamp < 3500) {
-      applyPrefill(cached);
-      delete (window as any).__lastSmartAddPrefill;
-    }
-
-    const handleSmartAddPrefill = (e: any) => {
-      applyPrefill(e.detail);
-    };
-
-    window.addEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
-    return () => window.removeEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
-  }, [today, selectedDay]);
-
   // Add YouTube Video Task Modal States
   const [showAddVideoModal, setShowAddVideoModal] = useState(false);
   const [targetDayForAddVideo, setTargetDayForAddVideo] = useState<DayOfWeek>(today);
@@ -1831,6 +1775,115 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
     if (!dailyStudyLogModalData || !onSaveDailyStudyLog) return;
     onSaveDailyStudyLog(dailyStudyLogModalData.dateStr, null);
   };
+
+  // ── AI SMART ADD PREFILL EVENT & MOUNT CACHE LISTENER ──
+  useEffect(() => {
+    const applyPrefill = (detail: any) => {
+      if (!detail) return;
+      const f = detail.fields || {};
+
+      // ── CASE A: STUDY_SESSION (Günün Net Çalışma Süresi / "+ Net Süre Gir" Modalı) ──
+      if (detail.intent === 'STUDY_SESSION') {
+        let targetDay: DayOfWeek = selectedDay || today;
+        if (f.date) {
+          try {
+            const d = new Date(f.date);
+            const dayNames: DayOfWeek[] = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+            targetDay = dayNames[d.getDay()] || targetDay;
+          } catch {}
+        }
+
+        setSelectedDay(targetDay);
+        setActiveSubTab('tracker');
+
+        const dateInfo = selectedWeekDaysMap?.[targetDay];
+        const dateStr = f.date || dateInfo?.isoDate || getPlanDateAndWeekLabel(targetDay).date;
+        const displayDate = dateInfo?.displayDate || '';
+        const dayPlans = activePlans.filter(p => p.day === targetDay);
+        const taskMinutes = dayPlans.reduce((sum, p) => sum + (p.completedMinutes || 0), 0);
+
+        let totalMins = Number(f.durationMinutes) || 0;
+        if (totalMins === 0) {
+          const textToParse = `${f.notes || ''} ${detail.summary || ''}`;
+          const hourMatches = [...textToParse.matchAll(/([0-9]+(?:[.,][0-9]+)?)\s*saat/gi)];
+          const minMatches = [...textToParse.matchAll(/([0-9]+)\s*(?:dk|dakika)/gi)];
+          
+          let parsedMins = 0;
+          for (const m of hourMatches) {
+            parsedMins += parseFloat(m[1].replace(',', '.')) * 60;
+          }
+          for (const m of minMatches) {
+            parsedMins += parseInt(m[1], 10);
+          }
+          if (parsedMins > 0) totalMins = Math.round(parsedMins);
+        }
+
+        const logNotes = f.notes || (detail.summary && !detail.summary.includes('Net') ? detail.summary : 'Çalışma oturumu');
+
+        setDailyStudyLogModalData({
+          day: targetDay,
+          dateStr,
+          displayDate,
+          currentMinutes: totalMins > 0 ? totalMins : 60,
+          currentNotes: logNotes,
+          isManual: true,
+          taskMinutes
+        });
+        return;
+      }
+
+      // ── CASE B: STUDY_PLAN (Yeni Ders / Çalışma Görevi Ekle Modalı) ──
+      if (detail.intent === 'STUDY_PLAN') {
+        let targetDay: DayOfWeek = selectedDay || today;
+        if (f.date) {
+          try {
+            const d = new Date(f.date);
+            const dayNames: DayOfWeek[] = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+            targetDay = dayNames[d.getDay()] || targetDay;
+          } catch {}
+        }
+
+        setTargetDaysForAdd([targetDay]);
+        setSelectedDay(targetDay);
+
+        if (f.subject) {
+          setSubject(f.subject);
+        }
+        if (f.topicName) {
+          setTopic(f.topicName);
+        }
+        if (f.durationMinutes) {
+          setPlannedMinutes(Number(f.durationMinutes) || 60);
+        }
+        if (f.totalQuestions) {
+          setTargetQuestionCount(Number(f.totalQuestions) || '');
+        }
+
+        const noteParts: string[] = [];
+        if (f.time) noteParts.push(`Saat: ${f.time}`);
+        if (f.notes) noteParts.push(f.notes);
+        if (noteParts.length > 0) {
+          setNotes(noteParts.join(' - '));
+        }
+
+        setActiveSubTab('tracker');
+        setShowAddModal(true);
+      }
+    };
+
+    const cached = (window as any).__lastSmartAddPrefill;
+    if (cached && (cached.intent === 'STUDY_PLAN' || cached.intent === 'STUDY_SESSION') && Date.now() - cached.timestamp < 3500) {
+      applyPrefill(cached);
+      delete (window as any).__lastSmartAddPrefill;
+    }
+
+    const handleSmartAddPrefill = (e: any) => {
+      applyPrefill(e.detail);
+    };
+
+    window.addEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
+    return () => window.removeEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
+  }, [today, selectedDay, selectedWeekDaysMap, activePlans]);
 
   // Weekly Stats Calculation
   const totalWeeklyPlannedMins = activePlans.reduce((acc, curr) => acc + (curr.plannedMinutes || 0), 0);

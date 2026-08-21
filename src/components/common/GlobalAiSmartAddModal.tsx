@@ -423,8 +423,14 @@ export const GlobalAiSmartAddModal: React.FC<GlobalAiSmartAddModalProps> = ({
 
                 {typeof parsedResult.fields?.durationMinutes === 'number' && (
                   <div className="p-2 bg-slate-900/90 border border-slate-800 rounded-xl space-y-0.5">
-                    <span className="text-[10px] text-slate-500 font-semibold block">Çözüm Süresi</span>
-                    <strong className="text-amber-300 font-bold block">{parsedResult.fields.durationMinutes} Dakika</strong>
+                    <span className="text-[10px] text-slate-500 font-semibold block">
+                      {parsedResult.intent === 'STUDY_SESSION' ? 'Toplam Çalışma Süresi' : 'Çözüm Süresi'}
+                    </span>
+                    <strong className="text-amber-300 font-bold block">
+                      {parsedResult.fields.durationMinutes >= 60 
+                        ? `${Math.floor(parsedResult.fields.durationMinutes / 60)} sa ${parsedResult.fields.durationMinutes % 60 > 0 ? (parsedResult.fields.durationMinutes % 60) + ' dk' : ''}`
+                        : `${parsedResult.fields.durationMinutes} dk`}
+                    </strong>
                   </div>
                 )}
 

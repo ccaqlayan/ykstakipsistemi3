@@ -2236,12 +2236,18 @@ MÜMKÜN NİYETLER (intents):
   targetTab: "mocks"
 - "STUDY_PLAN": Haftalık ders çalışma programına görev/plan ekleme (Örn: "Yarın saat 14:00'te Geometri üçgenler tekrarı yapalım", "Pazartesi günü Paragraf ve Problem koy")
   targetTab: "planner"
-- "STUDY_SESSION": Ders çalışma süresi / kronometre kaydı (Örn: "Bugün 3 saat Matematik, 2 saat Fizik çalıştım")
-  targetTab: "study"
+- "STUDY_SESSION": Ders çalışma süresi / günlük net süre kaydı (Örn: "Bugün 3 saat Matematik, 1.5 saat Fizik çalıştım", "Bugün 4 saat ders çalıştım")
+  targetTab: "planner"
 - "RESOURCE_BOOK": Kaynak kitap ekleme (Örn: "Apotemi AYT Kimya Organik soru bankası aldım ekleyelim")
   targetTab: "resources"
 - "ROUTINE": Günlük rutin / alışkanlık ekleme (Örn: "Her gün 20 paragraf çözme rutini ekle")
   targetTab: "routines"
+
+GÜNLÜK ÇALIŞMA SÜRESİ (STUDY_SESSION) ÖZEL KURALLARI:
+- targetTab her zaman "planner" olmalıdır.
+- Cümledeki tüm çalışma sürelerini toplayıp dakika cinsinden "durationMinutes" alanına yaz (Örn: "3 saat Matematik, 1.5 saat Fizik" -> 3 * 60 + 1.5 * 60 = 270 dakika).
+- Hangi derslere ne kadar çalışıldığını anlaşılır şekilde "notes" alanına aktar (Örn: "3 saat Matematik, 1.5 saat Fizik").
+- summary alanına Türkçe net özet yaz (Örn: "Net Çalışma Süresi: 4.5 Saat (270 dk)").
 
 GENEL DENEME (GENERAL_MOCK) ÖZEL KURALLARI:
 - Deneme adını "mockTitle" alanına ata (Örn: "Özdebir Türkiye Geneli TYT Denemesi", "3D Türkiye Geneli AYT-1", vb.).
