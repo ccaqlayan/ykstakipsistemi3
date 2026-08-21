@@ -48,12 +48,32 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
   const [reportData, setReportData] = useState<WeeklyReportCardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
+  const [lastGeneratedAt, setLastGeneratedAt] = useState<string | null>(null);
+  const [lastGeneratedDate, setLastGeneratedDate] = useState<string | null>(null);
+  const [dailyLimitWarning, setDailyLimitWarning] = useState<string | null>(null);
 
   const studentName = profile?.name || currentUser?.name || 'Öğrenci';
   const targetField = profile?.targetField || 'SAY';
   const targetGoal = profile?.targetUniversity && profile?.targetDepartment 
     ? `${profile.targetUniversity} - ${profile.targetDepartment}` 
     : (profile?.targetRank ? `Hedef #${profile.targetRank}` : 'İlk 20.000');
+
+  const getStorageKey = () => {
+    const userIdentifier = currentUser?.id || profile?.name || 'student';
+    return `yks_weekly_ai_report_card_${userIdentifier}_${currentWeekLabel}`;
+  };
+
+  const getStoredReport = () => {
+    try {
+      const saved = localStorage.getItem(getStorageKey());
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn('Failed to parse cached weekly report card', e);
+    }
+    return null;
+  };
 
   // Haftalık verileri derleme fonksiyonu
   const buildReportPayload = () => {
@@ -126,14 +146,38 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
     };
   };
 
-  const fetchWeeklyReport = async () => {
+  const fetchWeeklyReport = async (forceRefresh = false) => {
+    const todayIsoDate = new Date().toISOString().split('T')[0];
+
+    // Günde 1 kez oluşturma kuralı kontrolü
+    if (forceRefresh && lastGeneratedDate === todayIsoDate) {
+      setDailyLimitWarning('Haftalık başarı karnesi günde en fazla 1 kez yeniden oluşturulabilir. Bugün için karneniz zaten oluşturuldu. Yeni çalışma verilerinizle birlikte yarın tekrar yeni karne üretebilirsiniz.');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
+    setDailyLimitWarning(null);
     try {
       const payload = buildReportPayload();
       const response = await generateWeeklyAiReportCard(payload, currentUser);
       if (response && response.data) {
+        const nowIso = new Date().toISOString();
         setReportData(response.data);
+        setLastGeneratedAt(nowIso);
+        setLastGeneratedDate(todayIsoDate);
+
+        // Karneyi 1 hafta boyunca hatırlamak üzere yerel hafızaya kaydet
+        try {
+          localStorage.setItem(getStorageKey(), JSON.stringify({
+            reportData: response.data,
+            createdAt: nowIso,
+            createdDate: todayIsoDate,
+            weekLabel: currentWeekLabel
+          }));
+        } catch (saveErr) {
+          console.warn('Failed to cache weekly report card', saveErr);
+        }
       } else {
         throw new Error('Karne verisi alınamadı.');
       }
@@ -147,12 +191,24 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
 
   useEffect(() => {
     if (isOpen) {
-      fetchWeeklyReport();
+      setDailyLimitWarning(null);
+      const cached = getStoredReport();
+      if (cached && cached.reportData) {
+        // Önceden oluşturulmuş karne mevcut! 1 hafta boyunca doğrudan kayıtlı karne gösterilir.
+        setReportData(cached.reportData);
+        setLastGeneratedAt(cached.createdAt || null);
+        setLastGeneratedDate(cached.createdDate || null);
+        setIsLoading(false);
+      } else {
+        // Henüz bu haftaya ait karne yok, ilk kez oluştur
+        fetchWeeklyReport(false);
+      }
     } else {
       setReportData(null);
       setError(null);
+      setDailyLimitWarning(null);
     }
-  }, [isOpen]);
+  }, [isOpen, currentWeekLabel]);
 
   if (!isOpen) return null;
 
@@ -186,6 +242,23 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
     setTimeout(() => setCopySuccess(false), 2500);
   };
 
+  const formatDateTimeDisplay = (isoString?: string | null) => {
+    if (!isoString) return '';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleDateString('tr-TR', {
+        day: 'numeric',
+        month: 'long',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return '';
+    }
+  };
+
+  const isGeneratedToday = lastGeneratedDate === new Date().toISOString().split('T')[0];
+
   const modalContent = (
     <div 
       className="fixed inset-0 z-[120] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-fade-in print:p-0 print:bg-white print:static"
@@ -200,14 +273,25 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
               <Award className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                 <h3 className="text-lg font-black text-white">Haftalık Yapay Zeka Başarı Karnesi</h3>
                 <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500/20 to-indigo-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-black uppercase tracking-wider">
                   Pazar Raporu
                 </span>
+                {lastGeneratedAt && (
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                    Kayıtlı Karne
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 mt-0.5">
                 {studentName} • {targetField} • {currentWeekLabel} Performans Analizi
+                {lastGeneratedAt && (
+                  <span className="text-slate-400 ml-1.5 font-mono text-[11px]">
+                    (Oluşturulma: {formatDateTimeDisplay(lastGeneratedAt)})
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -247,6 +331,24 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
           </div>
         </div>
 
+        {/* Günlük Limit Uyarısı */}
+        {dailyLimitWarning && (
+          <div className="p-4 bg-amber-500/15 border border-amber-500/40 rounded-2xl flex items-center space-x-3 text-amber-200 animate-fade-in shadow-lg">
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
+            <div className="text-xs font-medium leading-relaxed flex-1">
+              <strong className="text-amber-300 font-bold block mb-0.5">Günde 1 Kez Oluşturma Kuralı:</strong>
+              {dailyLimitWarning}
+            </div>
+            <button
+              type="button"
+              onClick={() => setDailyLimitWarning(null)}
+              className="text-amber-400 hover:text-white p-1 rounded-lg hover:bg-amber-500/20"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* LOADING STATE */}
         {isLoading && (
           <div className="py-20 flex flex-col items-center justify-center space-y-4">
@@ -270,7 +372,7 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
             <p className="text-sm font-semibold text-rose-200">{error}</p>
             <button
               type="button"
-              onClick={fetchWeeklyReport}
+              onClick={() => fetchWeeklyReport(true)}
               className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
             >
               Tekrar Dene
@@ -408,11 +510,22 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800 print:hidden">
               <button
                 type="button"
-                onClick={fetchWeeklyReport}
-                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer"
+                onClick={() => fetchWeeklyReport(true)}
+                disabled={isLoading}
+                title={isGeneratedToday ? "Haftalık başarı karnesi günde 1 kez oluşturulabilir. Yarın tekrar yenileyebilirsiniz." : "Yeni çalışma ve soru verileriyle karneyi güncelle"}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                  isGeneratedToday 
+                    ? 'bg-slate-800/80 text-slate-400 border border-slate-700 hover:bg-slate-800' 
+                    : 'bg-indigo-600/80 hover:bg-indigo-500 text-white border border-indigo-400/40 shadow-md'
+                }`}
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                 <span>Yeniden Değerlendir</span>
+                {isGeneratedToday && (
+                  <span className="text-[10px] bg-slate-900 px-1.5 py-0.5 rounded text-amber-400 border border-amber-500/30 font-mono">
+                    Günde 1 Kez
+                  </span>
+                )}
               </button>
 
               <div className="flex items-center space-x-2">
