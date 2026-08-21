@@ -89,6 +89,12 @@ export function resolveStudentData(
     youtubeVideos: Array.isArray(rawData.youtubeVideos)
       ? rawData.youtubeVideos
       : [],
+    completedPastTopics: Array.isArray(rawData.completedPastTopics)
+      ? rawData.completedPastTopics
+      : (fallbackBase?.completedPastTopics || []),
+    pastExams: Array.isArray(rawData.pastExams)
+      ? rawData.pastExams
+      : [],
     topics: rawData.topics || {},
     pomodoroHistory: Array.isArray((rawData as any).pomodoroHistory)
       ? (rawData as any).pomodoroHistory

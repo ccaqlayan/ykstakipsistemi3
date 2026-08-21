@@ -5,6 +5,7 @@ import {
   GraduationCap, Video, Timer 
 } from 'lucide-react';
 import { YKSDataState } from '../../types';
+import { PAST_EXAM_QUESTIONS_DATA } from '../../data/pastQuestionsData';
 
 interface DashboardSubjectWidgetProps {
   state: YKSDataState;
@@ -277,12 +278,21 @@ export const renderBranchExamsWidget = (
 };
 
 export const renderPastExamsWidget = (
-  pastExams: any[],
+  completedPastTopics: string[] = [],
   onNavigateTab: (tab: any) => void
 ) => {
-  const solvedPastExams = pastExams.filter(p => p.solved);
-  const totalPast = pastExams.length > 0 ? pastExams.length : 24;
-  const pastPercent = Math.round((solvedPastExams.length / totalPast) * 100);
+  const isTopicDone = (subject: string, topic: string) => {
+    return (
+      completedPastTopics.includes(`${subject}:${topic}`) ||
+      completedPastTopics.includes(`${subject}::${topic}`) ||
+      completedPastTopics.includes(topic)
+    );
+  };
+
+  const totalTopics = PAST_EXAM_QUESTIONS_DATA.length;
+  const solvedPastTopics = PAST_EXAM_QUESTIONS_DATA.filter((p) => isTopicDone(p.subject, p.topic));
+  const solvedCount = solvedPastTopics.length;
+  const pastPercent = totalTopics > 0 ? Math.round((solvedCount / totalTopics) * 100) : 0;
 
   return (
     <div className="bg-white/5 backdrop-blur-md border border-amber-500/30 rounded-2xl p-5 shadow-xl hover:border-amber-400/50 transition-all flex flex-col justify-between">
@@ -294,7 +304,7 @@ export const renderPastExamsWidget = (
           </div>
         </div>
         <div className="text-2xl font-bold text-white font-mono">
-          {solvedPastExams.length} <span className="text-xs font-normal text-slate-400">/ {totalPast} Yıl/Ders</span>
+          {solvedCount} <span className="text-xs font-normal text-slate-400">/ {totalTopics} Konu</span>
         </div>
         <div className="w-full bg-white/10 h-2 rounded-full mt-2.5 overflow-hidden">
           <div 

@@ -70,7 +70,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     pastExams = [],
     youtubeVideos = [],
     coachAdvices = [],
-    quickNotes = []
+    quickNotes = [],
+    completedPastTopics = []
   } = state;
 
   const [showTargetModal, setShowTargetModal] = useState(false);
@@ -345,7 +346,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       case 'branch_exams_widget': 
         return renderBranchExamsWidget(branchExams, onNavigateTab);
       case 'past_exams_widget': 
-        return renderPastExamsWidget(pastExams, onNavigateTab);
+        return renderPastExamsWidget(completedPastTopics, onNavigateTab);
       case 'video_lessons_widget': 
         return renderVideoLessonsWidget(youtubeVideos, onNavigateTab);
       case 'pomodoro_stats_widget': 

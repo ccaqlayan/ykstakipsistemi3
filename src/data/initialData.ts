@@ -42,7 +42,8 @@ export function createEmptyStudentData(name: string = '', className: string = ''
     manuallyChangedTopicStatuses: [],
     routines: [],
     quickNotes: [],
-    dailyStudyLogs: {}
+    dailyStudyLogs: {},
+    completedPastTopics: []
   };
 }
 
@@ -1331,92 +1332,7 @@ export const INITIAL_STATE: YKSDataState = {
       notes: 'Fotosentez & Kemosentez ünitesi sıradaki konu.'
     }
   ],
-  pastExams: [
-    {
-      id: 'pe-2025-tyt',
-      year: 2025,
-      examType: 'TYT',
-      subject: 'TYT Genel (Tüm Dersler)',
-      solved: true,
-      correctCount: 106,
-      wrongCount: 11,
-      netScore: 103.25,
-      analyzed: true,
-      notes: 'Süre kontrolü harikaydı, sosyal bilgiler kıvrak sorulmuştu.'
-    },
-    {
-      id: 'pe-2025-ayt',
-      year: 2025,
-      examType: 'AYT',
-      subject: 'AYT Sayısal (Mat & Fen)',
-      solved: true,
-      correctCount: 70,
-      wrongCount: 7,
-      netScore: 68.25,
-      analyzed: true,
-      notes: 'Fizikte modern fizik soruları tekrar edildi.'
-    },
-    {
-      id: 'pe-2024-tyt',
-      year: 2024,
-      examType: 'TYT',
-      subject: 'TYT Genel (Tüm Dersler)',
-      solved: true,
-      correctCount: 102,
-      wrongCount: 13,
-      netScore: 98.75,
-      analyzed: true
-    },
-    {
-      id: 'pe-2024-ayt',
-      year: 2024,
-      examType: 'AYT',
-      subject: 'AYT Sayısal (Mat & Fen)',
-      solved: true,
-      correctCount: 67,
-      wrongCount: 8,
-      netScore: 65.0,
-      analyzed: true
-    },
-    {
-      id: 'pe-2023-tyt',
-      year: 2023,
-      examType: 'TYT',
-      subject: 'TYT Genel',
-      solved: true,
-      correctCount: 99,
-      wrongCount: 15,
-      netScore: 95.25,
-      analyzed: true
-    },
-    {
-      id: 'pe-2023-ayt',
-      year: 2023,
-      examType: 'AYT',
-      subject: 'AYT Sayısal',
-      solved: true,
-      correctCount: 64,
-      wrongCount: 9,
-      netScore: 61.75,
-      analyzed: true
-    },
-    {
-      id: 'pe-2022-tyt',
-      year: 2022,
-      examType: 'TYT',
-      subject: 'TYT Genel',
-      solved: false,
-      analyzed: false
-    },
-    {
-      id: 'pe-2022-ayt',
-      year: 2022,
-      examType: 'AYT',
-      subject: 'AYT Sayısal',
-      solved: false,
-      analyzed: false
-    }
-  ],
+  pastExams: [],
   branchExams: [
     {
       id: 'be-1',
