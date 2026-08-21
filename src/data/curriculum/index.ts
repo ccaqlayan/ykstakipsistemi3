@@ -87,21 +87,21 @@ export function getCategoryCurriculumKeysForGrade(
     switch (categoryId) {
       case 'matematik':
       case 'geometri':
-        return ['11. Sınıf Matematik'];
+        return ['MATEMATİK'];
       case 'fizik':
-        return ['11. Sınıf Fizik'];
+        return ['FİZİK'];
       case 'kimya':
-        return ['11. Sınıf Kimya'];
+        return ['KİMYA'];
       case 'biyoloji':
-        return ['11. Sınıf Biyoloji'];
+        return ['BİYOLOJİ'];
       case 'turkce_edebiyat':
-        return ['11. Sınıf Türk Dili ve Edebiyatı'];
+        return ['TÜRK DİLİ VE EDEBİYATI'];
       case 'tarih':
-        return ['11. Sınıf Tarih'];
+        return ['TARİH'];
       case 'cografya':
-        return ['11. Sınıf Coğrafya'];
+        return ['COĞRAFYA'];
       case 'felsefe_din':
-        return ['11. Sınıf Felsefe'];
+        return ['FELSEFE'];
       default:
         return defaultKeys;
     }

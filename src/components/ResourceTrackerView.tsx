@@ -220,8 +220,8 @@ const getTopicsForSelectedDers = (dersFilter: string, examTypeFilter: string, gr
       return [{ key: directKey, topics: cur[directKey] }];
     }
 
-    // 2. Specific grade aliases for 9 & 10
-    if (gradeLevel === '9' || gradeLevel === '10') {
+    // 2. Specific grade aliases for 9, 10 & 11
+    if (gradeLevel === '9' || gradeLevel === '10' || gradeLevel === '11') {
       if (dLower.includes('matematik') || dLower.includes('geometri')) return [{ key: 'MATEMATİK', topics: cur['MATEMATİK'] || [] }];
       if (dLower.includes('edebiyat') || dLower.includes('türkçe') || dLower.includes('türk dili')) return [{ key: 'TÜRK DİLİ VE EDEBİYATI', topics: cur['TÜRK DİLİ VE EDEBİYATI'] || [] }];
       if (dLower.includes('fizik')) return [{ key: 'FİZİK', topics: cur['FİZİK'] || [] }];
@@ -231,18 +231,7 @@ const getTopicsForSelectedDers = (dersFilter: string, examTypeFilter: string, gr
       if (dLower.includes('coğrafya')) return [{ key: 'COĞRAFYA', topics: cur['COĞRAFYA'] || [] }];
       if (dLower.includes('felsefe') && cur['FELSEFE']) return [{ key: 'FELSEFE', topics: cur['FELSEFE'] || [] }];
       if (dLower.includes('din')) return [{ key: 'DİN KÜLTÜRÜ', topics: cur['DİN KÜLTÜRÜ'] || [] }];
-    }
-
-    // 3. Specific grade aliases for 11
-    if (gradeLevel === '11') {
-      if (dLower.includes('matematik')) return [{ key: '11. Sınıf Matematik', topics: cur['11. Sınıf Matematik'] || [] }];
-      if (dLower.includes('fizik')) return [{ key: '11. Sınıf Fizik', topics: cur['11. Sınıf Fizik'] || [] }];
-      if (dLower.includes('kimya')) return [{ key: '11. Sınıf Kimya', topics: cur['11. Sınıf Kimya'] || [] }];
-      if (dLower.includes('biyoloji')) return [{ key: '11. Sınıf Biyoloji', topics: cur['11. Sınıf Biyoloji'] || [] }];
-      if (dLower.includes('edebiyat') || dLower.includes('türkçe') || dLower.includes('türk dili')) return [{ key: '11. Sınıf Türk Dili ve Edebiyatı', topics: cur['11. Sınıf Türk Dili ve Edebiyatı'] || [] }];
-      if (dLower.includes('tarih')) return [{ key: '11. Sınıf Tarih', topics: cur['11. Sınıf Tarih'] || [] }];
-      if (dLower.includes('coğrafya')) return [{ key: '11. Sınıf Coğrafya', topics: cur['11. Sınıf Coğrafya'] || [] }];
-      if (dLower.includes('felsefe')) return [{ key: '11. Sınıf Felsefe', topics: cur['11. Sınıf Felsefe'] || [] }];
+      if (dLower.includes('ingilizce') || dLower.includes('english')) return [{ key: 'İNGİLİZCE', topics: cur['İNGİLİZCE'] || [] }];
     }
 
     // 4. Fallback fuzzy contains match
@@ -727,14 +716,16 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
     if (gradeLevel === '11') {
       return [
         { value: 'all', label: 'Tüm 11. Sınıf Dersleri' },
-        { value: '11. Sınıf Matematik', label: '11. Sınıf Matematik' },
-        { value: '11. Sınıf Fizik', label: '11. Sınıf Fizik' },
-        { value: '11. Sınıf Kimya', label: '11. Sınıf Kimya' },
-        { value: '11. Sınıf Biyoloji', label: '11. Sınıf Biyoloji' },
-        { value: '11. Sınıf Türk Dili ve Edebiyatı', label: '11. Sınıf Edebiyat' },
-        { value: '11. Sınıf Tarih', label: '11. Sınıf Tarih' },
-        { value: '11. Sınıf Coğrafya', label: '11. Sınıf Coğrafya' },
-        { value: '11. Sınıf Felsefe', label: '11. Sınıf Felsefe' }
+        { value: 'Matematik', label: 'Matematik' },
+        { value: 'Türk Dili ve Edebiyatı', label: 'Türk Dili ve Edebiyatı' },
+        { value: 'Fizik', label: 'Fizik' },
+        { value: 'Kimya', label: 'Kimya' },
+        { value: 'Biyoloji', label: 'Biyoloji' },
+        { value: 'Tarih', label: 'Tarih' },
+        { value: 'Coğrafya', label: 'Coğrafya' },
+        { value: 'Felsefe', label: 'Felsefe' },
+        { value: 'Din Kültürü', label: 'Din Kültürü' },
+        { value: 'İngilizce', label: 'İngilizce' }
       ];
     }
     return [

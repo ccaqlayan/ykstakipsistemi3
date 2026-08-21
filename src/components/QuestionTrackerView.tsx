@@ -309,7 +309,7 @@ export const QuestionTrackerView: React.FC<QuestionTrackerViewProps> = ({
   const [subject, setSubject] = useState<string>(() => {
     if (gradeLevel === '9') return GRADE9_SUBJECT_NAMES[0] || 'Matematik';
     if (gradeLevel === '10') return GRADE10_SUBJECT_NAMES[0] || 'Matematik';
-    if (gradeLevel === '11') return GRADE11_SUBJECT_NAMES[0] || '11. Sınıf Matematik';
+    if (gradeLevel === '11') return GRADE11_SUBJECT_NAMES[0] || 'Matematik';
     return YKS_SUBJECTS.TYT[0];
   });
   const [targetCount, setTargetCount] = useState<number | ''>('');
