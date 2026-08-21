@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { 
   X, User, GraduationCap, Target, Upload, Link, Trash2, Camera, Check, 
   Shield, Mail, Phone, Building2, Key, Eye, EyeOff, Lock, ChevronDown, 
-  ChevronUp, AlertCircle, CheckCircle2, Bell, BellOff, Crop, Loader2
+  ChevronUp, AlertCircle, CheckCircle2, Bell, BellOff, Crop, Loader2, Sparkles
 } from 'lucide-react';
 import { UserAccount, StudentProfile, FieldType } from '../types';
 import { UNIVERSITIES } from '../data/universities';
