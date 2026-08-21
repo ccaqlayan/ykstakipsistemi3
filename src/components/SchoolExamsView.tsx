@@ -33,9 +33,6 @@ import { OfficialStudentReportCardModal } from './reports/OfficialStudentReportC
 import { BulkImportSchoolExamsModal } from './import/BulkImportSchoolExamsModal';
 import { FieldSelectionAdvisorModal } from './advisor/FieldSelectionAdvisorModal';
 import { getGradeLevel, getGradeDisplayName } from '../utils/gradeUtils';
-import { GRADE9_SUBJECT_NAMES } from '../data/curriculum/grade9';
-import { GRADE10_SUBJECT_NAMES } from '../data/curriculum/grade10';
-import { GRADE11_SUBJECT_NAMES } from '../data/curriculum/grade11';
 
 interface SchoolExamsViewProps {
   schoolExams: SchoolExam[];
@@ -51,6 +48,68 @@ interface SchoolExamsViewProps {
   onApplyBulkSchoolExams?: (updates: { studentId: string; exams: SchoolExam[] }[]) => void;
 }
 
+// Standart MEB Ders Listeleri (Title Case)
+const GRADE9_STANDARD_SUBJECTS = [
+  'Matematik',
+  'Türk Dili ve Edebiyatı',
+  'Fizik',
+  'Kimya',
+  'Biyoloji',
+  'Tarih',
+  'Coğrafya',
+  'Din Kültürü ve Ahlak Bilgisi',
+  'İngilizce',
+  'İkinci Yabancı Dil (Almanca)',
+  'Beden Eğitimi ve Spor',
+  'Görsel Sanatlar/Müzik',
+  'Sağlık Bilgisi ve Trafik Kültürü'
+];
+
+const GRADE10_STANDARD_SUBJECTS = [
+  'Matematik',
+  'Türk Dili ve Edebiyatı',
+  'Fizik',
+  'Kimya',
+  'Biyoloji',
+  'Tarih',
+  'Coğrafya',
+  'Felsefe',
+  'Din Kültürü ve Ahlak Bilgisi',
+  'İngilizce',
+  'İkinci Yabancı Dil (Almanca)',
+  'Beden Eğitimi ve Spor',
+  'Görsel Sanatlar/Müzik'
+];
+
+const GRADE11_STANDARD_SUBJECTS = [
+  '11. Sınıf Matematik',
+  '11. Sınıf Fizik',
+  '11. Sınıf Kimya',
+  '11. Sınıf Biyoloji',
+  '11. Sınıf Türk Dili ve Edebiyatı',
+  '11. Sınıf Tarih',
+  '11. Sınıf Coğrafya',
+  '11. Sınıf Felsefe',
+  'Din Kültürü ve Ahlak Bilgisi',
+  'İngilizce',
+  'İkinci Yabancı Dil (Almanca)',
+  'Beden Eğitimi ve Spor'
+];
+
+const GRADE12_STANDARD_SUBJECTS = [
+  'Matematik',
+  'Türk Dili ve Edebiyatı',
+  'Fizik',
+  'Kimya',
+  'Biyoloji',
+  'T.C. İnkılap Tarihi ve Atatürkçülük',
+  'Coğrafya',
+  'Din Kültürü ve Ahlak Bilgisi',
+  'İngilizce',
+  'İkinci Yabancı Dil (Almanca)',
+  'Beden Eğitimi ve Spor'
+];
+
 // Standart MEB Haftalık Ders Saatleri (Varsayılan Krediler)
 const DEFAULT_WEEKLY_HOURS: Record<string, number> = {
   'Matematik': 6,
@@ -65,6 +124,7 @@ const DEFAULT_WEEKLY_HOURS: Record<string, number> = {
   '11. Sınıf Biyoloji': 4,
   'Tarih': 2,
   '11. Sınıf Tarih': 2,
+  'T.C. İnkılap Tarihi ve Atatürkçülük': 2,
   'Coğrafya': 2,
   '11. Sınıf Coğrafya': 2,
   'Felsefe': 2,
@@ -77,12 +137,14 @@ const DEFAULT_WEEKLY_HOURS: Record<string, number> = {
   'Almanca': 2,
   'Beden Eğitimi ve Spor': 2,
   'Görsel Sanatlar/Müzik': 2,
+  'Sağlık Bilgisi ve Trafik Kültürü': 1,
   'Rehberlik ve Yönlendirme': 1
 };
 
 export interface SubjectGradeRow {
   subject: string;
   primaryExamId?: string;
+  examIds: string[];
   written1?: number | null;
   written2?: number | null;
   perf1?: number | null;
@@ -94,6 +156,81 @@ export interface SubjectGradeRow {
   date?: string;
   average: number | null;
 }
+
+// Türkçe karakter ve büyük/küçük harf duyarsız normalizasyon
+const normalizeSubject = (str: string): string => {
+  return str
+    .replace(/İ/g, 'i')
+    .replace(/I/g, 'ı')
+    .toLowerCase()
+    .replace(/[^a-z0-9ğüşıöç]/g, '')
+    .trim();
+};
+
+// Farklı formatlardaki ders isimlerini standart liste ile eşleştirme
+const findMatchingStandardSubject = (inputSubject: string, availableList: string[]): string => {
+  const normInput = normalizeSubject(inputSubject);
+  
+  // 1. Doğrudan eşleşme
+  const direct = availableList.find(s => normalizeSubject(s) === normInput);
+  if (direct) return direct;
+
+  // 2. Yaygın varyasyonlar
+  if (normInput.includes('dinkulturu') || normInput === 'din') {
+    const dinSub = availableList.find(s => normalizeSubject(s).includes('dinkulturu'));
+    if (dinSub) return dinSub;
+  }
+  if (normInput === 'ingilizce' || normInput.includes('birinciyabancidil')) {
+    const ingSub = availableList.find(s => normalizeSubject(s).includes('ingilizce') || normalizeSubject(s).includes('birinciyabancidil'));
+    if (ingSub) return ingSub;
+  }
+  if (normInput === 'almanca' || normInput.includes('ikinciyabancidil')) {
+    const almSub = availableList.find(s => normalizeSubject(s).includes('almanca') || normalizeSubject(s).includes('ikinciyabancidil'));
+    if (almSub) return almSub;
+  }
+  if (normInput.includes('turkdiliveedebiyati') || normInput === 'edebiyat') {
+    const edSub = availableList.find(s => normalizeSubject(s).includes('turkdiliveedebiyati') || normalizeSubject(s).includes('edebiyat'));
+    if (edSub) return edSub;
+  }
+  if (normInput.includes('bedenegitimi') || normInput.includes('beden')) {
+    const bedSub = availableList.find(s => normalizeSubject(s).includes('beden'));
+    if (bedSub) return bedSub;
+  }
+  if (normInput.includes('gorselsanatlar') || normInput.includes('muzik') || normInput.includes('sanat')) {
+    const artSub = availableList.find(s => normalizeSubject(s).includes('gorsel') || normalizeSubject(s).includes('muzik'));
+    if (artSub) return artSub;
+  }
+  if (normInput.includes('matematik')) {
+    const matSub = availableList.find(s => normalizeSubject(s).includes('matematik'));
+    if (matSub) return matSub;
+  }
+  if (normInput.includes('fizik')) {
+    const fizSub = availableList.find(s => normalizeSubject(s).includes('fizik'));
+    if (fizSub) return fizSub;
+  }
+  if (normInput.includes('kimya')) {
+    const kimSub = availableList.find(s => normalizeSubject(s).includes('kimya'));
+    if (kimSub) return kimSub;
+  }
+  if (normInput.includes('biyoloji')) {
+    const bioSub = availableList.find(s => normalizeSubject(s).includes('biyoloji'));
+    if (bioSub) return bioSub;
+  }
+  if (normInput.includes('inkilap') || normInput.includes('tarih')) {
+    const tarSub = availableList.find(s => normalizeSubject(s).includes('inkilap') || normalizeSubject(s).includes('tarih'));
+    if (tarSub) return tarSub;
+  }
+  if (normInput.includes('cografya')) {
+    const cogSub = availableList.find(s => normalizeSubject(s).includes('cografya'));
+    if (cogSub) return cogSub;
+  }
+  if (normInput.includes('felsefe')) {
+    const felSub = availableList.find(s => normalizeSubject(s).includes('felsefe'));
+    if (felSub) return felSub;
+  }
+
+  return inputSubject;
+};
 
 export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
   schoolExams = [],
@@ -116,7 +253,7 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
   const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [showAdvisorModal, setShowAdvisorModal] = useState(false);
   const [editingExam, setEditingExam] = useState<SchoolExam | null>(null);
-  const [deletingExamId, setDeletingExamId] = useState<string | null>(null);
+  const [deletingRow, setDeletingRow] = useState<SubjectGradeRow | null>(null);
   const [isTargetGpaModalOpen, setIsTargetGpaModalOpen] = useState(false);
   const [customTargetGpa, setCustomTargetGpa] = useState(profile.schoolGpaTarget?.toString() || '90.0');
 
@@ -137,20 +274,16 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
   const availableSubjects = useMemo(() => {
     switch (gradeLevel) {
       case '9':
-        return GRADE9_SUBJECT_NAMES.length > 0 ? GRADE9_SUBJECT_NAMES : [
-          'Matematik', 'Türk Dili ve Edebiyatı', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Din Kültürü', 'İngilizce', 'Almanca', 'Beden Eğitimi ve Spor', 'Görsel Sanatlar/Müzik'
-        ];
+        return GRADE9_STANDARD_SUBJECTS;
       case '10':
-        return GRADE10_SUBJECT_NAMES.length > 0 ? GRADE10_SUBJECT_NAMES : [
-          'Matematik', 'Türk Dili ve Edebiyatı', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü', 'İngilizce', 'Almanca', 'Beden Eğitimi ve Spor', 'Görsel Sanatlar/Müzik'
-        ];
+        return GRADE10_STANDARD_SUBJECTS;
       case '11':
-        return [
-          '11. Sınıf Matematik', '11. Sınıf Fizik', '11. Sınıf Kimya', '11. Sınıf Biyoloji',
-          '11. Sınıf Türk Dili ve Edebiyatı', '11. Sınıf Tarih', '11. Sınıf Coğrafya', '11. Sınıf Felsefe', 'Din Kültürü', 'İngilizce', 'Almanca', 'Beden Eğitimi ve Spor'
-        ];
+        return GRADE11_STANDARD_SUBJECTS;
+      case '12':
+      case 'mezun':
+        return GRADE12_STANDARD_SUBJECTS;
       default:
-        return ['Matematik', 'Türk Dili ve Edebiyatı', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü', 'İngilizce'];
+        return GRADE9_STANDARD_SUBJECTS;
     }
   }, [gradeLevel]);
 
@@ -159,7 +292,7 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
     return schoolExams.filter(e => e.semester === selectedSemester);
   }, [schoolExams, selectedSemester]);
 
-  // Tüm derslerin birleştirilmiş satır verileri (Tablo modeli)
+  // Tüm derslerin birleştirilmiş satır verileri (Tekilleştirilmiş Tablo modeli)
   const subjectRows: SubjectGradeRow[] = useMemo(() => {
     const map: Record<string, SubjectGradeRow> = {};
 
@@ -167,6 +300,7 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
     availableSubjects.forEach(sub => {
       map[sub] = {
         subject: sub,
+        examIds: [],
         weeklyHours: DEFAULT_WEEKLY_HOURS[sub] || 2,
         written1: null,
         written2: null,
@@ -178,12 +312,15 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
       };
     });
 
-    // 2. Kaydedilmiş sınav verilerini entegre et
+    // 2. Kaydedilmiş sınav verilerini standart derslerle eşleştirerek entegre et
     semesterExams.forEach(exam => {
-      if (!map[exam.subject]) {
-        map[exam.subject] = {
-          subject: exam.subject,
-          weeklyHours: exam.weeklyHours || DEFAULT_WEEKLY_HOURS[exam.subject] || 2,
+      const matchedSubject = findMatchingStandardSubject(exam.subject, availableSubjects);
+
+      if (!map[matchedSubject]) {
+        map[matchedSubject] = {
+          subject: matchedSubject,
+          examIds: [],
+          weeklyHours: exam.weeklyHours || DEFAULT_WEEKLY_HOURS[matchedSubject] || 2,
           written1: null,
           written2: null,
           perf1: null,
@@ -194,7 +331,10 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
         };
       }
 
-      const row = map[exam.subject];
+      const row = map[matchedSubject];
+      if (exam.id && !row.examIds.includes(exam.id)) {
+        row.examIds.push(exam.id);
+      }
       if (!row.primaryExamId) {
         row.primaryExamId = exam.id;
       }
@@ -409,6 +549,17 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
       onUpdateSchoolExam(examData as SchoolExam);
     } else {
       onAddSchoolExam(examData);
+    }
+  };
+
+  const handleConfirmDeleteRow = () => {
+    if (deletingRow) {
+      if (deletingRow.examIds && deletingRow.examIds.length > 0) {
+        deletingRow.examIds.forEach(id => onDeleteSchoolExam(id));
+      } else if (deletingRow.primaryExamId) {
+        onDeleteSchoolExam(deletingRow.primaryExamId);
+      }
+      setDeletingRow(null);
     }
   };
 
@@ -943,10 +1094,10 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
-                          {row.primaryExamId && (
+                          {(row.primaryExamId || row.examIds.length > 0) && (
                             <button
                               type="button"
-                              onClick={() => setDeletingExamId(row.primaryExamId!)}
+                              onClick={() => setDeletingRow(row)}
                               className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-rose-500 text-slate-400 hover:text-rose-400 transition-all cursor-pointer"
                               title="Bu dersin notlarını temizle"
                             >
@@ -1121,16 +1272,11 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
 
       {/* Delete Confirmation Modal */}
       <ConfirmDeleteModal
-        isOpen={!!deletingExamId}
-        title="Ders Notunu Sil"
-        itemName="Bu dersin not dökümünü"
-        onConfirm={() => {
-          if (deletingExamId) {
-            onDeleteSchoolExam(deletingExamId);
-            setDeletingExamId(null);
-          }
-        }}
-        onClose={() => setDeletingExamId(null)}
+        isOpen={!!deletingRow}
+        title="Ders Notlarını Sil"
+        itemName={deletingRow ? `${deletingRow.subject} dersine ait not dökümünü` : 'Bu dersin notlarını'}
+        onConfirm={handleConfirmDeleteRow}
+        onClose={() => setDeletingRow(null)}
       />
 
       {/* Target GPA Modal */}
