@@ -10,7 +10,8 @@ import { StudentPreviewBanner } from './components/StudentPreviewBanner';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { GlobalAiSmartAddModal } from './components/common/GlobalAiSmartAddModal';
 
-import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, InstitutionalMockExam, FieldType, DailyStudyTimeLog, StudyPlanItem, ResourceItem, RoutineItem, SchoolExam } from './types';
+import { AppGlobalState, UserAccount, YKSDataState, StudentProfile, AuditLogItem, DirectMessage, ClassAICoachAdvice, ClassDefinition, ClassFieldType, InstitutionalMockExam, FieldType, DailyStudyTimeLog, StudyPlanItem, ResourceItem, RoutineItem, SchoolExam } from './types';
+import { getGradeLevel, GradeLevel } from './utils/gradeUtils';
 import { deleteStorageFile } from './services/storageUpload';
 import { loadGlobalState, saveGlobalState, exportDataAsJSON, resetToDefaultData } from './services/storage';
 import { isMessageUnreadForUser } from './utils/statusUtils';
@@ -1118,10 +1119,17 @@ export default function App() {
     );
   };
 
-  const handleCreateClass = (className: string, field: FieldType, description?: string) => {
+  const handleCreateClass = (
+    className: string, 
+    field: ClassFieldType, 
+    description?: string, 
+    gradeLevel?: GradeLevel
+  ) => {
+    const resolvedGrade = gradeLevel || getGradeLevel(className);
     const newClass: ClassDefinition = {
       id: 'class-' + Date.now(),
       name: className,
+      gradeLevel: resolvedGrade,
       field: field,
       description: description || '',
       assignedTeacherIds: currentUser ? [currentUser.id] : []

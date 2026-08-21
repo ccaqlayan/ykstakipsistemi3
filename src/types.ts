@@ -28,11 +28,14 @@ export interface UserAccount {
   hasCompletedOnboarding?: boolean;
 }
 
+export type ClassFieldType = FieldType | 'ORTAK';
+
 export interface ClassDefinition {
   id: string;
-  name: string; // e.g. '12-A SAY'
+  name: string; // e.g. '12-A SAY', '9-A', '10-B'
+  gradeLevel?: '9' | '10' | '11' | '12' | 'mezun';
   description?: string;
-  field?: FieldType;
+  field?: ClassFieldType;
   assignedTeacherIds: string[];
   classCoachAdvices?: ClassAICoachAdvice[];
 }

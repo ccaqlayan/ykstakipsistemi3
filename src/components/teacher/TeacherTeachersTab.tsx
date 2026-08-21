@@ -13,6 +13,7 @@ import {
   Unlock
 } from 'lucide-react';
 import { UserAccount, ClassDefinition } from '../../types';
+import { getGradeLevel, GradeLevel } from '../../utils/gradeUtils';
 import { DEFAULT_AVATAR } from '../../data/initialData';
 
 interface TeacherTeachersTabProps {
@@ -25,6 +26,7 @@ interface TeacherTeachersTabProps {
   setEditClassNameInput: (name: string) => void;
   setEditClassDescInput: (desc: string) => void;
   setEditClassFieldInput: (field: any) => void;
+  setEditClassGradeLevel?: (grade: GradeLevel) => void;
   setShowEditClassModal: (show: boolean) => void;
   setSelectedClassForTeacherAssign: (cls: ClassDefinition) => void;
   setSelectedTeacherIdsForClass: (ids: string[]) => void;
@@ -104,59 +106,51 @@ export const TeacherTeachersTab: React.FC<TeacherTeachersTabProps> = ({
   setDeleteTeacherConfirmationStep,
   setTypedTeacherConfirmName
 }) => {
+  const [selectedClassGradeFilter, setSelectedClassGradeFilter] = React.useState<'ALL' | GradeLevel>('ALL');
+
+  const filteredClasses = classes.filter(cls => {
+    if (selectedClassGradeFilter === 'ALL') return true;
+    const g = cls.gradeLevel || getGradeLevel(cls.name);
+    return g === selectedClassGradeFilter;
+  });
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       
-      {/* Executive Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl flex items-center justify-between">
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-lg">
           <div>
-            <span className="text-xs font-semibold text-slate-400 block">Okul Öğretmen Sayısı</span>
+            <div className="text-xs text-slate-400 font-semibold">Toplam Öğretmen</div>
             <div className="text-2xl font-black text-white font-mono mt-1">
               {allUsers.filter(u => u.role === 'class_teacher' || u.role === 'teacher' || u.role === 'school_counselor').length}
             </div>
-            <p className="text-[10px] text-purple-300 mt-0.5">Kayıtlı Öğretmen Kadrosu</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-300 flex items-center justify-center">
+          <div className="p-3 bg-purple-500/20 text-purple-300 rounded-xl border border-purple-500/30">
             <UserCheck className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl flex items-center justify-between">
+        <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-lg">
           <div>
-            <span className="text-xs font-semibold text-slate-400 block">Tanımlı Okul Sınıfları</span>
-            <div className="text-2xl font-black text-emerald-400 font-mono mt-1">
+            <div className="text-xs text-slate-400 font-semibold">Tanımlı Sınıf Şubesi</div>
+            <div className="text-2xl font-black text-white font-mono mt-1">
               {classes.length}
             </div>
-            <p className="text-[10px] text-slate-400 mt-0.5">Aktif Sınıf Şubeleri</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 flex items-center justify-center">
+          <div className="p-3 bg-emerald-500/20 text-emerald-300 rounded-xl border border-emerald-500/30">
             <Building2 className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl flex items-center justify-between">
+        <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-lg">
           <div>
-            <span className="text-xs font-semibold text-slate-400 block">Atanmış Sınıf Şubeleri</span>
-            <div className="text-2xl font-black text-indigo-300 font-mono mt-1">
-              {Array.from(new Set(allUsers.flatMap(u => u.assignedClassNames || []))).length}
-            </div>
-            <p className="text-[10px] text-slate-400 mt-0.5">Rehber Öğretmeni Olan Sınıflar</p>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 flex items-center justify-center">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-xl flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-slate-400 block">Toplam Öğrenci Kapasitesi</span>
-            <div className="text-2xl font-black text-amber-300 font-mono mt-1">
+            <div className="text-xs text-slate-400 font-semibold">Kayıtlı Toplam Öğrenci</div>
+            <div className="text-2xl font-black text-white font-mono mt-1">
               {allUsers.filter(u => u.role === 'student').length}
             </div>
-            <p className="text-[10px] text-slate-400 mt-0.5">Sınıflardaki Öğrenciler</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 flex items-center justify-center">
+          <div className="p-3 bg-blue-500/20 text-blue-300 rounded-xl border border-blue-500/30">
             <Users className="w-5 h-5" />
           </div>
         </div>
@@ -186,83 +180,139 @@ export const TeacherTeachersTab: React.FC<TeacherTeachersTabProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {classes.map((cls) => {
-            const assignedTeachers = allUsers.filter(u => 
-              (u.role === 'class_teacher' || u.role === 'teacher' || u.role === 'school_counselor') &&
-              u.assignedClassNames?.includes(cls.name)
-            );
-            const studentsInClass = allUsers.filter(u => u.role === 'student' && u.className === cls.name);
-
+        {/* Kademe Hızlı Filtreleri */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          {[
+            { id: 'ALL', label: 'Tüm Sınıflar', count: classes.length },
+            { id: '9', label: '9. Sınıf', count: classes.filter(c => (c.gradeLevel || getGradeLevel(c.name)) === '9').length },
+            { id: '10', label: '10. Sınıf', count: classes.filter(c => (c.gradeLevel || getGradeLevel(c.name)) === '10').length },
+            { id: '11', label: '11. Sınıf', count: classes.filter(c => (c.gradeLevel || getGradeLevel(c.name)) === '11').length },
+            { id: '12', label: '12. Sınıf', count: classes.filter(c => (c.gradeLevel || getGradeLevel(c.name)) === '12').length },
+            { id: 'mezun', label: 'Mezun', count: classes.filter(c => (c.gradeLevel || getGradeLevel(c.name)) === 'mezun').length },
+          ].map(f => {
+            const isSelected = selectedClassGradeFilter === f.id;
             return (
-              <div key={cls.id} className="bg-slate-900/80 border border-white/10 rounded-2xl p-4 space-y-3 hover:border-emerald-500/40 transition-all">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
-                      {cls.name}
-                    </span>
-                    <h3 className="text-sm font-bold text-white mt-1">{cls.name} Şubesi</h3>
-                    {cls.description && <p className="text-[11px] text-slate-400 mt-0.5">{cls.description}</p>}
-                  </div>
-
-                  {onUpdateClass && (
-                    <button
-                      onClick={() => {
-                        setClassToEdit(cls);
-                        setEditClassNameInput(cls.name);
-                        setEditClassDescInput(cls.description || '');
-                        setEditClassFieldInput(cls.field || 'SAY');
-                        setShowEditClassModal(true);
-                      }}
-                      className="p-1.5 text-slate-500 hover:text-emerald-400 bg-white/5 hover:bg-emerald-500/10 rounded-xl transition-all border border-white/10"
-                      title="Sınıf Tanımını Düzenle"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                <div className="space-y-1.5 pt-2 border-t border-white/10 text-xs">
-                  <div className="flex items-center justify-between text-slate-300">
-                    <span className="text-slate-400">Atanmış Rehber Öğretmen:</span>
-                    <div className="font-semibold text-right">
-                      {assignedTeachers.length > 0 ? (
-                        assignedTeachers.map(t => (
-                          <span key={t.id} className="text-purple-300 block">{t.name}</span>
-                        ))
-                      ) : (
-                        <span className="text-amber-400 text-[11px]">Atama Yapılmadı</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-slate-300">
-                    <span className="text-slate-400">Kayıtlı Öğrenci:</span>
-                    <span className="font-mono text-white font-bold">{studentsInClass.length} Öğrenci</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 flex items-center justify-end space-x-2">
-                  <button
-                    onClick={() => {
-                      const assignedIds = allUsers
-                        .filter(u => (u.role === 'class_teacher' || u.role === 'teacher' || u.role === 'school_counselor') && u.assignedClassNames?.includes(cls.name))
-                        .map(u => u.id);
-                      setSelectedClassForTeacherAssign(cls);
-                      setSelectedTeacherIdsForClass(assignedIds);
-                      setClassTeacherSearchTerm('');
-                      setShowClassTeacherAssignModal(true);
-                    }}
-                    className="w-full bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/30 text-xs font-bold py-1.5 px-3 rounded-xl transition-all flex items-center justify-center space-x-1"
-                  >
-                    <UserCheck className="w-3.5 h-3.5" />
-                    <span>Sınıf Atamasını Düzenle</span>
-                  </button>
-                </div>
-              </div>
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setSelectedClassGradeFilter(f.id as any)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center space-x-1.5 ${
+                  isSelected
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
+                    : 'bg-white/5 text-slate-400 border-white/5 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <span>{f.label}</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/10">{f.count}</span>
+              </button>
             );
           })}
         </div>
+
+        {filteredClasses.length === 0 ? (
+          <div className="text-center py-10 border-2 border-dashed border-white/10 rounded-2xl text-slate-400 text-xs">
+            Bu kademede tanımlanmış sınıf şubesi bulunamadı.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredClasses.map((cls) => {
+              const assignedTeachers = allUsers.filter(u => 
+                (u.role === 'class_teacher' || u.role === 'teacher' || u.role === 'school_counselor') &&
+                u.assignedClassNames?.includes(cls.name)
+              );
+              const studentsInClass = allUsers.filter(u => u.role === 'student' && u.className === cls.name);
+              const clsGrade = cls.gradeLevel || getGradeLevel(cls.name);
+              const isMaarif = clsGrade === '9' || clsGrade === '10';
+
+              return (
+                <div key={cls.id} className="bg-slate-900/80 border border-white/10 rounded-2xl p-4 space-y-3 hover:border-emerald-500/40 transition-all">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                          isMaarif 
+                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' 
+                            : clsGrade === '11'
+                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                            : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                        }`}>
+                          {clsGrade === '9' 
+                            ? '9. Sınıf • Maarif' 
+                            : clsGrade === '10' 
+                            ? '10. Sınıf • Maarif' 
+                            : clsGrade === '11' 
+                            ? `11. Sınıf • ${cls.field || 'SAY'}` 
+                            : clsGrade === '12' 
+                            ? `12. Sınıf • ${cls.field || 'SAY'}` 
+                            : `Mezun • ${cls.field || 'SAY'}`}
+                        </span>
+                      </div>
+                      <h3 className="text-sm font-bold text-white mt-1.5 font-mono">{cls.name} Şubesi</h3>
+                      {cls.description && <p className="text-[11px] text-slate-400 mt-0.5">{cls.description}</p>}
+                    </div>
+
+                    {onUpdateClass && (
+                      <button
+                        onClick={() => {
+                          setClassToEdit(cls);
+                          setEditClassNameInput(cls.name);
+                          setEditClassDescInput(cls.description || '');
+                          setEditClassFieldInput(cls.field || 'SAY');
+                          if (setEditClassGradeLevel) {
+                            setEditClassGradeLevel(cls.gradeLevel || getGradeLevel(cls.name));
+                          }
+                          setShowEditClassModal(true);
+                        }}
+                        className="p-1.5 text-slate-500 hover:text-emerald-400 bg-white/5 hover:bg-emerald-500/10 rounded-xl transition-all border border-white/10"
+                        title="Sınıf Tanımını Düzenle"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5 pt-2 border-t border-white/10 text-xs">
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span className="text-slate-400">Atanmış Rehber Öğretmen:</span>
+                      <div className="font-semibold text-right">
+                        {assignedTeachers.length > 0 ? (
+                          assignedTeachers.map(t => (
+                            <span key={t.id} className="text-purple-300 block">{t.name}</span>
+                          ))
+                        ) : (
+                          <span className="text-amber-400 text-[11px]">Atama Yapılmadı</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-slate-300">
+                      <span className="text-slate-400">Kayıtlı Öğrenci:</span>
+                      <span className="font-mono text-white font-bold">{studentsInClass.length} Öğrenci</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-end space-x-2">
+                    <button
+                      onClick={() => {
+                        const assignedIds = allUsers
+                          .filter(u => (u.role === 'class_teacher' || u.role === 'teacher' || u.role === 'school_counselor') && u.assignedClassNames?.includes(cls.name))
+                          .map(u => u.id);
+                        setSelectedClassForTeacherAssign(cls);
+                        setSelectedTeacherIdsForClass(assignedIds);
+                        setClassTeacherSearchTerm('');
+                        setShowClassTeacherAssignModal(true);
+                      }}
+                      className="w-full bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/30 text-xs font-bold py-1.5 px-3 rounded-xl transition-all flex items-center justify-center space-x-1"
+                    >
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span>Sınıf Atamasını Düzenle</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Section 2: Teacher Users Management Table & Actions */}

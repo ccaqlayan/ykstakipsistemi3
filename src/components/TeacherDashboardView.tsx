@@ -67,6 +67,7 @@ import {
 import { 
   UserAccount, 
   ClassDefinition, 
+  ClassFieldType,
   YKSDataState, 
   StudentProfile, 
   StudyPlanItem, 
@@ -77,6 +78,7 @@ import {
   TopicErrorItem,
   SchoolExam
 } from '../types';
+import { getGradeLevel, GradeLevel } from '../utils/gradeUtils';
 import { YKS_SUBJECTS, YKS_CURRICULUM_TOPICS, DEFAULT_TASK_TYPES, DEFAULT_AVATAR } from '../data/initialData';
 import { isUserOnline, getUserLastSeenText, getExactLastSeenText, isStudentActive } from '../utils/statusUtils';
 import { TemplateWeeklyPreviewModal } from './TemplateWeeklyPreviewModal';
@@ -100,7 +102,7 @@ interface TeacherDashboardViewProps {
   auditLogs?: AuditLogItem[];
   activeTeacherSubView?: 'summary' | 'students' | 'teachers' | 'templates';
   onUpdateStudentProfile: (studentId: string, updatedProfile: StudentProfile) => void;
-  onCreateClass: (className: string, field: FieldType, description?: string) => void;
+  onCreateClass: (className: string, field: ClassFieldType, description?: string, gradeLevel?: GradeLevel) => void;
   onAssignStudentClass: (studentId: string, newClassName: string) => void;
   onUpdateStudentStudyPlans: (studentId: string, updatedPlans: StudyPlanItem[]) => void;
   onUpdateStudentTopicErrors?: (studentId: string, updatedErrors: TopicErrorItem[], actionDescription?: string) => void;
@@ -309,10 +311,12 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   const [classToEdit, setClassToEdit] = useState<ClassDefinition | null>(null);
   const [editClassNameInput, setEditClassNameInput] = useState('');
   const [editClassDescInput, setEditClassDescInput] = useState('');
-  const [editClassFieldInput, setEditClassFieldInput] = useState<FieldType>('SAY');
+  const [editClassFieldInput, setEditClassFieldInput] = useState<ClassFieldType>('SAY');
+  const [editClassGradeLevel, setEditClassGradeLevel] = useState<GradeLevel>('12');
   const [newClassNameInput, setNewClassNameInput] = useState('');
   const [newClassDescInput, setNewClassDescInput] = useState('');
-  const [newClassFieldInput, setNewClassFieldInput] = useState<FieldType>('SAY');
+  const [newClassFieldInput, setNewClassFieldInput] = useState<ClassFieldType>('ORTAK');
+  const [newClassGradeLevel, setNewClassGradeLevel] = useState<GradeLevel>('9');
   const [showLogoManager, setShowLogoManager] = useState(false);
 
   const [reassigningStudent, setReassigningStudent] = useState<UserAccount | null>(null);
@@ -711,10 +715,12 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   const handleCreateClassSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClassNameInput.trim()) return;
-    onCreateClass(newClassNameInput.trim(), newClassFieldInput, newClassDescInput.trim());
+    const finalField: ClassFieldType = (newClassGradeLevel === '9' || newClassGradeLevel === '10') ? 'ORTAK' : newClassFieldInput;
+    onCreateClass(newClassNameInput.trim(), finalField, newClassDescInput.trim(), newClassGradeLevel);
     setNewClassNameInput('');
     setNewClassDescInput('');
-    setNewClassFieldInput('SAY');
+    setNewClassFieldInput('ORTAK');
+    setNewClassGradeLevel('9');
     setShowCreateClassModal(false);
   };
 
@@ -1186,6 +1192,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           setEditClassNameInput={setEditClassNameInput}
           setEditClassDescInput={setEditClassDescInput}
           setEditClassFieldInput={setEditClassFieldInput}
+          setEditClassGradeLevel={setEditClassGradeLevel}
           setShowEditClassModal={setShowEditClassModal}
           setSelectedClassForTeacherAssign={setSelectedClassForTeacherAssign}
           setSelectedTeacherIdsForClass={setSelectedTeacherIdsForClass}
@@ -1542,10 +1549,10 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
       {/* MODAL: CREATE CLASS */}
       {showCreateClassModal && (
         <div 
-          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
           onClick={(e) => { if (e.target === e.currentTarget) setShowCreateClassModal(false); }}
         >
-          <div className="bg-slate-900/95 backdrop-blur-2xl border border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-slate-900/95 backdrop-blur-2xl border border-white/15 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 my-8">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-base font-bold text-white flex items-center space-x-2">
                 <School className="w-5 h-5 text-fuchsia-400" />
@@ -1557,34 +1564,149 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
             </div>
 
             <form onSubmit={handleCreateClassSubmit} className="space-y-4 text-xs">
+              {/* 1. Sınıf Kademesi / Seviyesi Seçimi */}
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">
-                  Sınıf Adı (Şube)
+                <label className="block font-semibold text-slate-200 mb-1.5 flex items-center justify-between">
+                  <span>Sınıf Seviyesi (Kademe)</span>
+                  <span className="text-[10px] text-fuchsia-300 font-normal">Zorunlu</span>
                 </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ör: 12-C SÖZ veya Mezun-2 SAY"
-                  value={newClassNameInput}
-                  onChange={(e) => setNewClassNameInput(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-fuchsia-400"
-                />
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { value: '9' as GradeLevel, label: '9. Sınıf', sub: 'Lise 1', badge: 'Maarif Modeli' },
+                    { value: '10' as GradeLevel, label: '10. Sınıf', sub: 'Lise 2', badge: 'Maarif Modeli' },
+                    { value: '11' as GradeLevel, label: '11. Sınıf', sub: 'Lise 3', badge: 'Alan & YKS' },
+                    { value: '12' as GradeLevel, label: '12. Sınıf', sub: 'YKS Maraton', badge: 'Tam YKS' },
+                    { value: 'mezun' as GradeLevel, label: 'Mezun', sub: 'YKS Derece', badge: 'Mezun' }
+                  ].map((g) => {
+                    const isSelected = newClassGradeLevel === g.value;
+                    return (
+                      <button
+                        key={g.value}
+                        type="button"
+                        onClick={() => {
+                          setNewClassGradeLevel(g.value);
+                          if (g.value === '9' || g.value === '10') {
+                            setNewClassFieldInput('ORTAK');
+                          } else if (newClassFieldInput === 'ORTAK') {
+                            setNewClassFieldInput('SAY');
+                          }
+                        }}
+                        className={`p-2.5 rounded-2xl border text-left transition-all relative overflow-hidden ${
+                          isSelected
+                            ? 'bg-gradient-to-br from-fuchsia-600/30 to-purple-600/20 border-fuchsia-400 text-white shadow-md shadow-fuchsia-600/20 ring-1 ring-fuchsia-400'
+                            : 'bg-slate-950/60 border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20'
+                        }`}
+                      >
+                        <div className="font-bold text-xs">{g.label}</div>
+                        <div className="text-[10px] opacity-75 mt-0.5">{g.sub}</div>
+                        <span className={`inline-block mt-1 text-[9px] px-1.5 py-0.2 rounded font-semibold ${
+                          isSelected ? 'bg-fuchsia-500/30 text-fuchsia-200' : 'bg-white/5 text-slate-400'
+                        }`}>
+                          {g.badge}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
+              {/* 2. Hızlı Şube Öneri Butonları */}
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">
-                  Alan (SAY, EA, vs.)
+                <label className="block font-semibold text-slate-300 mb-1 flex items-center justify-between">
+                  <span>Hızlı Şube Adı Şablonları</span>
+                  <span className="text-[10px] text-slate-500">Tek tıkla doldur</span>
                 </label>
-                <select
-                  value={newClassFieldInput}
-                  onChange={(e) => setNewClassFieldInput(e.target.value as FieldType)}
-                  className="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-fuchsia-400"
-                >
-                  <option value="SAY">Sayısal (SAY)</option>
-                  <option value="EA">Eşit Ağırlık (EA)</option>
-                  <option value="SÖZ">Sözel (SÖZ)</option>
-                  <option value="DİL">Yabancı Dil (DİL)</option>
-                </select>
+                <div className="flex flex-wrap gap-1.5">
+                  {(newClassGradeLevel === '9'
+                    ? [
+                        { name: '9-A', field: 'ORTAK' as ClassFieldType },
+                        { name: '9-B', field: 'ORTAK' as ClassFieldType },
+                        { name: '9-C', field: 'ORTAK' as ClassFieldType },
+                        { name: '9-D', field: 'ORTAK' as ClassFieldType },
+                        { name: '9-E', field: 'ORTAK' as ClassFieldType }
+                      ]
+                    : newClassGradeLevel === '10'
+                    ? [
+                        { name: '10-A', field: 'ORTAK' as ClassFieldType },
+                        { name: '10-B', field: 'ORTAK' as ClassFieldType },
+                        { name: '10-C', field: 'ORTAK' as ClassFieldType },
+                        { name: '10-D', field: 'ORTAK' as ClassFieldType },
+                        { name: '10-E', field: 'ORTAK' as ClassFieldType }
+                      ]
+                    : newClassGradeLevel === '11'
+                    ? [
+                        { name: '11-A SAY', field: 'SAY' as ClassFieldType },
+                        { name: '11-B EA', field: 'EA' as ClassFieldType },
+                        { name: '11-C SÖZ', field: 'SÖZ' as ClassFieldType },
+                        { name: '11-D DİL', field: 'DİL' as ClassFieldType }
+                      ]
+                    : newClassGradeLevel === '12'
+                    ? [
+                        { name: '12-A SAY', field: 'SAY' as ClassFieldType },
+                        { name: '12-B EA', field: 'EA' as ClassFieldType },
+                        { name: '12-C SÖZ', field: 'SÖZ' as ClassFieldType },
+                        { name: '12-D DİL', field: 'DİL' as ClassFieldType }
+                      ]
+                    : [
+                        { name: 'Mezun-1 SAY', field: 'SAY' as ClassFieldType },
+                        { name: 'Mezun-2 EA', field: 'EA' as ClassFieldType },
+                        { name: 'Mezun-3 SÖZ', field: 'SÖZ' as ClassFieldType },
+                        { name: 'Mezun-4 DİL', field: 'DİL' as ClassFieldType }
+                      ]
+                  ).map((sugg) => (
+                    <button
+                      key={sugg.name}
+                      type="button"
+                      onClick={() => {
+                        setNewClassNameInput(sugg.name);
+                        setNewClassFieldInput(sugg.field);
+                      }}
+                      className="px-2.5 py-1 bg-white/5 hover:bg-fuchsia-500/20 hover:border-fuchsia-400/40 text-slate-300 hover:text-white rounded-lg border border-white/10 text-[11px] font-mono font-bold transition-all"
+                    >
+                      + {sugg.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Sınıf Adı ve Alan Girişi */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">
+                    Sınıf Şube Adı
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ör: 9-A veya 12-C SÖZ"
+                    value={newClassNameInput}
+                    onChange={(e) => setNewClassNameInput(e.target.value.toUpperCase())}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white font-mono font-bold uppercase focus:outline-none focus:border-fuchsia-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">
+                    Alan Türü
+                  </label>
+                  {newClassGradeLevel === '9' || newClassGradeLevel === '10' ? (
+                    <div className="w-full bg-purple-950/40 border border-purple-500/30 rounded-xl px-3 py-2 text-purple-200 font-semibold flex items-center justify-between">
+                      <span>Ortak (Maarif Modeli)</span>
+                      <span className="text-[9px] bg-purple-500/20 px-1.5 py-0.5 rounded border border-purple-400/30">MEB</span>
+                    </div>
+                  ) : (
+                    <select
+                      value={newClassFieldInput}
+                      onChange={(e) => setNewClassFieldInput(e.target.value as ClassFieldType)}
+                      className="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-fuchsia-400 font-semibold"
+                    >
+                      <option value="SAY">Sayısal (SAY)</option>
+                      <option value="EA">Eşit Ağırlık (EA)</option>
+                      <option value="SÖZ">Sözel (SÖZ)</option>
+                      <option value="DİL">Yabancı Dil (DİL)</option>
+                    </select>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -1593,14 +1715,14 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="Ör: Sözel Derece Grubu"
+                  placeholder="Ör: 9. Sınıf Maarif Modeli A Şubesi veya Sayısal Derece Grubu"
                   value={newClassDescInput}
                   onChange={(e) => setNewClassDescInput(e.target.value)}
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-fuchsia-400"
                 />
               </div>
 
-              <div className="flex items-center justify-end space-x-2 pt-2">
+              <div className="flex items-center justify-end space-x-2 pt-2 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setShowCreateClassModal(false)}
@@ -1623,10 +1745,10 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
       {/* MODAL: EDIT CLASS */}
       {showEditClassModal && classToEdit && (
         <div 
-          className="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4"
+          className="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
           onClick={(e) => { if (e.target === e.currentTarget) setShowEditClassModal(false); }}
         >
-          <div className="bg-slate-900/95 backdrop-blur-2xl border border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+          <div className="bg-slate-900/95 backdrop-blur-2xl border border-white/15 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 my-8">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
               <h3 className="text-base font-bold text-white flex items-center space-x-2">
                 <Edit className="w-5 h-5 text-emerald-400" />
@@ -1639,55 +1761,107 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
             <form onSubmit={(e) => {
               e.preventDefault();
               if (editClassNameInput.trim()) {
+                const finalField: ClassFieldType = (editClassGradeLevel === '9' || editClassGradeLevel === '10') ? 'ORTAK' : editClassFieldInput;
                 if (onUpdateClass) {
                   onUpdateClass({
                     ...classToEdit,
                     name: editClassNameInput.trim().toUpperCase(),
+                    gradeLevel: editClassGradeLevel,
                     description: editClassDescInput.trim(),
-                    field: editClassFieldInput
+                    field: finalField
                   });
                 }
                 setShowEditClassModal(false);
+                setClassToEdit(null);
               }
-            }} className="space-y-4 text-sm">
+            }} className="space-y-4 text-xs">
+              {/* Sınıf Kademesi Seçimi */}
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Sınıf Şubesi (Örn: 12-A SAY)</label>
-                <input 
-                  type="text" 
-                  autoFocus
-                  required
-                  value={editClassNameInput}
-                  onChange={(e) => setEditClassNameInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500 uppercase font-bold"
-                  placeholder="12-A SAY"
-                />
+                <label className="block font-semibold text-slate-200 mb-1.5">Sınıf Seviyesi (Kademe)</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { value: '9' as GradeLevel, label: '9. Sınıf', sub: 'Lise 1', badge: 'Maarif Modeli' },
+                    { value: '10' as GradeLevel, label: '10. Sınıf', sub: 'Lise 2', badge: 'Maarif Modeli' },
+                    { value: '11' as GradeLevel, label: '11. Sınıf', sub: 'Lise 3', badge: 'Alan & YKS' },
+                    { value: '12' as GradeLevel, label: '12. Sınıf', sub: 'YKS Maraton', badge: 'Tam YKS' },
+                    { value: 'mezun' as GradeLevel, label: 'Mezun', sub: 'YKS Derece', badge: 'Mezun' }
+                  ].map((g) => {
+                    const isSelected = editClassGradeLevel === g.value;
+                    return (
+                      <button
+                        key={g.value}
+                        type="button"
+                        onClick={() => {
+                          setEditClassGradeLevel(g.value);
+                          if (g.value === '9' || g.value === '10') {
+                            setEditClassFieldInput('ORTAK');
+                          } else if (editClassFieldInput === 'ORTAK') {
+                            setEditClassFieldInput('SAY');
+                          }
+                        }}
+                        className={`p-2.5 rounded-2xl border text-left transition-all ${
+                          isSelected
+                            ? 'bg-gradient-to-br from-emerald-600/30 to-teal-600/20 border-emerald-400 text-white shadow-md shadow-emerald-600/20 ring-1 ring-emerald-400'
+                            : 'bg-slate-950/60 border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20'
+                        }`}
+                      >
+                        <div className="font-bold text-xs">{g.label}</div>
+                        <div className="text-[10px] opacity-75 mt-0.5">{g.sub}</div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">
-                  Alan (SAY, EA, vs.)
-                </label>
-                <select
-                  value={editClassFieldInput}
-                  onChange={(e) => setEditClassFieldInput(e.target.value as FieldType)}
-                  className="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
-                >
-                  <option value="SAY">Sayısal (SAY)</option>
-                  <option value="EA">Eşit Ağırlık (EA)</option>
-                  <option value="SÖZ">Sözel (SÖZ)</option>
-                  <option value="DİL">Yabancı Dil (DİL)</option>
-                </select>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">Sınıf Şubesi</label>
+                  <input 
+                    type="text" 
+                    autoFocus
+                    required
+                    value={editClassNameInput}
+                    onChange={(e) => setEditClassNameInput(e.target.value.toUpperCase())}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500 uppercase font-bold font-mono"
+                    placeholder="12-A SAY"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">
+                    Alan Türü
+                  </label>
+                  {editClassGradeLevel === '9' || editClassGradeLevel === '10' ? (
+                    <div className="w-full bg-teal-950/40 border border-teal-500/30 rounded-xl px-3 py-2 text-teal-200 font-semibold flex items-center justify-between">
+                      <span>Ortak (Maarif Modeli)</span>
+                      <span className="text-[9px] bg-teal-500/20 px-1.5 py-0.5 rounded border border-teal-400/30">MEB</span>
+                    </div>
+                  ) : (
+                    <select
+                      value={editClassFieldInput}
+                      onChange={(e) => setEditClassFieldInput(e.target.value as ClassFieldType)}
+                      className="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500 font-semibold"
+                    >
+                      <option value="SAY">Sayısal (SAY)</option>
+                      <option value="EA">Eşit Ağırlık (EA)</option>
+                      <option value="SÖZ">Sözel (SÖZ)</option>
+                      <option value="DİL">Yabancı Dil (DİL)</option>
+                    </select>
+                  )}
+                </div>
               </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-400 mb-1">Açıklama veya Not (Opsiyonel)</label>
                 <input 
                   type="text" 
                   value={editClassDescInput}
                   onChange={(e) => setEditClassDescInput(e.target.value)}
-                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-emerald-500"
-                  placeholder="Sayısal ağırlıklı hafta sonu sınıfı..."
+                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  placeholder="Sayısal ağırlıklı sınıf..."
                 />
               </div>
-              <div className="pt-2 flex justify-end space-x-3">
+
+              <div className="pt-2 flex justify-end space-x-3 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setShowEditClassModal(false)}
@@ -1735,9 +1909,25 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
                   onChange={(e) => setTargetClassChoice(e.target.value)}
                   className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none font-semibold text-indigo-300"
                 >
-                  {classes.map((c) => (
-                    <option key={c.id} value={c.name}>{c.name} {c.description ? `(${c.description})` : ''}</option>
-                  ))}
+                  {[
+                    { key: '9' as GradeLevel, label: '🎓 9. Sınıflar (Maarif Modeli)' },
+                    { key: '10' as GradeLevel, label: '🎓 10. Sınıflar (Maarif Modeli)' },
+                    { key: '11' as GradeLevel, label: '📘 11. Sınıflar (Alan & YKS)' },
+                    { key: '12' as GradeLevel, label: '🎯 12. Sınıflar (YKS Maratonu)' },
+                    { key: 'mezun' as GradeLevel, label: '🏆 Mezun Grupları' },
+                  ].map(g => {
+                    const matching = classes.filter(c => (c.gradeLevel || getGradeLevel(c.name)) === g.key);
+                    if (matching.length === 0) return null;
+                    return (
+                      <optgroup key={g.key} label={g.label} className="bg-slate-900 text-slate-300 font-bold">
+                        {matching.map(c => (
+                          <option key={c.id || c.name} value={c.name} className="bg-slate-950 text-white font-normal">
+                            {c.name} {c.description ? `(${c.description})` : ''}
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -2590,14 +2780,25 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
                   onChange={(e) => setNewStudentClass(e.target.value)}
                   className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-indigo-400"
                 >
-                  {availableClasses.map((clsName) => (
-                    <option key={clsName} value={clsName}>{clsName}</option>
-                  ))}
-                  {classes.map((c) => (
-                    !availableClasses.includes(c.name) && (
-                      <option key={c.id} value={c.name}>{c.name}</option>
-                    )
-                  ))}
+                  {[
+                    { key: '9' as GradeLevel, label: '🎓 9. Sınıflar (Maarif Modeli)' },
+                    { key: '10' as GradeLevel, label: '🎓 10. Sınıflar (Maarif Modeli)' },
+                    { key: '11' as GradeLevel, label: '📘 11. Sınıflar (Alan & YKS)' },
+                    { key: '12' as GradeLevel, label: '🎯 12. Sınıflar (YKS Maratonu)' },
+                    { key: 'mezun' as GradeLevel, label: '🏆 Mezun Grupları' },
+                  ].map(g => {
+                    const matching = classes.filter(c => (c.gradeLevel || getGradeLevel(c.name)) === g.key);
+                    if (matching.length === 0) return null;
+                    return (
+                      <optgroup key={g.key} label={g.label} className="bg-slate-900 text-slate-300 font-bold">
+                        {matching.map(c => (
+                          <option key={c.id || c.name} value={c.name} className="bg-slate-950 text-white font-normal">
+                            {c.name} {c.description ? `(${c.description})` : ''}
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  })}
                 </select>
               </div>
 
