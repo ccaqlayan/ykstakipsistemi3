@@ -26,8 +26,10 @@ import {
   Shuffle,
   AlertTriangle,
   Calendar,
-  Award
+  Award,
+  QrCode
 } from 'lucide-react';
+import QRCode from 'qrcode';
 import { TopicErrorItem, UserAccount } from '../../types';
 import { 
   formatDisplayDate, 
@@ -74,7 +76,8 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
   const [studentName, setStudentName] = useState<string>(currentUser?.name || 'YKS Adayı');
   const [layoutMode, setLayoutMode] = useState<'2cols' | '1col'>('2cols');
   const [solutionAreaSize, setSolutionAreaSize] = useState<'none' | 'compact' | 'normal' | 'large'>('normal');
-  const [includeAnswerKey, setIncludeAnswerKey] = useState<boolean>(true);
+  const [answerKeyMode, setAnswerKeyMode] = useState<'qr' | 'table' | 'both' | 'none'>('qr');
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [includeOpticalBubbles, setIncludeOpticalBubbles] = useState<boolean>(true);
   const [includeTopicMeta, setIncludeTopicMeta] = useState<boolean>(true);
   const [includeErrorReason, setIncludeErrorReason] = useState<boolean>(false);
@@ -144,6 +147,47 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
   const selectedQuestions = useMemo(() => {
     return topicErrors.filter(item => selectedIds.has(item.id));
   }, [topicErrors, selectedIds]);
+
+  // ── QR KOD CEVAP ANAHTARI ÜRETİMİ (OFFLINE DATA URL) ──
+  useEffect(() => {
+    if (answerKeyMode === 'qr' || answerKeyMode === 'both') {
+      if (selectedQuestions.length === 0) {
+        setQrCodeDataUrl('');
+        return;
+      }
+
+      const lines: string[] = [
+        `📋 ${testTitle.toUpperCase()}`,
+        `Aday: ${studentName} • ${selectedQuestions.length} Soru`,
+        `Tarih: ${formatDisplayDate(todayStr)}`,
+        '----------------------------------------',
+      ];
+
+      selectedQuestions.forEach((q, idx) => {
+        const qNum = idx + 1;
+        const correctRaw = q.correctOption || q.aiSolutionCorrectAnswer || '';
+        const correctLetter = extractOptionLetter(correctRaw) || '-';
+        lines.push(`${qNum}. ${correctLetter}  (${q.subject} • ${q.topicName})`);
+      });
+
+      lines.push('----------------------------------------');
+      lines.push('YKS Takip Sistemi • Pekiştirme Testi');
+
+      const qrText = lines.join('\n');
+
+      QRCode.toDataURL(qrText, {
+        width: 240,
+        margin: 1,
+        errorCorrectionLevel: 'M',
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
+      })
+        .then(url => setQrCodeDataUrl(url))
+        .catch(err => console.error('QR code generation error:', err));
+    }
+  }, [selectedQuestions, testTitle, studentName, answerKeyMode, todayStr]);
 
   if (!isOpen) return null;
 
@@ -629,17 +673,73 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
                 </div>
               </div>
 
+              {/* Cevap Anahtarı Formatı Seçimi (Göz Kaymasını Önleyen Karekod / Tablo / Her İkisi / Yok) */}
+              <div className="space-y-1.5 bg-slate-950/60 p-3 rounded-2xl border border-slate-800">
+                <label className="text-[11px] font-bold text-slate-300 flex items-center justify-between">
+                  <span>Cevap Anahtarı Formatı:</span>
+                  <span className="text-[10px] text-amber-400 font-semibold">Göz Kaymasını Önler</span>
+                </label>
+                <div className="grid grid-cols-2 gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setAnswerKeyMode('qr')}
+                    className={`p-2 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                      answerKeyMode === 'qr'
+                        ? 'bg-indigo-600/30 border-indigo-400 text-indigo-200 shadow-sm'
+                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                    title="Karekod ile gizli cevaplar (Göz kaymasını %100 önler)"
+                  >
+                    <QrCode className="w-4 h-4 text-emerald-400" />
+                    <span>📱 Karekod (Gizli)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAnswerKeyMode('table')}
+                    className={`p-2 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                      answerKeyMode === 'table'
+                        ? 'bg-indigo-600/30 border-indigo-400 text-indigo-200 shadow-sm'
+                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                    title="Ayrı son sayfada klasik yazılı tablo"
+                  >
+                    <Award className="w-4 h-4 text-purple-400" />
+                    <span>📄 Yazılı Tablo (Son Sayfa)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAnswerKeyMode('both')}
+                    className={`p-2 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                      answerKeyMode === 'both'
+                        ? 'bg-indigo-600/30 border-indigo-400 text-indigo-200 shadow-sm'
+                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                    title="Hem Karekod hem de son sayfada yazılı tablo"
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>🌟 Her İkisi (QR + Tablo)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAnswerKeyMode('none')}
+                    className={`p-2 rounded-xl border text-xs font-bold transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                      answerKeyMode === 'none'
+                        ? 'bg-indigo-600/30 border-indigo-400 text-indigo-200 shadow-sm'
+                        : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
+                    }`}
+                    title="Cevap anahtarı eklenmez"
+                  >
+                    <X className="w-4 h-4 text-rose-400" />
+                    <span>❌ Kapalı (Yok)</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Ekstra Baskı Seçenekleri */}
               <div className="space-y-2 bg-slate-950/60 p-3 rounded-2xl border border-slate-800 text-xs text-slate-300">
-                <label className="flex items-center space-x-2 cursor-pointer font-medium">
-                  <input
-                    type="checkbox"
-                    checked={includeAnswerKey}
-                    onChange={(e) => setIncludeAnswerKey(e.target.checked)}
-                    className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0 cursor-pointer"
-                  />
-                  <span>En Sona Cevap Anahtarı Tablosu Ekle</span>
-                </label>
 
                 <label className="flex items-center space-x-2 cursor-pointer font-medium">
                   <input
@@ -699,8 +799,8 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
             >
               
               {/* 1. TEST KİTAPÇIK ÜST BAŞLIĞI (HEADER) */}
-              <div className="border-b-2 border-slate-900 pb-3 flex items-start justify-between gap-4">
-                <div className="space-y-0.5 min-w-0">
+              <div className="border-b-2 border-slate-900 pb-3 flex items-start justify-between gap-3">
+                <div className="space-y-0.5 min-w-0 flex-1">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
                     {institutionName}
                   </span>
@@ -712,11 +812,32 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
                   </p>
                 </div>
 
-                {/* Sağ Öğrenci & Tarih Bilgi Kutusu */}
-                <div className="border border-slate-400 rounded-lg p-2 text-right text-[10.5px] shrink-0 bg-slate-50 space-y-0.5 min-w-[140px]">
-                  <div><span className="text-slate-500">Aday:</span> <strong className="text-black font-bold">{studentName}</strong></div>
-                  <div><span className="text-slate-500">Tarih:</span> <span className="text-slate-700 font-mono">{formatDisplayDate(todayStr)}</span></div>
-                  <div><span className="text-slate-500">Soru Sayısı:</span> <strong className="text-black font-bold">{selectedQuestions.length} Soru</strong></div>
+                {/* Sağ Bölüm: QR Kod Cevap Anahtarı (Göz Kaymasını Önleyen Gizli Sistem) & Öğrenci Bilgisi */}
+                <div className="flex items-center space-x-2 shrink-0">
+                  {(answerKeyMode === 'qr' || answerKeyMode === 'both') && qrCodeDataUrl && (
+                    <div className="border border-slate-400 rounded-lg p-1.5 bg-slate-50 flex items-center space-x-2 shrink-0">
+                      <img
+                        src={qrCodeDataUrl}
+                        alt="Cevap Anahtarı Karekodu"
+                        className="w-14 h-14 object-contain rounded border border-slate-300 bg-white shrink-0"
+                      />
+                      <div className="space-y-0.5 text-[9px] max-w-[90px]">
+                        <div className="font-black text-black uppercase flex items-center gap-0.5">
+                          <QrCode className="w-2.5 h-2.5 text-indigo-600" />
+                          <span>Cevaplar</span>
+                        </div>
+                        <p className="text-slate-500 leading-tight">
+                          Telefon kameranızla okutun.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="border border-slate-400 rounded-lg p-2 text-right text-[10.5px] bg-slate-50 space-y-0.5 min-w-[130px]">
+                    <div><span className="text-slate-500">Aday:</span> <strong className="text-black font-bold">{studentName}</strong></div>
+                    <div><span className="text-slate-500">Tarih:</span> <span className="text-slate-700 font-mono">{formatDisplayDate(todayStr)}</span></div>
+                    <div><span className="text-slate-500">Soru:</span> <strong className="text-black font-bold">{selectedQuestions.length} Soru</strong></div>
+                  </div>
                 </div>
               </div>
 
@@ -808,8 +929,8 @@ export const ErrorExamPrintModal: React.FC<ErrorExamPrintModalProps> = ({
                 })}
               </div>
 
-              {/* 3. CEVAP ANAHTARI SAYFASI (Eğer Seçildiyse) */}
-              {includeAnswerKey && (
+              {/* 3. CEVAP ANAHTARI SAYFASI (Yazılı Tablo Seçildiyse - Ayrı Yeni Sayfada) */}
+              {(answerKeyMode === 'table' || answerKeyMode === 'both') && (
                 <div className="print-page-break border-t-2 border-slate-900 pt-4 mt-8 space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-300 pb-2">
                     <div className="flex items-center space-x-2">
