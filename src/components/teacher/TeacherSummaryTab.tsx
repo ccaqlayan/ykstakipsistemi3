@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Users, 
   BookOpen, 
@@ -9,10 +9,12 @@ import {
   GraduationCap, 
   ChevronRight,
   Award,
-  Sparkles
+  Sparkles,
+  BarChart3
 } from 'lucide-react';
-import { UserAccount } from '../../types';
+import { UserAccount, ClassDefinition, YKSDataState } from '../../types';
 import { getGradeLevel } from '../../utils/gradeUtils';
+import { ClassComparisonModal } from '../reports/ClassComparisonModal';
 
 export interface ClassSummaryItem {
   className: string;
@@ -34,6 +36,10 @@ interface TeacherSummaryTabProps {
   totalCompletedPlans: number;
   totalPlansCount: number;
   classSummaries: ClassSummaryItem[];
+  allClasses?: ClassDefinition[];
+  allUsers?: UserAccount[];
+  studentsData?: Record<string, YKSDataState>;
+  onInspectStudent?: (student: UserAccount) => void;
   setShowCreateClassModal: (show: boolean) => void;
   setSelectedClassFilter: (className: string) => void;
   setActiveTeacherView: (view: 'summary' | 'students' | 'teachers' | 'templates') => void;
@@ -48,10 +54,15 @@ export const TeacherSummaryTab: React.FC<TeacherSummaryTabProps> = ({
   totalCompletedPlans,
   totalPlansCount,
   classSummaries,
+  allClasses = [],
+  allUsers = [],
+  studentsData = {},
+  onInspectStudent,
   setShowCreateClassModal,
   setSelectedClassFilter,
   setActiveTeacherView
 }) => {
+  const [showComparisonModal, setShowComparisonModal] = useState(false);
   return (
     <div className="space-y-6">
       
@@ -132,13 +143,23 @@ export const TeacherSummaryTab: React.FC<TeacherSummaryTabProps> = ({
               Her bir sınıfın kayıtlı öğrenci sayısı ve aktif sistemi kullanan öğrenci sayısı. Detaylar ve öğrenci listesi için sınıfa tıklayın.
             </p>
           </div>
-          <button
-            onClick={() => setShowCreateClassModal(true)}
-            className="bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center space-x-1.5 self-start sm:self-auto"
-          >
-            <Plus className="w-4 h-4 text-indigo-400" />
-            <span>Yeni Sınıf Ekle</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setShowComparisonModal(true)}
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-md shadow-indigo-600/25 flex items-center space-x-1.5 cursor-pointer self-start sm:self-auto"
+              title="9, 10, 11, 12 ve Mezun kademelerinin başarı ve soru çözüm oranlarını kıyaslayın"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Kademe Karşılaştırma & Analitik</span>
+            </button>
+            <button
+              onClick={() => setShowCreateClassModal(true)}
+              className="bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center space-x-1.5 self-start sm:self-auto cursor-pointer"
+            >
+              <Plus className="w-4 h-4 text-indigo-400" />
+              <span>Yeni Sınıf Ekle</span>
+            </button>
+          </div>
         </div>
 
         {classSummaries.length === 0 ? (
@@ -256,6 +277,20 @@ export const TeacherSummaryTab: React.FC<TeacherSummaryTabProps> = ({
         )}
       </div>
 
+      {/* Class Comparison & Cross-Grade Analytics Modal */}
+      {showComparisonModal && (
+        <ClassComparisonModal
+          isOpen={showComparisonModal}
+          onClose={() => setShowComparisonModal(false)}
+          classes={allClasses}
+          allUsers={allUsers}
+          studentsData={studentsData}
+          onInspectStudent={(student) => {
+            setShowComparisonModal(false);
+            if (onInspectStudent) onInspectStudent(student);
+          }}
+        />
+      )}
     </div>
   );
 };

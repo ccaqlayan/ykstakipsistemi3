@@ -14,11 +14,14 @@ import {
   Calculator,
   ArrowUpRight,
   BarChart2,
-  Share2
+  Share2,
+  FileSpreadsheet
 } from 'lucide-react';
-import { SchoolExam, StudentProfile, UserAccount } from '../types';
+import { SchoolExam, StudentProfile, UserAccount, YKSDataState } from '../types';
 import { SchoolExamModal } from './school_exams/SchoolExamModal';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
+import { OfficialStudentReportCardModal } from './reports/OfficialStudentReportCardModal';
+import { BulkImportSchoolExamsModal } from './import/BulkImportSchoolExamsModal';
 import { getGradeLevel, getGradeDisplayName } from '../utils/gradeUtils';
 import { GRADE9_SUBJECT_NAMES } from '../data/curriculum/grade9';
 import { GRADE10_SUBJECT_NAMES } from '../data/curriculum/grade10';
@@ -28,23 +31,33 @@ interface SchoolExamsViewProps {
   schoolExams: SchoolExam[];
   profile: StudentProfile;
   currentUser: UserAccount;
+  studentData?: YKSDataState;
+  allUsers?: UserAccount[];
+  classes?: { id: string; name: string }[];
   onAddSchoolExam: (exam: Omit<SchoolExam, 'id'>) => void;
   onUpdateSchoolExam: (exam: SchoolExam) => void;
   onDeleteSchoolExam: (id: string) => void;
   onUpdateProfile?: (updatedProfile: StudentProfile) => void;
+  onApplyBulkSchoolExams?: (updates: { studentId: string; exams: SchoolExam[] }[]) => void;
 }
 
 export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
   schoolExams = [],
   profile,
   currentUser,
+  studentData,
+  allUsers = [],
+  classes = [],
   onAddSchoolExam,
   onUpdateSchoolExam,
   onDeleteSchoolExam,
-  onUpdateProfile
+  onUpdateProfile,
+  onApplyBulkSchoolExams
 }) => {
   const [selectedSemester, setSelectedSemester] = useState<1 | 2>(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showReportCardModal, setShowReportCardModal] = useState(false);
+  const [showBulkImportModal, setShowBulkImportModal] = useState(false);
   const [editingExam, setEditingExam] = useState<SchoolExam | null>(null);
   const [deletingExamId, setDeletingExamId] = useState<string | null>(null);
   const [isTargetGpaModalOpen, setIsTargetGpaModalOpen] = useState(false);
@@ -206,11 +219,33 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Official Report Card Button */}
+            <button
+              onClick={() => setShowReportCardModal(true)}
+              className="px-3.5 py-2.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-bold rounded-2xl transition-all flex items-center space-x-1.5 shadow-sm cursor-pointer"
+              title="Resmi A4 formatında gelişim ve koçluk karnesini görüntüleyin / yazdırın"
+            >
+              <Award className="w-4 h-4 text-indigo-400" />
+              <span>Resmi Gelişim Karnesi (A4/PDF)</span>
+            </button>
+
+            {/* E-Okul Bulk Import Button (Teacher/Admin) */}
+            {currentUser.role !== 'student' && onApplyBulkSchoolExams && (
+              <button
+                onClick={() => setShowBulkImportModal(true)}
+                className="px-3.5 py-2.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-xs font-bold rounded-2xl transition-all flex items-center space-x-1.5 shadow-sm cursor-pointer"
+                title="E-Okul not çizelgesinden toplu yazılı sınav notu yükleyin"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-purple-400" />
+                <span>E-Okul Not Aktar</span>
+              </button>
+            )}
+
             {/* WhatsApp Share Button */}
             <button
               onClick={handleShareWhatsAppReport}
-              className="px-3.5 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-2xl transition-all flex items-center space-x-1.5 shadow-sm"
+              className="px-3.5 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-2xl transition-all flex items-center space-x-1.5 shadow-sm cursor-pointer"
               title="Yazılı sınav notlarını WhatsApp formatında veliyle paylaşın"
             >
               <Share2 className="w-4 h-4" />
@@ -221,7 +256,7 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
             <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800 shrink-0">
               <button
                 onClick={() => setSelectedSemester(1)}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   selectedSemester === 1
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                     : 'text-slate-400 hover:text-slate-200'
@@ -231,7 +266,7 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
               </button>
               <button
                 onClick={() => setSelectedSemester(2)}
-                className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+                className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   selectedSemester === 2
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                     : 'text-slate-400 hover:text-slate-200'
@@ -247,7 +282,7 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
                 setEditingExam(null);
                 setIsModalOpen(true);
               }}
-              className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-2xl shadow-lg shadow-emerald-600/25 transition-all flex items-center space-x-2"
+              className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-2xl shadow-lg shadow-emerald-600/25 transition-all flex items-center space-x-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Yazılı Notu Ekle</span>
@@ -620,6 +655,40 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Official Student Report Card Modal (A4 Print / PDF) */}
+      {showReportCardModal && (
+        <OfficialStudentReportCardModal
+          isOpen={showReportCardModal}
+          onClose={() => setShowReportCardModal(false)}
+          student={currentUser}
+          studentData={studentData || {
+            profile,
+            schoolExams,
+            questionLogs: [],
+            studyPlans: [],
+            topicErrors: [],
+            resources: [],
+            generalMocks: [],
+            branchExams: [],
+            pastExams: [],
+            youtubeVideos: [],
+            coachAdvices: [],
+            sheetsStatus: { isConnected: false }
+          }}
+        />
+      )}
+
+      {/* Bulk Import School Exams Modal */}
+      {showBulkImportModal && onApplyBulkSchoolExams && (
+        <BulkImportSchoolExamsModal
+          isOpen={showBulkImportModal}
+          onClose={() => setShowBulkImportModal(false)}
+          allUsers={allUsers}
+          classes={classes}
+          onApplyBulkSchoolExams={onApplyBulkSchoolExams}
+        />
       )}
     </div>
   );

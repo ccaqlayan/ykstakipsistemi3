@@ -283,10 +283,22 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           schoolExams={currentStudentData.schoolExams || []}
           profile={currentStudentData.profile}
           currentUser={previewStudentUser || currentUser}
+          studentData={currentStudentData}
+          allUsers={globalState.users}
+          classes={globalState.classes}
           onAddSchoolExam={handleAddSchoolExam || (() => {})}
           onUpdateSchoolExam={handleUpdateSchoolExam || (() => {})}
           onDeleteSchoolExam={handleDeleteSchoolExam || (() => {})}
           onUpdateProfile={handleUpdateStudentProfile}
+          onApplyBulkSchoolExams={(updates) => {
+            updates.forEach(({ studentId, exams }) => {
+              const studentExams = globalState.studentsData[studentId]?.schoolExams || [];
+              const mergedExams = [...studentExams, ...exams];
+              if (handleUpdateStudentSchoolExamsByTeacher) {
+                handleUpdateStudentSchoolExamsByTeacher(studentId, mergedExams, 'E-Okul toplu yazılı sınav notları aktarıldı');
+              }
+            });
+          }}
         />
       )}
 

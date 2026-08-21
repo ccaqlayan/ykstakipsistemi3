@@ -51,9 +51,11 @@ import {
   CalendarDays,
   Maximize2,
   Minimize2,
-  Star
+  Star,
+  Printer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { OfficialStudentReportCardModal } from '../reports/OfficialStudentReportCardModal';
 import { 
   getMonday, 
   formatWeekLabelWithYear, 
@@ -230,6 +232,7 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
   const [showApplyTemplateModalInInspect, setShowApplyTemplateModalInInspect] = React.useState<boolean>(false);
   const [selectedTemplateToApplyInInspect, setSelectedTemplateToApplyInInspect] = React.useState<StudyProgramTemplate | null>(null);
   const [applyTemplateModeInInspect, setApplyTemplateModeInInspect] = React.useState<'overwrite' | 'merge'>('merge');
+  const [showReportCardModal, setShowReportCardModal] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     if (isPlannerFullscreen) {
@@ -326,6 +329,15 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
           </div>
 
           <div className="flex items-center space-x-2 shrink-0">
+            <button
+              onClick={() => setShowReportCardModal(true)}
+              className="bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 font-bold text-xs px-3 py-2 rounded-2xl transition-all border border-emerald-500/40 flex items-center space-x-1.5 shadow-md shadow-emerald-600/20 cursor-pointer active:scale-95"
+              title="Öğrencinin A4 formatındaki resmi gelişim ve koçluk karnesini yazdırın / PDF olarak indirin"
+            >
+              <Printer className="w-4 h-4 text-emerald-300" />
+              <span>Koçluk Karnesi (A4)</span>
+            </button>
+
             {onPreviewStudent && (
               <button
                 onClick={() => {
@@ -4278,6 +4290,16 @@ export const TeacherStudentInspectModal: React.FC<TeacherStudentInspectModalProp
         )}
 
       </div>
+
+      {/* Official Student Report Card Modal (A4 Print / PDF) */}
+      {showReportCardModal && (
+        <OfficialStudentReportCardModal
+          isOpen={showReportCardModal}
+          onClose={() => setShowReportCardModal(false)}
+          student={selectedStudentUser}
+          studentData={studentData}
+        />
+      )}
     </div>
   );
 };

@@ -109,6 +109,7 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
   * BulkImportMarkdownTab.tsx     : Yapay zekasız, tarayıcıda anında çalışan Markdown (.md) sınav sonuç belgesi ayrıştırma alanı
   * BulkImportHistoryTab.tsx      : Geçmiş toplu aktarım kayıtları
   * BulkImportModals.tsx          : Manuel öğrenci eşleştirme ve toplu giriş modalları
+  * BulkImportSchoolExamsModal.tsx: E-Okul ve Excel/CSV formatından okul yazılı sınav notlarını toplu içe aktarma modalı
 
 [3.8. Sistem Yönetimi & Ayarlar (System Management)]
 - Main Orchestrator : src/components/SystemManagementView.tsx
@@ -127,8 +128,10 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 
 [3.9. Okul Yazılı Sınavları & OBP Karnesi (School Exams)]
 - Main Orchestrator : src/components/SchoolExamsView.tsx
-- Modüller (src/components/school_exams/) :
+- Modüller (src/components/school_exams/ & src/components/reports/) :
   * SchoolExamModal.tsx           : 1. ve 2. Dönem okul yazılı sınav notu ve sınıf ortalaması ekleme/düzenleme modalı
+  * OfficialStudentReportCardModal.tsx: MEB Maarif ve YKS uyumlu, A4 formatında yazdırılabilir/PDF kaydedilebilir resmi öğrenci gelişim karnesi modalı
+  * ClassComparisonModal.tsx      : 9, 10, 11, 12 ve Mezun kademelerinin başarı, soru çözümü ve erken uyarı radarını kıyaslayan analitik modalı
 
 [3.10. Bağımsız Diğer Ekranlar (Independent Views)]
 - src/components/AICoachView.tsx               : Bireysel öğrenci ve sınıf genel Yapay Zeka Koç Raporu.
