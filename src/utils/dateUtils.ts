@@ -237,4 +237,21 @@ export const formatShortDisplayDate = (dateStr?: string): string => {
   return dateStr;
 };
 
+/**
+ * Formats YYYY-MM-DD or ISO date string to compact day + short month (e.g. "18 Ağu", "5 Eyl").
+ */
+export const formatCompactDisplayDate = (dateStr?: string): string => {
+  if (!dateStr) return '';
+  const clean = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+  const parts = clean.split('-');
+  if (parts.length === 3) {
+    const mIdx = parseInt(parts[1], 10) - 1;
+    const d = parseInt(parts[2], 10);
+    const mName = TURKISH_SHORT_MONTHS[mIdx] || parts[1];
+    return `${d} ${mName}`;
+  }
+  return dateStr;
+};
+
+
 
