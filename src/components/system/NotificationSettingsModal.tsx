@@ -30,7 +30,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
 }) => {
   const [settings, setSettings] = useState<NotificationSettings>(getNotificationSettings);
   const [permissionState, setPermissionState] = useState<string>('default');
-  const [testSent, setTestSent] = useState<boolean>(false);
+  const [testStatus, setTestStatus] = useState<{ state: 'idle' | 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -38,6 +38,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
       if ('Notification' in window) {
         setPermissionState(Notification.permission);
       }
+      setTestStatus(null);
     }
   }, [isOpen]);
 
@@ -51,13 +52,19 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
         setSettings(updated);
         saveNotificationSettings(updated);
         setPermissionState('granted');
+        setTestStatus({ state: 'success', message: 'Bildirim izni başarıyla verildi!' });
       } else {
-        alert('Tarayıcı bildirim izni verilmedi. Lütfen adres çubuğundaki kilit simgesinden bildirimlere izin veriniz.');
+        setPermissionState(Notification.permission);
+        setTestStatus({ 
+          state: 'error', 
+          message: 'Tarayıcı veya Windows ayarlarından bildirim engellenmiş. Lütfen adres çubuğundaki kilit simgesine tıklayıp Bildirimler seçeneğini "İzin Ver" olarak değiştiriniz.' 
+        });
       }
     } else {
       const updated = { ...settings, browserNotificationsEnabled: false };
       setSettings(updated);
       saveNotificationSettings(updated);
+      setTestStatus(null);
     }
   };
 
@@ -67,13 +74,23 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
     saveNotificationSettings(updated);
   };
 
-  const handleSendTestNotification = () => {
-    triggerBrowserNotification(
+  const handleSendTestNotification = async () => {
+    setTestStatus(null);
+    const res = await triggerBrowserNotification(
       '🎯 YKS Akıllı Hatırlatıcı Testi',
-      'Tebrikler! Bildirim sisteminiz başarıyla aktif edildi ve çalışıyor.'
+      'Tebrikler! Masaüstü bildirim sisteminiz başarıyla aktif edildi ve çalışıyor. 🚀'
     );
-    setTestSent(true);
-    setTimeout(() => setTestSent(false), 3000);
+    if (res.success) {
+      setTestStatus({ 
+        state: 'success', 
+        message: 'Masaüstü bildirimi gönderildi ve zil sesi çalındı! (Eğer Windows ekranınızda görünmüyorsa Windows Odaklanma Yardımı veya Chrome bildirim izinlerini kontrol ediniz.)' 
+      });
+    } else {
+      setTestStatus({ 
+        state: 'error', 
+        message: res.error || 'Bildirim gönderilemedi. Lütfen tarayıcı izinlerini kontrol ediniz.' 
+      });
+    }
   };
 
   const modalContent = (
@@ -110,7 +127,7 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
               <ShieldCheck className="w-5 h-5 text-indigo-400" />
               <div>
                 <strong className="text-xs text-white block">Tarayıcı Masaüstü Bildirimleri</strong>
-                <span className="text-[11px] text-slate-400">Uygulama arka plandayken bildirim gönder</span>
+                <span className="text-[11px] text-slate-400">Uygulama açıkken veya arka plandayken bildirim gönder</span>
               </div>
             </div>
 
@@ -125,20 +142,52 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
             </button>
           </div>
 
-          {settings.browserNotificationsEnabled && (
-            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
-              <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                İzin Verildi
-              </span>
-              <button
-                type="button"
-                onClick={handleSendTestNotification}
-                className="px-2.5 py-1 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1"
-              >
-                <Zap className="w-3 h-3 text-amber-400" />
-                <span>{testSent ? 'Gönderildi!' : 'Test Bildirimi Gönder'}</span>
-              </button>
+          <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between flex-wrap gap-2">
+            <span className={`text-[11px] font-semibold flex items-center gap-1 ${
+              permissionState === 'granted' ? 'text-emerald-400' : 'text-amber-400'
+            }`}>
+              {permissionState === 'granted' ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  İzin Verildi
+                </>
+              ) : permissionState === 'denied' ? (
+                <>
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                  Tarayıcıda Engellenmiş
+                </>
+              ) : (
+                <>
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  İzin Bekleniyor
+                </>
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={handleSendTestNotification}
+              className="px-3 py-1.5 bg-indigo-500/25 hover:bg-indigo-500/40 text-indigo-200 hover:text-white border border-indigo-400/40 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <span>Test Bildirimi Gönder</span>
+            </button>
+          </div>
+
+          {/* Test Status Banner */}
+          {testStatus && (
+            <div className={`p-3 rounded-xl border text-xs leading-relaxed flex items-start space-x-2 animate-fade-in ${
+              testStatus.state === 'success' 
+                ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200' 
+                : 'bg-rose-950/40 border-rose-500/40 text-rose-200'
+            }`}>
+              {testStatus.state === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1">
+                <span>{testStatus.message}</span>
+              </div>
             </div>
           )}
         </div>

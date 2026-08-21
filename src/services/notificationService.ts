@@ -1,4 +1,5 @@
 import { DayOfWeek, RoutineItem, StudyPlanItem, TopicErrorItem } from '../types';
+import { playNotificationSound } from '../utils/soundUtils';
 
 export interface AppNotification {
   id: string;
@@ -83,18 +84,76 @@ export async function requestBrowserNotificationPermission(): Promise<boolean> {
   }
 }
 
-export function triggerBrowserNotification(title: string, body: string, icon = '🎯'): void {
-  if (!('Notification' in window)) return;
-  if (Notification.permission === 'granted') {
+export async function triggerBrowserNotification(
+  title: string, 
+  body: string, 
+  icon = '🎯'
+): Promise<{ success: boolean; error?: string }> {
+  if (!('Notification' in window)) {
+    return { success: false, error: 'Tarayıcınız bildirim özelliğini desteklemiyor.' };
+  }
+
+  let permission = Notification.permission;
+  if (permission !== 'granted' && permission !== 'denied') {
     try {
-      new Notification(title, {
-        body,
-        icon: '/favicon.ico',
-        badge: '/favicon.ico'
-      });
+      permission = await Notification.requestPermission();
+      const current = getNotificationSettings();
+      saveNotificationSettings({ ...current, browserNotificationsEnabled: permission === 'granted' });
     } catch (e) {
-      console.warn('Failed to send browser notification:', e);
+      console.warn('Permission request error:', e);
     }
+  }
+
+  if (permission !== 'granted') {
+    return { 
+      success: false, 
+      error: 'Bildirim izni verilmemiş. Lütfen adres çubuğundaki kilit (veya ayar) simgesinden bildirimlere izin veriniz.' 
+    };
+  }
+
+  // 🔔 Sesi çal
+  playNotificationSound();
+
+  // 1. Service Worker ile bildirim göndermeyi dene (PWA / Modern Chrome desteği)
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg && typeof reg.showNotification === 'function') {
+        await reg.showNotification(title, {
+          body,
+          icon: '/favicon.ico',
+          badge: '/favicon.ico',
+          tag: 'yks-notif-' + Date.now(),
+          data: { url: window.location.href }
+        });
+        return { success: true };
+      }
+    } catch (swErr) {
+      console.warn('Service worker showNotification fallback:', swErr);
+    }
+  }
+
+  // 2. Doğrudan DOM Notification nesnesi ile gönder
+  try {
+    const notif = new Notification(title, {
+      body,
+      icon: '/favicon.ico',
+      badge: '/favicon.ico',
+      tag: 'yks-notif-' + Date.now()
+    });
+
+    notif.onclick = () => {
+      window.focus();
+      notif.close();
+    };
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Direct Notification constructor error:', err);
+    return { 
+      success: false, 
+      error: err?.message || 'Masaüstü bildirimi oluşturulamadı.' 
+    };
   }
 }
 
