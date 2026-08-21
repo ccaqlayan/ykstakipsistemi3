@@ -22,6 +22,8 @@ interface SubjectDetailHeaderProps {
   detailSubTab: DetailSubTab;
   setDetailSubTab: (tab: DetailSubTab) => void;
   formatMinutes: (mins: number) => string;
+  gradeLevel?: string;
+  isEarly?: boolean;
 }
 
 export const SubjectDetailHeader: React.FC<SubjectDetailHeaderProps> = ({
@@ -33,6 +35,8 @@ export const SubjectDetailHeader: React.FC<SubjectDetailHeaderProps> = ({
   detailSubTab,
   setDetailSubTab,
   formatMinutes,
+  gradeLevel = '12',
+  isEarly = false,
 }) => {
   const category = activeDetailData.category;
 
@@ -52,36 +56,42 @@ export const SubjectDetailHeader: React.FC<SubjectDetailHeaderProps> = ({
               <span>Tüm Derslere Dön</span>
             </button>
 
-            {/* Scope Filter Buttons: TÜMÜ | TYT | AYT */}
-            <div className="inline-flex items-center p-1 bg-slate-950/90 border border-slate-800 rounded-xl space-x-1 shadow-inner">
-              <span className="text-[10px] font-bold text-slate-400 px-2 flex items-center space-x-1">
-                <Filter className="w-3 h-3 text-indigo-400" />
-                <span className="hidden sm:inline">Kapsam:</span>
-              </span>
-              {(['TÜMÜ', 'TYT', 'AYT'] as const).map(scope => {
-                const isDisabled = activeRawCategoryData ? (
-                  (scope === 'TYT' && activeRawCategoryData.tytTopics.length === 0) ||
-                  (scope === 'AYT' && activeRawCategoryData.aytTopics.length === 0)
-                ) : false;
+            {/* Scope Filter Buttons: TÜMÜ | TYT | AYT (or Maarif badge for 9-10) */}
+            {isEarly ? (
+              <div className="inline-flex items-center px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-[11px] font-bold text-indigo-300">
+                <span>{gradeLevel}. Sınıf Maarif Modeli</span>
+              </div>
+            ) : (
+              <div className="inline-flex items-center p-1 bg-slate-950/90 border border-slate-800 rounded-xl space-x-1 shadow-inner">
+                <span className="text-[10px] font-bold text-slate-400 px-2 flex items-center space-x-1">
+                  <Filter className="w-3 h-3 text-indigo-400" />
+                  <span className="hidden sm:inline">Kapsam:</span>
+                </span>
+                {(['TÜMÜ', 'TYT', 'AYT'] as const).map(scope => {
+                  const isDisabled = activeRawCategoryData ? (
+                    (scope === 'TYT' && activeRawCategoryData.tytTopics.length === 0) ||
+                    (scope === 'AYT' && activeRawCategoryData.aytTopics.length === 0)
+                  ) : false;
 
-                return (
-                  <button
-                    key={scope}
-                    disabled={isDisabled}
-                    onClick={() => setDetailExamFilter(scope)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      detailExamFilter === scope
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/40 border border-indigo-400'
-                        : isDisabled
-                        ? 'opacity-40 cursor-not-allowed text-slate-600'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    {scope}
-                  </button>
-                );
-              })}
-            </div>
+                  return (
+                    <button
+                      key={scope}
+                      disabled={isDisabled}
+                      onClick={() => setDetailExamFilter(scope)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        detailExamFilter === scope
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/40 border border-indigo-400'
+                          : isDisabled
+                          ? 'opacity-40 cursor-not-allowed text-slate-600'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      }`}
+                    >
+                      {scope}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center space-x-3.5">
@@ -94,7 +104,7 @@ export const SubjectDetailHeader: React.FC<SubjectDetailHeaderProps> = ({
                   {category.title}
                 </h1>
                 <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${category.badgeBg}`}>
-                  {category.examType}
+                  {isEarly ? `${gradeLevel}. Sınıf` : category.examType}
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-400 mt-0.5">

@@ -6,7 +6,7 @@ export interface UniversityProgram {
   city: string;
   type: 'Devlet' | 'Vakıf';
   field: 'SAY' | 'EA' | 'SÖZ' | 'DİL';
-  language: 'Türkçe' | 'İngilizce' | '%30 İngilizce';
+  language: 'Türkçe' | 'İngilizce' | '%30 İngilizce' | string;
   scholarship: 'Ücretsiz' | 'Burslu' | '%50 İndirimli' | 'Ücretli';
   quota: number;
   lastMinRank2025: number;

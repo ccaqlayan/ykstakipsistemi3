@@ -37,6 +37,8 @@ interface SubjectLandingGridProps {
   setSelectedSubjectId: (id: string | null) => void;
   setDetailSubTab: (tab: any) => void;
   formatMinutes: (mins: number) => string;
+  gradeLevel?: string;
+  isEarly?: boolean;
 }
 
 export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
@@ -54,6 +56,8 @@ export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
   setSelectedSubjectId,
   setDetailSubTab,
   formatMinutes,
+  gradeLevel = '12',
+  isEarly = false,
 }) => {
   return (
     <div className="space-y-6 animate-fade-in">
@@ -66,20 +70,30 @@ export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
           <div className="space-y-2">
             <div className="inline-flex items-center space-x-2 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full text-xs font-bold text-indigo-300">
               <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              <span>YKS Ders İlerleme & İnceleme Paneli</span>
+              <span>
+                {isEarly 
+                  ? `${gradeLevel}. Sınıf MEB Maarif Modeli Ders & Konu Takibi` 
+                  : gradeLevel === '11' 
+                  ? '11. Sınıf MEB Müfredatı Ders & Konu Takibi' 
+                  : 'YKS Ders İlerleme & İnceleme Paneli'}
+              </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Ders İlerlemelerim
+              {isEarly || gradeLevel === '11' ? `${gradeLevel}. Sınıf Ders İlerlemelerim` : 'Ders İlerlemelerim'}
             </h1>
             <p className="text-slate-400 text-xs sm:text-sm max-w-2xl leading-relaxed">
-              YKS müfredatındaki tüm derslerinizin konu tamamlama oranları, çözülen soru sayıları, çalışma süreleri ve deneme performanslarının bütüncül özeti.
+              {isEarly || gradeLevel === '11'
+                ? `${gradeLevel}. sınıf müfredatındaki tüm derslerinizin konu tamamlama oranları, çözülen soru sayıları ve çalışma süreleri özeti.`
+                : 'YKS müfredatındaki tüm derslerinizin konu tamamlama oranları, çözülen soru sayıları, çalışma süreleri ve deneme performanslarının bütüncül özeti.'}
             </p>
           </div>
 
           {/* Overall Progress Gauge Widget */}
           <div className="bg-slate-950/80 border border-slate-800/80 p-4.5 rounded-2xl flex items-center space-x-4 shrink-0 shadow-xl backdrop-blur-md">
             <div className="text-center">
-              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Genel Müfredat</div>
+              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                {isEarly ? `${gradeLevel}. Sınıf Müfredatı` : 'Genel Müfredat'}
+              </div>
               <div className="text-3xl font-black text-emerald-400 font-mono mt-0.5">%{globalCurriculumStats.percent}</div>
               <div className="text-[10px] text-slate-400 mt-0.5 font-medium">{globalCurriculumStats.totalCompleted} / {globalCurriculumStats.totalTopics} Konu</div>
             </div>
@@ -134,33 +148,52 @@ export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
 
       {/* ── 4 GLOBAL TOP KPI CARDS ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: TYT & AYT Split Progress */}
+        {/* Card 1: TYT & AYT Split Progress or Maarif Single Progress */}
         <div className="bg-slate-900/90 border border-slate-800 p-4.5 rounded-3xl shadow-xl backdrop-blur-md flex flex-col justify-between hover:border-slate-700 transition-all">
           <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Müfredat Tamamlama</div>
-          <div className="grid grid-cols-2 gap-3 divide-x divide-slate-800">
+          {isEarly ? (
             <div>
-              <div className="text-[10px] text-sky-400 font-bold uppercase tracking-wider">TYT</div>
-              <div className="text-xl font-black text-white font-mono mt-0.5">%{globalCurriculumStats.tytPercent}</div>
-              <div className="w-full bg-slate-950 h-1.5 rounded-full mt-1.5 overflow-hidden">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-wider">{gradeLevel}. Sınıf Maarif</span>
+                <span className="text-xl font-black text-white font-mono">%{globalCurriculumStats.percent}</span>
+              </div>
+              <div className="w-full bg-slate-950 h-2 rounded-full mt-2 overflow-hidden border border-slate-800">
                 <div 
-                  style={{ width: `${globalCurriculumStats.tytPercent}%` }}
-                  className="h-full bg-sky-500 rounded-full transition-all duration-500"
+                  style={{ width: `${globalCurriculumStats.percent}%` }}
+                  className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500 rounded-full transition-all duration-500"
                 />
               </div>
-              <div className="text-[10px] text-slate-400 font-medium mt-1.5">{globalCurriculumStats.totalTytCompleted}/{globalCurriculumStats.totalTytTopics} Konu</div>
-            </div>
-            <div className="pl-3">
-              <div className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">AYT</div>
-              <div className="text-xl font-black text-white font-mono mt-0.5">%{globalCurriculumStats.aytPercent}</div>
-              <div className="w-full bg-slate-950 h-1.5 rounded-full mt-1.5 overflow-hidden">
-                <div 
-                  style={{ width: `${globalCurriculumStats.aytPercent}%` }}
-                  className="h-full bg-purple-500 rounded-full transition-all duration-500"
-                />
+              <div className="text-[10px] text-slate-400 font-medium mt-2 flex items-center justify-between">
+                <span>Tamamlanan Konu:</span>
+                <span className="font-mono text-indigo-300 font-bold">{globalCurriculumStats.totalCompleted} / {globalCurriculumStats.totalTopics}</span>
               </div>
-              <div className="text-[10px] text-slate-400 font-medium mt-1.5">{globalCurriculumStats.totalAytCompleted}/{globalCurriculumStats.totalAytTopics} Konu</div>
             </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 divide-x divide-slate-800">
+              <div>
+                <div className="text-[10px] text-sky-400 font-bold uppercase tracking-wider">TYT</div>
+                <div className="text-xl font-black text-white font-mono mt-0.5">%{globalCurriculumStats.tytPercent}</div>
+                <div className="w-full bg-slate-950 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                  <div 
+                    style={{ width: `${globalCurriculumStats.tytPercent}%` }}
+                    className="h-full bg-sky-500 rounded-full transition-all duration-500"
+                  />
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium mt-1.5">{globalCurriculumStats.totalTytCompleted}/{globalCurriculumStats.totalTytTopics} Konu</div>
+              </div>
+              <div className="pl-3">
+                <div className="text-[10px] text-purple-400 font-bold uppercase tracking-wider">AYT</div>
+                <div className="text-xl font-black text-white font-mono mt-0.5">%{globalCurriculumStats.aytPercent}</div>
+                <div className="w-full bg-slate-950 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                  <div 
+                    style={{ width: `${globalCurriculumStats.aytPercent}%` }}
+                    className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                  />
+                </div>
+                <div className="text-[10px] text-slate-400 font-medium mt-1.5">{globalCurriculumStats.totalAytCompleted}/{globalCurriculumStats.totalAytTopics} Konu</div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Card 2: Soru Çözüm Sayısı */}
@@ -202,7 +235,7 @@ export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
             <Search className="w-4 h-4 text-slate-400 absolute left-4 top-3.5" />
             <input
               type="text"
-              placeholder="Ders ara... (Ör: Matematik, Fizik, Türkçe, Kimya)"
+              placeholder="Ders ara... (Ör: Matematik, Fizik, Türk Dili ve Edebiyatı, Kimya)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-11 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all"
@@ -218,33 +251,35 @@ export const SubjectLandingGrid: React.FC<SubjectLandingGridProps> = ({
             )}
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center space-x-1.5 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
-            {[
-              { id: 'ALANIM', label: `⭐ Alanım (${getFieldTitle(targetField)})` },
-              { id: 'ALL', label: 'Tüm Dersler' },
-              { id: 'Sayısal', label: 'Sayısal' },
-              { id: 'Eşit Ağırlık', label: 'Eşit Ağırlık' },
-              { id: 'Sözel', label: 'Sözel' },
-              { id: 'DİL', label: 'Yabancı Dil' }
-            ].map(f => (
-              <button
-                key={f.id}
-                onClick={() => setSelectedGroupFilter(f.id)}
-                className={`text-xs font-bold px-3.5 py-2 rounded-xl border transition-all whitespace-nowrap cursor-pointer ${
-                  selectedGroupFilter === f.id
-                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
-                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-850 hover:text-white'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+          {/* Filter Pills (Hidden for 9th and 10th grades) */}
+          {!isEarly && (
+            <div className="flex items-center space-x-1.5 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
+              {[
+                { id: 'ALANIM', label: `⭐ Alanım (${getFieldTitle(targetField)})` },
+                { id: 'ALL', label: 'Tüm Dersler' },
+                { id: 'Sayısal', label: 'Sayısal' },
+                { id: 'Eşit Ağırlık', label: 'Eşit Ağırlık' },
+                { id: 'Sözel', label: 'Sözel' },
+                { id: 'DİL', label: 'Yabancı Dil' }
+              ].map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setSelectedGroupFilter(f.id)}
+                  className={`text-xs font-bold px-3.5 py-2 rounded-xl border transition-all whitespace-nowrap cursor-pointer ${
+                    selectedGroupFilter === f.id
+                      ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
+                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-850 hover:text-white'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Profile Field Banner */}
-        {selectedGroupFilter === 'ALANIM' && (
+        {/* Profile Field Banner (Hidden for 9th and 10th grades) */}
+        {!isEarly && selectedGroupFilter === 'ALANIM' && (
           <div className="bg-indigo-950/40 border border-indigo-500/30 px-4 py-3 rounded-2xl flex items-center justify-between text-xs text-indigo-200 shadow-lg">
             <div className="flex items-center space-x-2">
               <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />

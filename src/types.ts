@@ -73,6 +73,7 @@ export interface SchoolExam {
   notes?: string;
   topicsCovered?: string[];
   classAverage?: number;
+  gradeLevel?: string;
 }
 
 export type DayOfWeek = 'Pazartesi' | 'Salı' | 'Çarşamba' | 'Perşembe' | 'Cuma' | 'Cumartesi' | 'Pazar';
@@ -99,6 +100,7 @@ export interface StudyPlanItem {
   notes?: string;
   reflection?: string;
   targetQuestionCount?: number;
+  completedQuestionCount?: number;
   weekLabel?: string;
   archived?: boolean;
 }
@@ -129,7 +131,7 @@ export interface QuestionLog {
   date: string;
   subject: string;
   topic?: string;
-  examType: 'TYT' | 'AYT' | 'YDT';
+  examType: 'TYT' | 'AYT' | 'YDT' | 'GRADE_9' | 'GRADE_10' | 'GRADE_11';
   targetCount: number;
   solvedCount: number;
   correctCount: number;
@@ -138,6 +140,7 @@ export interface QuestionLog {
   blankCount?: number;
   netScore: number;
   durationMinutes?: number;
+  timeSpentMinutes?: number;
   notes?: string;
   studyPlanId?: string;
 }
@@ -150,7 +153,7 @@ export interface ResourceItem {
   totalUnits: number; // Toplam Test veya Konu sayısı
   completedUnits: number; // Çözülen Test veya Konu sayısı
   status: 'not_started' | 'in_progress' | 'completed';
-  examType: 'TYT' | 'AYT' | 'YDT';
+  examType: 'TYT' | 'AYT' | 'YDT' | 'GRADE_9' | 'GRADE_10' | 'GRADE_11';
   completedTopics?: string[]; // Çözülen konuların listesi
   notes?: string;
 }

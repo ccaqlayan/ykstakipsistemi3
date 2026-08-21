@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { YKSDataState, FieldType } from '../types';
 import { YKS_CURRICULUM_TOPICS } from '../data/initialData';
 import { getCurriculumForGrade, getCategoryCurriculumKeysForGrade } from '../data/curriculum';
-import { getGradeLevel } from '../utils/gradeUtils';
+import { getGradeLevel, isEarlyHighSchool } from '../utils/gradeUtils';
 import { X, Image as ImageIcon } from 'lucide-react';
 
 // Subcomponent imports
@@ -125,9 +125,16 @@ const SubjectProgressView: React.FC<SubjectProgressViewProps> = ({
   // Category statistics
   const categoryStats = useMemo(() => {
     const gradeLevel = getGradeLevel(state.profile?.className);
+    const isEarly = isEarlyHighSchool(gradeLevel);
     const currentCurriculum = getCurriculumForGrade(gradeLevel);
 
-    return SUBJECT_CATEGORIES.map(category => {
+    return SUBJECT_CATEGORIES.filter(category => {
+      // 9 and 10th grade: exclude separate 'geometri' card (since it's inside Matematik) and 'dil'
+      if (isEarly && (category.id === 'geometri' || category.id === 'dil')) {
+        return false;
+      }
+      return true;
+    }).map(category => {
       // Build topic groups from grade-specific curriculum
       const effectiveKeys = getCategoryCurriculumKeysForGrade(
         category.id,
@@ -331,6 +338,9 @@ const SubjectProgressView: React.FC<SubjectProgressViewProps> = ({
 
   // Filtered list for landing grid
   const filteredCategoryStats = useMemo(() => {
+    const gradeLevel = getGradeLevel(state.profile?.className);
+    const isEarly = isEarlyHighSchool(gradeLevel);
+
     return categoryStats.filter(cs => {
       const cat = cs.category;
       const matchesSearch = searchQuery === '' ||
@@ -338,6 +348,11 @@ const SubjectProgressView: React.FC<SubjectProgressViewProps> = ({
         cat.subtitle.toLowerCase().includes(searchQuery.toLowerCase());
 
       if (!matchesSearch) return false;
+
+      // In 9th and 10th grades, show all common subjects without field separation
+      if (isEarly) {
+        return true;
+      }
 
       if (selectedGroupFilter === 'ALANIM') {
         return cat.fields.includes(targetField);
@@ -351,7 +366,7 @@ const SubjectProgressView: React.FC<SubjectProgressViewProps> = ({
       if (selectedGroupFilter === 'Sözel' || selectedGroupFilter === 'SÖZ') return cat.fields.includes('SÖZ') || cat.group === 'Sözel';
       return cat.group === selectedGroupFilter;
     });
-  }, [categoryStats, searchQuery, selectedGroupFilter, targetField]);
+  }, [categoryStats, searchQuery, selectedGroupFilter, targetField, state.profile?.className]);
 
   // Global curriculum stats
   const globalCurriculumStats = useMemo(() => {
@@ -640,6 +655,8 @@ const SubjectProgressView: React.FC<SubjectProgressViewProps> = ({
             detailSubTab={detailSubTab}
             setDetailSubTab={setDetailSubTab}
             formatMinutes={formatMinutes}
+            gradeLevel={getGradeLevel(state.profile?.className)}
+            isEarly={isEarlyHighSchool(getGradeLevel(state.profile?.className))}
           />
 
           {/* TAB 0: OVERVIEW */}
@@ -752,6 +769,8 @@ const SubjectProgressView: React.FC<SubjectProgressViewProps> = ({
           setSelectedSubjectId={setSelectedSubjectId}
           setDetailSubTab={setDetailSubTab}
           formatMinutes={formatMinutes}
+          gradeLevel={getGradeLevel(state.profile?.className)}
+          isEarly={isEarlyHighSchool(getGradeLevel(state.profile?.className))}
         />
       )}
 

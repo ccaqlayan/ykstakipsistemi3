@@ -29,6 +29,9 @@ import { RECOMMENDED_BOOKS, RecommendedBook } from '../data/books';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { getGradeLevel, isEarlyHighSchool } from '../utils/gradeUtils';
 import { getCurriculumForGrade } from '../data/curriculum';
+import { GRADE9_CURRICULUM, GRADE9_SUBJECT_NAMES } from '../data/curriculum/grade9';
+import { GRADE10_CURRICULUM, GRADE10_SUBJECT_NAMES } from '../data/curriculum/grade10';
+import { GRADE11_CURRICULUM, GRADE11_SUBJECT_NAMES } from '../data/curriculum/grade11';
 
 interface ResourceTrackerViewProps {
   resources: ResourceItem[];
@@ -46,7 +49,6 @@ interface ResourceTrackerViewProps {
   initialDersFilter?: string;
 }
 
-
 const RECOMMENDED_RESOURCES = [
   { subject: 'Matematik (TYT-AYT)', books: ['345 Yayınları', 'Bilgi Sarmal', '3D Yayınları', 'Orijinal Matematik', 'Acil Matematik', 'Apotemi Fasikülleri'] },
   { subject: 'Fizik (TYT-AYT)', books: ['345 Yayınları', 'Bilgi Sarmal', 'Nihat Bilgin Yayıncılık', '3D Yayınları', 'Ertan Sinan Şahin', 'Karaağaç'] },
@@ -56,14 +58,97 @@ const RECOMMENDED_RESOURCES = [
   { subject: 'Tarih / Coğrafya', books: ['Benim Hocam', 'Bilgi Sarmal', 'Limit El Kitapları', 'Yavuz Tuna Haritalarla Coğrafya'] }
 ];
 
-const getTopicsForResource = (subject: string, examType?: 'TYT' | 'AYT' | 'YDT'): string[] => {
+export const getAvailableExamTypesForGrade = (gradeLevel: string) => {
+  if (gradeLevel === '9') return [{ id: 'GRADE_9', label: '9. Sınıf Müfredatı' }];
+  if (gradeLevel === '10') return [{ id: 'GRADE_10', label: '10. Sınıf Müfredatı' }];
+  if (gradeLevel === '11') return [{ id: 'GRADE_11', label: '11. Sınıf Müfredatı' }];
+  return [
+    { id: 'TYT', label: 'TYT (Temel Yeterlilik Testi)' },
+    { id: 'AYT', label: 'AYT (Alan Yeterlilik Testi)' }
+  ];
+};
+
+export const getAvailableSubjectsForGradeAndExamType = (examType: string, gradeLevel: string): string[] => {
+  if (gradeLevel === '9' || examType === 'GRADE_9') {
+    return GRADE9_SUBJECT_NAMES.length > 0 ? GRADE9_SUBJECT_NAMES : [
+      'Matematik', 'Türk Dili ve Edebiyatı', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Din Kültürü'
+    ];
+  }
+  if (gradeLevel === '10' || examType === 'GRADE_10') {
+    return GRADE10_SUBJECT_NAMES.length > 0 ? GRADE10_SUBJECT_NAMES : [
+      'Matematik', 'Türk Dili ve Edebiyatı', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Felsefe', 'Din Kültürü'
+    ];
+  }
+  if (gradeLevel === '11' || examType === 'GRADE_11') {
+    return GRADE11_SUBJECT_NAMES.length > 0 ? GRADE11_SUBJECT_NAMES : [
+      '11. Sınıf Matematik', '11. Sınıf Fizik', '11. Sınıf Kimya', '11. Sınıf Biyoloji',
+      '11. Sınıf Türk Dili ve Edebiyatı', '11. Sınıf Tarih', '11. Sınıf Coğrafya', '11. Sınıf Felsefe'
+    ];
+  }
+  if (examType === 'AYT') return YKS_SUBJECTS.AYT;
+  if (examType === 'YDT') return YKS_SUBJECTS.YDT;
+  return YKS_SUBJECTS.TYT;
+};
+
+const getTopicsForResource = (subject: string, examType?: string, gradeLevel?: string): string[] => {
   if (!subject) return [];
-  if (YKS_CURRICULUM_TOPICS[subject]) {
-    return YKS_CURRICULUM_TOPICS[subject];
+
+  // 1. Direct match in grade curricula
+  if (GRADE9_CURRICULUM[subject]) return GRADE9_CURRICULUM[subject];
+  if (GRADE10_CURRICULUM[subject]) return GRADE10_CURRICULUM[subject];
+  if (GRADE11_CURRICULUM[subject]) return GRADE11_CURRICULUM[subject];
+  if (YKS_CURRICULUM_TOPICS[subject]) return YKS_CURRICULUM_TOPICS[subject];
+
+  const subUpper = subject.toUpperCase().trim();
+  const subLower = subject.toLowerCase().trim();
+
+  // 2. If 9th grade or GRADE_9 exam type
+  if (gradeLevel === '9' || examType === 'GRADE_9') {
+    const direct = Object.keys(GRADE9_CURRICULUM).find(k => k.toUpperCase() === subUpper || k.toLowerCase() === subLower);
+    if (direct) return GRADE9_CURRICULUM[direct];
+
+    if (subLower.includes('matematik') || subLower.includes('geometri')) return GRADE9_CURRICULUM['MATEMATİK'] || [];
+    if (subLower.includes('edebiyat') || subLower.includes('türkçe') || subLower.includes('türk dili')) return GRADE9_CURRICULUM['TÜRK DİLİ VE EDEBİYATI'] || [];
+    if (subLower.includes('fizik')) return GRADE9_CURRICULUM['FİZİK'] || [];
+    if (subLower.includes('kimya')) return GRADE9_CURRICULUM['KİMYA'] || [];
+    if (subLower.includes('biyoloji')) return GRADE9_CURRICULUM['BİYOLOJİ'] || [];
+    if (subLower.includes('tarih')) return GRADE9_CURRICULUM['TARİH'] || [];
+    if (subLower.includes('coğrafya')) return GRADE9_CURRICULUM['COĞRAFYA'] || [];
+    if (subLower.includes('din')) return GRADE9_CURRICULUM['DİN KÜLTÜRÜ'] || [];
   }
 
-  const subLower = subject.toLowerCase();
-  
+  // 3. If 10th grade or GRADE_10 exam type
+  if (gradeLevel === '10' || examType === 'GRADE_10') {
+    const direct = Object.keys(GRADE10_CURRICULUM).find(k => k.toUpperCase() === subUpper || k.toLowerCase() === subLower);
+    if (direct) return GRADE10_CURRICULUM[direct];
+
+    if (subLower.includes('matematik') || subLower.includes('geometri')) return GRADE10_CURRICULUM['MATEMATİK'] || [];
+    if (subLower.includes('edebiyat') || subLower.includes('türkçe') || subLower.includes('türk dili')) return GRADE10_CURRICULUM['TÜRK DİLİ VE EDEBİYATI'] || [];
+    if (subLower.includes('fizik')) return GRADE10_CURRICULUM['FİZİK'] || [];
+    if (subLower.includes('kimya')) return GRADE10_CURRICULUM['KİMYA'] || [];
+    if (subLower.includes('biyoloji')) return GRADE10_CURRICULUM['BİYOLOJİ'] || [];
+    if (subLower.includes('tarih')) return GRADE10_CURRICULUM['TARİH'] || [];
+    if (subLower.includes('coğrafya')) return GRADE10_CURRICULUM['COĞRAFYA'] || [];
+    if (subLower.includes('felsefe')) return GRADE10_CURRICULUM['FELSEFE'] || [];
+    if (subLower.includes('din')) return GRADE10_CURRICULUM['DİN KÜLTÜRÜ'] || [];
+  }
+
+  // 4. If 11th grade or GRADE_11 exam type
+  if (gradeLevel === '11' || examType === 'GRADE_11') {
+    const direct = Object.keys(GRADE11_CURRICULUM).find(k => k.toUpperCase() === subUpper || k.toLowerCase() === subLower);
+    if (direct) return GRADE11_CURRICULUM[direct];
+
+    if (subLower.includes('matematik')) return GRADE11_CURRICULUM['11. Sınıf Matematik'] || [];
+    if (subLower.includes('fizik')) return GRADE11_CURRICULUM['11. Sınıf Fizik'] || [];
+    if (subLower.includes('kimya')) return GRADE11_CURRICULUM['11. Sınıf Kimya'] || [];
+    if (subLower.includes('biyoloji')) return GRADE11_CURRICULUM['11. Sınıf Biyoloji'] || [];
+    if (subLower.includes('edebiyat') || subLower.includes('türkçe') || subLower.includes('türk dili')) return GRADE11_CURRICULUM['11. Sınıf Türk Dili ve Edebiyatı'] || [];
+    if (subLower.includes('tarih')) return GRADE11_CURRICULUM['11. Sınıf Tarih'] || [];
+    if (subLower.includes('coğrafya')) return GRADE11_CURRICULUM['11. Sınıf Coğrafya'] || [];
+    if (subLower.includes('felsefe')) return GRADE11_CURRICULUM['11. Sınıf Felsefe'] || [];
+  }
+
+  // 5. YKS topics matching for 12 / Mezun
   if (subLower.includes('paragraf')) {
     return YKS_CURRICULUM_TOPICS['Paragraf'] || [];
   }
@@ -72,7 +157,6 @@ const getTopicsForResource = (subject: string, examType?: 'TYT' | 'AYT' | 'YDT')
   }
 
   let mappedKey = '';
-  
   if (subLower.includes('türkçe') || subLower.includes('edebiyat') || subLower.includes('türk dili')) {
     mappedKey = examType === 'TYT' ? 'TYT Türkçe' : 'AYT Edebiyat';
   } else if (subLower.includes('matematik')) {
@@ -124,7 +208,22 @@ const COURSE_TOPICS_MAPPING: Record<string, string[]> = {
   'Din Kültürü': ['TYT Din Kültürü']
 };
 
-const getTopicsForSelectedDers = (dersFilter: string, examTypeFilter: string): { key: string; topics: string[] }[] => {
+const getTopicsForSelectedDers = (dersFilter: string, examTypeFilter: string, gradeLevel: string = '12'): { key: string; topics: string[] }[] => {
+  if (gradeLevel === '9' || gradeLevel === '10' || gradeLevel === '11') {
+    const cur = getCurriculumForGrade(gradeLevel as any);
+    const matchedKeys = Object.keys(cur).filter(k => {
+      const kLower = k.toLowerCase();
+      const dLower = dersFilter.toLowerCase();
+      return kLower.includes(dLower) || dLower.includes(kLower);
+    });
+    if (matchedKeys.length > 0) {
+      return matchedKeys.map(key => ({
+        key,
+        topics: cur[key] || []
+      })).filter(item => item.topics.length > 0);
+    }
+  }
+
   const mapping = COURSE_TOPICS_MAPPING[dersFilter];
   let keysToUse = mapping || [];
   if (mapping) {
@@ -156,18 +255,57 @@ const getTopicsForSelectedDers = (dersFilter: string, examTypeFilter: string): {
   return [];
 };
 
-const QUICK_COURSES = [
-  { value: 'Matematik', label: 'Matematik', color: 'from-blue-600 to-indigo-600' },
-  { value: 'Geometri', label: 'Geometri', color: 'from-cyan-600 to-blue-600' },
-  { value: 'Türkçe', label: 'Türkçe / Edebiyat', color: 'from-amber-600 to-orange-600' },
-  { value: 'Fizik', label: 'Fizik', color: 'from-purple-600 to-indigo-600' },
-  { value: 'Kimya', label: 'Kimya', color: 'from-emerald-600 to-teal-600' },
-  { value: 'Biyoloji', label: 'Biyoloji', color: 'from-rose-600 to-pink-600' },
-  { value: 'Tarih', label: 'Tarih', color: 'from-amber-700 to-yellow-600' },
-  { value: 'Coğrafya', label: 'Coğrafya', color: 'from-green-600 to-emerald-600' },
-  { value: 'Felsefe', label: 'Felsefe', color: 'from-violet-600 to-purple-600' },
-  { value: 'Din Kültürü', label: 'Din Kültürü', color: 'from-sky-600 to-indigo-600' },
-];
+const getQuickCoursesForGrade = (gradeLevel: string) => {
+  if (gradeLevel === '9') {
+    return [
+      { value: 'Matematik', label: 'Matematik', color: 'from-blue-600 to-indigo-600' },
+      { value: 'Türk Dili ve Edebiyatı', label: 'Türk Dili ve Edebiyatı', color: 'from-amber-600 to-orange-600' },
+      { value: 'Fizik', label: 'Fizik', color: 'from-purple-600 to-indigo-600' },
+      { value: 'Kimya', label: 'Kimya', color: 'from-emerald-600 to-teal-600' },
+      { value: 'Biyoloji', label: 'Biyoloji', color: 'from-rose-600 to-pink-600' },
+      { value: 'Tarih', label: 'Tarih', color: 'from-amber-700 to-yellow-600' },
+      { value: 'Coğrafya', label: 'Coğrafya', color: 'from-green-600 to-emerald-600' },
+      { value: 'Din Kültürü', label: 'Din Kültürü', color: 'from-sky-600 to-indigo-600' }
+    ];
+  }
+  if (gradeLevel === '10') {
+    return [
+      { value: 'Matematik', label: 'Matematik', color: 'from-blue-600 to-indigo-600' },
+      { value: 'Türk Dili ve Edebiyatı', label: 'Türk Dili ve Edebiyatı', color: 'from-amber-600 to-orange-600' },
+      { value: 'Fizik', label: 'Fizik', color: 'from-purple-600 to-indigo-600' },
+      { value: 'Kimya', label: 'Kimya', color: 'from-emerald-600 to-teal-600' },
+      { value: 'Biyoloji', label: 'Biyoloji', color: 'from-rose-600 to-pink-600' },
+      { value: 'Tarih', label: 'Tarih', color: 'from-amber-700 to-yellow-600' },
+      { value: 'Coğrafya', label: 'Coğrafya', color: 'from-green-600 to-emerald-600' },
+      { value: 'Felsefe', label: 'Felsefe', color: 'from-violet-600 to-purple-600' },
+      { value: 'Din Kültürü', label: 'Din Kültürü', color: 'from-sky-600 to-indigo-600' }
+    ];
+  }
+  if (gradeLevel === '11') {
+    return [
+      { value: '11. Sınıf Matematik', label: '11. Sınıf Matematik', color: 'from-blue-600 to-indigo-600' },
+      { value: '11. Sınıf Fizik', label: '11. Sınıf Fizik', color: 'from-purple-600 to-indigo-600' },
+      { value: '11. Sınıf Kimya', label: '11. Sınıf Kimya', color: 'from-emerald-600 to-teal-600' },
+      { value: '11. Sınıf Biyoloji', label: '11. Sınıf Biyoloji', color: 'from-rose-600 to-pink-600' },
+      { value: '11. Sınıf Türk Dili ve Edebiyatı', label: '11. Sınıf Edebiyat', color: 'from-amber-600 to-orange-600' },
+      { value: '11. Sınıf Tarih', label: '11. Sınıf Tarih', color: 'from-amber-700 to-yellow-600' },
+      { value: '11. Sınıf Coğrafya', label: '11. Sınıf Coğrafya', color: 'from-green-600 to-emerald-600' },
+      { value: '11. Sınıf Felsefe', label: '11. Sınıf Felsefe', color: 'from-violet-600 to-purple-600' }
+    ];
+  }
+  return [
+    { value: 'Matematik', label: 'Matematik', color: 'from-blue-600 to-indigo-600' },
+    { value: 'Geometri', label: 'Geometri', color: 'from-cyan-600 to-blue-600' },
+    { value: 'Türkçe', label: 'Türkçe / Edebiyat', color: 'from-amber-600 to-orange-600' },
+    { value: 'Fizik', label: 'Fizik', color: 'from-purple-600 to-indigo-600' },
+    { value: 'Kimya', label: 'Kimya', color: 'from-emerald-600 to-teal-600' },
+    { value: 'Biyoloji', label: 'Biyoloji', color: 'from-rose-600 to-pink-600' },
+    { value: 'Tarih', label: 'Tarih', color: 'from-amber-700 to-yellow-600' },
+    { value: 'Coğrafya', label: 'Coğrafya', color: 'from-green-600 to-emerald-600' },
+    { value: 'Felsefe', label: 'Felsefe', color: 'from-violet-600 to-purple-600' },
+    { value: 'Din Kültürü', label: 'Din Kültürü', color: 'from-sky-600 to-indigo-600' }
+  ];
+};
 
 export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   resources,
@@ -232,8 +370,11 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   const [showMobileStatusColumn, setShowMobileStatusColumn] = useState<boolean>(false);
 
   // Form State
-  const [examType, setExamType] = useState<'TYT' | 'AYT' | ''>('');
-  const [subject, setSubject] = useState('');
+  const defaultExamType = gradeLevel === '9' ? 'GRADE_9' : gradeLevel === '10' ? 'GRADE_10' : gradeLevel === '11' ? 'GRADE_11' : 'TYT';
+  const defaultSubject = getAvailableSubjectsForGradeAndExamType(defaultExamType, gradeLevel)[0] || 'Matematik';
+
+  const [examType, setExamType] = useState<string>(defaultExamType);
+  const [subject, setSubject] = useState<string>(defaultSubject);
   const [bookTitle, setBookTitle] = useState('');
   const [publisher, setPublisher] = useState('');
   const [selectedInitialTopics, setSelectedInitialTopics] = useState<string[]>([]);
@@ -250,6 +391,9 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
         setSubject(f.subject);
         if (f.subject.startsWith('AYT')) setExamType('AYT');
         else if (f.subject.startsWith('TYT')) setExamType('TYT');
+        else if (gradeLevel === '9') setExamType('GRADE_9');
+        else if (gradeLevel === '10') setExamType('GRADE_10');
+        else if (gradeLevel === '11') setExamType('GRADE_11');
       }
       if (f.publisher) setPublisher(f.publisher);
       if (f.notes) setBookTitle(f.notes);
@@ -271,14 +415,14 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
 
     window.addEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
     return () => window.removeEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
-  }, []);
+  }, [gradeLevel]);
 
   // Edit State
   const [editingResource, setEditingResource] = useState<ResourceItem | null>(null);
   const [editBookTitle, setEditBookTitle] = useState('');
   const [editPublisher, setEditPublisher] = useState('');
   const [editNotes, setEditNotes] = useState('');
-  const [editExamType, setEditExamType] = useState<'TYT' | 'AYT' | 'YDT'>('AYT');
+  const [editExamType, setEditExamType] = useState<string>(defaultExamType);
   const [editSubject, setEditSubject] = useState('');
   const [editCompletedTopics, setEditCompletedTopics] = useState<string[]>([]);
 
@@ -315,14 +459,15 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
     setEditBookTitle(res.bookTitle);
     setEditPublisher(res.publisher);
     setEditNotes(res.notes || '');
-    setEditExamType(res.examType);
+    setEditExamType(res.examType || defaultExamType);
     setEditSubject(res.subject);
     setEditCompletedTopics(res.completedTopics || []);
   };
 
-  const handleEditExamTypeChange = (type: 'TYT' | 'AYT' | 'YDT') => {
+  const handleEditExamTypeChange = (type: string) => {
     setEditExamType(type);
-    setEditSubject(YKS_SUBJECTS[type] ? YKS_SUBJECTS[type][0] : 'TYT Türkçe');
+    const availableSubs = getAvailableSubjectsForGradeAndExamType(type, gradeLevel);
+    setEditSubject(availableSubs[0] || 'Matematik');
     setEditCompletedTopics([]);
   };
 
@@ -341,7 +486,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
     e.preventDefault();
     if (!editingResource || !editBookTitle.trim()) return;
 
-    const subjectTopics = getTopicsForResource(editSubject, editExamType);
+    const subjectTopics = getTopicsForResource(editSubject, editExamType, gradeLevel);
     const finalCompletedTopics = subjectTopics.length > 0
       ? editCompletedTopics.filter(t => subjectTopics.includes(t))
       : editCompletedTopics;
@@ -355,7 +500,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
       bookTitle: editBookTitle,
       publisher: editPublisher || 'Yayınevi',
       notes: editNotes,
-      examType: editExamType,
+      examType: editExamType as any,
       subject: editSubject,
       completedTopics: finalCompletedTopics,
       completedUnits: completedUnitsCount,
@@ -371,9 +516,10 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
   };
 
   // Handle subject change in form
-  const handleExamTypeChange = (type: 'TYT' | 'AYT' | '') => {
+  const handleExamTypeChange = (type: string) => {
     setExamType(type);
-    setSubject('');
+    const availableSubs = getAvailableSubjectsForGradeAndExamType(type, gradeLevel);
+    setSubject(availableSubs[0] || '');
     setBookTitle('');
     setPublisher('');
     setSelectedInitialTopics([]);
@@ -398,7 +544,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
     e.preventDefault();
     if (!bookTitle.trim() || !subject || !examType) return;
 
-    const subjectTopics = getTopicsForResource(subject, examType as any) || YKS_CURRICULUM_TOPICS[subject] || [];
+    const subjectTopics = getTopicsForResource(subject, examType, gradeLevel);
     const completedUnitsCount = selectedInitialTopics.length;
     const totalUnitsCount = subjectTopics.length > 0 
       ? subjectTopics.length 
@@ -412,12 +558,13 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
       completedUnits: completedUnitsCount,
       completedTopics: selectedInitialTopics,
       status: completedUnitsCount >= totalUnitsCount && totalUnitsCount > 0 ? 'completed' : completedUnitsCount > 0 ? 'in_progress' : 'not_started',
-      examType: examType as 'TYT' | 'AYT',
+      examType: examType as any,
       notes
     });
 
-    setExamType('');
-    setSubject('');
+    setExamType(defaultExamType);
+    const availableSubs = getAvailableSubjectsForGradeAndExamType(defaultExamType, gradeLevel);
+    setSubject(availableSubs[0] || '');
     setBookTitle('');
     setPublisher('');
     setNotes('');
@@ -680,20 +827,43 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
         <div className="space-y-1 sm:space-y-1.5 z-10">
           <div className="hidden landscape:inline-flex sm:inline-flex items-center space-x-2 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full text-xs font-bold text-amber-300">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>YKS Konu & Kaynak Takip Sistemi</span>
+            <span>
+              {isEarly 
+                ? `${gradeLevel}. Sınıf MEB Maarif Modeli Kaynak Takibi` 
+                : gradeLevel === '11' 
+                ? '11. Sınıf MEB Müfredatı Kaynak Takibi' 
+                : 'YKS Konu & Kaynak Takip Sistemi'}
+            </span>
           </div>
           <h1 className="text-lg sm:text-xl md:text-2xl font-black text-white tracking-tight flex items-center space-x-2">
             <BookOpenCheck className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 shrink-0" />
-            <span>Kaynak Takibi (Konu Bazlı)</span>
+            <span>
+              {isEarly 
+                ? `${gradeLevel}. Sınıf Kaynak Takibi (Konu Bazlı)` 
+                : gradeLevel === '11' 
+                ? '11. Sınıf Kaynak Takibi (Konu Bazlı)' 
+                : 'Kaynak Takibi (Konu Bazlı)'}
+            </span>
           </h1>
           <p className="hidden landscape:block sm:block text-xs text-slate-400 max-w-2xl leading-relaxed">
-            Müfredat konu listenizdeki konuları kaynak kitaplarınızla eşleştirerek soru çözme tamamlama oranınızı adım adım takip edin.
+            {isEarly || gradeLevel === '11'
+              ? `${gradeLevel}. sınıf müfredat derslerinizdeki konuları kaynak kitaplarınızla eşleştirerek soru tamamlama oranınızı adım adım takip edin.`
+              : 'Müfredat konu listenizdeki konuları kaynak kitaplarınızla eşleştirerek soru çözme tamamlama oranınızı adım adım takip edin.'}
           </p>
         </div>
 
         <div className="hidden sm:flex items-center space-x-3 shrink-0 z-10">
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              setExamType(defaultExamType);
+              setSubject(defaultSubject);
+              setBookTitle('');
+              setPublisher('');
+              setSelectedInitialTopics([]);
+              setNotes('');
+              setShowSuggestions(false);
+              setShowAddModal(true);
+            }}
             id="add-resource-book-btn"
             className="bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white text-xs font-bold px-5 py-3 rounded-2xl transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center space-x-2 cursor-pointer border border-indigo-400/30 group"
           >
@@ -743,41 +913,53 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
           </span>
         </div>
 
-        {/* Card 3: TYT Kitap Sayısı */}
+        {/* Card 3: Sınıf Müfredatı / TYT Kitap Sayısı */}
         <div className="bg-slate-900/90 border border-slate-800 p-3 sm:p-3.5 rounded-2xl shadow-md backdrop-blur-md relative overflow-hidden group hover:border-sky-500/40 transition-all min-h-[80px]">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
               <Layers className="w-4 h-4 text-sky-400" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">TYT Kaynakları</span>
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">
+                {isEarly || gradeLevel === '11' ? `${gradeLevel}. Sınıf Kaynakları` : 'TYT Kaynakları'}
+              </span>
               <div className="flex items-baseline space-x-1.5">
-                <span className="text-base sm:text-lg font-black text-sky-400 font-mono">{getExamTypeBookCount('TYT')}</span>
+                <span className="text-base sm:text-lg font-black text-sky-400 font-mono">
+                  {isEarly || gradeLevel === '11' ? totalBooks : getExamTypeBookCount('TYT')}
+                </span>
                 <span className="text-[10px] text-slate-500 font-medium">Kitap</span>
               </div>
             </div>
           </div>
           <span className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 text-[9px] sm:text-[9.5px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0">
-            TYT Müfredatı
+            {isEarly ? 'Maarif Modeli' : gradeLevel === '11' ? '11. Sınıf' : 'TYT Müfredatı'}
           </span>
         </div>
 
-        {/* Card 4: AYT Kitap Sayısı */}
+        {/* Card 4: Aktif Dersler / AYT Kitap Sayısı */}
         <div className="bg-slate-900/90 border border-slate-800 p-3 sm:p-3.5 rounded-2xl shadow-md backdrop-blur-md relative overflow-hidden group hover:border-amber-500/40 transition-all min-h-[80px]">
           <div className="flex items-center space-x-2.5 min-w-0">
             <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
               <Award className="w-4 h-4 text-amber-400" />
             </div>
             <div className="min-w-0">
-              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">AYT Kaynakları</span>
+              <span className="text-[10px] sm:text-[10.5px] font-semibold text-slate-400 block truncate">
+                {isEarly || gradeLevel === '11' ? 'Kayıtlı Dersler' : 'AYT Kaynakları'}
+              </span>
               <div className="flex items-baseline space-x-1.5">
-                <span className="text-base sm:text-lg font-black text-amber-400 font-mono">{getExamTypeBookCount('AYT')}</span>
-                <span className="text-[10px] text-slate-500 font-medium">Kitap</span>
+                <span className="text-base sm:text-lg font-black text-amber-400 font-mono">
+                  {isEarly || gradeLevel === '11' 
+                    ? new Set(resources.map(r => r.subject)).size 
+                    : getExamTypeBookCount('AYT')}
+                </span>
+                <span className="text-[10px] text-slate-500 font-medium">
+                  {isEarly || gradeLevel === '11' ? 'Farklı Ders' : 'Kitap'}
+                </span>
               </div>
             </div>
           </div>
           <span className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 text-[9px] sm:text-[9.5px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-md font-semibold font-mono shrink-0">
-            AYT Müfredatı
+            {isEarly || gradeLevel === '11' ? 'MEB Programı' : 'AYT Müfredatı'}
           </span>
         </div>
       </div>
@@ -1852,7 +2034,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
 
               {/* Quick Selection Buttons */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-2 max-w-3xl mx-auto">
-                {QUICK_COURSES.map(course => (
+                {getQuickCoursesForGrade(gradeLevel).map(course => (
                   <button
                     key={course.value}
                     type="button"
@@ -1920,31 +2102,24 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                     <label className="block text-xs font-bold text-slate-300 mb-1.5">Sınav Türü *</label>
                     <select
                       value={examType}
-                      onChange={(e) => handleExamTypeChange(e.target.value as any)}
+                      onChange={(e) => handleExamTypeChange(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-bold cursor-pointer shadow-inner"
                     >
-                      <option value="">Sınav Türü Seçiniz...</option>
-                      <option value="TYT">TYT (Temel Yeterlilik Testi)</option>
-                      {targetField === 'DİL' || (targetField as string) === 'DIL' ? (
-                        <option value="AYT">YDT (Yabancı Dil Testi)</option>
-                      ) : (
-                        <option value="AYT">AYT (Alan Yeterlilik Testi)</option>
-                      )}
+                      {getAvailableExamTypesForGrade(gradeLevel).map(et => (
+                        <option key={et.id} value={et.id}>{et.label}</option>
+                      ))}
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1.5">Ders *</label>
                     <select
-                      disabled={!examType}
                       value={subject}
                       onChange={(e) => handleSubjectChange(e.target.value)}
-                      className={`w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-bold cursor-pointer shadow-inner ${
-                        !examType ? 'opacity-40 cursor-not-allowed text-slate-500' : ''
-                      }`}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-bold cursor-pointer shadow-inner"
                     >
-                      <option value="">{!examType ? 'Önce Sınav Türü Seçiniz' : 'Ders Seçiniz...'}</option>
-                      {examType && YKS_SUBJECTS[examType].map((s) => (
+                      <option value="">Ders Seçiniz...</option>
+                      {getAvailableSubjectsForGradeAndExamType(examType, gradeLevel).map((s) => (
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
@@ -1970,7 +2145,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                       <input
                         type="text"
                         required
-                        placeholder="Ör: 3D AYT Matematik Soru Bankası"
+                        placeholder={gradeLevel === '9' ? "Ör: 9. Sınıf Soru Bankası, MÖF Fasikül..." : gradeLevel === '10' ? "Ör: 10. Sınıf Soru Bankası, Modüler Piramit..." : gradeLevel === '11' ? "Ör: 11. Sınıf Matematik Soru Bankası..." : "Ör: 3D AYT Matematik Soru Bankası"}
                         value={bookTitle}
                         onFocus={() => setShowSuggestions(true)}
                         onChange={(e) => {
@@ -1984,17 +2159,20 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
 
                     {/* Auto-complete Dropdown Menu */}
                     {showSuggestions && bookTitle.trim().length >= 1 && (() => {
-                      const normSub = subject.toLowerCase();
+                      const normSub = subject.toLowerCase().replace(/^(9\.|10\.|11\.)\s*sınıf\s*/i, '').trim();
                       const query = bookTitle.toLowerCase().trim();
                       const matchedRecs = RECOMMENDED_BOOKS.filter(b => {
                         const bSub = b.subject.toLowerCase();
-                        const bCat = b.category.toLowerCase();
-                        const isSubMatch = bSub === normSub || bCat.includes(normSub) || normSub.includes(bSub);
-                        const isQueryMatch = b.name.toLowerCase().includes(query) || 
-                                             b.publisher.toLowerCase().includes(query) || 
-                                             `${b.publisher} ${b.name}`.toLowerCase().includes(query);
+                        const bCat = (b.category || '').toLowerCase();
+                        const bName = b.name.toLowerCase();
+                        const bPub = b.publisher.toLowerCase();
+                        
+                        const isSubMatch = bSub.includes(normSub) || normSub.includes(bSub) || bCat.includes(normSub) || normSub.includes(bCat);
+                        const isQueryMatch = bName.includes(query) || 
+                                             bPub.includes(query) || 
+                                             `${bPub} ${bName}`.toLowerCase().includes(query);
                         return isSubMatch && isQueryMatch;
-                      }).slice(0, 5);
+                      }).slice(0, 6);
 
                       if (matchedRecs.length === 0) return null;
 
@@ -2010,7 +2188,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                               onClick={() => {
                                 setBookTitle(rec.name);
                                 setPublisher(rec.publisher);
-                                setShowSuggestions(false); // <--- CLOSES DROPDOWN INSTANTLY!
+                                setShowSuggestions(false);
                               }}
                               className="p-2.5 hover:bg-indigo-950/80 rounded-xl cursor-pointer transition-all border border-transparent hover:border-indigo-500/30 flex items-center justify-between gap-2 group"
                             >
@@ -2047,99 +2225,102 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
               )}
 
               {/* ── ADIM 3: KONU SEÇİMİ, NOTLAR VE KAYDET BUTONU (Kitap adı girilince animasyonlu açılır) ── */}
-              {subject && bookTitle.trim() && (
-                <div className="space-y-4 bg-slate-950/60 p-4 rounded-2xl border border-slate-800 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="text-xs font-extrabold text-indigo-400 flex items-center space-x-2">
-                    <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">3</span>
-                    <span>Adım 3: Çözülen Konular & Notlar</span>
-                  </div>
+              {subject && bookTitle.trim() && (() => {
+                const subjectTopics = getTopicsForResource(subject, examType, gradeLevel);
+                return (
+                  <div className="space-y-4 bg-slate-950/60 p-4 rounded-2xl border border-slate-800 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="text-xs font-extrabold text-indigo-400 flex items-center space-x-2">
+                      <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">3</span>
+                      <span>Adım 3: Çözülen Konular & Notlar</span>
+                    </div>
 
-                  {/* Initial Completed Topics Selector */}
-                  {YKS_CURRICULUM_TOPICS[subject] && YKS_CURRICULUM_TOPICS[subject].length > 0 && (
-                    <div className="space-y-2.5 bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-xs font-bold text-indigo-300">
-                          Şu Ana Kadar Çözülen Konular ({selectedInitialTopics.length} / {YKS_CURRICULUM_TOPICS[subject].length})
-                        </label>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedInitialTopics([...YKS_CURRICULUM_TOPICS[subject]])}
-                            className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold bg-indigo-500/10 px-2.5 py-0.5 rounded-lg border border-indigo-500/20 cursor-pointer transition-all"
-                          >
-                            Tümünü Seç
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedInitialTopics([])}
-                            className="text-[11px] text-slate-400 hover:text-white font-bold bg-slate-900 px-2.5 py-0.5 rounded-lg border border-slate-800 cursor-pointer transition-all"
-                          >
-                            Temizle
-                          </button>
+                    {/* Initial Completed Topics Selector */}
+                    {subjectTopics.length > 0 && (
+                      <div className="space-y-2.5 bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-bold text-indigo-300">
+                            Şu Ana Kadar Çözülen Konular ({selectedInitialTopics.length} / {subjectTopics.length})
+                          </label>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedInitialTopics([...subjectTopics])}
+                              className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold bg-indigo-500/10 px-2.5 py-0.5 rounded-lg border border-indigo-500/20 cursor-pointer transition-all"
+                            >
+                              Tümünü Seç
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedInitialTopics([])}
+                              className="text-[11px] text-slate-400 hover:text-white font-bold bg-slate-900 px-2.5 py-0.5 rounded-lg border border-slate-800 cursor-pointer transition-all"
+                            >
+                              Temizle
+                            </button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-1 custom-scrollbar">
+                          {subjectTopics.map((topicName) => {
+                            const isSel = selectedInitialTopics.includes(topicName);
+                            return (
+                              <button
+                                key={topicName}
+                                type="button"
+                                onClick={() => handleToggleInitialTopic(topicName)}
+                                className={`flex items-center space-x-2 p-2 rounded-xl text-left text-xs transition-all border cursor-pointer ${
+                                  isSel
+                                    ? 'bg-indigo-950/50 border-indigo-500/50 text-indigo-200'
+                                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-850 hover:text-slate-200'
+                                }`}
+                              >
+                                {isSel ? (
+                                  <CheckSquare className="w-4 h-4 text-indigo-400 shrink-0" />
+                                ) : (
+                                  <Square className="w-4 h-4 text-slate-600 shrink-0" />
+                                )}
+                                <span className="truncate font-medium">{topicName}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-1 custom-scrollbar">
-                        {YKS_CURRICULUM_TOPICS[subject].map((topicName) => {
-                          const isSel = selectedInitialTopics.includes(topicName);
-                          return (
-                            <button
-                              key={topicName}
-                              type="button"
-                              onClick={() => handleToggleInitialTopic(topicName)}
-                              className={`flex items-center space-x-2 p-2 rounded-xl text-left text-xs transition-all border cursor-pointer ${
-                                isSel
-                                  ? 'bg-indigo-950/50 border-indigo-500/50 text-indigo-200'
-                                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-850 hover:text-slate-200'
-                              }`}
-                            >
-                              {isSel ? (
-                                <CheckSquare className="w-4 h-4 text-indigo-400 shrink-0" />
-                              ) : (
-                                <Square className="w-4 h-4 text-slate-600 shrink-0" />
-                              )}
-                              <span className="truncate font-medium">{topicName}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1.5">Notlar / Hızlı Değerlendirme (Opsiyonel)</label>
+                      <input
+                        type="text"
+                        placeholder="Ör: Konu kavrama ve kazanım testleri çözülecek..."
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium shadow-inner"
+                      />
                     </div>
-                  )}
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1.5">Notlar / Hızlı Değerlendirme (Opsiyonel)</label>
-                    <input
-                      type="text"
-                      placeholder="Ör: Türev ve İntegral testleri öncelikli çözülecek..."
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-medium shadow-inner"
-                    />
+                    <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddModal(false);
+                          setExamType(defaultExamType);
+                          setSubject(defaultSubject);
+                          setBookTitle('');
+                          setPublisher('');
+                          setShowSuggestions(false);
+                        }}
+                        className="px-5 py-2.5 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
+                      >
+                        İptal
+                      </button>
+                      <button
+                        type="submit"
+                        className="bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white text-xs font-bold px-6 py-2.5 rounded-2xl transition-all shadow-lg shadow-indigo-600/30 cursor-pointer border border-indigo-400/30"
+                      >
+                        Kaydet & Başlat
+                      </button>
+                    </div>
                   </div>
-
-                  <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowAddModal(false);
-                        setExamType('');
-                        setSubject('');
-                        setBookTitle('');
-                        setPublisher('');
-                        setShowSuggestions(false);
-                      }}
-                      className="px-5 py-2.5 text-xs font-bold text-slate-400 hover:text-white transition-colors cursor-pointer"
-                    >
-                      İptal
-                    </button>
-                    <button
-                      type="submit"
-                      className="bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white text-xs font-bold px-6 py-2.5 rounded-2xl transition-all shadow-lg shadow-indigo-600/30 cursor-pointer border border-indigo-400/30"
-                    >
-                      Kaydet & Başlat
-                    </button>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </form>
           </div>
         </div>,
@@ -2177,11 +2358,12 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                   <label className="block text-xs font-bold text-slate-200 mb-1.5">Sınav Türü</label>
                   <select
                     value={editExamType}
-                    onChange={(e) => handleEditExamTypeChange(e.target.value as any)}
+                    onChange={(e) => handleEditExamTypeChange(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer"
                   >
-                    <option value="TYT">TYT</option>
-                    <option value="AYT">AYT</option>
+                    {getAvailableExamTypesForGrade(gradeLevel).map(et => (
+                      <option key={et.id} value={et.id}>{et.label}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -2192,7 +2374,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                     onChange={(e) => handleEditSubjectChange(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer"
                   >
-                    {YKS_SUBJECTS[editExamType].map((s) => (
+                    {getAvailableSubjectsForGradeAndExamType(editExamType, gradeLevel).map((s) => (
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
@@ -2204,7 +2386,7 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="Ör: 3D AYT Matematik Soru Bankası"
+                  placeholder="Ör: Soru Bankası"
                   value={editBookTitle}
                   onChange={(e) => setEditBookTitle(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-medium"
@@ -2223,52 +2405,57 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
               </div>
 
               {/* Completed Topics Selector in Edit Mode */}
-              {YKS_CURRICULUM_TOPICS[editSubject] && YKS_CURRICULUM_TOPICS[editSubject].length > 0 && (
-                <div className="space-y-2.5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-indigo-300">
-                      Çözülen Konular ({editCompletedTopics.length} / {YKS_CURRICULUM_TOPICS[editSubject].length})
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setEditCompletedTopics([...YKS_CURRICULUM_TOPICS[editSubject]])}
-                      className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold bg-indigo-500/10 px-2.5 py-0.5 rounded-lg border border-indigo-500/20"
-                    >
-                      Tümünü Seç
-                    </button>
+              {(() => {
+                const editSubjectTopics = getTopicsForResource(editSubject, editExamType, gradeLevel);
+                if (editSubjectTopics.length === 0) return null;
+
+                return (
+                  <div className="space-y-2.5 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-indigo-300">
+                        Çözülen Konular ({editCompletedTopics.length} / {editSubjectTopics.length})
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setEditCompletedTopics([...editSubjectTopics])}
+                        className="text-[11px] text-indigo-400 hover:text-indigo-300 font-bold bg-indigo-500/10 px-2.5 py-0.5 rounded-lg border border-indigo-500/20"
+                      >
+                        Tümünü Seç
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                      {editSubjectTopics.map((topicName) => {
+                        const isSel = editCompletedTopics.includes(topicName);
+                        return (
+                          <button
+                            key={topicName}
+                            type="button"
+                            onClick={() => handleToggleEditTopic(topicName)}
+                            className={`flex items-center space-x-2 p-2.5 rounded-xl text-left text-xs transition-all border cursor-pointer ${
+                              isSel
+                                ? 'bg-indigo-950/40 border-indigo-500/50 text-indigo-200'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-850 hover:text-slate-200'
+                            }`}
+                          >
+                            {isSel ? (
+                              <CheckSquare className="w-4 h-4 text-indigo-400 shrink-0" />
+                            ) : (
+                              <Square className="w-4 h-4 text-slate-600 shrink-0" />
+                            )}
+                            <span className="truncate font-medium">{topicName}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-                    {YKS_CURRICULUM_TOPICS[editSubject].map((topicName) => {
-                      const isSel = editCompletedTopics.includes(topicName);
-                      return (
-                        <button
-                          key={topicName}
-                          type="button"
-                          onClick={() => handleToggleEditTopic(topicName)}
-                          className={`flex items-center space-x-2 p-2.5 rounded-xl text-left text-xs transition-all border cursor-pointer ${
-                            isSel
-                              ? 'bg-indigo-950/40 border-indigo-500/50 text-indigo-200'
-                              : 'bg-slate-900 border-slate-800 text-slate-400 hover:bg-slate-850 hover:text-slate-200'
-                          }`}
-                        >
-                          {isSel ? (
-                            <CheckSquare className="w-4 h-4 text-indigo-400 shrink-0" />
-                          ) : (
-                            <Square className="w-4 h-4 text-slate-600 shrink-0" />
-                          )}
-                          <span className="truncate font-medium">{topicName}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               <div>
                 <label className="block text-xs font-bold text-slate-200 mb-1.5">Notlar / Açıklama (Opsiyonel)</label>
                 <input
                   type="text"
-                  placeholder="Ör: Türev testleri çözülecek..."
+                  placeholder="Ör: Yazılı öncesi bitirilecek..."
                   value={editNotes}
                   onChange={(e) => setEditNotes(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-medium"
@@ -2313,8 +2500,8 @@ export const ResourceTrackerView: React.FC<ResourceTrackerViewProps> = ({
       {/* ── FLOATING ACTION BUTTON (+ FAB) ── */}
       <button
         onClick={() => {
-          setExamType('');
-          setSubject('');
+          setExamType(defaultExamType);
+          setSubject(defaultSubject);
           setBookTitle('');
           setPublisher('');
           setSelectedInitialTopics([]);
