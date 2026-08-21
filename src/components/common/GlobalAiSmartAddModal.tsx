@@ -329,9 +329,6 @@ export const GlobalAiSmartAddModal: React.FC<GlobalAiSmartAddModalProps> = ({
                   )}
                 </button>
 
-                <span className="text-[10px] text-slate-500 font-mono hidden sm:inline-block">
-                  Enter ↵ ile gönder
-                </span>
                 <button
                   type="submit"
                   disabled={!prompt.trim() || isLoading}
