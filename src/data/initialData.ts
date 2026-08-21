@@ -2,7 +2,7 @@ import { YKSDataState, AuditLogItem, DirectMessage, FieldType, DailyStudyTimeLog
 
 export const DEFAULT_AVATAR = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImF2YXRhckdyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMxZTI5M2IiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMzMzQxNTUiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0idXJsKCNhdmF0YXJHcmFkKSIgcng9IjI0Ii8+PGNpcmNsZSBjeD0iNTAiIGN5PSI0MCIgcj0iMTgiIGZpbGw9IiM5NGEzYjgiLz48cGF0aCBkPSJNNTAgNjJjLTE1IDAtMjYgOC0yNiAxOHY0aDUydi00YzAtMTAtMTEtMTgtMjYtMTh6IiBmaWxsPSIjOTRhM2I4Ii8+PC9zdmc+`;
 
-export function createEmptyStudentData(name: string = '', className: string = '', explicitField?: FieldType): YKSDataState {
+export function createEmptyStudentData(name: string = '', className: string = '', explicitField?: FieldType, schoolNumber?: string): YKSDataState {
   const targetField = explicitField || (className?.includes('EA') 
     ? 'EA' 
     : className?.includes('SÖZ') 
@@ -16,6 +16,7 @@ export function createEmptyStudentData(name: string = '', className: string = ''
       name: name,
       highSchool: 'Gürsu Yıldız Anadolu Lisesi',
       className: className,
+      schoolNumber: schoolNumber || '',
       targetUniversity: '',
       targetDepartment: '',
       targetField: targetField as any,

@@ -1005,7 +1005,8 @@ export default function App() {
     saveUserToFirestore(newUser);
 
     if (newUser.role === 'student') {
-      const initialStudentData: YKSDataState = createEmptyStudentData(newUser.name, newUser.className || '12-A SAY');
+      const targetClass = globalState.classes.find(c => c.name === newUser.className);
+      const initialStudentData: YKSDataState = createEmptyStudentData(newUser.name, newUser.className || '12-A SAY', targetClass?.field, newUser.schoolNumber);
       saveStudentDataToFirestore(newId, initialStudentData);
     }
 
@@ -1045,7 +1046,8 @@ export default function App() {
       const updatedUsers = [...prev.users, newUser];
       const updatedStudentsData = { ...prev.studentsData };
       if (newUser.role === 'student') {
-        updatedStudentsData[newId] = createEmptyStudentData(newUser.name, newUser.className || '12-A SAY');
+        const targetClass = prev.classes.find(c => c.name === newUser.className);
+        updatedStudentsData[newId] = createEmptyStudentData(newUser.name, newUser.className || '12-A SAY', targetClass?.field, newUser.schoolNumber);
       }
       return {
         ...prev,

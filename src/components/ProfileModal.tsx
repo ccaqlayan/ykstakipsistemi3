@@ -252,7 +252,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       email: email.trim(),
       phone: phone.trim(),
       prepSchool: prepSchool.trim(),
-      schoolNumber: schoolNumber.trim(),
+      schoolNumber: (isTeacher ? schoolNumber : (currentUser.schoolNumber || profile?.schoolNumber || '')).trim(),
       password: activePassword,
       title: title.trim(),
       avatarUrl: avatarUrl.trim(),
@@ -265,6 +265,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         name: (name || '').trim(),
         highSchool: (highSchool || '').trim(),
         className: currentUser.className,
+        schoolNumber: (currentUser.schoolNumber || profile?.schoolNumber || '').trim(),
         targetField: isEarly ? undefined : targetField,
         targetUniversity: isEarly ? '' : (targetUniversity || '').trim(),
         targetDepartment: isEarly ? '' : (targetDepartment || '').trim(),
@@ -278,8 +279,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         avatarUrl: avatarUrl.trim(),
         highSchoolGpa: Number(highSchoolGpa) || profile?.highSchoolGpa || 85,
         phone: phone.trim(),
-        prepSchool: prepSchool.trim(),
-        schoolNumber: schoolNumber.trim()
+        prepSchool: prepSchool.trim()
       };
     }
 
@@ -599,7 +599,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           )}
 
           {/* Student specific target fields */}
-          {/* Student specific target fields */}
           {!isTeacher && (
             <div className="space-y-3 pt-2 border-t border-white/10">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
@@ -608,15 +607,40 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Sınıf Seviyesi ve Şubesi (Salt Okunur) */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">Okul Numarası (Okul No)</label>
-                  <input
-                    type="text"
-                    placeholder="Ör: 528"
-                    value={schoolNumber}
-                    onChange={(e) => setSchoolNumber(e.target.value)}
-                    className="w-full bg-white/5 border border-indigo-500/30 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 font-mono font-bold min-h-[48px] sm:min-h-0"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-slate-300">Sınıf Seviyesi ve Şubesi</label>
+                    <span className="text-[10px] text-amber-400 font-medium flex items-center gap-0.5">
+                      <Lock className="w-3 h-3 text-amber-400" /> Sabit Bilgi
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-950/70 border border-slate-700/60 rounded-xl px-3.5 py-2.5 text-xs text-indigo-300 font-bold flex items-center justify-between cursor-not-allowed select-none min-h-[44px]">
+                    <span>{currentUser.className || 'Belirtilmedi'}</span>
+                    <span className="text-[10px] bg-indigo-500/15 border border-indigo-500/30 px-2 py-0.5 rounded text-indigo-300 font-normal">
+                      {gradeLevel === 'mezun' ? 'Mezun Grubu' : `${gradeLevel}. Sınıf`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Okul Numarası (Salt Okunur) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-slate-300">Okul Numarası (Okul No)</label>
+                    <span className="text-[10px] text-amber-400 font-medium flex items-center gap-0.5">
+                      <Lock className="w-3 h-3 text-amber-400" /> Sabit Bilgi
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-950/70 border border-slate-700/60 rounded-xl px-3.5 py-2.5 text-xs text-white font-mono font-bold flex items-center justify-between cursor-not-allowed select-none min-h-[44px]">
+                    <span>#{currentUser.schoolNumber || profile?.schoolNumber || 'Belirtilmedi'}</span>
+                    <span className="text-[10px] text-slate-400 font-sans font-normal">Değiştirilemez</span>
+                  </div>
+                </div>
+
+                {/* Bilgi Notu */}
+                <div className="sm:col-span-2 p-2.5 bg-amber-500/10 border border-amber-500/25 rounded-xl text-[11px] text-amber-200 flex items-center space-x-2">
+                  <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>Sınıf seviyesi, şubesi ve okul numarası bilgileriniz kayıt sırasında belirlenmiştir. Değişiklik talepleri için okul rehberlik öğretmeniniz ile iletişime geçiniz.</span>
                 </div>
 
                 <div>

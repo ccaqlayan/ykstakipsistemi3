@@ -55,7 +55,8 @@ export function resolveStudentData(
       ...emptyBase.profile,
       ...(rawData.profile || {}),
       name: name || rawData.profile?.name || emptyBase.profile?.name || 'Öğrenci',
-      className: className || rawData.profile?.className || emptyBase.profile?.className || '12-A SAY'
+      className: className || rawData.profile?.className || emptyBase.profile?.className || '12-A SAY',
+      schoolNumber: (studentObj as any)?.schoolNumber || rawData.profile?.schoolNumber || emptyBase.profile?.schoolNumber || ''
     },
     questionLogs: Array.isArray(rawData.questionLogs)
       ? rawData.questionLogs

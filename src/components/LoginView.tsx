@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   GraduationCap, 
+  User,
   UserCheck, 
   Lock, 
   Mail, 
@@ -21,6 +22,7 @@ import { UserAccount, UserRole } from '../types';
 import { YildizLisesiLogo } from './YildizLisesiLogo';
 import { DEFAULT_AVATAR, DEMO_USERS } from '../data/initialData';
 import { APP_VERSION } from '../version';
+import { getGradeLevel, GradeLevel } from '../utils/gradeUtils';
 
 
 interface LoginViewProps {
@@ -62,10 +64,42 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
   // Register form state
   const [regName, setRegName] = useState('');
+  const [regSchoolNumber, setRegSchoolNumber] = useState('');
+  const [regGradeLevel, setRegGradeLevel] = useState<GradeLevel>('12');
+  const [regClassName, setRegClassName] = useState(classes[0]?.name || '12-A SAY');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
-  const [regClassName, setRegClassName] = useState(classes[0]?.name || '12-A SAY');
   const [isRegistering, setIsRegistering] = useState(false);
+
+  // Kademeye göre sistemde tanımlı sınıfları filtrele
+  const availableClassesForGrade = useMemo(() => {
+    const matching = (classes || []).filter(c => getGradeLevel(c.name) === regGradeLevel);
+    if (matching.length > 0) {
+      return matching.map(c => c.name);
+    }
+    if (regGradeLevel === 'mezun') {
+      return ['Mezun-1 SAY', 'Mezun-2 EA', 'Mezun-3 SÖZ', 'Mezun-4 DİL'];
+    }
+    return [
+      `${regGradeLevel}-A`,
+      `${regGradeLevel}-B`,
+      `${regGradeLevel}-C`,
+      `${regGradeLevel}-D`,
+      `${regGradeLevel}-E`
+    ];
+  }, [classes, regGradeLevel]);
+
+  const handleGradeLevelChange = (newGrade: GradeLevel) => {
+    setRegGradeLevel(newGrade);
+    const matching = (classes || []).filter(c => getGradeLevel(c.name) === newGrade);
+    if (matching.length > 0) {
+      setRegClassName(matching[0].name);
+    } else if (newGrade === 'mezun') {
+      setRegClassName('Mezun-1 SAY');
+    } else {
+      setRegClassName(`${newGrade}-A`);
+    }
+  };
 
   // Forgot password form state
   const [forgotEmail, setForgotEmail] = useState('');
@@ -135,8 +169,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (!(regName || '').trim() || !(regEmail || '').trim() || !(regPassword || '').trim()) {
-      setErrorMessage('Lütfen tüm zorunlu alanları doldurun.');
+    if (!(regName || '').trim() || !(regSchoolNumber || '').trim() || !(regEmail || '').trim() || !(regPassword || '').trim()) {
+      setErrorMessage('Lütfen tüm zorunlu alanları (Ad Soyad, Okul No, E-posta ve Şifre) doldurun.');
       return;
     }
 
@@ -148,6 +182,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
       setErrorMessage('Bu e-posta adresi zaten kullanımda.');
       return;
     }
+
+    const chosenClass = regClassName || availableClassesForGrade[0] || '12-A SAY';
 
     setIsRegistering(true);
     try {
@@ -166,21 +202,22 @@ export const LoginView: React.FC<LoginViewProps> = ({
     }
 
     const newUser: Omit<UserAccount, 'id'> = {
-      name: regName,
-      email: regEmail,
-      password: regPassword,
+      name: regName.trim(),
+      email: regEmail.trim(),
+      password: regPassword.trim(),
       role: 'student',
-      className: regClassName,
-      title: `${regClassName} Öğrencisi`,
+      className: chosenClass,
+      schoolNumber: regSchoolNumber.trim(),
+      title: `${chosenClass} Öğrencisi`,
       status: 'pending',
       avatarUrl: DEFAULT_AVATAR,
       createdAt: new Date().toISOString()
     };
 
     onCreateAccount(newUser);
-    setPendingUserName(regName);
+    setPendingUserName(regName.trim());
     setShowPendingInfo(true);
-    setEmail(regEmail);
+    setEmail(regEmail.trim());
     setPassword('');
     setIsRegistering(false);
   };
@@ -823,51 +860,113 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
         {/* REGISTER FORM */}
         {activeTab === 'register' && (
-          <form onSubmit={handleRegister} className="space-y-4">
+          <form onSubmit={handleRegister} className="space-y-3">
             
             {/* Student Only Info Banner */}
             <div className="p-3 bg-indigo-950/70 border border-indigo-500/30 rounded-2xl flex items-start space-x-2.5">
               <GraduationCap className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
               <div className="text-xs text-indigo-200">
                 <strong className="block text-white font-bold mb-0.5">Öğrenci Kayıt Formu</strong>
-                <span>Öğretmen hesapları yalnızca <strong>Okul Rehber Öğretmeni</strong> tarafından oluşturulabilir. Öğrenci kaydınız oluşturulduktan sonra öğretmen onayına sunulacaktır.</span>
+                <span>Öğretmen hesapları yalnızca <strong>Okul Rehber Öğretmeni</strong> tarafından oluşturulabilir. Kaydınız öğretmen onayına sunulacaktır.</span>
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Ad Soyad</label>
-              <input
-                type="text"
-                required
-                placeholder="Ör: Selin Yılmaz"
-                value={regName}
-                onChange={(e) => setRegName(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
-              />
+            {/* Ad Soyad & Okul Numarası */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Ad Soyad</label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-400 absolute left-3 top-3.5 sm:top-2.5" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ör: Selin Yılmaz"
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-3 sm:py-2 text-sm sm:text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 min-h-[44px] sm:min-h-0"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">Okul Numarası (Okul No)</label>
+                <div className="relative">
+                  <span className="text-xs font-mono font-bold text-slate-400 absolute left-3 top-3.5 sm:top-2.5">#</span>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ör: 528"
+                    value={regSchoolNumber}
+                    onChange={(e) => setRegSchoolNumber(e.target.value.replace(/[^\d]/g, ''))}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-3 py-3 sm:py-2 text-sm sm:text-xs text-white font-mono font-bold placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 min-h-[44px] sm:min-h-0"
+                  />
+                </div>
+              </div>
             </div>
 
+            {/* Sınıf Seviyesi (Kademe) & Şubesi */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Sınıf Seviyesi (Kademe)
+                </label>
+                <select
+                  value={regGradeLevel}
+                  onChange={(e) => handleGradeLevelChange(e.target.value as GradeLevel)}
+                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none font-semibold text-indigo-300 min-h-[44px] sm:min-h-0 cursor-pointer"
+                >
+                  <option value="9">9. Sınıf (Maarif Modeli)</option>
+                  <option value="10">10. Sınıf (Maarif Modeli)</option>
+                  <option value="11">11. Sınıf (Alan Eğitimi)</option>
+                  <option value="12">12. Sınıf (YKS Hazırlık)</option>
+                  <option value="mezun">Mezun (YKS Derece)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Sınıf Şubesi
+                </label>
+                <select
+                  value={regClassName}
+                  onChange={(e) => setRegClassName(e.target.value)}
+                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none font-semibold text-emerald-300 min-h-[44px] sm:min-h-0 cursor-pointer"
+                >
+                  {availableClassesForGrade.map((cName) => (
+                    <option key={cName} value={cName}>{cName}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* E-posta Adresi */}
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">E-Posta Adresi</label>
-              <input
-                type="email"
-                required
-                placeholder="selin@okul.edu.tr"
-                value={regEmail}
-                onChange={(e) => setRegEmail(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
-              />
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3.5 sm:top-2.5" />
+                <input
+                  type="email"
+                  required
+                  placeholder="selin@okul.edu.tr"
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-3 sm:py-2 text-sm sm:text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 min-h-[44px] sm:min-h-0"
+                />
+              </div>
             </div>
 
+            {/* Şifre */}
             <div>
               <label className="block text-xs font-semibold text-slate-300 mb-1">Şifre Belirleyin</label>
               <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3.5 sm:top-2.5" />
                 <input
                   type={showRegPassword ? 'text' : 'password'}
                   required
                   placeholder="••••••••"
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 pr-10 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none focus:border-indigo-400 min-h-[48px] sm:min-h-0"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-10 py-3 sm:py-2 text-sm sm:text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 min-h-[44px] sm:min-h-0"
                 />
                 <button
                   type="button"
@@ -881,19 +980,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Ait Olduğu Sınıf
-              </label>
-              <select
-                value={regClassName}
-                onChange={(e) => setRegClassName(e.target.value)}
-                className="w-full bg-slate-900 border border-white/10 rounded-xl px-3.5 py-3 sm:py-2 text-sm sm:text-xs text-white focus:outline-none font-semibold text-indigo-300 min-h-[48px] sm:min-h-0 cursor-pointer"
-              >
-                {classes.map((c) => (
-                  <option key={c.id} value={c.name}>{c.name}</option>
-                ))}
-              </select>
+            {/* Sabit Bilgi Notu */}
+            <div className="text-[10.5px] text-slate-400 bg-slate-900/70 border border-slate-800 rounded-xl p-2.5 flex items-center space-x-2">
+              <Info className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+              <span>Sınıf seviyesi, şubesi ve okul numarası kayıt sonrası öğrenci profilinden değiştirilemez (salt okunur).</span>
             </div>
 
             <button
@@ -903,7 +993,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             >
               {isRegistering ? <span>Başvuru Gönderiliyor...</span> : <span>Öğrenci Kayıt Başvurusunu Gönder</span>}
             </button>
-            </form>
+          </form>
         )}
 
         </> /* showPendingInfo false block end */}
