@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Sliders, LayoutGrid } from 'lucide-react';
+import { Sliders, LayoutGrid, Award } from 'lucide-react';
 import { YKSDataState, StudentProfile, UserAccount, QuickNote } from '../types';
 import { TargetModal } from './TargetModal';
+import { WeeklyAiReportCardModal } from './reports/WeeklyAiReportCardModal';
 import { 
   DashboardCustomizeModal, 
   DashboardWidgetConfig, 
@@ -74,6 +75,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [showTargetModal, setShowTargetModal] = useState(false);
   const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [showReadinessModal, setShowReadinessModal] = useState(false);
+  const [showWeeklyReportModal, setShowWeeklyReportModal] = useState(false);
 
   // Schedule Widget tab state (Yesterday, Today, Tomorrow)
   const [scheduleDayTab, setScheduleDayTab] = useState<'yesterday' | 'today' | 'tomorrow'>('today');
@@ -511,19 +513,45 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowCustomizeModal(true)}
-          title="Dashboard modüllerini göster/gizle ve sırala"
-          className="bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/40 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center space-x-1.5 cursor-pointer active:scale-95 shrink-0 whitespace-nowrap"
-        >
-          <LayoutGrid className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline text-xs">Modülleri Özelleştir</span>
-        </button>
+        <div className="flex items-center space-x-2 shrink-0">
+          {/* 📊 Haftalık AI Karnesi Butonu */}
+          <button
+            type="button"
+            onClick={() => setShowWeeklyReportModal(true)}
+            title="Bu haftanın yapay zeka gelişim karnesi ve YKS sıralama tahminini görüntüle"
+            className="bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-indigo-500/20 hover:from-amber-500/30 hover:to-indigo-500/30 text-amber-300 hover:text-white border border-amber-500/40 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-bold transition-all shadow-md shadow-amber-500/10 flex items-center space-x-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
+          >
+            <Award className="w-4 h-4 text-amber-400 animate-pulse" />
+            <span className="text-xs font-black">Haftalık AI Karnesi</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowCustomizeModal(true)}
+            title="Dashboard modüllerini göster/gizle ve sırala"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/40 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center space-x-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline text-xs">Modülleri Özelleştir</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Dynamic Dashboard Content */}
       {renderDashboardContent()}
+
+      {/* 📊 Haftalık AI Başarı Karnesi Modalı */}
+      {showWeeklyReportModal && (
+        <WeeklyAiReportCardModal
+          isOpen={showWeeklyReportModal}
+          onClose={() => setShowWeeklyReportModal(false)}
+          currentUser={currentUser}
+          profile={profile}
+          questionLogs={questionLogs}
+          generalMocks={generalMocks}
+          studyPlans={studyPlans}
+        />
+      )}
 
       {/* Target Edit Modal */}
       {showTargetModal && (

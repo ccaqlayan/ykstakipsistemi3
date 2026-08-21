@@ -2354,4 +2354,135 @@ KULLANICININ GİRDİĞİ METİN:
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/gemini/generate-weekly-report-card
+// Öğrencinin haftalık çalışma, soru, hata, süre ve deneme sınavı performansını
+// bütüncül olarak analiz edip tahmini YKS sıralama bandı ve koçluk karnesi üreten yapay zeka motoru.
+// ─────────────────────────────────────────────────────────────────────────────
+router.post('/generate-weekly-report-card', async (req, res) => {
+  if (!isAiEnabledOrRespond(res)) return;
+
+  try {
+    const { 
+      studentName,
+      targetField,
+      targetGoal,
+      weekLabel,
+      weeklyStats,
+      subjectBreakdown,
+      latestMocks,
+      topMistakeTopics
+    } = req.body;
+
+    const studentInfo = `ÖĞRENCİ BİLGİLERİ:
+- İsim: ${studentName || 'Öğrenci'}
+- Alan: ${targetField || 'SAY'}
+- Hedef / Üniversite: ${targetGoal || 'İlk 20.000'}
+- Değerlendirilen Hafta: ${weekLabel || 'Bu Hafta'}
+
+HAFTALIK İSTATİSTİKLER:
+- Toplam Çözülen Soru: ${weeklyStats?.totalSolved || 0} / Hedef: ${weeklyStats?.targetSolved || 0}
+- Tamamlama Oranı: %${weeklyStats?.completionRate || 0}
+- Net Çalışma Süresi: ${weeklyStats?.totalStudyHours || '0'} Saat
+- Bu Haftaki Hata Sayısı: ${weeklyStats?.mistakeCount || 0}
+- Pekiştirilen / Tekrar Edilen Hata: ${weeklyStats?.pekiştirilenHataCount || 0}
+
+DERSLERE GÖRE DAĞILIM:
+${(subjectBreakdown || []).map((s: any) => `- ${s.subject}: ${s.solved} soru (${s.correct} Doğru, ${s.wrong} Yanlış, %${s.accuracy || 0} Başarı)`).join('\n') || 'Veri bulunmuyor.'}
+
+SON DENEME SINAVI SONUÇLARI:
+${(latestMocks || []).map((m: any) => `- ${m.title || m.date}: TYT ${m.tytNet || 0} Net, AYT ${m.aytNet || 0} Net, YDT ${m.ydtNet || 0} Net`).join('\n') || 'Henüz deneme verisi girilmemiş.'}
+
+EN ÇOK HATA YAPILAN / TEKRAR BEKLEYEN KONULAR:
+${(topMistakeTopics || []).map((t: any) => `- ${t.subject} - ${t.topic} (${t.count} Hata)`).join('\n') || 'Kritik hata birikimi yok.'}`;
+
+    const systemPrompt = `Sen Türkiye'nin en tecrübeli, pedagojik ve stratejik YKS Uzman Koçu ve Rehberlik Danışmanısın.
+Görevin aşağıdaki öğrenci verilerini analiz ederek öğrenciye moral veren, gerçekçi, motivasyon artıran ve nokta atışı stratejiler sunan bir "Haftalık Yapay Zeka Başarı Karnesi" hazırlamaktır.
+
+${studentInfo}
+
+ÖNEMLİ DEĞERLENDİRME KRİTERLERİ:
+1. Tahmini Sıralama Bandı: Öğrencinin netlerine, alanına ve soru temposuna göre gerçekçi bir YKS Türkiye Sıralaması bandı tahmin et (Örn: "12.000 - 18.000" veya "35.000 - 48.000").
+2. Güçlü Yönler: Öğrencinin bu hafta ivme kazandığı en güçlü 2 alanı takdir et.
+3. Kritik Gelişim Alanları: En çok hata yaptığı veya net artışı için en kritik 2 konuyu net tavsiyelerle belirt.
+4. Altın Stratejiler: Gelecek hafta için uygulanabilir, net 3 madde halinde eylem adımı yaz.
+
+YANIT FORMATI:
+SADECE aşağıdaki JSON şemasına tam uyan geçerli bir JSON nesnesi döndür, markdown formatlama (kod bloğu) dışında hiçbir metin yazma:
+
+{
+  "headline": "Haftanın İvme Başlığı (Örn: 'Disiplinli Çalışma ve İstikrarlı Net Artışı')",
+  "overallScore": 85,
+  "overallEvaluation": "Öğrencinin haftalık genel temposunu, güçlü yanlarını ve gelişimini özetleyen 2-3 cümlelik koçluk değerlendirmesi.",
+  "estimatedRankBand": "15.000 - 22.000",
+  "rankBandExplanation": "Mevcut netlerin ve çalışma disiplinin seni hedefine yaklaştırıyor...",
+  "topStrengths": [
+    {
+      "subject": "TYT Matematik",
+      "detail": "Problemlerde yakaladığın %88 doğruluk oranı haftanın en büyük kazanımı oldu."
+    },
+    {
+      "subject": "Düzenli Tekrar",
+      "detail": "Hata defterindeki 12 soruyu pekiştirerek öğrenme kalıcılığını sağladın."
+    }
+  ],
+  "criticalFocusAreas": [
+    {
+      "subject": "AYT Fizik",
+      "topic": "Elektromanyetizma",
+      "actionAdvice": "Bu konuda hata oranı yüksek. Hafta başında 2 test tarama ve özet video tekrarı planlanmalı."
+    },
+    {
+      "subject": "Geometri",
+      "topic": "Üçgende Alan",
+      "actionAdvice": "Günlük 10 soru geometri rutini ekleyerek hız ve görme kabiliyetini pekiştir."
+    }
+  ],
+  "goldenActionStrategies": [
+    "1. Sabah saatlerini en zorlandığın ders olan AYT Fizik çalışmalarına ayır.",
+    "2. Günlük 20 Paragraf rutinini aksatmadan devam ettirerek okuma hızını koru.",
+    "3. Hafta sonu çözülecek TYT denemesinde süre yönetimini Türkçe 45 dk olarak sınırla."
+  ],
+  "coachMotivationNote": "Unutma; şampiyonlar büyük günlerde değil, her gün masaya koydukları küçük adımlarla yetişir. Bu hafta gösterdiğin gayret hedefine giden yolda çok kıymetli! 🚀"
+}`;
+
+    const targetModel = featureModelConfig['WEEKLY_REPORT_CARD'] || featureModelConfig['AI_COACH'] || 'SYSTEM_DEFAULT';
+
+    const unifiedResult = await executeAiUnifiedRequest({
+      prompt: systemPrompt,
+      requireJson: true,
+      featureKey: 'WEEKLY_REPORT_CARD',
+      modelOverride: targetModel,
+      maxTokens: 2500
+    });
+
+    const parsedData = cleanAndParseJson(unifiedResult.text);
+    const { userName, userRole, userId } = resolveUserInfo(req.body);
+
+    const usageRecord = recordApiUsage({
+      featureKey: 'WEEKLY_REPORT_CARD',
+      featureName: 'Haftalık Yapay Zeka Başarı Karnesi',
+      category: 'AI_COACH',
+      provider: unifiedResult.providerUsed,
+      modelUsed: unifiedResult.modelUsed,
+      promptTokens: unifiedResult.promptTokens || Math.ceil(systemPrompt.length / 4),
+      candidatesTokens: unifiedResult.candidatesTokens || Math.ceil((unifiedResult.text || '').length / 4),
+      promptText: studentInfo,
+      responseText: unifiedResult.text,
+      userId,
+      userName,
+      userRole
+    });
+
+    res.json({
+      success: true,
+      data: parsedData,
+      aiUsage: usageRecord
+    });
+  } catch (err: any) {
+    console.error('Weekly report card error:', err);
+    res.status(500).json({ error: formatGeminiErrorMessage(err, 'Haftalık yapay zeka karnesi oluşturulurken bir hata meydana geldi.') });
+  }
+});
+
 export default router;

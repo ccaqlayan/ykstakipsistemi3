@@ -18,7 +18,10 @@ import {
   FileText,
   BookmarkPlus,
   BarChart2,
-  ListTodo
+  ListTodo,
+  Mic,
+  MicOff,
+  Volume2
 } from 'lucide-react';
 import { UserAccount } from '../../types';
 import { parseUserQuickAddIntent, SmartAddParsedResult } from '../../services/geminiService';
@@ -97,11 +100,95 @@ export const GlobalAiSmartAddModal: React.FC<GlobalAiSmartAddModalProps> = ({
   const [parsedResult, setParsedResult] = useState<SmartAddParsedResult | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // 🎙️ Web Speech API Sesli Komut Durumları
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const [speechSupported, setSpeechSupported] = useState<boolean>(true);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setSpeechSupported(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'tr-TR';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setError(null);
+      };
+
+      recognition.onresult = (event: any) => {
+        let currentTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          currentTranscript += event.results[i][0].transcript;
+        }
+        if (currentTranscript) {
+          setPrompt(currentTranscript);
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('Speech recognition event error:', event.error);
+        setIsListening(false);
+        if (event.error === 'not-allowed') {
+          setError('Mikrofon izni verilmedi. Lütfen tarayıcı ayarlarından mikrofona izin veriniz.');
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+    } catch (err) {
+      console.warn('Speech recognition init error:', err);
+      setSpeechSupported(false);
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {}
+      }
+    };
+  }, []);
+
+  const toggleListening = () => {
+    if (!speechSupported || !recognitionRef.current) {
+      alert('Tarayıcınız sesli komut (Web Speech API) özelliğini desteklemiyor. Lütfen Google Chrome veya Microsoft Edge kullanınız.');
+      return;
+    }
+
+    if (isListening) {
+      try {
+        recognitionRef.current.stop();
+      } catch {}
+      setIsListening(false);
+    } else {
+      try {
+        setPrompt('');
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (err) {
+        console.error('Speech recognition start error:', err);
+        setIsListening(false);
+      }
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       setPrompt('');
       setError(null);
       setParsedResult(null);
+      setIsListening(false);
       setTimeout(() => {
         textareaRef.current?.focus();
       }, 100);
@@ -211,12 +298,37 @@ export const GlobalAiSmartAddModal: React.FC<GlobalAiSmartAddModalProps> = ({
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
                 rows={3}
-                placeholder="Örnek: Bugün TYT Matematik 50 soru çözdüm 42 doğru 5 yanlış 45 dakika sürdü / AYT Fizik elektrostatik konusunda hata yaptım ekleyelim / 345 TYT Türkçe branş denemesi 35 D 4 Y..."
-                className="w-full bg-slate-950/80 border-2 border-indigo-500/30 focus:border-indigo-400 rounded-2xl p-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all resize-none shadow-inner"
+                placeholder={isListening ? "🎙️ Sizi dinliyorum, lütfen ne yaptığınızı söyleyin..." : "Örnek: Bugün TYT Matematik 50 soru çözdüm 42 doğru 5 yanlış 45 dakika sürdü / AYT Fizik elektrostatik konusunda hata yaptım ekleyelim / 345 TYT Türkçe branş denemesi 35 D 4 Y..."}
+                className={`w-full bg-slate-950/80 border-2 rounded-2xl p-4 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-4 transition-all resize-none shadow-inner ${
+                  isListening 
+                    ? 'border-rose-500 ring-4 ring-rose-500/20 bg-rose-950/10' 
+                    : 'border-indigo-500/30 focus:border-indigo-400 focus:ring-indigo-500/10'
+                }`}
                 disabled={isLoading}
               />
               
               <div className="absolute right-3 bottom-3 flex items-center space-x-2">
+                {/* 🎙️ Mikrofon Butonu */}
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  title={isListening ? "Dinlemeyi Durdur" : "Mikrofon ile Sesle Söyle"}
+                  className={`p-2 rounded-xl transition-all flex items-center justify-center cursor-pointer ${
+                    isListening 
+                      ? 'bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-500/40 ring-2 ring-rose-300' 
+                      : 'bg-slate-800/90 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 hover:border-indigo-400/50 shadow-sm'
+                  }`}
+                >
+                  {isListening ? (
+                    <div className="flex items-center space-x-1 px-1">
+                      <MicOff className="w-3.5 h-3.5 animate-bounce" />
+                      <span className="text-[10px] font-black uppercase tracking-tight">Dinleniyor</span>
+                    </div>
+                  ) : (
+                    <Mic className="w-4 h-4 text-indigo-400" />
+                  )}
+                </button>
+
                 <span className="text-[10px] text-slate-500 font-mono hidden sm:inline-block">
                   Enter ↵ ile gönder
                 </span>

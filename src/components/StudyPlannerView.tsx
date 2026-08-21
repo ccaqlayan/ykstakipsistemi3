@@ -69,6 +69,7 @@ import { StudyPlannerStatsView } from './planner/StudyPlannerStatsView';
 import { StudyPlannerModals, DailyStudyLogModalData } from './planner/StudyPlannerModals';
 import { AddVideoTaskModal } from './planner/AddVideoTaskModal';
 import { StudyPlannerPrintModal } from './planner/StudyPlannerPrintModal';
+import { WeeklyAiReportCardModal } from './reports/WeeklyAiReportCardModal';
 
 interface StudyPlannerViewProps {
   studyPlans: StudyPlanItem[];
@@ -1023,6 +1024,7 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
   const [targetQuestionCount, setTargetQuestionCount] = useState<number | ''>('');
   const [notes, setNotes] = useState('');
   const [targetDaysForAdd, setTargetDaysForAdd] = useState<DayOfWeek[]>([today]);
+  const [showWeeklyReportModal, setShowWeeklyReportModal] = useState<boolean>(false);
 
   // Add YouTube Video Task Modal States
   const [showAddVideoModal, setShowAddVideoModal] = useState(false);
@@ -2267,8 +2269,17 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
                   </button>
                 </div>
 
-                {/* Add task buttons */}
-                <div className="flex flex-row items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
+                {/* Add task buttons & Weekly AI Report Card */}
+                <div className="flex flex-row items-center justify-between sm:justify-start gap-2 w-full sm:w-auto overflow-x-auto no-scrollbar">
+                  <button
+                    type="button"
+                    onClick={() => setShowWeeklyReportModal(true)}
+                    title="Bu haftanın yapay zeka gelişim karnesi ve YKS sıralama tahminini görüntüle"
+                    className="bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-indigo-500/20 hover:from-amber-500/30 hover:to-indigo-500/30 text-amber-300 hover:text-white border border-amber-500/40 text-[11px] sm:text-xs font-black px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 rounded-xl sm:rounded-2xl transition-all shadow-md shadow-amber-500/10 flex items-center space-x-1.5 cursor-pointer shrink-0 whitespace-nowrap active:scale-95"
+                  >
+                    <Award className="w-4 h-4 text-amber-400 animate-pulse" />
+                    <span>AI Karnesi</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => openAddVideoModal()}
@@ -2686,6 +2697,19 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         routines={routines}
         weekDaysMap={selectedWeekDaysMap}
       />
+
+      {/* 📊 Haftalık AI Başarı Karnesi Modalı */}
+      {showWeeklyReportModal && (
+        <WeeklyAiReportCardModal
+          isOpen={showWeeklyReportModal}
+          onClose={() => setShowWeeklyReportModal(false)}
+          currentUser={currentUser}
+          profile={profile}
+          questionLogs={questionLogs}
+          studyPlans={studyPlans}
+          currentWeekLabel={currentWeekLabel}
+        />
+      )}
 
       {/* ── FLOATING ACTION BUTTON (+ FAB) ── */}
       <button

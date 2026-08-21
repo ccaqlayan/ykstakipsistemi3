@@ -1,20 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   GraduationCap, 
   FileSpreadsheet, 
   UserCheck, 
   RotateCcw, 
-  Sparkles,
-  LogOut,
-  User,
-  Cloud,
-  Menu,
-  Sun,
-  Moon,
-  MessageSquare
+  Sparkles, 
+  LogOut, 
+  User, 
+  Cloud, 
+  Menu, 
+  Sun, 
+  Moon, 
+  MessageSquare,
+  Bell,
+  Settings,
+  CheckCheck,
+  Target,
+  Clock,
+  AlertTriangle,
+  ChevronRight
 } from 'lucide-react';
-import { UserAccount, StudentProfile, GoogleSheetsStatus } from '../types';
+import { UserAccount, StudentProfile, GoogleSheetsStatus, DayOfWeek } from '../types';
 import { YildizLisesiLogo } from './YildizLisesiLogo';
+import { 
+  AppNotification, 
+  getStoredInAppNotifications, 
+  saveStoredInAppNotifications, 
+  evaluateSmartReminders 
+} from '../services/notificationService';
+import { NotificationSettingsModal } from './system/NotificationSettingsModal';
 
 interface NavbarProps {
   currentUser: UserAccount | null;
@@ -36,6 +50,10 @@ interface NavbarProps {
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
   alwaysShowMenuButton?: boolean;
+  routines?: any[];
+  studyPlans?: any[];
+  topicErrors?: any[];
+  onNavigateTab?: (tab: string) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -57,7 +75,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSmartAddModal,
   theme = 'dark',
   onToggleTheme,
-  alwaysShowMenuButton = false
+  alwaysShowMenuButton = false,
+  routines = [],
+  studyPlans = [],
+  topicErrors = [],
+  onNavigateTab
 }) => {
   const isPreviewMode = !!previewStudentUser;
   const effectiveUser = previewStudentUser || currentUser;
@@ -67,6 +89,65 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [currentSchoolName, setCurrentSchoolName] = React.useState<string>(
     () => localStorage.getItem('school_name') || 'Yıldız Anadolu Lisesi'
   );
+
+  // 🔔 Bildirim Merkezi Durumları
+  const [notifications, setNotifications] = useState<AppNotification[]>(getStoredInAppNotifications);
+  const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
+  const [showNotifSettings, setShowNotifSettings] = useState<boolean>(false);
+  const notifDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Akıllı hatırlatıcıları veri değişiminde ve belirli aralıklarla değerlendir
+  useEffect(() => {
+    if (isPreviewMode) return;
+    const DAYS_TR: DayOfWeek[] = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+    const todayIndex = new Date().getDay();
+    const todayDay = DAYS_TR[todayIndex];
+
+    evaluateSmartReminders({
+      routines,
+      studyPlans,
+      topicErrors,
+      todayDay,
+      currentNotifications: notifications,
+      onAddNotification: (newNotif) => {
+        setNotifications((prev) => {
+          const updated = [newNotif, ...prev.filter(n => n.id !== newNotif.id)].slice(0, 30);
+          saveStoredInAppNotifications(updated);
+          return updated;
+        });
+      }
+    });
+  }, [routines, studyPlans, topicErrors, isPreviewMode]);
+
+  // Açılır menü dışına tıklanınca kapat
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifDropdownRef.current && !notifDropdownRef.current.contains(e.target as Node)) {
+        setIsNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const unreadNotifCount = notifications.filter(n => !n.read).length;
+
+  const handleMarkAllRead = () => {
+    const updated = notifications.map(n => ({ ...n, read: true }));
+    setNotifications(updated);
+    saveStoredInAppNotifications(updated);
+  };
+
+  const handleNotificationClick = (notif: AppNotification) => {
+    const updated = notifications.map(n => n.id === notif.id ? { ...n, read: true } : n);
+    setNotifications(updated);
+    saveStoredInAppNotifications(updated);
+    setIsNotifOpen(false);
+
+    if (notif.linkTab && onNavigateTab) {
+      onNavigateTab(notif.linkTab);
+    }
+  };
 
   React.useEffect(() => {
     const handleUpdate = () => {
@@ -184,6 +265,123 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             )}
 
+            {/* 🔔 Akıllı Bildirim Çanı (Navbar) */}
+            {!isPreviewMode && (
+              <div className="relative" ref={notifDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsNotifOpen(prev => !prev)}
+                  id="navbar-notifications-btn"
+                  title="Akıllı Hatırlatıcılar ve Bildirimler"
+                  className={`relative p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                    isNotifOpen 
+                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 ring-2 ring-indigo-400/50' 
+                      : 'text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30'
+                  }`}
+                >
+                  <Bell className="w-4 h-4" />
+                  {unreadNotifCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-slate-950 font-black text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center border-2 border-slate-900 shadow-md animate-bounce">
+                      {unreadNotifCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Bildirim Açılır Menüsü (Dropdown) */}
+                {isNotifOpen && (
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-slate-900 border border-indigo-500/30 rounded-2xl shadow-2xl shadow-black/80 z-50 p-4 space-y-3 animate-fade-in">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                      <div className="flex items-center space-x-2">
+                        <Bell className="w-4 h-4 text-indigo-400" />
+                        <span className="text-xs font-black text-white">Akıllı Bildirimler</span>
+                        {unreadNotifCount > 0 && (
+                          <span className="px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
+                            {unreadNotifCount} Yeni
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center space-x-1.5">
+                        {unreadNotifCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleMarkAllRead}
+                            className="text-[10px] text-slate-400 hover:text-indigo-300 transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Tümünü Okundu İşaretle"
+                          >
+                            <CheckCheck className="w-3.5 h-3.5" />
+                            <span>Okundu Yap</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsNotifOpen(false);
+                            setShowNotifSettings(true);
+                          }}
+                          className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                          title="Bildirim Ayarları"
+                        >
+                          <Settings className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Bildirim Listesi */}
+                    <div className="max-h-72 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                      {notifications.length === 0 ? (
+                        <div className="py-8 text-center space-y-2">
+                          <Sparkles className="w-6 h-6 text-slate-600 mx-auto" />
+                          <p className="text-xs text-slate-400 font-medium">Henüz bir bildiriminiz yok.</p>
+                          <p className="text-[10px] text-slate-500">
+                            Rutinleriniz ve çalışma görevleriniz için akıllı hatırlatıcılar burada görünecektir.
+                          </p>
+                        </div>
+                      ) : (
+                        notifications.map((notif) => (
+                          <div
+                            key={notif.id}
+                            onClick={() => handleNotificationClick(notif)}
+                            className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-start space-x-2.5 ${
+                              !notif.read
+                                ? 'bg-indigo-950/40 border-indigo-500/30 hover:border-indigo-400/50 shadow-sm'
+                                : 'bg-slate-950/50 border-slate-800/80 hover:border-slate-700 opacity-75 hover:opacity-100'
+                            }`}
+                          >
+                            <div className="p-2 rounded-lg bg-slate-900 border border-slate-800 shrink-0 mt-0.5">
+                              {notif.type === 'routine' && <Target className="w-3.5 h-3.5 text-amber-400" />}
+                              {notif.type === 'task' && <Clock className="w-3.5 h-3.5 text-indigo-400" />}
+                              {notif.type === 'error' && <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />}
+                              {notif.type === 'ai' && <Sparkles className="w-3.5 h-3.5 text-cyan-400" />}
+                              {notif.type === 'streak' && <Sparkles className="w-3.5 h-3.5 text-emerald-400" />}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <h5 className={`text-xs font-bold truncate ${!notif.read ? 'text-white' : 'text-slate-300'}`}>
+                                  {notif.title}
+                                </h5>
+                                {!notif.read && (
+                                  <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0 ml-1" />
+                                )}
+                              </div>
+                              <p className="text-[11px] text-slate-400 leading-snug mt-0.5 line-clamp-2">
+                                {notif.message}
+                              </p>
+                            </div>
+
+                            {notif.linkTab && (
+                              <ChevronRight className="w-3.5 h-3.5 text-slate-500 shrink-0 self-center" />
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Profile Pill */}
             {!isTeacher ? (
               <button
@@ -274,6 +472,14 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 🔔 Akıllı Bildirim Ayarları Modalı */}
+      {showNotifSettings && (
+        <NotificationSettingsModal
+          isOpen={showNotifSettings}
+          onClose={() => setShowNotifSettings(false)}
+        />
+      )}
     </header>
   );
 };

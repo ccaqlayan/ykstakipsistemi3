@@ -130,8 +130,11 @@ dosyaya odaklanmak için bu indeksi referans almalıdır.
 - src/components/AdminMessageManagement.tsx   : Yönetici toplu mesaj gönderme ve mesaj denetim paneli.
 - src/components/AuditLogsView.tsx             : Sistem İşlem Zaman Çizelgesi (Ayak İzi izleme alanı).
 - src/components/ConfirmDeleteModal.tsx        : Evrensel silme onay penceresi.
-- src/components/common/GlobalAiSmartAddModal.tsx: Yapay Zeka destekli Akıllı Hızlı Ekle (Smart Add / Intent Dispatcher) komut paleti modalı.
+- src/components/common/GlobalAiSmartAddModal.tsx: Yapay Zeka ve Sesli Komut (Web Speech API) destekli Akıllı Hızlı Ekle (Smart Add) komut paleti modalı.
 - src/components/common/ImageCropperModal.tsx  : Mobil ve dokunmatik uyumlu, 90° döndürme destekli görsel kırpma (crop) modalı.
+- src/components/reports/WeeklyAiReportCardModal.tsx : Haftalık Yapay Zeka Öğrenci Başarı Karnesi (Pazar Raporu & YKS Sıralama Bandı Tahmini) modalı.
+- src/components/system/NotificationSettingsModal.tsx: Masaüstü ve uygulama içi akıllı hatırlatıcı bildirim ayarları modalı.
+- src/services/notificationService.ts          : Push bildirim ve akıllı hatırlatıcı değerlendirme motoru.
 - src/components/GoogleSheetsView.tsx          : Google Tabloları bağlantı ve veri senkronizasyonu.
 - src/components/LoginView.tsx                 : Kullanıcı giriş ve hesap oluşturma ekranı.
 - src/components/MaintenanceView.tsx           : Sistem bakım modu ekranı ve yönetici bypass giriş penceresi.

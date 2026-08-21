@@ -3161,6 +3161,10 @@ export default function App() {
           theme={theme}
           onToggleTheme={handleToggleTheme}
           alwaysShowMenuButton={activeTab === 'bulk_exam_import' || activeTab === 'teacher_system'}
+          routines={currentStudentData.routines}
+          studyPlans={currentStudentData.studyPlans}
+          topicErrors={currentStudentData.topicErrors}
+          onNavigateTab={(tab) => setActiveTab(tab as any)}
         />
       )}
 

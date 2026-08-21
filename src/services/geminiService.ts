@@ -244,3 +244,66 @@ export async function parseUserQuickAddIntent(
   }
   return { data: result.data, aiUsage: result.aiUsage };
 }
+
+export interface WeeklyReportCardData {
+  headline: string;
+  overallScore: number;
+  overallEvaluation: string;
+  estimatedRankBand: string;
+  rankBandExplanation: string;
+  topStrengths: Array<{
+    subject: string;
+    detail: string;
+  }>;
+  criticalFocusAreas: Array<{
+    subject: string;
+    topic: string;
+    actionAdvice: string;
+  }>;
+  goldenActionStrategies: string[];
+  coachMotivationNote: string;
+}
+
+export async function generateWeeklyAiReportCard(
+  payload: {
+    studentName?: string;
+    targetField?: string;
+    targetGoal?: string;
+    weekLabel?: string;
+    weeklyStats?: any;
+    subjectBreakdown?: any[];
+    latestMocks?: any[];
+    topMistakeTopics?: any[];
+  },
+  currentUser?: UserAccount | null
+): Promise<{ data: WeeklyReportCardData; aiUsage?: any }> {
+  const res = await fetch('/api/gemini/generate-weekly-report-card', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...payload,
+      userName: currentUser?.name || 'Öğrenci',
+      userEmail: currentUser?.email || '',
+      userRole: currentUser?.role || 'student',
+      userId: currentUser?.id || ''
+    })
+  });
+
+  if (!res.ok) {
+    let errorMsg = 'Haftalık yapay zeka karnesi oluşturulamadı.';
+    try {
+      const errData = await res.json();
+      if (errData && errData.error) {
+        errorMsg = errData.error;
+      }
+    } catch {}
+    throw new Error(errorMsg);
+  }
+
+  const result = await res.json();
+  if (result.error) {
+    throw new Error(result.error);
+  }
+  return { data: result.data, aiUsage: result.aiUsage };
+}
+
