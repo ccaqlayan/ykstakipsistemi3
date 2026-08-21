@@ -259,7 +259,7 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
           <style>
             @page {
               size: A4 portrait;
-              margin: 8mm 10mm;
+              margin: 4mm 7mm;
             }
             * {
               -webkit-print-color-adjust: exact !important;
@@ -273,22 +273,37 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
               background: #ffffff !important;
               color: #0f172a !important;
               width: 100% !important;
+              height: 100vh !important;
+              max-height: 100vh !important;
+              overflow: hidden !important;
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
             }
             #print-root {
               width: 100% !important;
+              height: 100vh !important;
+              max-height: 100vh !important;
               background: #ffffff !important;
               color: #0f172a !important;
               padding: 0 !important;
+              margin: 0 !important;
+              overflow: hidden !important;
             }
             #weekly-report-card-print-document {
               background: #ffffff !important;
               color: #0f172a !important;
               width: 100% !important;
+              height: 100vh !important;
+              max-height: 100vh !important;
               padding: 0 !important;
               margin: 0 !important;
               border: none !important;
               box-shadow: none !important;
+              display: flex !important;
+              flex-direction: column !important;
+              justify-content: space-between !important;
+              overflow: hidden !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
             }
             /* 🖨️ Mürekkep Tasarruflu Açık & Siyah-Beyaz Baskı Formatı */
             .bg-slate-900,
@@ -352,12 +367,56 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
               border-width: 1px !important;
               border-style: solid !important;
             }
-            /* Kart arkaplanlarını hafif gri kutu yap */
-            .p-4, .p-5, .p-6 {
+            /* Tek Sayfaya Sığdırma: Kart iç boşlukları ve kompakt fontlar */
+            .p-6 {
+              padding: 7px 10px !important;
+              border-radius: 8px !important;
               background-color: #f8fafc !important;
               border: 1px solid #cbd5e1 !important;
-              border-radius: 12px !important;
             }
+            .p-5 {
+              padding: 6px 10px !important;
+              border-radius: 8px !important;
+              background-color: #f8fafc !important;
+              border: 1px solid #cbd5e1 !important;
+            }
+            .p-4 {
+              padding: 5px 8px !important;
+              border-radius: 6px !important;
+              background-color: #f8fafc !important;
+              border: 1px solid #cbd5e1 !important;
+            }
+            .p-3.5, .p-3 {
+              padding: 4px 6px !important;
+              border-radius: 6px !important;
+              background-color: #ffffff !important;
+              border: 1px solid #e2e8f0 !important;
+            }
+            .space-y-6 > * + *, .space-y-5 > * + *, .space-y-4 > * + * {
+              margin-top: 4px !important;
+            }
+            .space-y-3.5 > * + *, .space-y-3 > * + *, .space-y-2.5 > * + * {
+              margin-top: 3px !important;
+            }
+            .gap-4, .gap-5 {
+              gap: 5px !important;
+            }
+            .gap-2.5 {
+              gap: 4px !important;
+            }
+            h1 { font-size: 13px !important; margin: 0 !important; }
+            h2 { font-size: 13px !important; margin: 0 !important; }
+            h3 { font-size: 12px !important; margin: 0 !important; }
+            h4 { font-size: 10.5px !important; margin: 0 !important; }
+            p, span, div { font-size: 10px !important; line-height: 1.25 !important; }
+            .text-3xl, .text-4xl { font-size: 20px !important; }
+            .text-2xl { font-size: 15px !important; }
+            .text-xl { font-size: 13px !important; }
+            .text-lg { font-size: 12px !important; }
+            .text-sm { font-size: 10px !important; }
+            .text-xs { font-size: 9px !important; }
+            .text-\\[10px\\] { font-size: 8px !important; }
+            svg { width: 12px !important; height: 12px !important; }
             .print\\:hidden {
               display: none !important;
             }
