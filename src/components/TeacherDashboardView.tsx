@@ -1125,7 +1125,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           allClasses={classes}
           allUsers={allUsers}
           studentsData={studentsData}
-          onInspectStudent={handleInspectStudent}
+          onInspectStudent={(student) => handleOpenInspectStudent(student, 'performance')}
           setShowCreateClassModal={setShowCreateClassModal}
           setSelectedClassFilter={setSelectedClassFilter}
           setActiveTeacherView={setActiveTeacherView}
