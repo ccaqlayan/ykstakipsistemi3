@@ -57,6 +57,7 @@ interface AppTabRouterProps {
   handleUpdateProgramTemplate: (updatedTemplate: any) => void;
   handleDeleteProgramTemplate: (templateId: string) => void;
   handleApplyTemplateToStudent: (studentId: string, templateId: string, mode: 'overwrite' | 'merge') => void;
+  handleApplyTemplateToClass?: (className: string, templateId: string, mode: 'overwrite' | 'merge') => void;
   handleUpdateTeacherAssignedClasses: (teacherId: string, assignedClassNames: string[]) => void;
   handleUpdateTeacherAccount: (updatedTeacher: UserAccount) => void;
   handleDeleteClassDefinition: (classId: string) => void;
@@ -152,6 +153,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
   handleUpdateProgramTemplate,
   handleDeleteProgramTemplate,
   handleApplyTemplateToStudent,
+  handleApplyTemplateToClass,
   handleUpdateTeacherAssignedClasses,
   handleUpdateTeacherAccount,
   handleDeleteClassDefinition,
@@ -308,6 +310,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           onUpdateProgramTemplate={handleUpdateProgramTemplate}
           onDeleteProgramTemplate={handleDeleteProgramTemplate}
           onApplyTemplateToStudent={handleApplyTemplateToStudent}
+          onApplyTemplateToClass={handleApplyTemplateToClass}
           onUpdateTeacherAssignedClasses={handleUpdateTeacherAssignedClasses}
           onUpdateTeacherAccount={handleUpdateTeacherAccount}
           onDeleteClass={handleDeleteClassDefinition}

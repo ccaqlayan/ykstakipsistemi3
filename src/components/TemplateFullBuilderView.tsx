@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import { DayOfWeek, FieldType, StudyProgramTemplate, StudyProgramTemplateItem } from '../types';
 import { YKS_CURRICULUM_TOPICS, DEFAULT_TASK_TYPES } from '../data/initialData';
+import { GRADE9_CURRICULUM, GRADE10_CURRICULUM, GRADE11_CURRICULUM } from '../data/curriculum';
+import { GradeLevel } from '../utils/gradeUtils';
 
 const ALL_SUBJECT_LIST = Object.keys(YKS_CURRICULUM_TOPICS);
 
@@ -63,7 +65,15 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [targetField, setTargetField] = useState<FieldType | 'TÜMÜ'>('TÜMÜ');
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState<GradeLevel | 'TÜMÜ'>('TÜMÜ');
   const [builderMode, setBuilderMode] = useState<'drag' | 'manual'>('drag');
+
+  const currentCurriculumTopics = React.useMemo<Record<string, string[]>>(() => {
+    if (selectedGradeLevel === '9') return GRADE9_CURRICULUM;
+    if (selectedGradeLevel === '10') return GRADE10_CURRICULUM;
+    if (selectedGradeLevel === '11') return GRADE11_CURRICULUM;
+    return YKS_CURRICULUM_TOPICS;
+  }, [selectedGradeLevel]);
 
   // Items in template
   const [items, setItems] = useState<Array<StudyProgramTemplateItem & { id: string; poolId?: string }>>([]);
@@ -352,6 +362,7 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
       title: (title || '').trim(),
       description: (description || '').trim() || undefined,
       targetField,
+      gradeLevel: selectedGradeLevel,
       createdByName: teacherName,
       items: items.map(({ id, ...rest }) => rest)
     });
@@ -480,7 +491,7 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
               className="w-full bg-slate-950 border border-fuchsia-500/30 rounded-xl px-4 py-2 text-white font-bold text-sm placeholder:text-slate-500 focus:outline-none focus:border-fuchsia-400"
             />
           </div>
-          <div className="w-full sm:w-48">
+          <div className="w-full sm:w-44">
             <select
               value={targetField}
               onChange={(e) => setTargetField(e.target.value as any)}
@@ -491,6 +502,20 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
               <option value="EA">EA (Eşit Ağırlık)</option>
               <option value="SÖZ">SÖZ (Sözel)</option>
               <option value="DİL">DİL (Yabancı Dil)</option>
+            </select>
+          </div>
+          <div className="w-full sm:w-56">
+            <select
+              value={selectedGradeLevel}
+              onChange={(e) => setSelectedGradeLevel(e.target.value as any)}
+              className="w-full bg-slate-950 border border-fuchsia-500/40 rounded-xl px-3 py-2 text-white font-bold text-xs focus:outline-none focus:border-fuchsia-400"
+            >
+              <option value="TÜMÜ">🎓 Tüm Kademeler / Genel</option>
+              <option value="9">🎓 9. Sınıf (Maarif Modeli)</option>
+              <option value="10">🎓 10. Sınıf (Maarif Modeli)</option>
+              <option value="11">📘 11. Sınıf (Alan & YKS)</option>
+              <option value="12">🎯 12. Sınıf (YKS Maraton)</option>
+              <option value="mezun">🏆 Mezun (YKS Derece)</option>
             </select>
           </div>
         </div>
@@ -691,11 +716,19 @@ export const TemplateFullBuilderView: React.FC<TemplateFullBuilderViewProps> = (
                     <BookOpen className="w-3.5 h-3.5 text-fuchsia-400" />
                     <span>Dersler & Konular</span>
                   </div>
-                  <span className="text-[10px] text-slate-500 font-normal">YKS Müfredatı</span>
+                  <span className="text-[10px] text-fuchsia-300/80 font-medium">
+                    {selectedGradeLevel === '9' 
+                      ? '9. Sınıf Maarif Modeli' 
+                      : selectedGradeLevel === '10' 
+                      ? '10. Sınıf Maarif Modeli' 
+                      : selectedGradeLevel === '11' 
+                      ? '11. Sınıf Müfredatı' 
+                      : 'YKS Müfredatı'}
+                  </span>
                 </div>
 
                 <div className="space-y-1.5">
-                  {Object.entries(YKS_CURRICULUM_TOPICS).map(([subject, topics]) => {
+                  {Object.entries(currentCurriculumTopics).map(([subject, topics]) => {
                     // Category filter
                     if (examCategory === 'TYT' && !subject.startsWith('TYT') && subject.startsWith('AYT')) {
                       return null;

@@ -491,13 +491,32 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
 
   const handleShareWhatsApp = () => {
     if (!reportData) return;
-    const text = `📊 *${studentName} - YKS Haftalık AI Başarı Karnesi* 🎓\n\n` +
-      `🏆 *Haftanın Notu:* ${reportData.overallScore}/100\n` +
-      `📈 *Tahmini Sıralama:* ${reportData.estimatedRankBand}\n\n` +
-      `🌟 *Genel Değerlendirme:* ${reportData.overallEvaluation}\n\n` +
-      `🎯 *Gelecek Hafta Stratejileri:*\n` +
-      reportData.goldenActionStrategies.map(s => `• ${s}`).join('\n') +
-      `\n\n💬 *Koç Mesajı:* "${reportData.coachMotivationNote}"\n\n_YKS Takip Sistemi Akıllı Koçluk Raporu_`;
+    const isAraSinifGrade = studentGrade === '9' || studentGrade === '10' || studentGrade === '11';
+    
+    let text = '';
+    if (isAraSinifGrade) {
+      text = `🎓 *${studentName} - ${studentGrade}. Sınıf Haftalık Başarı Karnesi* 🎓\n\n` +
+        `👤 *Sınıf / Şube:* ${profile?.className || currentUser?.className || `${studentGrade}. Sınıf`}\n` +
+        `📅 *Dönem:* ${currentWeekLabel}\n\n` +
+        `🏆 *Haftalık Başarı Puanı:* ${reportData.overallScore} / 100 🌟\n` +
+        (currentGpa > 0 ? `📝 *Okul Yazılı Ortalaması:* ${currentGpa} (${honorBadge ? honorBadge.label : 'Normal Band'})\n` : '') +
+        (obpContribution > 0 ? `🎯 *YKS Yerleştirme OBP Katkısı:* +${obpContribution} Puan\n\n` : '\n') +
+        `📊 *Yapay Zeka & Koç Değerlendirmesi:*\n${reportData.overallEvaluation}\n\n` +
+        `💡 *Gelecek Hafta Öncelikli Stratejileri:*\n` +
+        reportData.goldenActionStrategies.map(s => `• ${s}`).join('\n') +
+        `\n\n💬 *Rehberlik Notu:* "${reportData.coachMotivationNote}"\n\n` +
+        `_MEB Türkiye Yüzyılı Maarif Modeli & Akıllı Öğrenci Takip Sistemi_`;
+    } else {
+      text = `📊 *${studentName} - YKS Haftalık AI Başarı Karnesi* 🎓\n\n` +
+        `👤 *Hedef:* ${targetGoal}\n` +
+        `🏆 *Haftanın Notu:* ${reportData.overallScore} / 100\n` +
+        `📈 *Tahmini YKS Sıralama Bandı:* ${reportData.estimatedRankBand}\n\n` +
+        `🌟 *Genel Değerlendirme:*\n${reportData.overallEvaluation}\n\n` +
+        `🎯 *Gelecek Hafta Stratejileri:*\n` +
+        reportData.goldenActionStrategies.map(s => `• ${s}`).join('\n') +
+        `\n\n💬 *Koç Mesajı:* "${reportData.coachMotivationNote}"\n\n` +
+        `_YKS Akıllı Koçluk & Öğrenci Takip Sistemi_`;
+    }
 
     const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
@@ -505,8 +524,9 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
 
   const handleCopySummary = () => {
     if (!reportData) return;
-    const text = `📊 ${studentName} - YKS Haftalık AI Başarı Karnesi (${currentWeekLabel})\n` +
-      `🏆 Puan: ${reportData.overallScore}/100 | Sıralama Bandı: ${reportData.estimatedRankBand}\n\n` +
+    const isAraSinifGrade = studentGrade === '9' || studentGrade === '10' || studentGrade === '11';
+    const text = `📊 ${studentName} - ${isAraSinifGrade ? `${studentGrade}. Sınıf` : 'YKS'} Haftalık AI Başarı Karnesi (${currentWeekLabel})\n` +
+      `🏆 Puan: ${reportData.overallScore}/100 | ${isAraSinifGrade ? `Yazılı Ort: ${currentGpa > 0 ? currentGpa : '-'}` : `Sıralama: ${reportData.estimatedRankBand}`}\n\n` +
       `Genel Değerlendirme: ${reportData.overallEvaluation}\n\n` +
       `Koç Tavsiyeleri:\n` + reportData.goldenActionStrategies.join('\n');
 

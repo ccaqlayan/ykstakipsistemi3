@@ -1390,6 +1390,70 @@ export default function App() {
     );
   };
 
+  const handleApplyTemplateToClass = (className: string, templateId: string, mode: 'overwrite' | 'merge') => {
+    const tpl = (globalState.programTemplates || []).find((t) => t.id === templateId);
+    if (!tpl) return;
+
+    const classStudents = globalState.users.filter(u => u.role === 'student' && u.className === className);
+    if (classStudents.length === 0) {
+      alert(`"${className}" şubesinde kayıtlı öğrenci bulunamadı.`);
+      return;
+    }
+
+    const prevStudentsData = { ...globalState.studentsData };
+
+    setGlobalState((prev) => {
+      const nextStudentsData = { ...prev.studentsData };
+
+      classStudents.forEach(student => {
+        const studentId = student.id;
+        const studentData = nextStudentsData[studentId] || createEmptyStudentData(student.name, student.className);
+        const existingPlans = studentData.studyPlans || [];
+
+        const newItems: StudyPlanItem[] = tpl.items.map((item: any, idx: number) => ({
+          id: `plan-${Date.now()}-${studentId.slice(-4)}-${idx}`,
+          day: item.day,
+          subject: item.subject,
+          topic: item.topic,
+          plannedMinutes: item.plannedMinutes,
+          completedMinutes: 0,
+          status: 'pending' as const,
+          notes: item.notes
+        }));
+
+        const updatedPlans = mode === 'overwrite' ? newItems : [...newItems, ...existingPlans];
+        const updatedData = { ...studentData, studyPlans: updatedPlans };
+        saveStudentDataToFirestore(studentId, updatedData);
+        nextStudentsData[studentId] = updatedData;
+      });
+
+      return {
+        ...prev,
+        studentsData: nextStudentsData
+      };
+    });
+
+    addAuditAndUndo(
+      `${currentUser?.name || 'Öğretmen'} "${tpl.title}" şablonunu "${className}" şubesindeki ${classStudents.length} öğrenciye toplu uyguladı.`,
+      'template',
+      'bulk_apply_template_class',
+      () => {
+        setGlobalState((prev) => {
+          classStudents.forEach(st => {
+            const oldData = prevStudentsData[st.id];
+            if (oldData) {
+              saveStudentDataToFirestore(st.id, oldData);
+            }
+          });
+          return {
+            ...prev,
+            studentsData: prevStudentsData
+          };
+        });
+      }
+    );
+  };
+
   const handleUpdateStudentAccount = (updatedStudent: UserAccount) => {
     const prevUsers = globalState.users;
     setGlobalState((prev) => {
@@ -3339,6 +3403,7 @@ export default function App() {
             handleUpdateProgramTemplate={handleUpdateProgramTemplate}
             handleDeleteProgramTemplate={handleDeleteProgramTemplate}
             handleApplyTemplateToStudent={handleApplyTemplateToStudent}
+            handleApplyTemplateToClass={handleApplyTemplateToClass}
             handleUpdateTeacherAssignedClasses={handleUpdateTeacherAssignedClasses}
             handleUpdateTeacherAccount={handleUpdateTeacherAccount}
             handleDeleteClassDefinition={handleDeleteClassDefinition}

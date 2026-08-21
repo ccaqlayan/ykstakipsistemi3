@@ -225,7 +225,7 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
   const [activeTab, setActiveTab] = useState<'youtube' | 'books'>('books');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [selectedSubject, setSelectedSubject] = useState<string>('Matematik');
-  const [selectedExamType, setSelectedExamType] = useState<'Tümü' | 'TYT' | 'AYT'>('Tümü');
+  const [selectedExamType, setSelectedExamType] = useState<'Tümü' | '9' | '10' | '11' | 'TYT' | 'AYT'>('Tümü');
   const [selectedCategory, setSelectedCategory] = useState<string>('Tümü');
   const [difficultyFilter, setDifficultyFilter] = useState<number | 'all'>('all');
   const [showOnlyPopular, setShowOnlyPopular] = useState<boolean>(false);
@@ -743,8 +743,17 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         return false;
       }
 
-      // Exam Type filter (TYT vs AYT/YDT)
-      if (selectedExamType === 'TYT') {
+      // Exam / Grade Type filter
+      if (selectedExamType === '9') {
+        const is9 = book.category.includes('9.') || book.name.includes('9.') || book.reason?.includes('9.') || book.category.includes('Maarif');
+        if (!is9) return false;
+      } else if (selectedExamType === '10') {
+        const is10 = book.category.includes('10.') || book.name.includes('10.') || book.reason?.includes('10.');
+        if (!is10) return false;
+      } else if (selectedExamType === '11') {
+        const is11 = book.category.includes('11.') || book.name.includes('11.') || book.reason?.includes('11.');
+        if (!is11) return false;
+      } else if (selectedExamType === 'TYT') {
         const isTyt = book.category.includes('TYT') || ['Kelime', 'Gramer', 'Skills', 'Okuma'].includes(book.category);
         if (!isTyt) return false;
       } else if (selectedExamType === 'AYT') {
@@ -1081,7 +1090,37 @@ export const RecommendationsView: React.FC<RecommendationsViewProps> = ({
         {/* Sub-Filters for Books & Sort Options */}
         {activeTab === 'books' && (
           <div className="pt-3 border-t border-slate-800/80 space-y-3">
-            
+            {/* Kademe & Sınav Filtresi */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] uppercase font-extrabold text-slate-400 shrink-0 flex items-center gap-1 mr-1">
+                <GraduationCap className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Hedef Kademe:</span>
+              </span>
+              {[
+                { id: 'Tümü', label: 'Tüm Kademeler' },
+                { id: '9', label: '9. Sınıf (Maarif)' },
+                { id: '10', label: '10. Sınıf (Maarif)' },
+                { id: '11', label: '11. Sınıf (Alan)' },
+                { id: 'TYT', label: 'TYT' },
+                { id: 'AYT', label: 'AYT / YDT' },
+              ].map(f => {
+                const isSelected = selectedExamType === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setSelectedExamType(f.id as any)}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer border ${
+                      isSelected
+                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-md'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Dynamic Sub-Category Tabs (e.g. Kelime, Gramer, Skills, Okuma, Deneme) - Wrapped without scrollbar */}
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] uppercase font-extrabold text-slate-400 shrink-0 flex items-center gap-1 mr-1">

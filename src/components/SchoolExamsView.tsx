@@ -13,7 +13,8 @@ import {
   GraduationCap,
   Calculator,
   ArrowUpRight,
-  BarChart2
+  BarChart2,
+  Share2
 } from 'lucide-react';
 import { SchoolExam, StudentProfile, UserAccount } from '../types';
 import { SchoolExamModal } from './school_exams/SchoolExamModal';
@@ -160,6 +161,31 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
     setIsTargetGpaModalOpen(false);
   };
 
+  const handleShareWhatsAppReport = () => {
+    const studentName = profile.name || currentUser.name || 'Öğrenci';
+    const scoredList = Object.entries(subjectGroups).filter(([_, g]) => g.avg !== undefined);
+
+    let text = `🎓 *${studentName} - ${getGradeDisplayName(gradeLevel)} Okul Yazılı Sınav Karnesi* 🎓\n` +
+      `📅 *${selectedSemester}. Dönem Not Dökümü*\n\n` +
+      `📊 *Dönem Karne Ortalaması:* ${overallSemesterGpa > 0 ? overallSemesterGpa.toFixed(2) : '-'} / 100 (${certificateStatus.title})\n` +
+      `🎯 *Tahmini OBP:* ${estimatedObp > 0 ? estimatedObp.toFixed(1) : '-'} / 500\n` +
+      `🚀 *YKS Yerleştirme Puanı Katkısı:* ${yksPointContribution > 0 ? `+${yksPointContribution.toFixed(2)}` : '-'} Puan\n\n` +
+      `📝 *Ders Bazlı Yazılı Notları:*\n`;
+
+    scoredList.forEach(([sub, g]) => {
+      text += `• ${sub}: ${g.avg?.toFixed(1)} Puan`;
+      if (g.exam1 && g.exam2) {
+        text += ` (1. Yazılı: ${g.exam1.score}, 2. Yazılı: ${g.exam2.score})`;
+      }
+      text += '\n';
+    });
+
+    text += `\n_MEB Türkiye Yüzyılı Maarif Modeli & Akıllı Öğrenci Takip Sistemi_`;
+
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300 pb-12">
       {/* Header Banner */}
@@ -181,6 +207,16 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {/* WhatsApp Share Button */}
+            <button
+              onClick={handleShareWhatsAppReport}
+              className="px-3.5 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-2xl transition-all flex items-center space-x-1.5 shadow-sm"
+              title="Yazılı sınav notlarını WhatsApp formatında veliyle paylaşın"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>WhatsApp İle Paylaş</span>
+            </button>
+
             {/* Semester Switcher */}
             <div className="flex items-center bg-slate-950 p-1 rounded-2xl border border-slate-800 shrink-0">
               <button
@@ -294,6 +330,66 @@ export const SchoolExamsView: React.FC<SchoolExamsViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* SECTION: VISUAL EXAM COMPARISON BARS */}
+      {Object.values(subjectGroups).some(g => g.avg !== undefined) && (
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <h2 className="text-sm sm:text-base font-bold text-white flex items-center space-x-2">
+              <BarChart2 className="w-5 h-5 text-indigo-400" />
+              <span>Ders Bazlı Yazılı Notu & Sınıf Ortalaması Karşılaştırması</span>
+            </h2>
+            <div className="flex items-center space-x-3 text-xs">
+              <div className="flex items-center space-x-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block" />
+                <span className="text-slate-300 font-medium">Öğrenci Notu</span>
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-600 inline-block" />
+                <span className="text-slate-400 font-medium">Sınıf Ortalaması</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+            {Object.entries(subjectGroups)
+              .filter(([_, g]) => g.avg !== undefined)
+              .map(([subjectName, g]) => {
+                const studentScore = g.avg || 0;
+                const classAvg = g.exam1?.classAverage || g.exam2?.classAverage || 70;
+
+                return (
+                  <div key={subjectName} className="bg-slate-950/70 border border-slate-800/80 rounded-2xl p-3.5 space-y-2 hover:border-slate-700 transition-all">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-white truncate max-w-[200px]">{subjectName}</span>
+                      <div className="flex items-center space-x-2 font-mono font-bold">
+                        <span className="text-emerald-400">{studentScore.toFixed(1)} Puan</span>
+                        <span className="text-slate-600">/</span>
+                        <span className="text-slate-400 text-[11px]">Ort: {classAvg.toFixed(1)}</span>
+                      </div>
+                    </div>
+
+                    {/* Comparison Bars */}
+                    <div className="space-y-1.5">
+                      <div className="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-white/5 relative">
+                        <div 
+                          className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500 shadow-sm"
+                          style={{ width: `${Math.min(100, Math.max(0, studentScore))}%` }}
+                        />
+                      </div>
+                      <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden border border-white/5 relative">
+                        <div 
+                          className="bg-slate-600 h-full rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, Math.max(0, classAvg))}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
 
       {/* Main Subjects Table & Cards */}
       <div className="space-y-4">

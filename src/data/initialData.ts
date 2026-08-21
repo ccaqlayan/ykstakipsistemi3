@@ -2620,10 +2620,77 @@ export const DEMO_CLASSES = [
 
 export const DEFAULT_PROGRAM_TEMPLATES = [
   {
+    id: 'template-9-1',
+    title: '🎓 9. Sınıf Maarif Modeli - Okul Yazılılarına Hazırlık & Günlük Etüt',
+    description: '9. Sınıf lise uyumu, MEB Türkiye Yüzyılı Maarif Modeli temaları (Sayılar, Kümeler, Mekanik, Madde) ve okul yazılılarında yüksek not hedefleyen dengeli program.',
+    targetField: 'TÜMÜ' as const,
+    gradeLevel: '9' as const,
+    createdByName: 'Mustafa Yılmaz (Rehber Koç)',
+    createdAt: '2026-08-01',
+    items: [
+      { day: 'Pazartesi' as const, subject: 'Matematik', topic: '1. Tema: Sayılar ve İşlemler (Reel Sayılar)', plannedMinutes: 75, notes: 'Ders kitabı alıştırmaları ve 30 soru' },
+      { day: 'Pazartesi' as const, subject: 'Türk Dili ve Edebiyatı', topic: '1. Tema: Sözün İnceliği (İletişim ve Dil)', plannedMinutes: 45, notes: 'Kavram haritası ve okuma' },
+      { day: 'Salı' as const, subject: 'Fizik', topic: '1. Tema: Fizik Bilimine Giriş & Nicelikler', plannedMinutes: 60, notes: 'Temel ve türetilmiş büyüklükler' },
+      { day: 'Salı' as const, subject: 'Kimya', topic: '1. Tema: Kimya Disiplini ve Güvenlik', plannedMinutes: 60, notes: 'Laboratuvar güvenlik sembolleri' },
+      { day: 'Çarşamba' as const, subject: 'Matematik', topic: 'Kümelerde İşlemler ve Kartezyen Çarpım', plannedMinutes: 75, notes: 'Venn şeması soru çözümü' },
+      { day: 'Çarşamba' as const, subject: 'Tarih', topic: '1. Tema: Tarih ve Zaman Kavramı', plannedMinutes: 45, notes: 'Kronoloji ve kaynak türleri' },
+      { day: 'Perşembe' as const, subject: 'Biyoloji', topic: '1. Tema: Yaşamın Temeli Hücre & Canlıların Ortak Özellikleri', plannedMinutes: 60, notes: 'Hücre yapısı şekilleri' },
+      { day: 'Perşembe' as const, subject: 'Coğrafya', topic: '1. Tema: İnsan ve Doğa Etkileşimi', plannedMinutes: 45, notes: 'Harita bilgisi tekrarı' },
+      { day: 'Cuma' as const, subject: 'İngilizce', topic: 'Theme 1: Studying Abroad & Daily Routines', plannedMinutes: 45, notes: 'Kelime kartları ve dinleme' },
+      { day: 'Cumartesi' as const, subject: 'Matematik', topic: 'Haftalık Kazanım Pekiştirme Testi', plannedMinutes: 90, notes: 'Maarif Modeli açık uçlu sorular' },
+      { day: 'Pazar' as const, subject: 'Türk Dili ve Edebiyatı', topic: 'Kitap Okuma & Haftalık Hata Tekrarı', plannedMinutes: 60, notes: 'Yanlış yapılan soruları deftere not al' }
+    ]
+  },
+  {
+    id: 'template-10-1',
+    title: '🎓 10. Sınıf Maarif Modeli - Kavram Pekiştirme & OBP Yükseltme',
+    description: '10. Sınıf Sayma-Olasılık, Fonksiyonlar, Elektrik Devreleri ve Kimyasal Hesaplamalar odaklı okul yazılılarına hazırlık programı.',
+    targetField: 'TÜMÜ' as const,
+    gradeLevel: '10' as const,
+    createdByName: 'Elif Çelik (Matematik Zümre Bşk.)',
+    createdAt: '2026-08-01',
+    items: [
+      { day: 'Pazartesi' as const, subject: 'Matematik', topic: '1. Tema: Sayma Yöntemleri & Permütasyon', plannedMinutes: 80, notes: 'Farklı soru tipleri' },
+      { day: 'Pazartesi' as const, subject: 'Fizik', topic: 'Elektrik Akımı, Direnç ve Ohm Kanunu', plannedMinutes: 60, notes: 'Eşdeğer direnç hesapları' },
+      { day: 'Salı' as const, subject: 'Kimya', topic: 'Kimyanın Temel Kanunları ve Mol Hesapları', plannedMinutes: 75, notes: 'Kütlenin korunumu ve sabit oranlar' },
+      { day: 'Salı' as const, subject: 'Türk Dili ve Edebiyatı', topic: 'Hikaye Türü ve Dede Korkut Hikayeleri', plannedMinutes: 50, notes: 'Metin tahlili' },
+      { day: 'Çarşamba' as const, subject: 'Matematik', topic: 'Kombinasyon ve Binom Açılımı', plannedMinutes: 80, notes: 'Katsayılar toplamı kuralları' },
+      { day: 'Çarşamba' as const, subject: 'Biyoloji', topic: 'Mitoz Bölünme ve Eşeysiz Üreme Evreleri', plannedMinutes: 60, notes: 'Mikroskopik evre çizimleri' },
+      { day: 'Perşembe' as const, subject: 'Tarih', topic: 'Yerleşme ve Devletleşme Sürecinde Selçuklu', plannedMinutes: 50, notes: 'Anadolu beylikleri haritası' },
+      { day: 'Perşembe' as const, subject: 'Fizik', topic: 'Elektrik Devrelerinde Güç ve Enerji', plannedMinutes: 60, notes: 'Lamba parlaklığı soruları' },
+      { day: 'Cuma' as const, subject: 'Coğrafya', topic: 'Dünya’nın Tektonik Oluşumu ve İç Kuvvetler', plannedMinutes: 50, notes: 'Levha hareketleri' },
+      { day: 'Cumartesi' as const, subject: 'Matematik', topic: '10. Sınıf Yazılı Prova Denemesi', plannedMinutes: 90, notes: 'Yazılı puanını hesapla' },
+      { day: 'Pazar' as const, subject: 'Fizik', topic: 'Fen Dersleri Hata Analizi ve Tekrar', plannedMinutes: 75, notes: 'Tüm sayısal branşların hataları' }
+    ]
+  },
+  {
+    id: 'template-11-1',
+    title: '📘 11. Sınıf Alan Eğitimi & TYT Temel Başlangıç',
+    description: '11. Sınıf okul yazılılarını yüksek tutup OBP biriktirirken haftalık düzenli Paragraf ve TYT Matematik rutinini oturtan koçluk programı.',
+    targetField: 'SAY' as const,
+    gradeLevel: '11' as const,
+    createdByName: 'Mustafa Yılmaz (Rehber Koç)',
+    createdAt: '2026-08-05',
+    items: [
+      { day: 'Pazartesi' as const, subject: 'Matematik', topic: '11. Sınıf Trigonometri: Birim Çember ve Esas Ölçü', plannedMinutes: 90, notes: 'Özdeşlik soruları' },
+      { day: 'Pazartesi' as const, subject: 'Paragraf', topic: '25 Günlük Paragraf Sorusu', plannedMinutes: 35, notes: 'Süre tutarak çöz' },
+      { day: 'Salı' as const, subject: 'Fizik', topic: '11. Sınıf Vektörler ve Bağıl Hareket', plannedMinutes: 75, notes: 'Bileşke vektör çizimleri' },
+      { day: 'Salı' as const, subject: 'Kimya', topic: 'Modern Atom Teorisi ve Kuantum Sayıları', plannedMinutes: 75, notes: 'Elektron dizilimi kuralları' },
+      { day: 'Çarşamba' as const, subject: 'Matematik', topic: 'Trigonometrik Fonksiyonların Grafikleri', plannedMinutes: 90, notes: 'Periyot bulma alıştırmaları' },
+      { day: 'Çarşamba' as const, subject: 'TYT Matematik', topic: 'Temel Kavramlar & Bölünebilme Tekrarı', plannedMinutes: 60, notes: 'TYT temeli güçlendir' },
+      { day: 'Perşembe' as const, subject: 'Biyoloji', topic: 'Sinir Sistemi, Nöronlar ve İmpuls İletimi', plannedMinutes: 75, notes: 'Sinaps iletim şeması' },
+      { day: 'Perşembe' as const, subject: 'Türk Dili ve Edebiyatı', topic: '11. Sınıf Tanzimat Dönemi Hikaye ve Roman', plannedMinutes: 50, notes: 'Eser-yazar özetleri' },
+      { day: 'Cuma' as const, subject: 'Fizik', topic: 'Newton’ın Hareket Yasaları & Eğik Düzlem', plannedMinutes: 80, notes: 'Sürtünme kuvveti hesapları' },
+      { day: 'Cumartesi' as const, subject: 'Matematik', topic: '11. Sınıf Trigonometri Karma Test', plannedMinutes: 90, notes: 'En az 50 soru' },
+      { day: 'Pazar' as const, subject: 'TYT Matematik', topic: 'TYT Problem Seti & Haftalık Hata Tekrarı', plannedMinutes: 75, notes: 'Haftanın tüm yanlışlarını çöz' }
+    ]
+  },
+  {
     id: 'template-1',
     title: '⚡ TYT 70+ Net Hızlandırma Programı',
     description: 'Haftalık düzenli problem, paragraf ve fen tekrarıyla TYT netlerini hızla yükselten koçluk programı.',
     targetField: 'TÜMÜ' as const,
+    gradeLevel: '12' as const,
     createdByName: 'Mustafa Yılmaz (Rehber Koç)',
     createdAt: '2026-07-01',
     items: [
@@ -2642,9 +2709,10 @@ export const DEFAULT_PROGRAM_TEMPLATES = [
   },
   {
     id: 'template-2',
-    title: '🚀 AYT Sayısal Derece Şablonı (Mat & Fen Yoğun)',
+    title: '🚀 AYT Sayısal Derece Şablonu (Mat & Fen Yoğun)',
     description: '12. Sınıf ve Mezun Sayısal öğrencileri için Türev, İntegral, Elektrik ve Organik Kimya ağırlıklı haftalık program.',
     targetField: 'SAY' as const,
+    gradeLevel: '12' as const,
     createdByName: 'Elif Çelik (Matematik Zümre Bşk.)',
     createdAt: '2026-07-05',
     items: [
@@ -2666,6 +2734,7 @@ export const DEFAULT_PROGRAM_TEMPLATES = [
     title: '🏆 Eşit Ağırlık İlk 10.000 Hedef Programı',
     description: 'Matematik netlerini yukarılara taşırken Divan ve Tanzimat edebiyatı ezberlerini güçlendiren dengeli program.',
     targetField: 'EA' as const,
+    gradeLevel: '12' as const,
     createdByName: 'Mustafa Yılmaz (Rehber Koç)',
     createdAt: '2026-07-10',
     items: [

@@ -118,6 +118,7 @@ export interface StudyProgramTemplate {
   title: string;
   description?: string;
   targetField?: FieldType | 'TÜMÜ';
+  gradeLevel?: '9' | '10' | '11' | '12' | 'mezun' | 'TÜMÜ';
   createdByName?: string;
   createdAt: string;
   items: StudyProgramTemplateItem[];

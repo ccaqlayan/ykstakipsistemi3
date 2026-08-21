@@ -111,6 +111,7 @@ interface TeacherDashboardViewProps {
   onUpdateProgramTemplate?: (template: StudyProgramTemplate) => void;
   onDeleteProgramTemplate: (templateId: string) => void;
   onApplyTemplateToStudent: (studentId: string, templateId: string, mode: 'overwrite' | 'merge') => void;
+  onApplyTemplateToClass?: (className: string, templateId: string, mode: 'overwrite' | 'merge') => void;
   onUpdateTeacherAssignedClasses?: (teacherId: string, assignedClassNames: string[]) => void;
   onUpdateTeacherAccount?: (updatedTeacher: UserAccount) => void;
   onUpdateStudentAccount?: (updatedStudent: UserAccount) => void;
@@ -162,6 +163,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   onUpdateProgramTemplate,
   onDeleteProgramTemplate,
   onApplyTemplateToStudent,
+  onApplyTemplateToClass,
   onUpdateTeacherAssignedClasses,
   onUpdateTeacherAccount,
   onDeleteClass,
@@ -1174,8 +1176,11 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           setSelectedTemplateToApply={setSelectedTemplateToApply}
           setTargetStudentIdForApply={setTargetStudentIdForApply}
           studentUsers={studentUsers}
+          classes={classes}
+          allUsers={allUsers}
           setShowApplyTemplateModal={setShowApplyTemplateModal}
           onDeleteProgramTemplate={onDeleteProgramTemplate}
+          onApplyTemplateToClass={onApplyTemplateToClass}
         />
       )}
 
