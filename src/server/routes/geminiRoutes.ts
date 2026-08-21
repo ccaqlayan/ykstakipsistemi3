@@ -2232,7 +2232,7 @@ MÜMKÜN NİYETLER (intents):
   targetTab: "errors"
 - "BRANCH_EXAM": Branş denemesi kaydı (Örn: "345 TYT Türkçe branş denemesi çözdüm 35 doğru 4 yanlış 45 dakika sürdü", "Apotemi AYT Matematik denemesi 32 net")
   targetTab: "branches"
-- "GENERAL_MOCK": Genel deneme sınavı (TYT/AYT) kaydı (Örn: "Özdebir Türkiye Geneli TYT Denemesi netlerim: Türkçe 32, Sosyal 15, Mat 30, Fen 16", "3D AYT denemesi çözdüm")
+- "GENERAL_MOCK": Genel deneme sınavı (TYT/AYT/YDT) kaydı (Örn: "Özdebir Türkiye Geneli TYT Denemesi netlerim: Türkçe 32, Sosyal 15, Mat 30, Fen 16", "3D AYT denemesi çözdüm Mat 35 Fen 32", "YDT İngilizce 72 net")
   targetTab: "mocks"
 - "STUDY_PLAN": Haftalık ders çalışma programına görev/plan ekleme (Örn: "Yarın saat 14:00'te Geometri üçgenler tekrarı yapalım", "Pazartesi günü Paragraf ve Problem koy")
   targetTab: "planner"
@@ -2242,6 +2242,14 @@ MÜMKÜN NİYETLER (intents):
   targetTab: "resources"
 - "ROUTINE": Günlük rutin / alışkanlık ekleme (Örn: "Her gün 20 paragraf çözme rutini ekle")
   targetTab: "routines"
+
+GENEL DENEME (GENERAL_MOCK) ÖZEL KURALLARI:
+- Deneme adını "mockTitle" alanına ata (Örn: "Özdebir Türkiye Geneli TYT Denemesi", "3D Türkiye Geneli AYT-1", vb.).
+- "examType" alanını belirle ("TYT", "AYT", "TYT_AYT", "DIL", "TYT_DIL").
+- Belirtilen ders netlerini "tytNets" ve "aytNets" nesneleri içine ayrıştır:
+  - tytNets: { "turkce": 32, "sosyal": 15, "matematik": 30, "fen": 16 }
+  - aytNets: { "matematik": 35, "fen": 32, "edebiyatSos1": 30, "sos2": 28 }
+  - ydtNet: 72 (Varsa)
 
 DERS ADI STANDARTLARI (subject):
 - "TYT Türkçe", "TYT Matematik", "TYT Geometri", "TYT Fizik", "TYT Kimya", "TYT Biyoloji", "TYT Tarih", "TYT Coğrafya", "TYT Felsefe", "TYT Din Kültürü"
@@ -2262,12 +2270,13 @@ SADECE aşağıdaki JSON şemasına tam uyan geçerli bir JSON nesnesi döndür,
   "intent": "QUESTION_LOG" | "TOPIC_ERROR" | "BRANCH_EXAM" | "GENERAL_MOCK" | "STUDY_PLAN" | "STUDY_SESSION" | "RESOURCE_BOOK" | "ROUTINE",
   "targetTab": "questions" | "errors" | "branches" | "mocks" | "planner" | "study" | "resources" | "routines",
   "confidence": 0.95,
-  "summary": "Kısa ve anlaşılır Türkçe özet başlık (Örn: TYT Matematik 50 Soru Çözümü)",
+  "summary": "Kısa ve anlaşılır Türkçe özet başlık (Örn: Özdebir TYT Denemesi - 93 Net)",
   "explanation": "Tespit edilen işlem hakkında 1 cümlelik açıklama",
   "fields": {
-    "subject": "TYT Matematik",
+    "mockTitle": "Özdebir Türkiye Geneli TYT Denemesi (Varsa)",
+    "subject": "TYT Matematik (Varsa)",
     "topicName": "Fonksiyonlar (Varsa)",
-    "publisher": "345 Yayınları (Varsa)",
+    "publisher": "Özdebir (Varsa)",
     "totalQuestions": 50,
     "correct": 42,
     "wrong": 5,
@@ -2277,9 +2286,22 @@ SADECE aşağıdaki JSON şemasına tam uyan geçerli bir JSON nesnesi döndür,
     "date": "${currentDateStr}",
     "time": "14:00 (Varsa)",
     "errorReason": "Dikkat Hatası (Varsa)",
-    "examType": "TYT (Varsa)",
+    "examType": "TYT (Varsa: TYT, AYT, TYT_AYT, DIL, TYT_DIL)",
     "bookName": "Kitap adı (Varsa)",
     "routineTitle": "Rutin başlığı (Varsa)",
+    "tytNets": {
+      "turkce": 32,
+      "sosyal": 15,
+      "matematik": 30,
+      "fen": 16
+    },
+    "aytNets": {
+      "matematik": 35,
+      "fen": 30,
+      "edebiyatSos1": 28,
+      "sos2": 24
+    },
+    "ydtNet": 70,
     "notes": "Ek not veya açıklama"
   }
 }

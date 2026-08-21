@@ -163,6 +163,7 @@ export interface SmartAddParsedFields {
   subject?: string;
   topicName?: string;
   publisher?: string;
+  mockTitle?: string;
   totalQuestions?: number;
   correct?: number;
   wrong?: number;
@@ -175,6 +176,23 @@ export interface SmartAddParsedFields {
   examType?: string;
   bookName?: string;
   routineTitle?: string;
+  tytNets?: {
+    turkce?: number;
+    sosyal?: number;
+    matematik?: number;
+    fen?: number;
+    [key: string]: any;
+  };
+  aytNets?: {
+    matematik?: number;
+    fen?: number;
+    edebiyatSos1?: number;
+    edebiyat?: number;
+    sos2?: number;
+    sosyal?: number;
+    [key: string]: any;
+  };
+  ydtNet?: number;
   notes?: string;
   [key: string]: any;
 }

@@ -237,27 +237,6 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
     }
   }, []);
 
-  // ── AI SMART ADD PREFILL EVENT & MOUNT CACHE LISTENER ──
-  useEffect(() => {
-    const applyPrefill = (detail: any) => {
-      if (!detail || detail.intent !== 'GENERAL_MOCK') return;
-      setShowAddModal(true);
-    };
-
-    const cached = (window as any).__lastSmartAddPrefill;
-    if (cached && cached.intent === 'GENERAL_MOCK' && Date.now() - cached.timestamp < 3500) {
-      applyPrefill(cached);
-      delete (window as any).__lastSmartAddPrefill;
-    }
-
-    const handleSmartAddPrefill = (e: any) => {
-      applyPrefill(e.detail);
-    };
-
-    window.addEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
-    return () => window.removeEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
-  }, []);
-
   const saveVisibleCharts = (newConfig: typeof visibleCharts) => {
     setVisibleCharts(newConfig);
     try {
@@ -358,6 +337,131 @@ export const GeneralMockView: React.FC<GeneralMockViewProps> = ({
     if (profile?.targetField === 'DİL' || (profile?.targetField as string) === 'DIL') {
       setAddExamType('DIL');
     }
+  }, [profile?.targetField]);
+
+  // ── AI SMART ADD PREFILL EVENT & MOUNT CACHE LISTENER ──
+  useEffect(() => {
+    const applyPrefill = (detail: any) => {
+      if (!detail || detail.intent !== 'GENERAL_MOCK') return;
+      const f = detail.fields || {};
+
+      // 1. Title / Name
+      let mockName = f.mockTitle || f.title;
+      if (!mockName || mockName.length < 3) {
+        if (detail.summary && !detail.summary.includes('Net') && !detail.summary.includes('Soru')) {
+          mockName = detail.summary;
+        } else if (f.publisher) {
+          mockName = `${f.publisher} Deneme Sınavı`;
+        }
+      }
+      if (mockName) {
+        setTitle(mockName);
+      }
+
+      // 2. Date
+      if (f.date) {
+        setDate(f.date);
+      }
+
+      // 3. Notes
+      if (f.notes && f.notes !== mockName) {
+        setNotes(f.notes);
+      }
+
+      // 4. Exam Type
+      if (f.examType) {
+        const et = String(f.examType).toUpperCase();
+        if (et.includes('TYT') && et.includes('AYT')) setAddExamType('TYT_AYT');
+        else if (et.includes('TYT') && (et.includes('DIL') || et.includes('DİL'))) setAddExamType('TYT_DIL');
+        else if (et.includes('DIL') || et.includes('DİL')) setAddExamType('DIL');
+        else if (et.includes('AYT')) setAddExamType('AYT');
+        else setAddExamType('TYT');
+      } else if (f.aytNets && f.tytNets) {
+        setAddExamType('TYT_AYT');
+      } else if (f.aytNets) {
+        setAddExamType('AYT');
+      } else if (f.ydtNet !== undefined) {
+        setAddExamType('DIL');
+      } else {
+        setAddExamType('TYT');
+      }
+
+      // 5. Entry Mode & Input Method (Set to quick & net mode for clean prefilled view)
+      setAddEntryMode('quick');
+      setAddInputMethod('net');
+
+      // 6. TYT Netleri (Nesne veya Metin içi Fallback)
+      const tytNetsObj: Record<string, any> = { ...(f.tytNets || {}) };
+      const fallbackText = `${f.notes || ''} ${detail.summary || ''}`;
+      
+      if (tytNetsObj.turkce === undefined && fallbackText) {
+        const turkceMatch = fallbackText.match(/türkçe[:\s]+([0-9]+[.,]?[0-9]*)/i);
+        if (turkceMatch) tytNetsObj.turkce = parseFloat(turkceMatch[1].replace(',', '.'));
+      }
+      if (tytNetsObj.matematik === undefined && fallbackText) {
+        const matMatch = fallbackText.match(/(?:matematik|mat)[:\s]+([0-9]+[.,]?[0-9]*)/i);
+        if (matMatch) tytNetsObj.matematik = parseFloat(matMatch[1].replace(',', '.'));
+      }
+      if (tytNetsObj.sosyal === undefined && fallbackText) {
+        const sosMatch = fallbackText.match(/(?:sosyal|sos)[:\s]+([0-9]+[.,]?[0-9]*)/i);
+        if (sosMatch) tytNetsObj.sosyal = parseFloat(sosMatch[1].replace(',', '.'));
+      }
+      if (tytNetsObj.fen === undefined && fallbackText) {
+        const fenMatch = fallbackText.match(/fen[:\s]+([0-9]+[.,]?[0-9]*)/i);
+        if (fenMatch) tytNetsObj.fen = parseFloat(fenMatch[1].replace(',', '.'));
+      }
+
+      if (tytNetsObj.turkce !== undefined && tytNetsObj.turkce !== '') {
+        setTytTurkce(String(tytNetsObj.turkce).replace('.', ','));
+      }
+      if (tytNetsObj.matematik !== undefined && tytNetsObj.matematik !== '') {
+        setTytMat(String(tytNetsObj.matematik).replace('.', ','));
+      }
+      if (tytNetsObj.sosyal !== undefined && tytNetsObj.sosyal !== '') {
+        setTytSosyal(String(tytNetsObj.sosyal).replace('.', ','));
+      }
+      if (tytNetsObj.fen !== undefined && tytNetsObj.fen !== '') {
+        setTytFen(String(tytNetsObj.fen).replace('.', ','));
+      }
+
+      // 7. AYT Netleri
+      if (f.aytNets) {
+        if (f.aytNets.matematik !== undefined && f.aytNets.matematik !== '') {
+          setAytMat(String(f.aytNets.matematik).replace('.', ','));
+        }
+        if (f.aytNets.fen !== undefined && f.aytNets.fen !== '') {
+          setAytFen(String(f.aytNets.fen).replace('.', ','));
+        }
+        const edebNet = f.aytNets.edebiyatSos1 ?? f.aytNets.edebiyat;
+        if (edebNet !== undefined && edebNet !== '') {
+          setAytEdebiyatSos1(String(edebNet).replace('.', ','));
+        }
+        const sos2Net = f.aytNets.sos2 ?? f.aytNets.sosyal;
+        if (sos2Net !== undefined && sos2Net !== '') {
+          setAytSos2(String(sos2Net).replace('.', ','));
+        }
+      }
+
+      // 8. YDT Net
+      if (f.ydtNet !== undefined && f.ydtNet !== '') {
+        setYdtNet(String(f.ydtNet).replace('.', ','));
+      }
+
+      setShowAddModal(true);
+    };
+
+    const cached = (window as any).__lastSmartAddPrefill;
+    if (cached && cached.intent === 'GENERAL_MOCK' && Date.now() - cached.timestamp < 3500) {
+      applyPrefill(cached);
+      delete (window as any).__lastSmartAddPrefill;
+    }
+
+    const handleSmartAddPrefill = (e: any) => {
+      applyPrefill(e.detail);
+    };
+
+    window.addEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
+    return () => window.removeEventListener('yks_smart_add_prefill', handleSmartAddPrefill);
   }, [profile?.targetField]);
 
   const resetAddForm = () => {

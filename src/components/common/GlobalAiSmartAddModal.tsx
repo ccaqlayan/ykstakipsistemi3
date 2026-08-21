@@ -317,6 +317,64 @@ export const GlobalAiSmartAddModal: React.FC<GlobalAiSmartAddModalProps> = ({
 
               {/* Doldurulacak Alanlar Izgarası */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                {parsedResult.fields?.mockTitle && (
+                  <div className="p-2 bg-slate-900/90 border border-slate-800 rounded-xl space-y-0.5 col-span-2 sm:col-span-3">
+                    <span className="text-[10px] text-slate-500 font-semibold block">Deneme Sınavı Adı</span>
+                    <strong className="text-purple-300 font-bold block truncate">{parsedResult.fields.mockTitle}</strong>
+                  </div>
+                )}
+
+                {parsedResult.fields?.tytNets && (
+                  <div className="p-2 bg-slate-900/90 border border-slate-800 rounded-xl space-y-0.5 col-span-2 sm:col-span-3">
+                    <span className="text-[10px] text-slate-500 font-semibold block">TYT Netleri</span>
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-bold pt-0.5">
+                      {parsedResult.fields.tytNets.turkce !== undefined && (
+                        <span className="bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-lg border border-rose-500/30">
+                          Türkçe: {parsedResult.fields.tytNets.turkce}
+                        </span>
+                      )}
+                      {parsedResult.fields.tytNets.matematik !== undefined && (
+                        <span className="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-lg border border-indigo-500/30">
+                          Mat: {parsedResult.fields.tytNets.matematik}
+                        </span>
+                      )}
+                      {parsedResult.fields.tytNets.sosyal !== undefined && (
+                        <span className="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-lg border border-amber-500/30">
+                          Sosyal: {parsedResult.fields.tytNets.sosyal}
+                        </span>
+                      )}
+                      {parsedResult.fields.tytNets.fen !== undefined && (
+                        <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-lg border border-emerald-500/30">
+                          Fen: {parsedResult.fields.tytNets.fen}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {parsedResult.fields?.aytNets && (
+                  <div className="p-2 bg-slate-900/90 border border-slate-800 rounded-xl space-y-0.5 col-span-2 sm:col-span-3">
+                    <span className="text-[10px] text-slate-500 font-semibold block">AYT Netleri</span>
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-bold pt-0.5">
+                      {parsedResult.fields.aytNets.matematik !== undefined && (
+                        <span className="bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-lg border border-indigo-500/30">
+                          Mat: {parsedResult.fields.aytNets.matematik}
+                        </span>
+                      )}
+                      {parsedResult.fields.aytNets.fen !== undefined && (
+                        <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-lg border border-emerald-500/30">
+                          Fen: {parsedResult.fields.aytNets.fen}
+                        </span>
+                      )}
+                      {(parsedResult.fields.aytNets.edebiyatSos1 !== undefined || parsedResult.fields.aytNets.edebiyat !== undefined) && (
+                        <span className="bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-lg border border-rose-500/30">
+                          Edebiyat: {parsedResult.fields.aytNets.edebiyatSos1 ?? parsedResult.fields.aytNets.edebiyat}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {parsedResult.fields?.subject && (
                   <div className="p-2 bg-slate-900/90 border border-slate-800 rounded-xl space-y-0.5">
                     <span className="text-[10px] text-slate-500 font-semibold block">Ders</span>
@@ -331,7 +389,7 @@ export const GlobalAiSmartAddModal: React.FC<GlobalAiSmartAddModalProps> = ({
                   </div>
                 )}
 
-                {parsedResult.fields?.publisher && (
+                {parsedResult.fields?.publisher && !parsedResult.fields?.mockTitle && (
                   <div className="p-2 bg-slate-900/90 border border-slate-800 rounded-xl space-y-0.5">
                     <span className="text-[10px] text-slate-500 font-semibold block">Yayın / Kaynak</span>
                     <strong className="text-slate-200 font-bold block truncate">{parsedResult.fields.publisher}</strong>
