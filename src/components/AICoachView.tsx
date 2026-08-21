@@ -198,6 +198,11 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
   const [chatLoading, setChatLoading] = useState(false);
   const [isChatEnabledGlobally, setIsChatEnabledGlobally] = useState<boolean>(true);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
+  const chatScrollRef = useRef<HTMLDivElement | null>(null);
+  // Typewriter efekti için: son gelen AI mesajının ID'si ve gösterilen metin
+  const [typewriterMsgId, setTypewriterMsgId] = useState<string | null>(null);
+  const [typewriterText, setTypewriterText] = useState('');
+  const typewriterRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetch('/api/gemini/model-settings')
@@ -250,11 +255,20 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
 
   const chatMessages = isTeacher ? teacherChatMessages : studentChatMessages;
 
+  // Kullanıcı mesajı gönderince en alta scroll; AI cevabı gelince cevabın başına scroll
+  const lastMsgId = chatMessages[chatMessages.length - 1]?.id;
+  const lastMsgSender = chatMessages[chatMessages.length - 1]?.sender;
   useEffect(() => {
-    if (activeTab === 'chat') {
+    if (activeTab !== 'chat') return;
+    if (lastMsgSender === 'user') {
+      // Kullanıcı yazdı → en alta git
       chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } else if (lastMsgSender === 'ai') {
+      // AI cevabı → scroll container'ın en altındaki AI mesajının üstüne kaydır
+      // Bunu typewriter başladığında yapacağız
     }
-  }, [chatMessages, activeTab]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastMsgId, activeTab]);
 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedDetailAdvice, setSelectedDetailAdvice] = useState<AICoachAdvice | null>(null);
@@ -691,6 +705,39 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
       } else {
         setStudentChatMessages(prev => [...prev, aiMsg]);
       }
+
+      // Typewriter efekti başlat
+      const fullText = result.reply;
+      setTypewriterMsgId(aiMsg.id);
+      setTypewriterText('');
+
+      // AI cevabının en üstüne scroll (chatScrollRef container'ını scroll et)
+      setTimeout(() => {
+        if (chatScrollRef.current) {
+          chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight - chatScrollRef.current.clientHeight - 60;
+        }
+      }, 50);
+
+      // Harf harf yazma efekti
+      let idx = 0;
+      const CHUNK = 3; // Her adımda 3 karakter ekle (hız ayarı)
+      const INTERVAL = 18; // ms cinsinden gecikme
+      if (typewriterRef.current) clearInterval(typewriterRef.current);
+      typewriterRef.current = setInterval(() => {
+        idx += CHUNK;
+        if (idx >= fullText.length) {
+          setTypewriterText(fullText);
+          setTypewriterMsgId(null); // Typewriter bitti
+          if (typewriterRef.current) clearInterval(typewriterRef.current);
+          // Yazma bitince sona git
+          setTimeout(() => {
+            chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        } else {
+          setTypewriterText(fullText.slice(0, idx));
+        }
+      }, INTERVAL);
+
     } catch (err: any) {
       const errMsg: AICoachChatMessage = { 
         id: 'msg-err-' + Date.now(), 
@@ -1263,14 +1310,14 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
             </div>
           )}
 
-          {/* Quick Prompts Bar */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 scrollbar-none shrink-0 -mx-1 px-1">
+          {/* Quick Prompts - 2 satıra yayılan sarmalayan düzen */}
+          <div className="flex flex-wrap gap-1.5 shrink-0">
             {(isTeacher ? teacherQuickPrompts : adaptedQuickPrompts).map((promptText, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSendMessage(promptText)}
                 disabled={chatLoading}
-                className={`shrink-0 text-[11px] ${!isTeacher && stressProfile.stressLevel !== 'calm' ? `${stressTheme.bgColor} ${stressTheme.textColor} ${stressTheme.borderColor}` : 'bg-slate-950 text-purple-200 border-purple-500/20 hover:border-purple-500/40'} border hover:opacity-80 px-3 py-1.5 rounded-full transition-all cursor-pointer whitespace-nowrap disabled:opacity-50`}
+                className={`text-[10px] leading-snug ${!isTeacher && stressProfile.stressLevel !== 'calm' ? `${stressTheme.bgColor} ${stressTheme.textColor} ${stressTheme.borderColor}` : 'bg-slate-950 text-purple-200 border-purple-500/20 hover:border-purple-500/40'} border hover:opacity-80 px-2.5 py-1.5 rounded-full transition-all cursor-pointer disabled:opacity-50 max-w-[48%] sm:max-w-none text-left`}
               >
                 {promptText}
               </button>
@@ -1278,7 +1325,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
           </div>
 
           {/* Chat Messages List */}
-          <div className="flex-1 overflow-y-auto space-y-3.5 pr-2">
+          <div ref={chatScrollRef} className="flex-1 overflow-y-auto space-y-3.5 pr-2">
             {chatMessages.map((msg) => (
               <div
                 key={msg.id}
@@ -1296,10 +1343,19 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                       : 'bg-slate-950 text-slate-200 border border-slate-800 rounded-bl-none shadow-inner'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{msg.text}</p>
-                  <span className={`text-[9px] block mt-1.5 text-right font-mono ${msg.sender === 'user' ? 'text-purple-200' : 'text-slate-500'}`}>
-                    {msg.timestamp}
-                  </span>
+                  <p className="whitespace-pre-wrap">
+                    {msg.sender === 'ai' && msg.id === typewriterMsgId
+                      ? typewriterText
+                      : msg.text}
+                    {msg.sender === 'ai' && msg.id === typewriterMsgId && (
+                      <span className="inline-block w-0.5 h-3.5 bg-purple-400 ml-0.5 align-middle animate-pulse" />
+                    )}
+                  </p>
+                  {(msg.sender !== 'ai' || msg.id !== typewriterMsgId) && (
+                    <span className={`text-[9px] block mt-1.5 text-right font-mono ${msg.sender === 'user' ? 'text-purple-200' : 'text-slate-500'}`}>
+                      {msg.timestamp}
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
