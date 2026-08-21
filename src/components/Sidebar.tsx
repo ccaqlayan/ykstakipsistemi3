@@ -153,6 +153,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const tabs = isTeacher ? teacherTabs : studentTabs;
 
+  const [canScrollDown, setCanScrollDown] = React.useState<boolean>(false);
+  const scrollContainerRef = React.useRef<HTMLDivElement | null>(null);
+
+  const checkScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      setCanScrollDown(scrollHeight - scrollTop - clientHeight > 15);
+    }
+  };
+
+  React.useEffect(() => {
+    checkScroll();
+    const timer = setTimeout(checkScroll, 100);
+    window.addEventListener('resize', checkScroll);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', checkScroll);
+    };
+  }, [tabs, isOpenMobile]);
+
   const handleSelectTab = (tabId: TabType) => {
     onSelectTab(tabId);
     if (onCloseMobile) {
@@ -169,116 +189,143 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const renderNavContent = () => (
     <>
-      <div className="flex flex-col space-y-1.5 overflow-y-auto scrollbar-none py-1 flex-1">
-        
-        {/* Role Badge inside Sidebar Header with Message Icon */}
-        <div className={`flex items-center justify-between p-3 mb-2 rounded-2xl border ${
-          isPreviewMode 
-            ? 'bg-amber-500/10 border-amber-500/30' 
-            : 'bg-white/5 border-white/10'
-        }`}>
-          <div className="flex items-center space-x-3 overflow-hidden">
-            {effectiveUser?.avatarUrl ? (
-              <img
-                src={effectiveUser.avatarUrl}
-                alt={effectiveUser.name}
-                className="w-10 h-10 rounded-full object-cover shrink-0 border-2 border-indigo-500/50 shadow-md"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-              />
-            ) : null}
-            {(!effectiveUser?.avatarUrl) && (
-              <div className="w-10 h-10 rounded-full bg-indigo-600/30 border border-indigo-400/40 text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
-                {effectiveUser?.name ? effectiveUser.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
-              </div>
-            )}
-            <div className="overflow-hidden">
-              <div className="text-xs sm:text-sm font-bold text-white truncate">{effectiveUser?.name || 'Kullanıcı'}</div>
-              <div className={`text-[10px] font-bold uppercase tracking-wider truncate ${
-                isPreviewMode
-                  ? 'text-amber-300'
-                  : isSchoolCounselor
-                  ? 'text-purple-300'
-                  : isTeacher
-                  ? 'text-fuchsia-300'
-                  : 'text-indigo-300'
-              }`}>
-                {isPreviewMode
-                  ? `ÖĞRENCİ ÖNİZLEME (${effectiveUser?.className || '12-A'})`
-                  : isSchoolCounselor
-                  ? 'OKUL REHBER ÖĞRET.'
-                  : isTeacher
-                  ? 'SINIF REHBER ÖĞRET.'
-                  : `ÖĞRENCİ (${effectiveUser?.className || '12-A SAY'})`}
+      <div className="relative flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div 
+          ref={scrollContainerRef}
+          onScroll={checkScroll}
+          className="flex flex-col space-y-1 sm:space-y-1.5 overflow-y-auto custom-scrollbar py-1 flex-1 pr-1"
+        >
+          
+          {/* Role Badge inside Sidebar Header with Message Icon */}
+          <div className={`flex items-center justify-between p-2.5 mb-1.5 rounded-2xl border ${
+            isPreviewMode 
+              ? 'bg-amber-500/10 border-amber-500/30' 
+              : 'bg-white/5 border-white/10'
+          }`}>
+            <div className="flex items-center space-x-2.5 overflow-hidden">
+              {effectiveUser?.avatarUrl ? (
+                <img
+                  src={effectiveUser.avatarUrl}
+                  alt={effectiveUser.name}
+                  className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-indigo-500/50 shadow-md"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
+              ) : null}
+              {(!effectiveUser?.avatarUrl) && (
+                <div className="w-9 h-9 rounded-full bg-indigo-600/30 border border-indigo-400/40 text-indigo-300 flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
+                  {effectiveUser?.name ? effectiveUser.name.charAt(0).toUpperCase() : <User className="w-4 h-4" />}
+                </div>
+              )}
+              <div className="overflow-hidden">
+                <div className="text-xs sm:text-sm font-bold text-white truncate">{effectiveUser?.name || 'Kullanıcı'}</div>
+                <div className={`text-[10px] font-bold uppercase tracking-wider truncate ${
+                  isPreviewMode
+                    ? 'text-amber-300'
+                    : isSchoolCounselor
+                    ? 'text-purple-300'
+                    : isTeacher
+                    ? 'text-fuchsia-300'
+                    : 'text-indigo-300'
+                }`}>
+                  {isPreviewMode
+                    ? `ÖĞRENCİ ÖNİZLEME (${effectiveUser?.className || '12-A'})`
+                    : isSchoolCounselor
+                    ? 'OKUL REHBER ÖĞRET.'
+                    : isTeacher
+                    ? 'SINIF REHBER ÖĞRET.'
+                    : `ÖĞRENCİ (${effectiveUser?.className || '12-A SAY'})`}
+                </div>
               </div>
             </div>
+
           </div>
 
-        </div>
+          {tabs.map((t, idx) => {
+            // Separator render
+            if (t.isSeparator) {
+              return (
+                <div key={`sep-${idx}`} className="flex items-center space-x-2 px-1 pt-1.5 pb-0.5">
+                  <div className="h-px flex-1 bg-white/10" />
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">{t.label}</span>
+                  <div className="h-px flex-1 bg-white/10" />
+                </div>
+              );
+            }
 
-        {tabs.map((t, idx) => {
-          // Separator render
-          if (t.isSeparator) {
+            const Icon = t.icon;
+            const isActive = activeTab === t.id;
+
             return (
-              <div key={`sep-${idx}`} className="flex items-center space-x-2 px-1 pt-2 pb-0.5">
-                <div className="h-px flex-1 bg-white/10" />
-                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">{t.label}</span>
-                <div className="h-px flex-1 bg-white/10" />
-              </div>
-            );
-          }
-
-          const Icon = t.icon;
-          const isActive = activeTab === t.id;
-
-          return (
-            <button
-              key={t.id}
-              id={`tab-btn-${t.id}`}
-              onClick={() => handleSelectTab(t.id as TabType)}
-              title={t.tooltip || t.label}
-              className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-medium transition-all whitespace-nowrap w-full text-left border ${
-                isActive
-                  ? isTeacher
+              <button
+                key={t.id}
+                id={`tab-btn-${t.id}`}
+                onClick={() => handleSelectTab(t.id as TabType)}
+                title={t.tooltip || t.label}
+                className={`flex items-center space-x-2.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium transition-all whitespace-nowrap w-full text-left border cursor-pointer ${
+                  isActive
+                    ? isTeacher
                     ? 'bg-fuchsia-600/80 backdrop-blur-md text-white shadow-lg shadow-fuchsia-500/30 border-fuchsia-400/40'
                     : 'bg-indigo-600/80 backdrop-blur-md text-white shadow-lg shadow-indigo-500/30 border-indigo-400/40'
                   : t.highlight
                   ? 'bg-gradient-to-r from-fuchsia-500/20 to-indigo-500/20 text-fuchsia-200 border-fuchsia-400/30 hover:bg-fuchsia-500/30 backdrop-blur-md'
                   : 'bg-indigo-500/10 text-indigo-200 border-indigo-500/20 hover:bg-indigo-500/20 hover:text-white backdrop-blur-md'
-              }`}
-            >
-              <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : t.highlight ? 'text-fuchsia-300' : 'text-slate-400'}`} />
-              <span className="flex-1 font-semibold">{t.label}</span>
+                }`}
+              >
+                <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-white' : t.highlight ? 'text-fuchsia-300' : 'text-slate-400'}`} />
+                <span className="flex-1 font-semibold truncate">{t.label}</span>
 
-              {t.badge && (
-                <span className="bg-rose-500/20 backdrop-blur-md text-rose-300 text-[10px] px-2 py-0.5 rounded-full border border-rose-500/40 font-bold">
-                  {t.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
+                {t.badge && (
+                  <span className="bg-rose-500/20 backdrop-blur-md text-rose-300 text-[10px] px-2 py-0.5 rounded-full border border-rose-500/40 font-bold">
+                    {t.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 🔻 Dinamik Aşağı Kaydırma Göstergesi (Scroll Hint Badge & Gradient) */}
+        {canScrollDown && (
+          <div 
+            onClick={() => {
+              if (scrollContainerRef.current) {
+                scrollContainerRef.current.scrollBy({ top: 140, behavior: 'smooth' });
+              }
+            }}
+            className="absolute bottom-0 inset-x-0 pt-6 pb-1 bg-gradient-to-t from-slate-900 via-slate-900/90 to-transparent flex items-center justify-center cursor-pointer pointer-events-auto z-10 animate-fade-in"
+          >
+            <div className="flex items-center space-x-1 px-2.5 py-1 rounded-full bg-indigo-600/90 hover:bg-indigo-500 text-white text-[10px] font-black tracking-wide border border-indigo-400/40 shadow-lg shadow-indigo-950/80 animate-bounce">
+              <span>Daha Fazla Menü</span>
+              <span className="text-xs font-black">↓</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Logout button */}
-      <div className="pt-3 border-t border-white/10 mt-2 space-y-2 shrink-0">
-        <button
-          onClick={handleLogout}
-          className="flex items-center space-x-2.5 px-3.5 py-3 sm:py-2.5 rounded-2xl text-xs font-bold text-rose-300 hover:text-white bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 w-full transition-all min-h-[44px] cursor-pointer active:scale-95"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>Çıkış Yap / Giriş Ekranı</span>
-        </button>
-
-        {isMobileOrTablet && (
+      {/* 🚀 Alt Butonlar: Çıkış Yap & Ana Ekrana Ekle (Tek Satırda Yan Yana) */}
+      <div className="pt-2.5 border-t border-white/10 mt-1 shrink-0">
+        <div className={`grid gap-2 ${isMobileOrTablet ? 'grid-cols-2' : 'grid-cols-1'}`}>
           <button
-            onClick={onAddToHomeScreen}
-            id="sidebar-add-to-homescreen-bottom"
-            className="flex items-center space-x-2.5 px-3.5 py-3 sm:py-2.5 rounded-2xl text-xs font-bold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 w-full transition-all min-h-[44px] cursor-pointer active:scale-95"
+            onClick={handleLogout}
+            title="Çıkış Yap / Giriş Ekranı"
+            className="flex items-center justify-center space-x-1.5 px-2.5 py-2.5 rounded-2xl text-xs font-bold text-rose-300 hover:text-white bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 w-full transition-all min-h-[42px] cursor-pointer active:scale-95 text-center shadow-sm"
           >
-            <YildizLisesiLogo className="w-4 h-4 shrink-0" />
-            <span>Ana Ekrana Ekle</span>
+            <LogOut className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Çıkış Yap</span>
           </button>
-        )}
+
+          {isMobileOrTablet && (
+            <button
+              onClick={onAddToHomeScreen}
+              id="sidebar-add-to-homescreen-bottom"
+              title="Uygulamayı Ana Ekrana Ekle"
+              className="flex items-center justify-center space-x-1.5 px-2.5 py-2.5 rounded-2xl text-xs font-bold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 w-full transition-all min-h-[42px] cursor-pointer active:scale-95 text-center shadow-sm"
+            >
+              <YildizLisesiLogo className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Uygulama İndir</span>
+            </button>
+          )}
+        </div>
       </div>
     </>
   );
