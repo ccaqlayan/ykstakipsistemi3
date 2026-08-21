@@ -1,4 +1,5 @@
 import { YKSDataState, AICoachAdvice, ClassAICoachAdvice, UserAccount } from '../types';
+import { detectStressProfile } from './stressDetector';
 
 export async function fetchAICoachAdvice(state: YKSDataState, currentUser?: UserAccount | null): Promise<{ advice: AICoachAdvice; aiUsage?: any }> {
   let pomodoroHistory = (state as any).pomodoroHistory;
@@ -30,7 +31,8 @@ export async function fetchAICoachAdvice(state: YKSDataState, currentUser?: User
       youtubeVideos: state.youtubeVideos,
       pomodoroHistory,
       earnedBadges: state.earnedBadges,
-      motivationStats: state.motivationStats
+      motivationStats: state.motivationStats,
+      stressProfile: detectStressProfile(state)
     })
   });
 
@@ -128,7 +130,8 @@ export async function sendAICoachChatMessage(
       topicErrors: state.topicErrors,
       routines: state.routines,
       branchExams: state.branchExams,
-      classContext
+      classContext,
+      stressProfile: detectStressProfile(state)
     })
   });
 

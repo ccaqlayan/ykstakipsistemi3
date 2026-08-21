@@ -529,6 +529,7 @@ export interface YKSDataState {
   dailyStudyLogs?: Record<string, DailyStudyTimeLog>;
   earnedBadges?: EarnedBadge[];
   motivationStats?: MotivationStats;
+  manualMoodToday?: 'tired' | 'okay' | 'ready' | null;
 }
 
 export type BadgeTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'legendary';
@@ -547,6 +548,23 @@ export interface MotivationStats {
   lastActiveDate: string;
   totalStudyDays: number;
   lastStreakUpdate?: string;
+}
+
+export type StressLevel = 'calm' | 'mildly_stressed' | 'burnt_out';
+
+export interface StressSignals {
+  performanceDrop: boolean;
+  streakBroken: boolean;
+  lowRoutineRate: boolean;
+  errorLogPassive: boolean;
+  manualMoodOverride?: 'tired' | 'okay' | 'ready' | null;
+}
+
+export interface StressProfile {
+  stressLevel: StressLevel;
+  score: number;          // 0-100 ham skor
+  signals: StressSignals;
+  summary: string;        // AI prompt'a eklenecek Türkçe özet
 }
 
 export interface MotivationToastItem {

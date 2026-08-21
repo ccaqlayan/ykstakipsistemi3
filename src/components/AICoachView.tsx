@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { detectStressProfile, getStressUiTheme } from '../services/stressDetector';
 import { 
   Bot, 
   Sparkles, 
@@ -96,6 +97,58 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
 }) => {
   const isTeacher = !previewStudentUser && (currentUser?.role === 'class_teacher' || currentUser?.role === 'school_counselor' || currentUser?.role === 'teacher' || currentUser?.role === 'admin');
   const isSchoolCounselor = !previewStudentUser && (currentUser?.role === 'school_counselor' || currentUser?.role === 'admin');
+
+  // --- Stres / Motivasyon Profili ---
+  const [manualMood, setManualMood] = useState<'tired' | 'okay' | 'ready' | null>(() => {
+    try {
+      const stored = localStorage.getItem(`yks_manual_mood_${currentUser?.id || 'guest'}`);
+      if (stored) {
+        const { mood, date } = JSON.parse(stored);
+        const today = new Date().toISOString().slice(0, 10);
+        if (date === today) return mood; // Bugün girilen mood geçerli
+      }
+    } catch {}
+    return null;
+  });
+
+  const stressProfile = useMemo(() => {
+    const stateWithMood = { ...state, manualMoodToday: manualMood };
+    return detectStressProfile(stateWithMood);
+  }, [state, manualMood]);
+
+  const stressTheme = useMemo(() => getStressUiTheme(stressProfile.stressLevel), [stressProfile.stressLevel]);
+
+  const handleSetMood = (mood: 'tired' | 'okay' | 'ready') => {
+    setManualMood(mood);
+    try {
+      localStorage.setItem(`yks_manual_mood_${currentUser?.id || 'guest'}`, JSON.stringify({
+        mood,
+        date: new Date().toISOString().slice(0, 10)
+      }));
+    } catch {}
+  };
+
+  // Stres seviyesine göre uyarlanmış hızlı soru butonları
+  const adaptedQuickPrompts = useMemo(() => {
+    if (isTeacher) return DEFAULT_QUICK_PROMPTS;
+    const isDil = (state.profile?.targetField as string) === 'DİL' || (state.profile?.targetField as string) === 'DIL';
+    const basePrompts = isDil ? DIL_QUICK_PROMPTS : DEFAULT_QUICK_PROMPTS;
+    if (stressProfile.stressLevel === 'burnt_out') {
+      return [
+        '🫶 Çok yorgunum, bugün için küçük bir başlangıç noktası önerir misin?',
+        '😮‍💨 Motivasyonumu nasıl geri kazanabilirim?',
+        '🛌 Zihinsel tükenmişlikle nasıl başa çıkabilirim?',
+        '🌱 Bu haftaki tek önceliğim ne olmalı?',
+      ];
+    }
+    if (stressProfile.stressLevel === 'mildly_stressed') {
+      return [
+        '💛 Biraz yorgunum ama devam etmek istiyorum — nereden başlamalıyım?',
+        ...basePrompts.slice(0, 3),
+      ];
+    }
+    return basePrompts;
+  }, [stressProfile.stressLevel, isTeacher, state.profile?.targetField]);
 
   const [activeTab, setActiveTab] = useState<AICoachTab>('report');
 
@@ -1143,7 +1196,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
       {/* TAB 2: AI KOÇ İLE CANLI SOHBET & DANIŞMANLIK */}
       {/* ─────────────────────────────────────────────────────────── */}
       {activeTab === 'chat' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl animate-fade-in flex flex-col h-[650px]">
+        <div className={`bg-slate-900 border ${!isTeacher ? stressTheme.borderColor : 'border-slate-800'} rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl animate-fade-in flex flex-col h-[650px] transition-colors duration-500`}>
           <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
             <div className="flex items-center space-x-3">
               <div className="w-9 h-9 rounded-xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
@@ -1173,14 +1226,51 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
             </button>
           </div>
 
+          {/* 🧠 Stres Durumu Banner & Check-In Widget (sadece öğrenci modunda) */}
+          {!isTeacher && (
+            <div className="shrink-0 space-y-2">
+              {/* Empati Banner */}
+              {stressTheme.bannerText && (
+                <div className={`flex items-start space-x-2.5 px-3.5 py-2.5 rounded-xl ${stressTheme.bgColor} border ${stressTheme.borderColor} animate-fade-in`}>
+                  <span className="text-base shrink-0 mt-0.5">{stressTheme.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-semibold ${stressTheme.textColor}`}>{stressTheme.label}</p>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">{stressTheme.bannerText}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Günlük Ruh Hali Check-In */}
+              <div className="flex items-center space-x-2">
+                <span className="text-[10px] text-slate-500 font-medium shrink-0">Bugün nasılsın?</span>
+                {(['tired', 'okay', 'ready'] as const).map(m => {
+                  const labels = { tired: '😴 Yorgunum', okay: '😐 İdare Eder', ready: '🔥 Hazırım' };
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => handleSetMood(m)}
+                      className={`text-[10px] px-2.5 py-1 rounded-full border font-bold transition-all cursor-pointer active:scale-95 ${
+                        manualMood === m
+                          ? `${stressTheme.badgeBg} text-white border-transparent scale-105 shadow-md`
+                          : 'bg-slate-800 text-slate-400 border-slate-700 hover:border-slate-500'
+                      }`}
+                    >
+                      {labels[m]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Quick Prompts Bar */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 scrollbar-none shrink-0 -mx-1 px-1">
-            {(isTeacher ? teacherQuickPrompts : (state.profile?.targetField === 'DİL' || (state.profile?.targetField as string) === 'DIL' ? DIL_QUICK_PROMPTS : DEFAULT_QUICK_PROMPTS)).map((promptText, idx) => (
+            {(isTeacher ? teacherQuickPrompts : adaptedQuickPrompts).map((promptText, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSendMessage(promptText)}
                 disabled={chatLoading}
-                className="shrink-0 text-[11px] bg-slate-950 hover:bg-purple-950/40 text-purple-200 border border-purple-500/20 hover:border-purple-500/40 px-3 py-1.5 rounded-full transition-all cursor-pointer whitespace-nowrap disabled:opacity-50"
+                className={`shrink-0 text-[11px] ${!isTeacher && stressProfile.stressLevel !== 'calm' ? `${stressTheme.bgColor} ${stressTheme.textColor} ${stressTheme.borderColor}` : 'bg-slate-950 text-purple-200 border-purple-500/20 hover:border-purple-500/40'} border hover:opacity-80 px-3 py-1.5 rounded-full transition-all cursor-pointer whitespace-nowrap disabled:opacity-50`}
               >
                 {promptText}
               </button>

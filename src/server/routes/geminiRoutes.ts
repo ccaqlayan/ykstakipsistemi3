@@ -349,6 +349,7 @@ router.post('/coach-advice', async (req, res) => {
     pomodoroHistory,
     earnedBadges,
     motivationStats,
+    stressProfile,
     coachDataSettings: customSettings
   } = req.body;
 
@@ -424,6 +425,17 @@ ${isDilField ? 'NOT: Bu öğrenci YKS DİL (YDT) alanındadır. Haftalık reçet
         badgesList: (earnedBadges || []).map((b: any) => b.key)
       };
       prompt += `\nÖĞRENCİNİN KAZANDIĞI 3D ROZETLER & ÇALIŞMA SERİSİ (MOTİVASYON BİLGİSİ):\n${JSON.stringify(badgeSummary)}\n(Öğrenciyi kazandığı bu rozetler ve çalışma serisi için motive et, tebrik et ve devamlılığını öv.)\n`;
+    }
+
+    // Stres/Motivasyon ton yönergesi
+    if (stressProfile) {
+      const toneGuide: Record<string, string> = {
+        calm: 'Öğrenci motivasyonu ve performansı iyi durumda. Analitik, hedefe yönelik ve verimliliğe odaklı bir ton kullan. Performans artışı için somut stratejiler öner.',
+        mildly_stressed: 'Öğrenci hafif stres veya yorgunluk yaşıyor olabilir. Önce empati kurarak başla, ardından öneri sun. Yargılayıcı veya baskı oluşturucu bir dil KULLANMA. Küçük kazanımlara dikkat çek.',
+        burnt_out: 'Öğrenci ciddi düzeyde yorgun veya tükenmiş görünüyor. Performans baskısından önce psikolojik güvenlik ver. "Bu hissin normal olduğunu" belirt. Çok küçük, başarılabilir tek bir adım öner. Nazik, anlayışlı ve destekleyici ol. Kesinlikle yargılama. Mümkünse kısa mola veya nefes egzersizi önerisi de ekle.',
+      };
+      const guide = toneGuide[stressProfile.stressLevel] || toneGuide.calm;
+      prompt += `\n## ÖĞRENCİNİN DUYGUSAL/MOTİVASYON DURUMU (ZORUNLU KULLANİLA)\nStres Seviyesi: ${stressProfile.stressLevel} (Skor: ${stressProfile.score}/100)\nDurum Özeti: ${stressProfile.summary}\nTON YÖNERGESİ — BU KURALI MUTLAKA UYGULA:\n${guide}\n`;
     }
 
     prompt += `
@@ -610,7 +622,8 @@ router.post('/coach-chat', async (req, res) => {
     topicErrors,
     routines,
     branchExams,
-    classContext
+    classContext,
+    stressProfile
   } = req.body;
 
   if (!message || !message.trim()) {
@@ -664,6 +677,17 @@ KULLANICI: Öğretmen / Okul Rehberlik Uzmanı
       if (questionLogs && questionLogs.length > 0) {
         const totalSolved = questionLogs.reduce((acc: number, q: any) => acc + (q.solvedCount || 0), 0);
         contextPrompt += `\nTOPLAM ÇÖZÜLEN SORU SAYISI: ${totalSolved}\n`;
+      }
+
+      // Stres/Motivasyon tonu (sadece öğrenci modunda)
+      if (stressProfile && !isTeacherMode) {
+        const toneMap: Record<string, string> = {
+          calm: 'Analitik ve hedefe yönelik ol. Performans artışı için somut stratejiler öner.',
+          mildly_stressed: 'Önce empati kur, sonra öneri sun. Yargılayıcı dil KULLANMA.',
+          burnt_out: 'Performans baskısı verme. Psikolojik güvenlik ver, küçük adım öner, nazik ol.',
+        };
+        const guide = toneMap[stressProfile.stressLevel] || toneMap.calm;
+        contextPrompt += `\n## ÖĞRENCİNİN DUYGUSAL DURUMU (ZORUNLU UYGULA)\nStres Seviyesi: ${stressProfile.stressLevel} (Skor: ${stressProfile.score}/100)\nDurum: ${stressProfile.summary}\nTon: ${guide}\n`;
       }
     }
 
