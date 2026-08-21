@@ -74,7 +74,8 @@ import {
   DayOfWeek,
   FieldType,
   AuditLogItem,
-  TopicErrorItem
+  TopicErrorItem,
+  SchoolExam
 } from '../types';
 import { YKS_SUBJECTS, YKS_CURRICULUM_TOPICS, DEFAULT_TASK_TYPES, DEFAULT_AVATAR } from '../data/initialData';
 import { isUserOnline, getUserLastSeenText, getExactLastSeenText, isStudentActive } from '../utils/statusUtils';
@@ -90,11 +91,6 @@ import { TeacherStudentInspectView } from './teacher/TeacherStudentInspectView';
 import { subscribeToPresence } from '../services/firebase';
 import { resolveStudentData } from '../utils/studentDataUtils';
 
-
-
-
-
-
 interface TeacherDashboardViewProps {
   teacher: UserAccount;
   classes: ClassDefinition[];
@@ -108,6 +104,7 @@ interface TeacherDashboardViewProps {
   onAssignStudentClass: (studentId: string, newClassName: string) => void;
   onUpdateStudentStudyPlans: (studentId: string, updatedPlans: StudyPlanItem[]) => void;
   onUpdateStudentTopicErrors?: (studentId: string, updatedErrors: TopicErrorItem[], actionDescription?: string) => void;
+  onUpdateStudentSchoolExams?: (studentId: string, updatedExams: SchoolExam[], actionDescription?: string) => void;
   onSaveProgramTemplate: (template: Omit<StudyProgramTemplate, 'id' | 'createdAt'>) => void;
   onUpdateProgramTemplate?: (template: StudyProgramTemplate) => void;
   onDeleteProgramTemplate: (templateId: string) => void;
@@ -158,6 +155,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
   onAssignStudentClass,
   onUpdateStudentStudyPlans,
   onUpdateStudentTopicErrors,
+  onUpdateStudentSchoolExams,
   onSaveProgramTemplate,
   onUpdateProgramTemplate,
   onDeleteProgramTemplate,
@@ -778,6 +776,7 @@ export const TeacherDashboardView: React.FC<TeacherDashboardViewProps> = ({
           onApplyTemplateToStudent={onApplyTemplateToStudent}
           onUpdateStudentStudyPlans={onUpdateStudentStudyPlans}
           onUpdateStudentTopicErrors={onUpdateStudentTopicErrors}
+          onUpdateStudentSchoolExams={onUpdateStudentSchoolExams}
           onPreviewStudent={onPreviewStudent}
         />
 

@@ -7,9 +7,12 @@ import {
   Building2, 
   Plus, 
   GraduationCap, 
-  ChevronRight
+  ChevronRight,
+  Award,
+  Sparkles
 } from 'lucide-react';
 import { UserAccount } from '../../types';
+import { getGradeLevel } from '../../utils/gradeUtils';
 
 export interface ClassSummaryItem {
   className: string;
@@ -210,14 +213,31 @@ export const TeacherSummaryTab: React.FC<TeacherSummaryTabProps> = ({
 
                   {/* Academic Quick Stats */}
                   <div className="space-y-1.5 border-t border-slate-800/80 pt-3 text-xs">
-                    <div className="flex justify-between text-[11px]">
-                      <span className="text-slate-400">TYT Net Ortalaması:</span>
-                      <span className="font-bold text-emerald-400 font-mono">{cls.avgTYT} Net</span>
-                    </div>
-                    <div className="flex justify-between text-[11px]">
-                      <span className="text-slate-400">AYT Net Ortalaması:</span>
-                      <span className="font-bold text-purple-300 font-mono">{cls.avgAYT} Net</span>
-                    </div>
+                    {getGradeLevel(cls.className) === '9' || getGradeLevel(cls.className) === '10' ? (
+                      <>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-slate-400">Müfredat Standardı:</span>
+                          <span className="font-bold text-indigo-300 font-mono">
+                            {getGradeLevel(cls.className) === '9' ? 'Maarif Modeli (9. Sınıf)' : '10. Sınıf Alan Eğilimi'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-slate-400">Ana Odak Alanı:</span>
+                          <span className="font-bold text-emerald-400 font-mono">Okul Yazılıları & OBP</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-slate-400">TYT Net Ortalaması:</span>
+                          <span className="font-bold text-emerald-400 font-mono">{cls.avgTYT} Net</span>
+                        </div>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-slate-400">AYT Net Ortalaması:</span>
+                          <span className="font-bold text-purple-300 font-mono">{cls.avgAYT} Net</span>
+                        </div>
+                      </>
+                    )}
                     <div className="flex justify-between text-[11px]">
                       <span className="text-slate-400">Toplam Çözülen Soru:</span>
                       <span className="font-bold text-amber-300 font-mono">{cls.totalQuestions.toLocaleString()} Soru</span>

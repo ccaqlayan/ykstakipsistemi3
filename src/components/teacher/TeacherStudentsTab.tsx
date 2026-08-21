@@ -12,19 +12,22 @@ import {
   CheckCircle2, 
   MessageSquare, 
   Eye, 
-  Trash2,
-  Lock,
-  Unlock,
   Pencil,
   X,
   Trophy,
-  Flame
+  Flame,
+  GraduationCap,
+  Award,
+  Layers,
+  Unlock,
+  Trash2
 } from 'lucide-react';
 import { UserAccount, YKSDataState } from '../../types';
 import { DEFAULT_AVATAR } from '../../data/initialData';
 import { isUserOnline, isStudentActive } from '../../utils/statusUtils';
 import { evaluateBadges } from '../../services/motivationEngine';
 import { resolveStudentData } from '../../utils/studentDataUtils';
+import { getGradeLevel } from '../../utils/gradeUtils';
 
 interface TeacherStudentsTabProps {
   totalStudentsCount: number;
@@ -94,6 +97,50 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
   OfflineStatusDisplay
 }) => {
   const [selectedCoachNoteStudent, setSelectedCoachNoteStudent] = useState<{ name: string; notes: string } | null>(null);
+  const [selectedGradeFilter, setSelectedGradeFilter] = useState<'ALL' | '9' | '10' | '11' | '12'>('ALL');
+
+  // Filter students by selected grade chip + search/class filter
+  const displayedStudents = React.useMemo(() => {
+    if (selectedGradeFilter === 'ALL') return filteredStudents;
+    return filteredStudents.filter((s) => getGradeLevel(s.className) === selectedGradeFilter);
+  }, [filteredStudents, selectedGradeFilter]);
+
+  const isIntermediateScope = selectedGradeFilter === '9' || selectedGradeFilter === '10' || (
+    selectedClassFilter !== 'ALL' && (selectedClassFilter.startsWith('9') || selectedClassFilter.startsWith('10'))
+  );
+
+  // Compute school exams & OBP metrics for 9-10 intermediate classes
+  const { avgSchoolExamScore, avgTargetGpa, takdirCount, tesekkurCount } = React.useMemo(() => {
+    let totalExamScores = 0;
+    let totalExamsCount = 0;
+    let totalGpa = 0;
+    let gpaStudentsCount = 0;
+    let takdir = 0;
+    let tesekkur = 0;
+
+    displayedStudents.forEach((s) => {
+      const data = resolveStudentData(s, studentsData);
+      const exams = data?.schoolExams || [];
+      if (exams.length > 0) {
+        const studentSum = exams.reduce((sum, e) => sum + e.score, 0);
+        const studentAvg = studentSum / exams.length;
+        totalExamScores += studentAvg;
+        totalExamsCount++;
+        if (studentAvg >= 85) takdir++;
+        else if (studentAvg >= 70) tesekkur++;
+      }
+      const gpa = data?.profile?.schoolGpaTarget || 90;
+      totalGpa += gpa;
+      gpaStudentsCount++;
+    });
+
+    return {
+      avgSchoolExamScore: totalExamsCount > 0 ? (totalExamScores / totalExamsCount).toFixed(1) : '-',
+      avgTargetGpa: gpaStudentsCount > 0 ? (totalGpa / gpaStudentsCount).toFixed(1) : '90.0',
+      takdirCount: takdir,
+      tesekkurCount: tesekkur
+    };
+  }, [displayedStudents, studentsData]);
 
   return (
     <div className="space-y-6 font-sans">
@@ -107,58 +154,125 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
               <Users className="w-4.5 h-4.5" />
             </div>
           </div>
-          <div className="text-2xl font-black text-white font-mono">{totalStudentsCount}</div>
-          <p className="text-[10px] text-slate-400 mt-1">Aktif kayıtlı öğrenci</p>
+          <div className="text-2xl font-black text-white font-mono">{displayedStudents.length}</div>
+          <p className="text-[10px] text-slate-400 mt-1">{selectedGradeFilter !== 'ALL' ? `${selectedGradeFilter}. Sınıf öğrenci` : 'Aktif kayıtlı öğrenci'}</p>
         </div>
 
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-4 shadow-xl hover:border-emerald-500/40 transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-400">Sınıf TYT Net Ort.</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 flex items-center justify-center shadow-inner">
-              <TrendingUp className="w-4.5 h-4.5" />
+        {isIntermediateScope ? (
+          <>
+            <div className="bg-slate-900/80 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-4 shadow-xl hover:border-emerald-500/40 transition-all">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-400">Yazılı Sınav Ort.</span>
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 flex items-center justify-center shadow-inner">
+                  <Award className="w-4.5 h-4.5" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-emerald-400 font-mono">
+                {avgSchoolExamScore} <span className="text-xs text-slate-400 font-normal">Puan</span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">Okul yazılı notları ort.</p>
             </div>
-          </div>
-          <div className="text-2xl font-black text-emerald-400 font-mono">{avgTYTNet} <span className="text-xs text-slate-400 font-normal">Net</span></div>
-          <p className="text-[10px] text-slate-400 mt-1">Son genel denemeler</p>
-        </div>
 
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4 shadow-xl hover:border-purple-500/40 transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-400">Sınıf AYT Net Ort.</span>
-            <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-300 flex items-center justify-center shadow-inner">
-              <BarChart3 className="w-4.5 h-4.5" />
+            <div className="bg-slate-900/80 backdrop-blur-xl border border-amber-500/20 rounded-2xl p-4 shadow-xl hover:border-amber-500/40 transition-all">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-400">Hedef OBP / Diploma</span>
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 flex items-center justify-center shadow-inner">
+                  <GraduationCap className="w-4.5 h-4.5" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-amber-300 font-mono">
+                {avgTargetGpa} <span className="text-xs text-slate-400 font-normal">OBP</span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">Yıl sonu hedef karne</p>
             </div>
-          </div>
-          <div className="text-2xl font-black text-purple-300 font-mono">{avgAYTNet} <span className="text-xs text-slate-400 font-normal">Net</span></div>
-          <p className="text-[10px] text-slate-400 mt-1">Son genel denemeler</p>
-        </div>
+          </>
+        ) : (
+          <>
+            <div className="bg-slate-900/80 backdrop-blur-xl border border-emerald-500/20 rounded-2xl p-4 shadow-xl hover:border-emerald-500/40 transition-all">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-400">Sınıf TYT Net Ort.</span>
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 flex items-center justify-center shadow-inner">
+                  <TrendingUp className="w-4.5 h-4.5" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-emerald-400 font-mono">{avgTYTNet} <span className="text-xs text-slate-400 font-normal">Net</span></div>
+              <p className="text-[10px] text-slate-400 mt-1">Son genel denemeler</p>
+            </div>
 
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-amber-500/20 rounded-2xl p-4 shadow-xl hover:border-amber-500/40 transition-all">
+            <div className="bg-slate-900/80 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4 shadow-xl hover:border-purple-500/40 transition-all">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-400">Sınıf AYT Net Ort.</span>
+                <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-300 flex items-center justify-center shadow-inner">
+                  <BarChart3 className="w-4.5 h-4.5" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-purple-300 font-mono">{avgAYTNet} <span className="text-xs text-slate-400 font-normal">Net</span></div>
+              <p className="text-[10px] text-slate-400 mt-1">Son genel denemeler</p>
+            </div>
+          </>
+        )}
+
+        <div className="bg-slate-900/80 backdrop-blur-xl border border-cyan-500/20 rounded-2xl p-4 shadow-xl hover:border-cyan-500/40 transition-all">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-slate-400">Toplam Çözülen Soru</span>
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 flex items-center justify-center shadow-inner">
+            <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 flex items-center justify-center shadow-inner">
               <BookOpen className="w-4.5 h-4.5" />
             </div>
           </div>
-          <div className="text-2xl font-black text-amber-300 font-mono">{totalQuestionsSolvedInClass}</div>
+          <div className="text-2xl font-black text-cyan-300 font-mono">{totalQuestionsSolvedInClass}</div>
           <p className="text-[10px] text-slate-400 mt-1">Haftalık Soru Günlükleri</p>
         </div>
 
         <div className="bg-slate-900/80 backdrop-blur-xl border border-rose-500/20 rounded-2xl p-4 shadow-xl hover:border-rose-500/40 transition-all">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-400">Çözülmemiş Hata</span>
+            <span className="text-xs font-bold text-slate-400">
+              {isIntermediateScope ? 'Belge Hak Edenler' : 'Çözülmemiş Hata'}
+            </span>
             <div className="w-9 h-9 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-300 flex items-center justify-center shadow-inner">
-              <AlertTriangle className="w-4.5 h-4.5" />
+              {isIntermediateScope ? <Trophy className="w-4.5 h-4.5 text-amber-400" /> : <AlertTriangle className="w-4.5 h-4.5" />}
             </div>
           </div>
-          <div className="text-2xl font-black text-rose-400 font-mono">{totalUnresolvedErrorsInClass}</div>
-          <p className="text-[10px] text-slate-400 mt-1">Konu hatası bildirimleri</p>
+          <div className="text-2xl font-black text-rose-400 font-mono">
+            {isIntermediateScope ? `${takdirCount} Takdir` : totalUnresolvedErrorsInClass}
+          </div>
+          <p className="text-[10px] text-slate-400 mt-1">
+            {isIntermediateScope ? `${tesekkurCount} Teşekkür Belgesi` : 'Konu hatası bildirimleri'}
+          </p>
         </div>
 
       </div>
 
-      {/* Student Matrix Container */}
+      {/* Grade Filter Pills & Student Matrix Container */}
       <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl space-y-5">
+        
+        {/* Grade Quick Filter Pills */}
+        <div className="flex items-center gap-2 pb-3 border-b border-white/10 overflow-x-auto no-scrollbar">
+          <span className="text-xs font-bold text-slate-400 flex items-center gap-1 shrink-0 mr-1">
+            <Layers className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Kademeler:</span>
+          </span>
+
+          {[
+            { id: 'ALL', label: 'Tüm Kademeler' },
+            { id: '9', label: '9. Sınıf (Maarif Modeli)' },
+            { id: '10', label: '10. Sınıf (Alan Seçimi)' },
+            { id: '11', label: '11. Sınıf (AYT Temeli)' },
+            { id: '12', label: '12. Sınıf & Mezun (YKS)' }
+          ].map((gradeOption) => (
+            <button
+              key={gradeOption.id}
+              onClick={() => setSelectedGradeFilter(gradeOption.id as any)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                selectedGradeFilter === gradeOption.id
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30 border border-indigo-400/40'
+                  : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
+              }`}
+            >
+              {gradeOption.label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center space-x-2">
@@ -183,7 +297,7 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
             </div>
 
             <span className="text-[11px] font-bold text-indigo-300 bg-indigo-500/15 border border-indigo-500/30 px-2.5 py-1 rounded-lg font-mono">
-              {filteredStudents.length} öğrenci
+              {displayedStudents.length} öğrenci
             </span>
           </div>
 
@@ -215,7 +329,7 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
           </div>
         </div>
 
-        {filteredStudents.length === 0 ? (
+        {displayedStudents.length === 0 ? (
           <div className="text-center py-16 border-2 border-dashed border-white/10 rounded-3xl bg-slate-950/40 space-y-2">
             <Users className="w-12 h-12 text-slate-500 mx-auto" />
             <p className="text-sm text-slate-300 font-bold">Kayıtlı öğrenci bulunamadı.</p>
@@ -224,7 +338,7 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
         ) : (
           /* 3-Column Grid for spacious user-friendly student cards */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredStudents.map((student) => {
+            {displayedStudents.map((student) => {
               const data = resolveStudentData(student, studentsData);
               const profile = data?.profile;
               const lastMock = data?.generalMocks?.[data.generalMocks.length - 1];
@@ -233,6 +347,16 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
               const completedPlansCount = plans.filter(p => p.status === 'completed' || (p.completedMinutes && p.completedMinutes > 0)).length;
               const planPct = totalPlansCount > 0 ? Math.round((completedPlansCount / totalPlansCount) * 100) : 0;
               
+              const studentGrade = getGradeLevel(student.className);
+              const isStudentEarlyGrade = studentGrade === '9' || studentGrade === '10';
+              const studentSchoolExams = data?.schoolExams || [];
+              const studentExamAvg = studentSchoolExams.length > 0 
+                ? (studentSchoolExams.reduce((sum, e) => sum + e.score, 0) / studentSchoolExams.length).toFixed(1)
+                : null;
+              const studentHonorBadge = studentExamAvg 
+                ? (Number(studentExamAvg) >= 85 ? 'Takdir 🏆' : Number(studentExamAvg) >= 70 ? 'Teşekkür 🎖️' : null)
+                : null;
+
               const hasCoachNote = Boolean(profile?.coachNotes && profile.coachNotes.trim() !== '');
               const unresolvedErrorsCount = (data?.topicErrors || []).filter(e => !e.revised).length;
               const { allEarnedBadges: cardEarnedBadges, stats: cardStats } = evaluateBadges(data);
@@ -242,7 +366,7 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
                 <div 
                   key={student.id} 
                   className="bg-slate-950/90 backdrop-blur-xl border border-white/10 rounded-3xl p-5 shadow-xl hover:border-indigo-500/50 hover:bg-slate-900/90 transition-all duration-300 hover:-translate-y-1 cursor-pointer group flex flex-col justify-between h-full relative space-y-4"
-                  onClick={() => handleOpenInspectStudent(student, 'performance')}
+                  onClick={() => handleOpenInspectStudent(student, isStudentEarlyGrade ? 'school_exams' : 'performance')}
                 >
                   {/* Top Card Header */}
                   <div className="space-y-3">
@@ -312,44 +436,79 @@ export const TeacherStudentsTab: React.FC<TeacherStudentsTabProps> = ({
                       </div>
                     </div>
 
-                    {/* Stacked Horizontal Rectangles (Hedef & Son Deneme) */}
+                    {/* Stacked Horizontal Rectangles (Hedef & Son Deneme / Yazılı Notları) */}
                     <div className="space-y-2">
-                      {/* Target Rectangle Box: Label is simple "Hedef" */}
+                      {/* Target Rectangle Box */}
                       <div className="bg-slate-900/90 rounded-2xl p-3 border border-white/5 space-y-1">
                         <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold">
                           <span className="flex items-center gap-1">
                             <Target className="w-3.5 h-3.5 text-indigo-400" />
-                            <span className="font-bold text-slate-300">Hedef</span>
+                            <span className="font-bold text-slate-300">
+                              {isStudentEarlyGrade ? 'Hedef OBP / Diploma' : 'Hedef'}
+                            </span>
                           </span>
-                          {profile?.targetRank && (
+                          {isStudentEarlyGrade ? (
+                            <span className="text-amber-300 font-mono font-bold bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 text-[10px]">
+                              OBP: {profile?.schoolGpaTarget || 90}
+                            </span>
+                          ) : profile?.targetRank ? (
                             <span className="text-amber-300 font-mono font-bold bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 text-[10px]">
                               #{profile.targetRank.toLocaleString()} Sıralama
                             </span>
-                          )}
+                          ) : null}
                         </div>
                         <div className="text-xs font-bold text-white flex items-center gap-1.5 flex-wrap">
-                          <span>{profile?.targetUniversity || 'Üniversite Belirtilmedi'}</span>
-                          {profile?.targetDepartment && (
+                          <span>
+                            {isStudentEarlyGrade 
+                              ? (profile?.targetTrack ? `Alan: ${profile.targetTrack}` : 'Alan Seçimi Yapılacak')
+                              : (profile?.targetUniversity || 'Üniversite Belirtilmedi')}
+                          </span>
+                          {profile?.targetDepartment && !isStudentEarlyGrade && (
                             <span className="text-slate-400 font-medium">• {profile.targetDepartment}</span>
                           )}
                         </div>
                       </div>
 
-                      {/* Last Mock Net Rectangle Box */}
-                      <div className="bg-slate-900/90 rounded-2xl p-3 border border-white/5 flex items-center justify-between text-xs font-bold">
-                        <div className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold">
-                          <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                          <span className="font-bold text-slate-300">Son Deneme Netleri</span>
+                      {/* Performance Rectangle Box */}
+                      {isStudentEarlyGrade ? (
+                        <div className="bg-slate-900/90 rounded-2xl p-3 border border-emerald-500/20 flex items-center justify-between text-xs font-bold">
+                          <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
+                            <Award className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="font-bold text-slate-200">Okul Yazılı & Karne</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 font-mono">
+                            {studentExamAvg ? (
+                              <>
+                                <span className="text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20 text-xs">
+                                  Ort: <strong className="text-white ml-0.5">{studentExamAvg}</strong>
+                                </span>
+                                {studentHonorBadge && (
+                                  <span className="text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded-lg border border-amber-500/20 text-[10px]">
+                                    {studentHonorBadge}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-slate-400 text-[11px] font-normal">Yazılı Notu Girilmedi</span>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 font-mono">
-                          <span className="text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 text-xs">
-                            TYT: <strong className="text-white ml-0.5">{lastMock?.tyt?.totalNet || '-'}</strong>
-                          </span>
-                          <span className="text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20 text-xs">
-                            AYT: <strong className="text-white ml-0.5">{lastMock?.ayt?.totalNet || '-'}</strong>
-                          </span>
+                      ) : (
+                        <div className="bg-slate-900/90 rounded-2xl p-3 border border-white/5 flex items-center justify-between text-xs font-bold">
+                          <div className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold">
+                            <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="font-bold text-slate-300">Son Deneme Netleri</span>
+                          </div>
+                          <div className="flex items-center gap-2 font-mono">
+                            <span className="text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 text-xs">
+                              TYT: <strong className="text-white ml-0.5">{lastMock?.tyt?.totalNet || '-'}</strong>
+                            </span>
+                            <span className="text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20 text-xs">
+                              AYT: <strong className="text-white ml-0.5">{lastMock?.ayt?.totalNet || '-'}</strong>
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* Task Progress Bar Box */}

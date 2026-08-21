@@ -164,8 +164,8 @@ const getRelativeTimeStr = (ts: number): string => {
 interface TeacherStudentInspectModalProps {
   selectedStudentUser: UserAccount | null;
   setSelectedStudentUser: (user: UserAccount | null) => void;
-  inspectModalTab: 'performance' | 'planner' | 'questions' | 'resources' | 'mocks' | 'youtube' | 'audit_logs' | 'badges';
-  setInspectModalTab: (tab: 'performance' | 'planner' | 'questions' | 'resources' | 'mocks' | 'youtube' | 'audit_logs' | 'badges') => void;
+  inspectModalTab: 'performance' | 'planner' | 'questions' | 'resources' | 'mocks' | 'youtube' | 'audit_logs' | 'badges' | 'school_exams';
+  setInspectModalTab: (tab: 'performance' | 'planner' | 'questions' | 'resources' | 'mocks' | 'youtube' | 'audit_logs' | 'badges' | 'school_exams') => void;
   studentsData: Record<string, YKSDataState>;
   teacher: UserAccount;
   editingCoachNotes: string;

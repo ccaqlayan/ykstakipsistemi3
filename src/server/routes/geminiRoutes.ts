@@ -537,7 +537,91 @@ router.post('/class-coach-advice', async (req, res) => {
   const { className, studentCount, averageTYTNet, averageAYTNet, totalQuestionsSolved, topStrugglingTopics, studentsSummary } = req.body;
 
   try {
-    const prompt = `
+    const gradeLevel = (() => {
+      const trimmed = (className || '').trim().toUpperCase();
+      const numMatch = trimmed.match(/^(9|10|11|12)/);
+      if (numMatch) return numMatch[1];
+      if (trimmed.includes('9.') || trimmed.startsWith('9')) return '9';
+      if (trimmed.includes('10.') || trimmed.startsWith('10')) return '10';
+      if (trimmed.includes('11.') || trimmed.startsWith('11')) return '11';
+      if (trimmed.includes('12.') || trimmed.startsWith('12') || trimmed.includes('MEZUN')) return '12';
+      return '12';
+    })();
+
+    const isEarlyHighSchool = gradeLevel === '9' || gradeLevel === '10';
+    const isEleventhGrade = gradeLevel === '11';
+
+    let prompt = '';
+    if (isEarlyHighSchool) {
+      prompt = `
+Sen MEB Türkiye Yüzyılı Maarif Modeli ve lise başarı/yazılı sınav odaklı lise kademe rehberlik uzmanı ve sınıf koçusun.
+Bu sınıf ${gradeLevel}. Sınıf kademesindedir. Müfredat MEB Türkiye Yüzyılı Maarif Modeli beceri ve tema temellidir.
+Öğrencilerin birincil akademik odağı: Okul yazılı sınavları (1. ve 2. dönem), OBP (Ortaöğretim Başarı Puanı) kazanımı, temel ders kavramları ve haftalık düzenli çalışma disiplinidir. (Erken YKS kaygısı yerine okul derslerindeki kavrayış ve not ortalaması önceliklidir).
+
+SINIF VERİLERİ VE GENEL PERFORMANS ÖZETİ:
+- Sınıf Adı: ${className || `${gradeLevel}-A`} (${gradeLevel}. Sınıf - MEB Maarif Modeli)
+- Öğrenci Sayısı: ${studentCount || 0}
+- Sınıf Toplam Çözülen Soru Sayısı: ${totalQuestionsSolved || 0}
+- Sınıfın En Çok Zorlandığı ve Hata Yaptığı Konular: ${JSON.stringify(topStrugglingTopics || [])}
+
+ÖĞRENCİ BAZLI ÖZET:
+${JSON.stringify(studentsSummary || [])}
+
+Lütfen bu ${gradeLevel}. sınıf şubesinin tüm verilerini detaylıca analiz et ve sınıf rehber öğretmenine özel MEB Maarif Modeli ve okul ders başarısı/yazılı hazırlık odaklı bir Türkçe Sınıf Koçluk Raporu ve Ders Bazlı Haftalık Sınıf Etüt Reçetesi üret.
+Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
+{
+  "generalEvaluation": "${gradeLevel}. sınıf düzeyine uygun akademik gelişim, ders disiplini ve yazılı sınav performansı değerlendirmesi (3-4 cümle)",
+  "strengths": ["Sınıfın öne çıkan 3-4 güçlü yönü (konu kavrayışı, yazılı başarısı, etüt katılımı vb.)"],
+  "weakAreas": ["Sınıfça acil müdahale edilmesi gereken 2-3 zayıf alan veya konu eksikliği"],
+  "weeklyPrescription": [
+    {
+      "subject": "Ders Adı (Örn: Matematik, Fizik, Türk Dili ve Edebiyatı vb.)",
+      "targetQuestions": 150,
+      "focusTopics": ["Konu 1", "Konu 2"],
+      "description": "Sınıf geneli bu haftalık yazılı hazırlık, MEB kazanım kavrama ve ödev tavsiyesi",
+      "priority": "high"
+    }
+  ],
+  "actionPlan": ["Rehber öğretmen için bu haftalık 4 somut sınıf içi aksiyon ve okul dersi pekiştirme önerisi"],
+  "motivationalQuote": "${gradeLevel}. sınıf öğrencilerine ve öğretmenlerine ilham verici lise başarı ve motivasyon mesajı"
+}
+      `;
+    } else if (isEleventhGrade) {
+      prompt = `
+Sen MEB 11. Sınıf İleri Düzey Akademik Program ve YKS Temel Hazırlık/AYT Başlangıç rehberlik uzmanı ve sınıf koçusun.
+Bu sınıf 11. Sınıf kademesindedir. Öğrencilerin odağı: 11. sınıf okul dersleri, yazılı sınavları, OBP ve TYT temelini güçlendirip 11. sınıf AYT konularını sağlam öğrenmektir.
+
+SINIF VERİLERİ VE GENEL PERFORMANS ÖZETİ:
+- Sınıf Adı: ${className || '11-A'} (11. Sınıf)
+- Öğrenci Sayısı: ${studentCount || 0}
+- Sınıfın Ortalama TYT Neti: ${averageTYTNet || 0} Net
+- Sınıf Toplam Çözülen Soru Sayısı: ${totalQuestionsSolved || 0}
+- Sınıfın En Çok Zorlandığı ve Hata Yaptığı Konular: ${JSON.stringify(topStrugglingTopics || [])}
+
+ÖĞRENCİ BAZLI ÖZET:
+${JSON.stringify(studentsSummary || [])}
+
+Lütfen bu 11. sınıf şubesinin tüm verilerini analiz et ve sınıf rehber öğretmenine özel 11. sınıf okul başarısı, OBP ve YKS temel atma odaklı bir Türkçe Sınıf Koçluk Raporu ve Ders Bazlı Haftalık Sınıf Etüt Reçetesi üret.
+Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
+{
+  "generalEvaluation": "11. sınıf düzeyine uygun akademik gelişim, OBP ve YKS hazırlık başlangıcı değerlendirmesi (3-4 cümle)",
+  "strengths": ["Sınıfın öne çıkan 3-4 güçlü yönü"],
+  "weakAreas": ["Sınıfça acil müdahale edilmesi gereken 2-3 zayıf alan veya konu eksikliği"],
+  "weeklyPrescription": [
+    {
+      "subject": "Ders Adı (Örn: Matematik, Fizik, Kimya vb.)",
+      "targetQuestions": 200,
+      "focusTopics": ["Konu 1", "Konu 2"],
+      "description": "11. sınıf ders başarısı ve TYT/AYT temeli için haftalık hedef",
+      "priority": "high"
+    }
+  ],
+  "actionPlan": ["Rehber öğretmen için bu haftalık 4 somut sınıf içi aksiyon ve etüt önerisi"],
+  "motivationalQuote": "11. sınıf öğrencilerine ve öğretmenlerine ilham verici güçlü bir motivasyon mesajı"
+}
+      `;
+    } else {
+      prompt = `
 Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) derece hazırlık konusunda uzman, analitik ve motivasyonu yüksek bir Okul Rehberlik Uzmanı ve Sınıf YKS Koçusun.
 
 SINIF VERİLERİ VE GENEL PERFORMANS ÖZETİ:
@@ -569,7 +653,8 @@ Cevabın YALNIZCA geçerli bir JSON objesi olmalıdır. Şeması:
   "actionPlan": ["Rehber öğretmen için bu haftalık 4 somut sınıf içi aksiyon ve etüt önerisi"],
   "motivationalQuote": "Sınıfa ve öğretmenine ilham verici güçlü bir YKS motivasyon mesajı"
 }
-    `;
+      `;
+    }
 
     const targetModel = featureModelConfig['AI_COACH_CLASS'] || 'SYSTEM_DEFAULT';
     const unifiedResult = await executeAiUnifiedRequest({

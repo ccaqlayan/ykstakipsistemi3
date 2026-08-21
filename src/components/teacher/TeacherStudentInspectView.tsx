@@ -88,11 +88,13 @@ import {
   DayOfWeek,
   InstitutionalMockExam,
   StudyProgramTemplate,
-  TopicErrorItem
+  TopicErrorItem,
+  SchoolExam
 } from '../../types';
 import { TeacherErrorsTab } from './TeacherErrorsTab';
 import { AuditLogsView } from '../AuditLogsView';
 import { MockInstitutionalDetailView } from '../mocks/MockInstitutionalDetailView';
+import { SchoolExamModal } from '../school_exams/SchoolExamModal';
 import { isUserOnline } from '../../utils/statusUtils';
 import { UniversityLogo } from '../UniversityLogo';
 import { BadgeShield } from '../badges/BadgeShield';
@@ -103,6 +105,7 @@ import {
   DEFAULT_PROGRAM_TEMPLATES
 } from '../../data/initialData';
 import { resolveStudentData } from '../../utils/studentDataUtils';
+import { getGradeLevel, calculateObpContribution, getDiplomaHonorBadge, isEarlyHighSchool } from '../../utils/gradeUtils';
 
 const DAYS: DayOfWeek[] = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
 
@@ -172,6 +175,7 @@ const getRelativeTimeStr = (ts: number): string => {
 export type InspectTabType = 
   | 'performance' 
   | 'badges'
+  | 'school_exams'
   | 'planner' 
   | 'questions' 
   | 'topics' 
@@ -204,6 +208,7 @@ interface TeacherStudentInspectViewProps {
   onApplyTemplateToStudent?: (studentId: string, templateId: string, mode: 'overwrite' | 'merge') => void;
   onUpdateStudentStudyPlans?: (studentId: string, plans: any[]) => void;
   onUpdateStudentTopicErrors?: (studentId: string, updatedErrors: TopicErrorItem[], actionDescription?: string) => void;
+  onUpdateStudentSchoolExams?: (studentId: string, updatedExams: SchoolExam[], actionDescription?: string) => void;
   onPreviewStudent?: (student: UserAccount) => void;
 }
 
@@ -229,6 +234,7 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
   onApplyTemplateToStudent,
   onUpdateStudentStudyPlans,
   onUpdateStudentTopicErrors,
+  onUpdateStudentSchoolExams,
   onPreviewStudent
 }) => {
   const [activeTab, setActiveTab] = useState<InspectTabType>(initialTab || 'performance');
@@ -310,11 +316,84 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
   const [institutionalMockPage, setInstitutionalMockPage] = useState<number>(1);
   const [institutionalMockPageSize, setInstitutionalMockPageSize] = useState<number>(10);
 
+  const [isAddSchoolExamModalOpen, setIsAddSchoolExamModalOpen] = useState<boolean>(false);
+  const [editingSchoolExam, setEditingSchoolExam] = useState<SchoolExam | null>(null);
+  const [schoolExamSemesterFilter, setSchoolExamSemesterFilter] = useState<'all' | '1' | '2'>('all');
+  const [schoolExamSearchQuery, setSchoolExamSearchQuery] = useState<string>('');
+
   const stData = resolveStudentData(selectedStudentUser, studentsData);
   const profile = stData.profile;
   const mocks = stData.generalMocks || [];
   const branchExams = stData.branchExams || [];
   const institutionalMocks: InstitutionalMockExam[] = (stData.institutionalMocks as InstitutionalMockExam[]) || [];
+  const schoolExams: SchoolExam[] = stData.schoolExams || [];
+  const studentGrade = getGradeLevel(selectedStudentUser.className);
+  const isEarlyGrade = studentGrade === '9' || studentGrade === '10' || studentGrade === '11';
+
+  // Compute 1st & 2nd semester averages & OBP for inspected student
+  const sem1Exams = schoolExams.filter(e => e.semester === 1);
+  const sem2Exams = schoolExams.filter(e => e.semester === 2);
+  const sem1Avg = sem1Exams.length > 0 ? (sem1Exams.reduce((s, e) => s + e.score, 0) / sem1Exams.length).toFixed(1) : null;
+  const sem2Avg = sem2Exams.length > 0 ? (sem2Exams.reduce((s, e) => s + e.score, 0) / sem2Exams.length).toFixed(1) : null;
+  const overallExamAvg = schoolExams.length > 0 ? (schoolExams.reduce((s, e) => s + e.score, 0) / schoolExams.length).toFixed(1) : null;
+  const honorBadge = overallExamAvg ? getDiplomaHonorBadge(Number(overallExamAvg)) : null;
+  const targetGpa = profile?.schoolGpaTarget || 90;
+  const obpContribution = calculateObpContribution(targetGpa);
+
+  const availableSchoolSubjects = [
+    'Matematik',
+    'Türk Dili ve Edebiyatı',
+    'Fizik',
+    'Kimya',
+    'Biyoloji',
+    'Tarih',
+    'Coğrafya',
+    'Felsefe',
+    'Din Kültürü ve Ahlak Bilgisi',
+    'İngilizce',
+    'Almanca',
+    'Beden Eğitimi',
+    'Müzik',
+    'Görsel Sanatlar',
+    'Sağlık Bilgisi ve Trafik Kültürü'
+  ];
+
+  const handleSaveStudentSchoolExam = (examData: Omit<SchoolExam, 'id'> | SchoolExam) => {
+    const isEdit = 'id' in examData && Boolean(examData.id);
+    let updatedExams: SchoolExam[];
+    if (isEdit) {
+      updatedExams = schoolExams.map(e => e.id === (examData as SchoolExam).id ? (examData as SchoolExam) : e);
+    } else {
+      const newExam: SchoolExam = {
+        ...(examData as Omit<SchoolExam, 'id'>),
+        id: 'sexam-' + Date.now()
+      };
+      updatedExams = [newExam, ...schoolExams];
+    }
+
+    if (onUpdateStudentSchoolExams) {
+      onUpdateStudentSchoolExams(
+        selectedStudentUser.id, 
+        updatedExams, 
+        `${teacher.name} (${teacher.title || 'Öğretmen'}), ${selectedStudentUser.name} için "${examData.subject}" ${examData.semester}. Dönem ${examData.examNumber}. Yazılı notunu (${examData.score}) ${isEdit ? 'güncelledi' : 'ekledi'}.`
+      );
+    }
+    setIsAddSchoolExamModalOpen(false);
+    setEditingSchoolExam(null);
+  };
+
+  const handleDeleteStudentSchoolExam = (examId: string) => {
+    const deletedExam = schoolExams.find(e => e.id === examId);
+    const updatedExams = schoolExams.filter(e => e.id !== examId);
+    if (onUpdateStudentSchoolExams) {
+      onUpdateStudentSchoolExams(
+        selectedStudentUser.id,
+        updatedExams,
+        `${teacher.name} (${teacher.title || 'Öğretmen'}), ${selectedStudentUser.name} için "${deletedExam?.subject || ''}" yazılı notunu sildi.`
+      );
+    }
+  };
+
   const questionLogs = stData.questionLogs || [];
   const plans = stData.studyPlans || [];
   const topicErrors = stData.topicErrors || [];
@@ -706,8 +785,8 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
         {/* WORKSPACE MAIN NAVIGATION TABS - 2 CLEAN SPACIOUS ROWS */}
         <div className="space-y-2 pt-3 border-t border-white/10">
           
-          {/* ROW 1: CORE PERFORMANCE, BADGES & PLANNING (6 TABS) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+          {/* ROW 1: CORE PERFORMANCE, BADGES, SCHOOL EXAMS & PLANNING */}
+          <div className={`grid grid-cols-2 sm:grid-cols-3 ${isEarlyGrade ? 'lg:grid-cols-7' : 'lg:grid-cols-6'} gap-2`}>
             <button
               onClick={() => setActiveTab('performance')}
               className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer text-center w-full shadow-sm ${
@@ -719,6 +798,25 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
               <TrendingUp className="w-4 h-4 text-indigo-300 shrink-0" />
               <span>Performans & Özet</span>
             </button>
+
+            {isEarlyGrade && (
+              <button
+                onClick={() => setActiveTab('school_exams')}
+                className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer text-center w-full shadow-sm ${
+                  activeTab === 'school_exams'
+                    ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 border border-emerald-400/40'
+                    : 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/30'
+                }`}
+              >
+                <Award className="w-4 h-4 text-emerald-300 shrink-0" />
+                <span>Okul Yazılıları & OBP</span>
+                {schoolExams.length > 0 && (
+                  <span className="ml-1 bg-emerald-500/40 text-emerald-100 font-mono text-[10px] font-black px-1.5 py-0.2 rounded-full border border-emerald-400/50">
+                    {schoolExams.length}
+                  </span>
+                )}
+              </button>
+            )}
 
             <button
               onClick={() => setActiveTab('badges')}
@@ -852,6 +950,262 @@ export const TeacherStudentInspectView: React.FC<TeacherStudentInspectViewProps>
         </div>
 
       </div>
+
+      {/* TAB: SCHOOL EXAMS & OBP REPORT CARD */}
+      {activeTab === 'school_exams' && (
+        <div className="space-y-6">
+          
+          {/* Executive OBP & Semester GPA Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <div className="bg-slate-900/90 border border-indigo-500/30 rounded-2xl p-4 shadow-xl backdrop-blur-2xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-400">1. Dönem Yazılı Ort.</span>
+                <div className="w-8 h-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 flex items-center justify-center">
+                  <Award className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-white font-mono">
+                {sem1Avg ? `${sem1Avg}` : '-'} <span className="text-xs text-slate-400 font-normal">Puan</span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">{sem1Exams.length} sınav notu girildi</p>
+            </div>
+
+            <div className="bg-slate-900/90 border border-purple-500/30 rounded-2xl p-4 shadow-xl backdrop-blur-2xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-400">2. Dönem Yazılı Ort.</span>
+                <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-300 flex items-center justify-center">
+                  <Award className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-purple-300 font-mono">
+                {sem2Avg ? `${sem2Avg}` : '-'} <span className="text-xs text-slate-400 font-normal">Puan</span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">{sem2Exams.length} sınav notu girildi</p>
+            </div>
+
+            <div className="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-4 shadow-xl backdrop-blur-2xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-400">Yıl Sonu Başarı & Belge</span>
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-300 flex items-center justify-center">
+                  <Trophy className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-amber-300 font-mono flex items-baseline gap-2">
+                <span>{overallExamAvg ? `${overallExamAvg}` : '-'}</span>
+                {honorBadge && (
+                  <span className="text-xs font-bold bg-amber-500/20 text-amber-200 px-2 py-0.5 rounded-lg border border-amber-500/30">
+                    {honorBadge}
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">Ağırlıklı yazılı ortalaması</p>
+            </div>
+
+            <div className="bg-slate-900/90 border border-emerald-500/30 rounded-2xl p-4 shadow-xl backdrop-blur-2xl">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-400">Hedef OBP & YKS Puanı</span>
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 flex items-center justify-center">
+                  <GraduationCap className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-emerald-400 font-mono">
+                +{obpContribution} <span className="text-xs text-slate-400 font-normal">Yerleştirme</span>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-1">Hedef Diploma: {targetGpa} OBP</p>
+            </div>
+
+          </div>
+
+          {/* Exam Table / Cards Container */}
+          <div className="bg-slate-900/90 border border-white/10 rounded-3xl p-6 shadow-2xl space-y-5">
+            
+            {/* Header, Semester Filter, Search & Add Exam Button */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center space-x-2">
+                  <Award className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <h3 className="text-base font-black text-white">Yazılı Sınav Notları ve Ders Dağılımı</h3>
+                </div>
+
+                <div className="flex items-center space-x-1 bg-slate-950/80 p-1 rounded-xl border border-white/10">
+                  <button
+                    onClick={() => setSchoolExamSemesterFilter('all')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      schoolExamSemesterFilter === 'all'
+                        ? 'bg-emerald-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Tümü
+                  </button>
+                  <button
+                    onClick={() => setSchoolExamSemesterFilter('1')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      schoolExamSemesterFilter === '1'
+                        ? 'bg-emerald-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    1. Dönem
+                  </button>
+                  <button
+                    onClick={() => setSchoolExamSemesterFilter('2')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      schoolExamSemesterFilter === '2'
+                        ? 'bg-emerald-600 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    2. Dönem
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <div className="relative min-w-[200px]">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    placeholder="Ders ara..."
+                    value={schoolExamSearchQuery}
+                    onChange={(e) => setSchoolExamSearchQuery(e.target.value)}
+                    className="w-full bg-slate-950/80 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-400 transition-colors"
+                  />
+                </div>
+
+                {!isBranchTeacher && (
+                  <button
+                    onClick={() => {
+                      setEditingSchoolExam(null);
+                      setIsAddSchoolExamModalOpen(true);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 shadow-md shadow-emerald-600/30 shrink-0 cursor-pointer border border-emerald-400/40"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Yazılı Notu Ekle</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* List of Exams */}
+            {(() => {
+              const filteredExams = schoolExams.filter((exam) => {
+                if (schoolExamSemesterFilter !== 'all' && String(exam.semester) !== schoolExamSemesterFilter) {
+                  return false;
+                }
+                if (schoolExamSearchQuery.trim()) {
+                  const q = schoolExamSearchQuery.toLowerCase();
+                  return exam.subject.toLowerCase().includes(q) || (exam.notes && exam.notes.toLowerCase().includes(q));
+                }
+                return true;
+              });
+
+              if (filteredExams.length === 0) {
+                return (
+                  <div className="text-center py-12 border-2 border-dashed border-white/10 rounded-2xl bg-slate-950/40 space-y-2">
+                    <Award className="w-10 h-10 text-slate-500 mx-auto" />
+                    <p className="text-xs text-slate-300 font-bold">Kayıtlı yazılı sınav notu bulunamadı.</p>
+                    <p className="text-[11px] text-slate-500">Öğrenciye ait 1. veya 2. dönem yazılı notlarını yukarıdaki "+ Yazılı Notu Ekle" butonu ile girebilirsiniz.</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredExams.map((exam) => {
+                    const diff = typeof exam.classAverage === 'number' ? Number((exam.score - exam.classAverage).toFixed(1)) : null;
+                    return (
+                      <div
+                        key={exam.id}
+                        className="bg-slate-950/80 border border-white/10 hover:border-emerald-500/40 rounded-2xl p-4 space-y-3 transition-all shadow-lg"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-[10px] font-bold bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">
+                                {exam.semester}. Dönem • {exam.examNumber}. Yazılı
+                              </span>
+                              {exam.date && (
+                                <span className="text-[10px] text-slate-400 font-mono">{exam.date}</span>
+                              )}
+                            </div>
+                            <h4 className="text-sm font-bold text-white mt-1">{exam.subject}</h4>
+                          </div>
+
+                          <div className="text-right">
+                            <div className="text-2xl font-black text-emerald-400 font-mono">{exam.score}</div>
+                            <span className="text-[10px] text-slate-400 font-medium">/ 100 Puan</span>
+                          </div>
+                        </div>
+
+                        {typeof exam.classAverage === 'number' && (
+                          <div className="flex items-center justify-between text-xs bg-slate-900/90 px-3 py-2 rounded-xl border border-white/5 font-mono">
+                            <span className="text-slate-400 text-[11px]">Sınıf Ortalaması: <strong className="text-slate-200">{exam.classAverage}</strong></span>
+                            {diff !== null && (
+                              <span className={`text-[11px] font-bold ${diff >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {diff >= 0 ? `+${diff}` : `${diff}`} Fark
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {exam.notes && (
+                          <p className="text-[11px] text-slate-400 bg-slate-900/50 p-2 rounded-xl border border-white/5 italic">
+                            "{exam.notes}"
+                          </p>
+                        )}
+
+                        {!isBranchTeacher && (
+                          <div className="flex items-center justify-end space-x-2 pt-2 border-t border-white/5">
+                            <button
+                              onClick={() => {
+                                setEditingSchoolExam(exam);
+                                setIsAddSchoolExamModalOpen(true);
+                              }}
+                              className="text-slate-400 hover:text-indigo-400 text-xs font-semibold px-2 py-1 rounded transition-colors flex items-center space-x-1 cursor-pointer"
+                            >
+                              <span>Düzenle</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`"${exam.subject}" ${exam.semester}. Dönem ${exam.examNumber}. Yazılı sınav notunu silmek istediğinizden emin misiniz?`)) {
+                                  handleDeleteStudentSchoolExam(exam.id);
+                                }
+                              }}
+                              className="text-slate-400 hover:text-rose-400 text-xs font-semibold px-2 py-1 rounded transition-colors flex items-center space-x-1 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Sil</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+          </div>
+
+          {/* SchoolExamModal for Teacher Adding / Editing */}
+          {isAddSchoolExamModalOpen && (
+            <SchoolExamModal
+              isOpen={isAddSchoolExamModalOpen}
+              onClose={() => {
+                setIsAddSchoolExamModalOpen(false);
+                setEditingSchoolExam(null);
+              }}
+              onSave={handleSaveStudentSchoolExam}
+              initialExam={editingSchoolExam}
+              availableSubjects={availableSchoolSubjects}
+            />
+          )}
+
+        </div>
+      )}
 
       {/* TAB 1: COACHING & EXECUTIVE PERFORMANCE */}
       {activeTab === 'performance' && (

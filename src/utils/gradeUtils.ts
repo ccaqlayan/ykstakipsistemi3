@@ -63,3 +63,25 @@ export function getGradeYksTargetYear(grade: GradeLevel): number {
       return baseYear;
   }
 }
+
+/**
+ * Diploma notundan YKS yerleştirme puanı OBP katkısını hesaplar (Diploma * 5 * 0.12).
+ */
+export function calculateObpContribution(diplomaScore: number): number {
+  const clamped = Math.min(100, Math.max(0, diplomaScore || 0));
+  const obp = clamped * 5;
+  return Number((obp * 0.12).toFixed(2));
+}
+
+/**
+ * MEB Lise Yönetmeliğine göre karne başarı belgesini belirler.
+ * 85.00 ve üzeri: Takdir Belgesi
+ * 70.00 - 84.99: Teşekkür Belgesi
+ */
+export function getDiplomaHonorBadge(average: number): 'Takdir Belgesi' | 'Teşekkür Belgesi' | null {
+  if (typeof average !== 'number' || isNaN(average)) return null;
+  if (average >= 85) return 'Takdir Belgesi';
+  if (average >= 70) return 'Teşekkür Belgesi';
+  return null;
+}
+

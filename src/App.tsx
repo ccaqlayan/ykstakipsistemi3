@@ -2429,6 +2429,38 @@ export default function App() {
     );
   };
 
+  const handleUpdateStudentSchoolExamsByTeacher = (studentId: string, updatedExams: SchoolExam[], actionDescription?: string) => {
+    const targetStudent = globalState.users.find(u => u.id === studentId);
+    const prevExams = globalState.studentsData[studentId]?.schoolExams || [];
+
+    setGlobalState((prev) => {
+      const studentData = prev.studentsData[studentId] || createEmptyStudentData(targetStudent?.name || '', targetStudent?.className || '');
+      const updatedData: YKSDataState = {
+        ...studentData,
+        schoolExams: updatedExams
+      };
+      saveStudentDataToFirestore(studentId, updatedData);
+      return {
+        ...prev,
+        studentsData: {
+          ...prev.studentsData,
+          [studentId]: updatedData
+        }
+      };
+    });
+
+    addAuditAndUndo(
+      actionDescription || `${currentUser?.name || 'Öğretmen'}, ${targetStudent?.name || 'Öğrenci'} için okul yazılı sınav notlarını güncelledi.`,
+      'exam',
+      'teacher_update_school_exams',
+      () => {
+        handleUpdateStudentSchoolExamsByTeacher(studentId, prevExams);
+      },
+      studentId,
+      targetStudent?.name
+    );
+  };
+
   const handleUpdateTopicTipsCache = (cacheKey: string, data: { mistakes: Array<{ mistake: string; correction: string }>; tips: string[] }) => {
     updateCurrentStudentData((prev) => ({
       ...prev,
@@ -3292,6 +3324,7 @@ export default function App() {
             handleUpdateStudentProfileByTeacher={handleUpdateStudentProfileByTeacher}
             handleUpdateStudentStudyPlansByTeacher={handleUpdateStudentStudyPlansByTeacher}
             handleUpdateStudentTopicErrorsByTeacher={handleUpdateStudentTopicErrorsByTeacher}
+            handleUpdateStudentSchoolExamsByTeacher={handleUpdateStudentSchoolExamsByTeacher}
             handleCreateClass={handleCreateClass}
             handleAssignStudentClass={handleAssignStudentClass}
             handleSaveProgramTemplate={handleSaveProgramTemplate}

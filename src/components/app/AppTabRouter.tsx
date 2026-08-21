@@ -50,6 +50,7 @@ interface AppTabRouterProps {
   handleUpdateStudentProfileByTeacher: (studentId: string, updatedProfile: StudentProfile) => void;
   handleUpdateStudentStudyPlansByTeacher: (studentId: string, updatedPlans: any[]) => void;
   handleUpdateStudentTopicErrorsByTeacher?: (studentId: string, updatedErrors: any[], actionText?: string) => void;
+  handleUpdateStudentSchoolExamsByTeacher?: (studentId: string, updatedExams: SchoolExam[], actionDescription?: string) => void;
   handleCreateClass: (className: string, field: FieldType, description?: string) => void;
   handleAssignStudentClass: (studentId: string, newClassName: string) => void;
   handleSaveProgramTemplate: (templateData: any) => void;
@@ -144,6 +145,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
   handleUpdateStudentProfileByTeacher,
   handleUpdateStudentStudyPlansByTeacher,
   handleUpdateStudentTopicErrorsByTeacher,
+  handleUpdateStudentSchoolExamsByTeacher,
   handleCreateClass,
   handleAssignStudentClass,
   handleSaveProgramTemplate,
@@ -299,6 +301,7 @@ export const AppTabRouter: React.FC<AppTabRouterProps> = ({
           onUpdateStudentProfile={handleUpdateStudentProfileByTeacher}
           onUpdateStudentStudyPlans={handleUpdateStudentStudyPlansByTeacher}
           onUpdateStudentTopicErrors={handleUpdateStudentTopicErrorsByTeacher}
+          onUpdateStudentSchoolExams={handleUpdateStudentSchoolExamsByTeacher}
           onCreateClass={handleCreateClass}
           onAssignStudentClass={handleAssignStudentClass}
           onSaveProgramTemplate={handleSaveProgramTemplate}
