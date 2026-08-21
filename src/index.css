@@ -797,7 +797,8 @@ body.modal-open .mobile-bottom-nav {
 
   /* Sadece yazdırma belgesi kapsayıcısını ve çocuklarını görünür yap */
   #study-plan-print-document,
-  #error-exam-print-document {
+  #error-exam-print-document,
+  #weekly-report-card-print-document {
     box-shadow: none !important;
     border: none !important;
     background-color: #ffffff !important;

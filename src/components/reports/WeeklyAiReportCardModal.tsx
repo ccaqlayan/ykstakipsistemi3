@@ -213,7 +213,175 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
   if (!isOpen) return null;
 
   const handlePrint = () => {
-    window.print();
+    const printDoc = document.getElementById('weekly-report-card-print-document');
+    if (!printDoc) {
+      window.print();
+      return;
+    }
+
+    // Varsa eski iframe'i temizle
+    const oldIframe = document.getElementById('weekly-report-print-iframe');
+    if (oldIframe) {
+      oldIframe.remove();
+    }
+
+    // Tamamen izole yazdırma iframe'i oluştur (Ana sayfa öğeleri asla karışmaz)
+    const iframe = document.createElement('iframe');
+    iframe.id = 'weekly-report-print-iframe';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const pri = iframe.contentWindow;
+    if (!pri) {
+      window.print();
+      return;
+    }
+
+    // Dokümandaki Tailwind ve temel stilleri al
+    let styleHtml = '';
+    document.querySelectorAll('style, link[rel="stylesheet"]').forEach((node) => {
+      styleHtml += node.outerHTML;
+    });
+
+    pri.document.open();
+    pri.document.write(`
+      <!DOCTYPE html>
+      <html lang="tr">
+        <head>
+          <meta charset="utf-8" />
+          <title>YKS Haftalık Başarı Karnesi - ${studentName}</title>
+          ${styleHtml}
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 8mm 10mm;
+            }
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+              box-sizing: border-box !important;
+            }
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              background-color: #ffffff !important;
+              background: #ffffff !important;
+              color: #0f172a !important;
+              width: 100% !important;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+            }
+            #print-root {
+              width: 100% !important;
+              background: #ffffff !important;
+              color: #0f172a !important;
+              padding: 0 !important;
+            }
+            #weekly-report-card-print-document {
+              background: #ffffff !important;
+              color: #0f172a !important;
+              width: 100% !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              border: none !important;
+              box-shadow: none !important;
+            }
+            /* 🖨️ Mürekkep Tasarruflu Açık & Siyah-Beyaz Baskı Formatı */
+            .bg-slate-900,
+            .bg-slate-950,
+            .bg-slate-950\\/80,
+            .bg-slate-950\\/70,
+            .bg-slate-900\\/90,
+            .bg-gradient-to-br,
+            .bg-gradient-to-r,
+            .bg-cyan-950\\/60,
+            .bg-indigo-950\\/50,
+            .bg-amber-500\\/10,
+            .bg-emerald-500\\/20,
+            .bg-rose-500\\/10,
+            .bg-cyan-500\\/20 {
+              background-color: #ffffff !important;
+              background-image: none !important;
+              background: #ffffff !important;
+              color: #0f172a !important;
+            }
+            /* Koyu metinleri yüksek kontrastlı siyah/koyu griye çevir */
+            .text-white,
+            .text-slate-100,
+            .text-slate-200,
+            .text-slate-300,
+            .text-indigo-200,
+            .text-indigo-300,
+            .text-amber-200,
+            .text-amber-300,
+            .text-cyan-200,
+            .text-cyan-300,
+            .text-emerald-200,
+            .text-emerald-300,
+            .text-rose-200,
+            .text-rose-300 {
+              color: #0f172a !important;
+              -webkit-text-fill-color: #0f172a !important;
+            }
+            .text-slate-400,
+            .text-slate-500 {
+              color: #475569 !important;
+            }
+            /* Tüm kenarlıkları şık 1px gri sınır çizgilerine dönüştür */
+            div, section, article {
+              border-color: #cbd5e1 !important;
+            }
+            .border-indigo-500\\/30,
+            .border-indigo-500\\/20,
+            .border-amber-500\\/40,
+            .border-amber-500\\/30,
+            .border-amber-400\\/30,
+            .border-cyan-500\\/30,
+            .border-cyan-400\\/40,
+            .border-emerald-500\\/30,
+            .border-emerald-500\\/20,
+            .border-rose-500\\/30,
+            .border-rose-500\\/20,
+            .border-slate-800,
+            .border-slate-700 {
+              border-color: #cbd5e1 !important;
+              border-width: 1px !important;
+              border-style: solid !important;
+            }
+            /* Kart arkaplanlarını hafif gri kutu yap */
+            .p-4, .p-5, .p-6 {
+              background-color: #f8fafc !important;
+              border: 1px solid #cbd5e1 !important;
+              border-radius: 12px !important;
+            }
+            .print\\:hidden {
+              display: none !important;
+            }
+            .print\\:block {
+              display: block !important;
+            }
+          </style>
+        </head>
+        <body>
+          <div id="print-root">
+            ${printDoc.outerHTML}
+          </div>
+        </body>
+      </html>
+    `);
+    pri.document.close();
+
+    setTimeout(() => {
+      pri.focus();
+      pri.print();
+      setTimeout(() => {
+        iframe.remove();
+      }, 1500);
+    }, 300);
   };
 
   const handleShareWhatsApp = () => {
@@ -382,8 +550,23 @@ export const WeeklyAiReportCardModal: React.FC<WeeklyAiReportCardModalProps> = (
 
         {/* REPORT CARD CONTENT */}
         {reportData && !isLoading && (
-          <div className="space-y-6 print:space-y-4">
+          <div id="weekly-report-card-print-document" className="space-y-5 print:space-y-3">
             
+            {/* Sadece Yazdırmada Gözüken Profesyonel Üst Başlık */}
+            <div className="hidden print:flex items-center justify-between border-b-2 border-slate-900 pb-2 mb-3">
+              <div>
+                <h1 className="text-base font-black text-slate-900 uppercase tracking-tight">
+                  YKS Takip & Koçluk Sistemi • Haftalık Başarı Karnesi
+                </h1>
+                <p className="text-xs text-slate-600 font-semibold">
+                  Öğrenci: <span className="text-slate-900 font-black">{studentName}</span> | Alan: <span className="text-slate-900 font-black">{targetField}</span> | Hafta: <span className="text-slate-900 font-black">{currentWeekLabel}</span>
+                </p>
+              </div>
+              <div className="text-right text-[11px] text-slate-500 font-mono">
+                {new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </div>
+            </div>
+
             {/* 1. Üst Banner & Karne Puanı */}
             <div className="p-6 bg-gradient-to-br from-indigo-950/80 via-slate-900 to-purple-950/80 border border-indigo-500/30 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-5 relative overflow-hidden">
               <div className="space-y-2 z-10 text-center sm:text-left">
