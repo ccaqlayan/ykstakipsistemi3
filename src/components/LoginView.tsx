@@ -323,13 +323,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
             </div>
           </div>
 
-          {/* Rehberlik & Yönetim */}
+          {/* Rehberlik & Öğretmenler */}
           <div className="space-y-1.5 pt-1.5 border-t border-slate-800">
             <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center space-x-1">
               <ShieldCheck className="w-3 h-3 text-fuchsia-400" />
-              <span>Rehberlik & Yönetim</span>
+              <span>Rehberlik & Öğretmenler</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-2 gap-1.5">
               <button
                 type="button"
                 onClick={() => handleQuickDemo('elif.hoca@okul.edu.tr')}
@@ -345,14 +345,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
               >
                 <School className="w-3 h-3" />
                 <span>Okul Rehberliği</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo('caglayan.mat@gmail.com')}
-                className="py-1.5 px-2 bg-rose-600/20 hover:bg-rose-600/30 text-rose-200 rounded-xl text-[10.5px] font-bold transition-all border border-rose-500/30 flex items-center justify-center space-x-1 cursor-pointer"
-              >
-                <ShieldCheck className="w-3 h-3" />
-                <span>Yönetici (Admin)</span>
               </button>
             </div>
           </div>
