@@ -50,7 +50,7 @@ import {
 import { fetchAICoachAdvice, fetchClassAICoachAdvice, sendAICoachChatMessage } from '../services/geminiService';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
-export type AICoachTab = 'report' | 'chat' | 'targetGap' | 'urgentTopics' | 'history';
+export type AICoachTab = 'report' | 'chat' | 'history';
 
 interface AICoachViewProps {
   state: YKSDataState;
@@ -933,38 +933,68 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
     }
   };
 
-  // Nav Tabs configuration for Student vs Teacher
+  // Nav Tabs configuration for Student vs Teacher (3 Ana Sekme)
   const tabsList = useMemo(() => {
     if (isTeacher) {
       return [
-        { id: 'report', label: 'Sınıf Koçluk Raporu & Reçete', icon: Sparkles },
-        { id: 'chat', label: 'Sınıf Rehberliği AI Danışmanı', icon: MessageSquare, badge: isChatEnabledGlobally },
-        { id: 'targetGap', label: 'Sınıf Hedef Gap & Net İbresi', icon: Target },
-        { id: 'urgentTopics', label: 'Sınıf Ortak Acil Konuları', icon: AlertTriangle, count: classUrgentTopics.length },
-        { id: 'history', label: 'Geçmiş Sınıf Raporları', icon: FileText, count: allClassAdvices.length }
+        { 
+          id: 'report' as AICoachTab, 
+          label: 'Sınıf Koçluk Raporu & Reçete', 
+          shortLabel: 'Rapor & Reçete',
+          icon: Sparkles 
+        },
+        { 
+          id: 'chat' as AICoachTab, 
+          label: 'Sınıf Rehberliği AI Danışmanı', 
+          shortLabel: 'Canlı Sohbet',
+          icon: MessageSquare, 
+          badge: isChatEnabledGlobally 
+        },
+        { 
+          id: 'history' as AICoachTab, 
+          label: 'Geçmiş Sınıf Raporları', 
+          shortLabel: 'Geçmiş',
+          icon: FileText, 
+          count: allClassAdvices.length 
+        }
       ];
     }
     return [
-      { id: 'report', label: 'Koçluk Raporu & Reçete', icon: Sparkles },
-      { id: 'chat', label: 'AI Koç ile Canlı Sohbet', icon: MessageSquare, badge: isChatEnabledGlobally },
-      { id: 'targetGap', label: 'Hedef Gap & Net İbresi', icon: Target },
-      { id: 'urgentTopics', label: 'Acil Müdahale Konuları', icon: AlertTriangle, count: urgentStrugglingTopics.length },
-      { id: 'history', label: 'Geçmiş Raporlar', icon: FileText, count: allAdvices.length }
+      { 
+        id: 'report' as AICoachTab, 
+        label: 'Koçluk Raporu & Reçete', 
+        shortLabel: 'Koçluk Raporu',
+        icon: Sparkles 
+      },
+      { 
+        id: 'chat' as AICoachTab, 
+        label: 'Canlı Sohbet', 
+        shortLabel: 'Canlı Sohbet',
+        icon: MessageSquare, 
+        badge: isChatEnabledGlobally 
+      },
+      { 
+        id: 'history' as AICoachTab, 
+        label: 'Geçmiş Raporlar', 
+        shortLabel: 'Geçmiş',
+        icon: FileText, 
+        count: isTeacher ? allClassAdvices.length : allAdvices.length
+      }
     ];
-  }, [isTeacher, isChatEnabledGlobally, classUrgentTopics.length, allClassAdvices.length, urgentStrugglingTopics.length, allAdvices.length]);
+  }, [isTeacher, isChatEnabledGlobally, allClassAdvices.length, allAdvices.length]);
 
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       
       {/* ── 1. HERO HEADER ── */}
-      <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 border border-purple-500/30 rounded-3xl p-5 sm:p-6 shadow-xl relative overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
+      <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 border border-purple-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl relative overflow-hidden">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-5 relative z-10">
           <div>
-            <div className="flex items-center space-x-2 text-purple-300 text-[11px] font-semibold uppercase tracking-wider mb-1">
-              <Bot className="w-4 h-4" />
+            <div className="flex items-center space-x-2 text-purple-300 text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider mb-1">
+              <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Yapay Zeka Destekli YKS {isTeacher ? 'Sınıf & Okul Rehberlik' : 'Bireysel Öğrenci'} Koçluk Merkezi</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight">
               {isTeacher ? `${selectedClass} Sınıfı Yapay Zeka Koçluk Analizi` : 'Kişiselleştirilmiş Yapay Zeka YKS Çalışma Analizi'}
             </h1>
             <p className="text-slate-300 text-xs mt-1 max-w-2xl leading-relaxed">
@@ -976,14 +1006,14 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
           </div>
 
           {isTeacher ? (
-            <div className="flex flex-col sm:items-end gap-2 shrink-0">
+            <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-auto">
               <div className="flex flex-wrap items-center gap-2">
-                <div className="bg-slate-950/80 px-3 py-2 rounded-xl border border-white/10 flex items-center space-x-2">
-                  <School className="w-4 h-4 text-purple-400" />
+                <div className="bg-slate-950/80 px-3 py-2 rounded-xl border border-white/10 flex items-center space-x-2 flex-1 sm:flex-initial">
+                  <School className="w-4 h-4 text-purple-400 shrink-0" />
                   <select
                     value={selectedClass}
                     onChange={(e) => setSelectedClass(e.target.value)}
-                    className="bg-transparent text-xs text-white font-bold border-none focus:outline-none cursor-pointer"
+                    className="bg-transparent text-xs text-white font-bold border-none focus:outline-none cursor-pointer w-full sm:w-auto"
                   >
                     {availableClassNames.map((cls) => (
                       <option key={cls} value={cls} className="bg-slate-900">{cls}</option>
@@ -994,7 +1024,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                 <button
                   onClick={handleFetchClassAdvice}
                   disabled={loading || classGeneratedTodayCount >= 2}
-                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-purple-600/30 flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+                  className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-purple-600/30 flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50 flex-1 sm:flex-initial"
                 >
                   {loading ? (
                     <>
@@ -1009,17 +1039,16 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                   )}
                 </button>
               </div>
-
-              <span className={`text-[11px] font-medium ${classGeneratedTodayCount >= 2 ? 'text-amber-300' : 'text-emerald-300'}`}>
-                {classGeneratedTodayCount >= 2 ? '⚠️ Günlük 2/2 analiz tamamlandı' : `✨ Günlük Sınıf Analiz Hakkı: ${classGeneratedTodayCount}/2`}
+              <span className={`text-[10px] sm:text-[11px] font-medium ${classGeneratedTodayCount >= 2 ? 'text-amber-300' : 'text-emerald-300'}`}>
+                {classGeneratedTodayCount >= 2 ? '⚠️ Günlük 2/2 sınıf analiz hakkı kullanıldı' : `✨ Bugün ${classGeneratedTodayCount}/2 sınıf analizi yapıldı`}
               </span>
             </div>
           ) : (
-            <div className="flex flex-col sm:items-end gap-1 shrink-0">
+            <div className="flex flex-col sm:items-end gap-1.5 shrink-0 w-full sm:w-auto">
               <button
                 onClick={handleFetchAdvice}
                 disabled={loading || hasGeneratedToday}
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-purple-600/30 flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-purple-600/30 flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50 w-full sm:w-auto"
               >
                 {loading ? (
                   <>
@@ -1033,7 +1062,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                   </>
                 )}
               </button>
-              <span className={`text-[11px] font-medium ${hasGeneratedToday ? 'text-amber-300' : 'text-emerald-300'}`}>
+              <span className={`text-[10px] sm:text-[11px] font-medium text-center sm:text-right ${hasGeneratedToday ? 'text-amber-300' : 'text-emerald-300'}`}>
                 {hasGeneratedToday ? '⚠️ Bugünkü 1/1 rapor hakkınız kullanıldı' : '✨ Günlük 1 analiz hakkı hazır'}
               </span>
             </div>
@@ -1053,25 +1082,26 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
         </div>
       )}
 
-      {/* ── 2. SUB-TABS NAVIGATION (HER İKİ MOD İÇİN ZENGİN 5'Lİ ŞERİT) ── */}
-      <div className="flex bg-slate-950 p-1.5 rounded-2xl border border-slate-800 items-center gap-1.5 w-full shadow-lg overflow-x-auto">
+      {/* ── 2. SUB-TABS NAVIGATION (3'LÜ RESPONSIVE ŞERİT) ── */}
+      <div className="grid grid-cols-3 bg-slate-950 p-1 sm:p-1.5 rounded-2xl border border-slate-800 gap-1 sm:gap-1.5 w-full shadow-lg">
         {tabsList.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as AICoachTab)}
-            className={`flex-1 min-w-[140px] flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl font-bold text-xs transition-all cursor-pointer relative ${
+            className={`flex items-center justify-center space-x-1.5 sm:space-x-2 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl font-bold text-[10.5px] sm:text-xs transition-all cursor-pointer relative text-center ${
               activeTab === tab.id
                 ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/70'
             }`}
           >
-            <tab.icon className="w-4 h-4 shrink-0" />
-            <span className="truncate">{tab.label}</span>
+            <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+            <span className="hidden md:inline truncate">{tab.label}</span>
+            <span className="md:hidden truncate">{tab.shortLabel}</span>
             {tab.badge && (
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
             )}
             {typeof tab.count === 'number' && tab.count > 0 && (
-              <span className="text-[10px] bg-purple-500/30 text-purple-200 font-mono px-1.5 py-0.2 rounded-full font-bold">
+              <span className="text-[9px] sm:text-[10px] bg-purple-500/30 text-purple-200 font-mono px-1.5 py-0.2 rounded-full font-bold">
                 {tab.count}
               </span>
             )}
@@ -1079,35 +1109,35 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
         ))}
       </div>
 
-      {/* ── 3. TAB CONTENT ── */}
+      {/* ── 3. TAB CONTENT (3 ANA SEKME) ── */}
 
       {/* ─────────────────────────────────────────────────────────── */}
-      {/* TAB 1: KOÇLUK RAPORU & REÇETE */}
+      {/* SEKME 1: KOÇLUK RAPORU & REÇETE */}
       {/* ─────────────────────────────────────────────────────────── */}
       {activeTab === 'report' && (
-        <div className="space-y-6">
-          {/* TEACHER MODE REPORT */}
+        <div className="space-y-6 animate-fade-in">
           {isTeacher ? (
+            /* TEACHER MODE REPORT */
             activeClassAdvice ? (
-              <div className="space-y-6 animate-fade-in">
-                <div className="bg-slate-900 border border-purple-500/30 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div className="space-y-6">
+                <div className="bg-slate-900 border border-purple-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
                     <div>
-                      <h2 className="text-base font-bold text-white flex items-center space-x-2">
-                        <Users className="w-5 h-5 text-purple-400" />
+                      <h2 className="text-sm sm:text-base font-bold text-white flex items-center space-x-2">
+                        <Users className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400 shrink-0" />
                         <span>{activeClassAdvice.className} Sınıfı Koçluk Değerlendirme Raporu</span>
                       </h2>
                       {activeClassAdvice.createdByName && (
-                        <p className="text-xs text-slate-400 mt-0.5">
+                        <p className="text-[11px] text-slate-400 mt-0.5">
                           Oluşturan: <span className="text-purple-300 font-semibold">{activeClassAdvice.createdByName}</span> ({activeClassAdvice.createdByRole || 'Rehber Öğretmen'})
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center space-x-2 shrink-0 self-start sm:self-center">
+                    <div className="flex flex-wrap items-center gap-2 shrink-0 self-start sm:self-center">
                       {isSpeechSynthesisSupported() && (
                         <button
                           onClick={() => handleSpeakClassReport(activeClassAdvice)}
-                          className={`flex items-center space-x-1.5 text-xs px-3 py-1 rounded-xl border font-semibold transition-all cursor-pointer ${
+                          className={`flex items-center space-x-1.5 text-xs px-3 py-1.5 rounded-xl border font-semibold transition-all cursor-pointer ${
                             activeSpeakingId === 'report-class-latest'
                               ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
                               : 'bg-purple-600/20 text-purple-300 border-purple-500/30 hover:bg-purple-600/30'
@@ -1127,23 +1157,23 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                           )}
                         </button>
                       )}
-                      <span className="text-[11px] font-mono text-purple-300 bg-purple-500/20 px-2.5 py-1 rounded-full border border-purple-500/30">
+                      <span className="text-[10px] sm:text-[11px] font-mono text-purple-300 bg-purple-500/20 px-2.5 py-1 rounded-full border border-purple-500/30">
                         Rapor Tarihi: {activeClassAdvice.timestamp}
                       </span>
                     </div>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-slate-200 leading-relaxed bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                  <p className="text-xs sm:text-sm text-slate-200 leading-relaxed bg-slate-950 p-3.5 sm:p-4 rounded-2xl border border-slate-800">
                     {activeClassAdvice.generalEvaluation}
                   </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-                    <div className="bg-emerald-950/20 border border-emerald-500/30 p-4 rounded-2xl space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                    <div className="bg-emerald-950/20 border border-emerald-500/30 p-3.5 sm:p-4 rounded-2xl space-y-2">
                       <div className="flex items-center space-x-2 text-emerald-400 text-xs font-bold">
-                        <CheckCircle className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4 shrink-0" />
                         <span>Sınıfın Güçlü Yönleri & Başarı Dinamikleri</span>
                       </div>
-                      <ul className="space-y-2 text-xs text-slate-300">
+                      <ul className="space-y-1.5 text-xs text-slate-300">
                         {activeClassAdvice.strengths?.map((str, idx) => (
                           <li key={idx} className="flex items-start space-x-2">
                             <span className="text-emerald-400 font-bold mt-0.5">•</span>
@@ -1153,12 +1183,12 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                       </ul>
                     </div>
 
-                    <div className="bg-rose-950/20 border border-rose-500/30 p-4 rounded-2xl space-y-2">
+                    <div className="bg-rose-950/20 border border-rose-500/30 p-3.5 sm:p-4 rounded-2xl space-y-2">
                       <div className="flex items-center space-x-2 text-rose-400 text-xs font-bold">
-                        <AlertCircle className="w-4 h-4" />
+                        <AlertCircle className="w-4 h-4 shrink-0" />
                         <span>Sınıfça Müdahale Edilecek Zayıf Alanlar</span>
                       </div>
-                      <ul className="space-y-2 text-xs text-slate-300">
+                      <ul className="space-y-1.5 text-xs text-slate-300">
                         {activeClassAdvice.weakAreas?.map((w, idx) => (
                           <li key={idx} className="flex items-start space-x-2">
                             <span className="text-rose-400 font-bold mt-0.5">•</span>
@@ -1171,18 +1201,18 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
 
                   {/* Sınıf Haftalık Branş & Etüt Reçetesi */}
                   {activeClassAdvice.weeklyPrescription && activeClassAdvice.weeklyPrescription.length > 0 && (
-                    <div className="bg-slate-950 border border-purple-500/30 p-5 rounded-2xl space-y-4 mt-4">
+                    <div className="bg-slate-950 border border-purple-500/30 p-4 sm:p-5 rounded-2xl space-y-3.5 mt-4">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
                         <h3 className="text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center space-x-2">
                           <ListTodo className="w-4 h-4 text-purple-400" />
                           <span>Sınıf Geneli Haftalık Çalışma & Soru Çözüm Reçetesi</span>
                         </h3>
-                        <span className="text-[10px] text-slate-400 font-medium">Sınıf Tavsiye Kotası</span>
+                        <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">Sınıf Tavsiye Kotası</span>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {activeClassAdvice.weeklyPrescription.map((item, idx) => (
-                          <div key={idx} className="bg-slate-900 border border-slate-800 p-3.5 rounded-xl space-y-2.5 hover:border-purple-500/40 transition-all">
+                          <div key={idx} className="bg-slate-900 border border-slate-800 p-3.5 rounded-xl space-y-2 hover:border-purple-500/40 transition-all">
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-white">{item.subject}</span>
                               <span className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-bold uppercase ${
@@ -1195,8 +1225,8 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                             </div>
 
                             <div className="flex items-baseline space-x-1.5">
-                              <span className="text-xl font-black text-purple-400 font-mono">{item.targetQuestions}</span>
-                              <span className="text-[11px] text-slate-400">Hedef Soru / Öğrenci</span>
+                              <span className="text-lg sm:text-xl font-black text-purple-400 font-mono">{item.targetQuestions}</span>
+                              <span className="text-[10px] text-slate-400">Hedef Soru / Öğrenci</span>
                             </div>
 
                             {item.focusTopics && item.focusTopics.length > 0 && (
@@ -1219,68 +1249,62 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                   )}
 
                   {/* Rehber Öğretmen 4 Temel Aksiyon Planı */}
-                  <div className="bg-slate-950 border border-indigo-500/30 p-5 rounded-2xl space-y-3 mt-4">
-                    <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center space-x-2">
-                      <Zap className="w-4 h-4" />
-                      <span>Rehber Öğretmen / Sınıf Koçu İçin Bu Haftalık 4 Temel Aksiyon ve Etüt Planı</span>
-                    </h3>
+                  {activeClassAdvice.actionPlan && activeClassAdvice.actionPlan.length > 0 && (
+                    <div className="bg-slate-950 border border-indigo-500/30 p-4 sm:p-5 rounded-2xl space-y-3 mt-4">
+                      <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center space-x-2">
+                        <Zap className="w-4 h-4" />
+                        <span>Rehber Öğretmen / Sınıf Koçu İçin Bu Haftalık 4 Temel Aksiyon ve Etüt Planı</span>
+                      </h3>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {activeClassAdvice.actionPlan?.map((plan, idx) => (
-                        <div key={idx} className="flex items-start space-x-3 p-3 bg-slate-900 rounded-xl border border-slate-800 hover:border-indigo-500/30 transition-all">
-                          <span className="w-6 h-6 rounded-full bg-purple-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
-                            {idx + 1}
-                          </span>
-                          <p className="text-xs text-slate-200 leading-relaxed">{plan}</p>
-                        </div>
-                      ))}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {activeClassAdvice.actionPlan?.map((plan, idx) => (
+                          <div key={idx} className="flex items-start space-x-3 p-3 bg-slate-900 rounded-xl border border-slate-800 hover:border-indigo-500/30 transition-all">
+                            <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-purple-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                              {idx + 1}
+                            </span>
+                            <p className="text-xs text-slate-200 leading-relaxed">{plan}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {activeClassAdvice.motivationalQuote && (
-                    <div className="bg-gradient-to-r from-purple-950/60 via-slate-900 to-indigo-950/60 p-4 rounded-2xl border border-purple-500/30 flex items-center space-x-3 italic text-xs text-purple-200">
-                      <Quote className="w-6 h-6 text-purple-400 flex-shrink-0" />
+                    <div className="bg-gradient-to-r from-purple-950/60 via-slate-900 to-indigo-950/60 p-3.5 sm:p-4 rounded-2xl border border-purple-500/30 flex items-center space-x-3 italic text-xs text-purple-200">
+                      <Quote className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400 flex-shrink-0" />
                       <p className="leading-relaxed font-medium">"{activeClassAdvice.motivationalQuote}"</p>
                     </div>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center mx-auto">
-                  <Sparkles className="w-8 h-8" />
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-8 sm:p-12 text-center space-y-4">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center mx-auto">
+                  <Sparkles className="w-7 h-7 sm:w-8 sm:h-8" />
                 </div>
                 <div className="max-w-md mx-auto space-y-1.5">
-                  <h3 className="text-base font-bold text-white">{selectedClass} Sınıfı İçin Rapor Bulunmuyor</h3>
+                  <h3 className="text-sm sm:text-base font-bold text-white">{selectedClass} Sınıfı İçin Rapor Bulunmuyor</h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Sınıfın tüm öğrenci verilerini tarayarak SWOT değerlendirmesi, haftalık etüt reçetesi ve rehberlik planı oluşturmak için yukarıdaki butona tıklayın.
                   </p>
                 </div>
-                <button
-                  onClick={handleFetchClassAdvice}
-                  disabled={loading}
-                  className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-600/30 cursor-pointer hover:from-purple-500 hover:to-indigo-500 transition-all inline-flex items-center space-x-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>{selectedClass} Sınıf Raporunu Başlat</span>
-                </button>
               </div>
             )
           ) : (
             /* STUDENT MODE REPORT */
             latestAdvice ? (
               <div className="space-y-6 animate-fade-in">
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
                     <h2 className="text-sm font-bold text-white flex items-center space-x-2">
-                      <Sparkles className="w-4 h-4 text-purple-400" />
+                      <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
                       <span>Genel Gidişat ve Durum Değerlendirmesi</span>
                     </h2>
-                    <div className="flex items-center space-x-2 self-start sm:self-center">
+                    <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
                       {isSpeechSynthesisSupported() && (
                         <button
                           onClick={() => handleSpeakReport(latestAdvice)}
-                          className={`flex items-center space-x-1.5 text-xs px-3 py-1 rounded-xl border font-semibold transition-all cursor-pointer ${
+                          className={`flex items-center space-x-1.5 text-xs px-3 py-1.5 rounded-xl border font-semibold transition-all cursor-pointer ${
                             activeSpeakingId === 'report-latest'
                               ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
                               : 'bg-purple-600/20 text-purple-300 border-purple-500/30 hover:bg-purple-600/30'
@@ -1300,23 +1324,23 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                           )}
                         </button>
                       )}
-                      <span className="text-[11px] font-mono text-purple-300 font-bold bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full">
+                      <span className="text-[10px] sm:text-[11px] font-mono text-purple-300 font-bold bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 rounded-full">
                         Rapor Tarihi: {latestAdvice.timestamp}
                       </span>
                     </div>
                   </div>
 
-                  <p className="text-xs sm:text-sm text-slate-200 leading-relaxed bg-slate-950 p-4 rounded-2xl border border-slate-800/80">
+                  <p className="text-xs sm:text-sm text-slate-200 leading-relaxed bg-slate-950 p-3.5 sm:p-4 rounded-2xl border border-slate-800/80">
                     {latestAdvice.generalEvaluation}
                   </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-                    <div className="bg-emerald-950/20 border border-emerald-500/30 p-4 rounded-2xl space-y-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                    <div className="bg-emerald-950/20 border border-emerald-500/30 p-3.5 sm:p-4 rounded-2xl space-y-2">
                       <div className="flex items-center space-x-2 text-emerald-400 text-xs font-bold">
-                        <CheckCircle className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4 shrink-0" />
                         <span>Güçlü Yönleriniz & Öne Çıkanlar</span>
                       </div>
-                      <ul className="space-y-2 text-xs text-slate-300">
+                      <ul className="space-y-1.5 text-xs text-slate-300">
                         {latestAdvice.strengths?.map((str, idx) => (
                           <li key={idx} className="flex items-start space-x-2">
                             <span className="text-emerald-400 font-bold mt-0.5">•</span>
@@ -1326,12 +1350,12 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                       </ul>
                     </div>
 
-                    <div className="bg-rose-950/20 border border-rose-500/30 p-4 rounded-2xl space-y-2.5">
+                    <div className="bg-rose-950/20 border border-rose-500/30 p-3.5 sm:p-4 rounded-2xl space-y-2">
                       <div className="flex items-center space-x-2 text-rose-400 text-xs font-bold">
-                        <AlertCircle className="w-4 h-4" />
+                        <AlertCircle className="w-4 h-4 shrink-0" />
                         <span>Öncelikli Geliştirilecek Alanlar</span>
                       </div>
-                      <ul className="space-y-2 text-xs text-slate-300">
+                      <ul className="space-y-1.5 text-xs text-slate-300">
                         {latestAdvice.weakAreas?.map((w, idx) => (
                           <li key={idx} className="flex items-start space-x-2">
                             <span className="text-rose-400 font-bold mt-0.5">•</span>
@@ -1342,19 +1366,20 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                     </div>
                   </div>
 
+                  {/* Haftalık Soru Reçetesi */}
                   {latestAdvice.weeklyPrescription && latestAdvice.weeklyPrescription.length > 0 && (
-                    <div className="bg-slate-950 border border-purple-500/30 p-5 rounded-2xl space-y-4 mt-4">
+                    <div className="bg-slate-950 border border-purple-500/30 p-4 sm:p-5 rounded-2xl space-y-3.5 mt-4">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
                         <h3 className="text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center space-x-2">
                           <ListTodo className="w-4 h-4 text-purple-400" />
                           <span>Haftalık YKS Çalışma & Soru Reçetesi</span>
                         </h3>
-                        <span className="text-[10px] text-slate-400 font-medium">Kişiye Özel Haftalık Kota</span>
+                        <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">Kişiye Özel Haftalık Kota</span>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {latestAdvice.weeklyPrescription.map((item, idx) => (
-                          <div key={idx} className="bg-slate-900 border border-slate-800 p-3.5 rounded-xl space-y-2.5 hover:border-purple-500/40 transition-all">
+                          <div key={idx} className="bg-slate-900 border border-slate-800 p-3.5 rounded-xl space-y-2 hover:border-purple-500/40 transition-all">
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-white">{item.subject}</span>
                               <span className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-bold uppercase ${
@@ -1367,8 +1392,8 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                             </div>
 
                             <div className="flex items-baseline space-x-1.5">
-                              <span className="text-xl font-black text-purple-400 font-mono">{item.targetQuestions}</span>
-                              <span className="text-[11px] text-slate-400">Hedef Soru</span>
+                              <span className="text-lg sm:text-xl font-black text-purple-400 font-mono">{item.targetQuestions}</span>
+                              <span className="text-[10px] text-slate-400">Hedef Soru</span>
                             </div>
 
                             {item.focusTopics && item.focusTopics.length > 0 && (
@@ -1390,51 +1415,46 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                     </div>
                   )}
 
-                  <div className="bg-slate-950 border border-indigo-500/30 p-5 rounded-2xl space-y-3 mt-4">
-                    <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center space-x-2">
-                      <Zap className="w-4 h-4" />
-                      <span>YKS Koçunun Bu Haftaki 4 Temel Aksiyon Adımı</span>
-                    </h3>
+                  {/* 4 Temel Aksiyon Adımı */}
+                  {latestAdvice.actionPlan && latestAdvice.actionPlan.length > 0 && (
+                    <div className="bg-slate-950 border border-indigo-500/30 p-4 sm:p-5 rounded-2xl space-y-3 mt-4">
+                      <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center space-x-2">
+                        <Zap className="w-4 h-4" />
+                        <span>YKS Koçunun Bu Haftaki 4 Temel Aksiyon Adımı</span>
+                      </h3>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {latestAdvice.actionPlan?.map((plan, idx) => (
-                        <div key={idx} className="flex items-start space-x-3 p-3 bg-slate-900 rounded-xl border border-slate-800 hover:border-indigo-500/30 transition-all">
-                          <span className="w-6 h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
-                            {idx + 1}
-                          </span>
-                          <p className="text-xs text-slate-200 leading-relaxed">{plan}</p>
-                        </div>
-                      ))}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {latestAdvice.actionPlan.map((plan, idx) => (
+                          <div key={idx} className="flex items-start space-x-3 p-3 bg-slate-900 rounded-xl border border-slate-800 hover:border-indigo-500/30 transition-all">
+                            <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+                              {idx + 1}
+                            </span>
+                            <p className="text-xs text-slate-200 leading-relaxed">{plan}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {latestAdvice.motivationalQuote && (
-                    <div className="bg-gradient-to-r from-purple-950/60 via-slate-900 to-indigo-950/60 p-4 rounded-2xl border border-purple-500/30 flex items-center space-x-3 italic text-xs text-purple-200">
-                      <Quote className="w-6 h-6 text-purple-400 flex-shrink-0" />
+                    <div className="bg-gradient-to-r from-purple-950/60 via-slate-900 to-indigo-950/60 p-3.5 sm:p-4 rounded-2xl border border-purple-500/30 flex items-center space-x-3 italic text-xs text-purple-200">
+                      <Quote className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400 flex-shrink-0" />
                       <p className="leading-relaxed font-medium">"{latestAdvice.motivationalQuote}"</p>
                     </div>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center space-y-4">
-                <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center mx-auto">
-                  <Sparkles className="w-8 h-8" />
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-8 sm:p-12 text-center space-y-4">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center mx-auto">
+                  <Sparkles className="w-7 h-7 sm:w-8 sm:h-8" />
                 </div>
                 <div className="max-w-md mx-auto space-y-1.5">
-                  <h3 className="text-base font-bold text-white">Henüz Bir Koçluk Raporu Üretilmedi</h3>
+                  <h3 className="text-sm sm:text-base font-bold text-white">Henüz Bir Koçluk Raporu Üretilmedi</h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Soru çözümlerini, deneme netlerini ve Hata Defterindeki eksik konularını analiz ederek kişisel çalışma reçetesi almak için yukarıdaki butona tıkla.
                   </p>
                 </div>
-                <button
-                  onClick={handleFetchAdvice}
-                  disabled={loading}
-                  className="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold rounded-xl shadow-lg shadow-purple-600/30 cursor-pointer hover:from-purple-500 hover:to-indigo-500 transition-all inline-flex items-center space-x-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  <span>İlk Analizi Başlat</span>
-                </button>
               </div>
             )
           )}
@@ -1442,35 +1462,35 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
       )}
 
       {/* ─────────────────────────────────────────────────────────── */}
-      {/* TAB 2: AI KOÇ İLE CANLI SOHBET & DANIŞMANLIK */}
+      {/* SEKME 2: AI KOÇ İLE CANLI SOHBET & DANIŞMANLIK */}
       {/* ─────────────────────────────────────────────────────────── */}
       {activeTab === 'chat' && (
-        <div className={`bg-slate-900 border ${!isTeacher ? stressTheme.borderColor : 'border-slate-800'} rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl animate-fade-in flex flex-col h-[650px] transition-colors duration-500`}>
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
-            <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 rounded-xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
-                <MessageSquare className="w-5 h-5" />
+        <div className={`bg-slate-900 border ${!isTeacher ? stressTheme.borderColor : 'border-slate-800'} rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 space-y-3.5 shadow-xl animate-fade-in flex flex-col h-[560px] sm:h-[650px] transition-colors duration-500`}>
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0 gap-2">
+            <div className="flex items-center space-x-2.5 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-purple-600/20 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
+                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <span>{isTeacher ? `${selectedClass} Sınıf Rehberliği AI Danışmanı` : 'YKS Koçu ile Canlı Danışmanlık'}</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <div className="min-w-0">
+                <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 truncate">
+                  <span className="truncate">{isTeacher ? `${selectedClass} Sınıf Rehberliği Danışmanı` : 'YKS Koçu ile Canlı Danışmanlık'}</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                 </h3>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
                   {isTeacher
-                    ? `${selectedClass} sınıfı akademik performansı ve rehberlik taktikleri hakkında anlık danışın`
-                    : 'YKS stratejisi, çalışma taktikleri ve motivasyon konusunda sorularını sor'
+                    ? `${selectedClass} sınıfı için taktik ve plan danışın`
+                    : 'YKS stratejisi ve motivasyon konusunda sorularını sor'
                   }
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5 shrink-0">
               {isSpeechSynthesisSupported() && (
                 <div className="flex items-center space-x-1 bg-slate-950 border border-slate-800 rounded-xl p-1">
                   <button
                     onClick={toggleAutoSpeak}
-                    className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    className={`flex items-center space-x-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       isAutoSpeakEnabled
                         ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40 shadow-sm'
                         : 'text-slate-400 hover:text-slate-200'
@@ -1478,7 +1498,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                     title={isAutoSpeakEnabled ? 'Otomatik sesli okuma açık' : 'Otomatik sesli okumayı aç'}
                   >
                     {isAutoSpeakEnabled ? <Volume2 className="w-3.5 h-3.5 text-purple-400 animate-pulse" /> : <VolumeX className="w-3.5 h-3.5 text-slate-500" />}
-                    <span className="hidden sm:inline">{isAutoSpeakEnabled ? 'Sesli Koç: Açık' : 'Sesli Koç: Kapalı'}</span>
+                    <span className="hidden md:inline">{isAutoSpeakEnabled ? 'Sesli Koç: Açık' : 'Sesli Koç: Kapalı'}</span>
                   </button>
 
                   {isAutoSpeakEnabled && (
@@ -1507,9 +1527,8 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
           {/* 🧠 Stres Durumu Banner & Check-In Widget (sadece öğrenci modunda) */}
           {!isTeacher && (
             <div className="shrink-0 space-y-2">
-              {/* Empati Banner */}
               {stressTheme.bannerText && (
-                <div className={`flex items-start space-x-2.5 px-3.5 py-2.5 rounded-xl ${stressTheme.bgColor} border ${stressTheme.borderColor} animate-fade-in`}>
+                <div className={`flex items-start space-x-2.5 px-3 py-2 rounded-xl ${stressTheme.bgColor} border ${stressTheme.borderColor} animate-fade-in`}>
                   <span className="text-base shrink-0 mt-0.5">{stressTheme.icon}</span>
                   <div className="flex-1 min-w-0">
                     <p className={`text-xs font-semibold ${stressTheme.textColor}`}>{stressTheme.label}</p>
@@ -1519,7 +1538,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
               )}
 
               {/* Günlük Ruh Hali Check-In */}
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[10px] text-slate-500 font-medium shrink-0">Bugün nasılsın?</span>
                 {(['tired', 'okay', 'ready'] as const).map(m => {
                   const labels = { tired: '😴 Yorgunum', okay: '😐 İdare Eder', ready: '🔥 Hazırım' };
@@ -1548,7 +1567,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                 key={idx}
                 onClick={() => handleSendMessage(promptText)}
                 disabled={chatLoading}
-                className={`text-[10px] leading-snug ${!isTeacher && stressProfile.stressLevel !== 'calm' ? `${stressTheme.bgColor} ${stressTheme.textColor} ${stressTheme.borderColor}` : 'bg-slate-950 text-purple-200 border-purple-500/20 hover:border-purple-500/40'} border hover:opacity-80 px-2.5 py-1.5 rounded-full transition-all cursor-pointer disabled:opacity-50 max-w-[48%] sm:max-w-none text-left`}
+                className={`text-[10px] leading-snug ${!isTeacher && stressProfile.stressLevel !== 'calm' ? `${stressTheme.bgColor} ${stressTheme.textColor} ${stressTheme.borderColor}` : 'bg-slate-950 text-purple-200 border-purple-500/20 hover:border-purple-500/40'} border hover:opacity-80 px-2.5 py-1.5 rounded-full transition-all cursor-pointer disabled:opacity-50 text-left`}
               >
                 {promptText}
               </button>
@@ -1556,7 +1575,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
           </div>
 
           {/* Chat Messages List */}
-          <div ref={chatScrollRef} className="flex-1 overflow-y-auto space-y-3.5 pr-2">
+          <div ref={chatScrollRef} className="flex-1 overflow-y-auto space-y-3.5 pr-1 sm:pr-2 custom-scrollbar">
             {chatMessages.map((msg) => (
               <div
                 key={msg.id}
@@ -1568,7 +1587,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
                   </div>
                 )}
                 <div
-                  className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-3.5 text-xs sm:text-sm leading-relaxed ${
+                  className={`max-w-[88%] sm:max-w-[75%] rounded-2xl p-3 sm:p-3.5 text-xs sm:text-sm leading-relaxed ${
                     msg.sender === 'user'
                       ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-br-none shadow-md'
                       : 'bg-slate-950 text-slate-200 border border-slate-800 rounded-bl-none shadow-inner'
@@ -1643,12 +1662,12 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
               onChange={(e) => setChatInput(e.target.value)}
               placeholder={isTeacher ? `${selectedClass} sınıfı için bir rehberlik sorusu sorun...` : 'YKS koçuna bir soru sor veya taktik iste...'}
               disabled={chatLoading}
-              className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-colors"
+              className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-colors"
             />
             <button
               type="submit"
               disabled={chatLoading || !chatInput.trim()}
-              className="p-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl shadow-lg shadow-purple-600/30 transition-all cursor-pointer disabled:opacity-50"
+              className="p-2.5 sm:p-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl shadow-lg shadow-purple-600/30 transition-all cursor-pointer disabled:opacity-50 shrink-0"
             >
               <Send className="w-4 h-4" />
             </button>
@@ -1657,339 +1676,7 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
       )}
 
       {/* ─────────────────────────────────────────────────────────── */}
-      {/* TAB 3: HEDEF GAP & NET DAĞILIMI */}
-      {/* ─────────────────────────────────────────────────────────── */}
-      {activeTab === 'targetGap' && (
-        <div className="space-y-6 animate-fade-in">
-          {isTeacher ? (
-            /* TEACHER CLASS GAP & NET DISTRIBUTION */
-            <div className="space-y-6">
-              {/* 4 Top Metric Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center space-x-3 shadow-md">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
-                    <Users className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-medium block">Sınıf Mevcudu</span>
-                    <span className="text-xl font-black text-white font-mono">{classSummaryStats.studentCount} <span className="text-xs text-slate-500 font-normal">Öğrenci</span></span>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center space-x-3 shadow-md">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
-                    <BarChart2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-medium block">Ort. TYT Neti</span>
-                    <span className="text-xl font-black text-indigo-300 font-mono">{classSummaryStats.averageTYTNet} <span className="text-xs text-slate-500 font-normal">Net</span></span>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center space-x-3 shadow-md">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-                    <TrendingUp className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-medium block">Ort. AYT Neti</span>
-                    <span className="text-xl font-black text-emerald-300 font-mono">{classSummaryStats.averageAYTNet} <span className="text-xs text-slate-500 font-normal">Net</span></span>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center space-x-3 shadow-md">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
-                    <Award className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[11px] text-slate-400 font-medium block">Toplam Soru Çözümü</span>
-                    <span className="text-xl font-black text-amber-300 font-mono">{classSummaryStats.totalQuestionsSolved.toLocaleString('tr-TR')}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress & Gap Bars */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-900 border border-indigo-500/30 p-5 rounded-3xl space-y-3 shadow-xl">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
-                      <Target className="w-4 h-4" /> Sınıf TYT Hedef Gap Analizi
-                    </span>
-                    <span className="text-xs font-mono font-bold text-indigo-300">
-                      {classSummaryStats.averageTYTNet} / {classSummaryStats.targetTYTNet} Net
-                    </span>
-                  </div>
-
-                  <div className="w-full bg-slate-950 h-3.5 rounded-full overflow-hidden border border-slate-800 p-0.5">
-                    <div
-                      className="h-full bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, (classSummaryStats.averageTYTNet / classSummaryStats.targetTYTNet) * 100)}%` }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                    <span>En Yüksek: <strong className="text-white font-mono">{classSummaryStats.highestTYTNet}</strong> Net</span>
-                    <span>Hedefe Kalan Gap: <strong className="text-indigo-300 font-mono">+{classSummaryStats.tytGap}</strong> Net</span>
-                    <span>En Düşük: <strong className="text-white font-mono">{classSummaryStats.lowestTYTNet}</strong> Net</span>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 border border-emerald-500/30 p-5 rounded-3xl space-y-3 shadow-xl">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                      <Target className="w-4 h-4" /> Sınıf AYT Hedef Gap Analizi
-                    </span>
-                    <span className="text-xs font-mono font-bold text-emerald-300">
-                      {classSummaryStats.averageAYTNet} / {classSummaryStats.targetAYTNet} Net
-                    </span>
-                  </div>
-
-                  <div className="w-full bg-slate-950 h-3.5 rounded-full overflow-hidden border border-slate-800 p-0.5">
-                    <div
-                      className="h-full bg-gradient-to-r from-emerald-600 to-teal-600 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, (classSummaryStats.averageAYTNet / classSummaryStats.targetAYTNet) * 100)}%` }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                    <span>En Yüksek: <strong className="text-white font-mono">{classSummaryStats.highestAYTNet}</strong> Net</span>
-                    <span>Hedefe Kalan Gap: <strong className="text-emerald-300 font-mono">+{classSummaryStats.aytGap}</strong> Net</span>
-                    <span>En Düşük: <strong className="text-white font-mono">{classSummaryStats.lowestAYTNet}</strong> Net</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Sınıf Seviyesinde Yüksek Getirili Ortak Konular */}
-              <div className="bg-slate-900 border border-slate-800 p-5 sm:p-6 rounded-3xl space-y-4 shadow-xl">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-                    <Flame className="w-4 h-4 text-amber-400" />
-                    <span>{selectedClass} Sınıfına En Hızlı Net Kazandıracak Yüksek Getirili Ortak Konular</span>
-                  </h3>
-                  <span className="text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full font-bold">
-                    Öncelikli Telafi Konuları
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {classHighYieldTopics.map((item, idx) => (
-                    <div key={idx} className="bg-slate-950 p-4 rounded-2xl border border-slate-800/80 hover:border-purple-500/40 transition-all space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono font-bold text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-md">
-                          {item.subject}
-                        </span>
-                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono">
-                          +{item.estimatedNetGain} Net Potansiyeli
-                        </span>
-                      </div>
-                      <h4 className="text-xs font-bold text-white">{item.topic}</h4>
-                      <p className="text-[11px] text-slate-400 leading-relaxed">{item.reason}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* STUDENT GAP & METRICS */
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-900 border border-indigo-500/30 p-5 rounded-3xl space-y-3 shadow-xl">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
-                      <Target className="w-4 h-4" /> TYT Net Hedef İbresi
-                    </span>
-                    <span className="text-xs font-mono font-bold text-indigo-300">
-                      {targetGapData.currentTyt} / {targetGapData.targetTyt} Net
-                    </span>
-                  </div>
-
-                  <div className="w-full bg-slate-950 h-3.5 rounded-full overflow-hidden border border-slate-800 p-0.5">
-                    <div
-                      className="h-full bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, (targetGapData.currentTyt / targetGapData.targetTyt) * 100)}%` }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                    <span>Mevcut: <strong className="text-white font-mono">{targetGapData.currentTyt}</strong> Net</span>
-                    <span>Kalan Gap: <strong className="text-indigo-300 font-mono">+{targetGapData.tytGap}</strong> Net</span>
-                    <span>Hedef: <strong className="text-white font-mono">{targetGapData.targetTyt}</strong> Net</span>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900 border border-emerald-500/30 p-5 rounded-3xl space-y-3 shadow-xl">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                      <Target className="w-4 h-4" /> {targetGapData.isDil ? 'YDT Net Hedef İbresi' : 'AYT Net Hedef İbresi'}
-                    </span>
-                    <span className="text-xs font-mono font-bold text-emerald-300">
-                      {targetGapData.currentAyt} / {targetGapData.targetAyt} Net
-                    </span>
-                  </div>
-
-                  <div className="w-full bg-slate-950 h-3.5 rounded-full overflow-hidden border border-slate-800 p-0.5">
-                    <div
-                      className="h-full bg-gradient-to-r from-emerald-600 to-teal-600 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min(100, (targetGapData.currentAyt / targetGapData.targetAyt) * 100)}%` }}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                    <span>Mevcut: <strong className="text-white font-mono">{targetGapData.currentAyt}</strong> Net</span>
-                    <span>Kalan Gap: <strong className="text-emerald-300 font-mono">+{targetGapData.aytGap}</strong> Net</span>
-                    <span>Hedef: <strong className="text-white font-mono">{targetGapData.targetAyt}</strong> Net</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ─────────────────────────────────────────────────────────── */}
-      {/* TAB 4: ACİL MÜDAHALE KONULARI */}
-      {/* ─────────────────────────────────────────────────────────── */}
-      {activeTab === 'urgentTopics' && (
-        <div className="space-y-6 animate-fade-in">
-          {isTeacher ? (
-            /* TEACHER AGGREGATED CLASS ERROR TOPICS */
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                <div>
-                  <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-                    <AlertTriangle className="w-4 h-4 text-rose-400" />
-                    <span>{selectedClass} Sınıfının Ortak Hata ve Acil Telafi Konuları</span>
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Sınıftaki tüm öğrencilerin Hata Defteri kayıtlarından toplanan, en çok yanlış yapılan ortak eksikler.
-                  </p>
-                </div>
-                <span className="text-[11px] font-mono text-rose-300 font-bold bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 rounded-full self-start sm:self-center">
-                  Toplam {classUrgentTopics.length} Ortak Konu
-                </span>
-              </div>
-
-              {classUrgentTopics.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                  {classUrgentTopics.map((item, idx) => (
-                    <div key={idx} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 hover:border-rose-500/40 transition-all space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono text-purple-300 font-bold bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-md">
-                          {item.subject}
-                        </span>
-                        <span className="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-bold font-mono">
-                          {item.studentCount} Öğrencide Hata
-                        </span>
-                      </div>
-
-                      <div>
-                        <h4 className="text-xs font-bold text-white">{item.topic}</h4>
-                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                          Toplam {item.totalErrorCount} hatalı soru kaydı
-                        </p>
-                      </div>
-
-                      {item.studentNames.length > 0 && (
-                        <div className="pt-2 border-t border-slate-800/80">
-                          <span className="text-[10px] text-slate-400 block mb-1">Zorlanan Öğrenciler:</span>
-                          <div className="flex flex-wrap gap-1">
-                            {item.studentNames.slice(0, 4).map((name, nIdx) => (
-                              <span key={nIdx} className="text-[9px] bg-slate-900 text-slate-300 px-1.5 py-0.5 rounded border border-slate-800">
-                                {name}
-                              </span>
-                            ))}
-                            {item.studentNames.length > 4 && (
-                              <span className="text-[9px] text-purple-300 font-bold self-center">
-                                +{item.studentNames.length - 4} diğer
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-                        <span className="text-[10px] text-slate-500">Rehberlik Önerisi</span>
-                        <span className="text-[10px] text-rose-400 font-bold flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" /> Toplu Etüt Önerilir
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-slate-950 border border-slate-800 p-8 rounded-2xl text-center space-y-2">
-                  <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-                  <h4 className="text-sm font-bold text-white">Harika! Sınıfta Bekleyen Ortak Hata Yok</h4>
-                  <p className="text-xs text-slate-400 max-w-md mx-auto">
-                    Öğrenciler Hata Defterlerindeki soruları düzenli tekrar etmiş veya henüz kayıtlı hata bulunmuyor.
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            /* STUDENT INDIVIDUAL ERROR TOPICS */
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                <div>
-                  <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-                    <AlertTriangle className="w-4 h-4 text-rose-400" />
-                    <span>Hata Defterindeki Acil Müdahale Konuların</span>
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Hata defterinde biriken ve tekrar edilmeyi bekleyen kritik soru konuları.
-                  </p>
-                </div>
-                <span className="text-[11px] font-mono text-rose-300 font-bold bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 rounded-full self-start sm:self-center">
-                  {urgentStrugglingTopics.length} Kritik Konu
-                </span>
-              </div>
-
-              {urgentStrugglingTopics.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                  {urgentStrugglingTopics.map((item, idx) => (
-                    <div key={idx} className="bg-slate-950 p-4 rounded-2xl border border-slate-800 hover:border-rose-500/40 transition-all space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono text-purple-300 font-bold bg-purple-500/10 border border-purple-500/20 px-2 py-0.5 rounded-md">
-                          {item.subject}
-                        </span>
-                        <span className="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded-full font-bold font-mono">
-                          {item.count} Bekleyen Hata
-                        </span>
-                      </div>
-
-                      <div>
-                        <h4 className="text-xs font-bold text-white">{item.topic}</h4>
-                        {item.errorReasons.length > 0 && (
-                          <p className="text-[11px] text-slate-400 mt-1 line-clamp-1">
-                            Neden: {item.errorReasons.join(', ')}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-                        <span className="text-[10px] text-slate-500">Hata Defteri Durumu</span>
-                        <span className="text-[10px] text-rose-400 font-bold flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3" /> Tekrar Gerekli
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-slate-950 border border-slate-800 p-8 rounded-2xl text-center space-y-2">
-                  <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
-                  <h4 className="text-sm font-bold text-white">Harika! Bekleyen Kritik Hata Yok</h4>
-                  <p className="text-xs text-slate-400 max-w-md mx-auto">
-                    Hata Defterindeki tüm sorularını başarıyla tekrar etmiş ve pekiştirmişsin.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ─────────────────────────────────────────────────────────── */}
-      {/* TAB 5: GEÇMİŞ RAPORLAR & ARŞİV */}
+      {/* SEKME 3: GEÇMİŞ RAPORLAR & ARŞİV */}
       {/* ─────────────────────────────────────────────────────────── */}
       {activeTab === 'history' && (
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl animate-fade-in">
