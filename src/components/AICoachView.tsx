@@ -395,20 +395,40 @@ export const AICoachView: React.FC<AICoachViewProps> = ({
 
   const chatMessages = isTeacher ? teacherChatMessages : studentChatMessages;
 
-  // Kullanıcı mesajı gönderince en alta scroll; AI cevabı gelince cevabın başına scroll
+  // Canlı sohbet sekmesi ilk defa açıldığında veya sınıf değiştiğinde doğrudan son mesajın sonuna kaydır
+  useEffect(() => {
+    if (activeTab !== 'chat') return;
+
+    const scrollToBottom = (behavior: ScrollBehavior = 'auto') => {
+      if (chatScrollRef.current) {
+        chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+      }
+      chatBottomRef.current?.scrollIntoView({ behavior, block: 'end' });
+    };
+
+    // DOM ilk render edildiğinde ve eleman boyutları oturduğunda son mesaja kaydır
+    scrollToBottom('auto');
+    const frameId = requestAnimationFrame(() => scrollToBottom('auto'));
+    const t1 = setTimeout(() => scrollToBottom('auto'), 50);
+    const t2 = setTimeout(() => scrollToBottom('auto'), 150);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [activeTab, selectedClass]);
+
+  // Kullanıcı mesajı gönderince en alta yumuşak scroll
   const lastMsgId = chatMessages[chatMessages.length - 1]?.id;
   const lastMsgSender = chatMessages[chatMessages.length - 1]?.sender;
   useEffect(() => {
     if (activeTab !== 'chat') return;
     if (lastMsgSender === 'user') {
-      // Kullanıcı yazdı → en alta git
-      chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    } else if (lastMsgSender === 'ai') {
-      // AI cevabı → scroll container'ın en altındaki AI mesajının üstüne kaydır
-      // Bunu typewriter başladığında yapacağız
+      chatBottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastMsgId, activeTab]);
+  }, [lastMsgId, lastMsgSender, activeTab]);
 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [selectedDetailAdvice, setSelectedDetailAdvice] = useState<AICoachAdvice | null>(null);
