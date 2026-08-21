@@ -23,8 +23,10 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { StudyPlanItem, DayOfWeek, QuestionLog, DailyStudyTimeLog } from '../../types';
+import { StudyPlanItem, DayOfWeek, QuestionLog, DailyStudyTimeLog, UserAccount } from '../../types';
 import { YKS_SUBJECTS, YKS_CURRICULUM_TOPICS, DEFAULT_TASK_TYPES } from '../../data/initialData';
+import { getCurriculumForGrade } from '../../data/curriculum';
+import { getGradeLevel, isIntermediateGrade, GradeLevel } from '../../utils/gradeUtils';
 import { ConfirmDeleteModal } from '../ConfirmDeleteModal';
 import { isSameWeekLabel, formatWeekLabelWithYear } from '../../utils/dateUtils';
 
@@ -147,6 +149,9 @@ interface StudyPlannerModalsProps {
   } | null;
   setClearFutureWeekConfirm?: (data: { weekLabel: string; plansCount: number; step: 1 | 2 } | null) => void;
   handleConfirmClearFutureWeek?: () => void;
+  currentUser?: UserAccount;
+  profile?: any;
+  gradeLevel?: GradeLevel;
 }
 
 export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
@@ -237,8 +242,15 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
   handleDeleteDailyStudyLogModal,
   clearFutureWeekConfirm,
   setClearFutureWeekConfirm,
-  handleConfirmClearFutureWeek
+  handleConfirmClearFutureWeek,
+  currentUser,
+  profile,
+  gradeLevel: explicitGradeLevel
 }) => {
+  const currentGrade: GradeLevel = explicitGradeLevel || getGradeLevel(currentUser?.className || profile?.className);
+  const isIntermediate = isIntermediateGrade(currentGrade);
+  const currentCurriculum = getCurriculumForGrade(currentGrade);
+
   const [modalHours, setModalHours] = React.useState<number>(0);
   const [modalMinutes, setModalMinutes] = React.useState<number>(0);
   const [modalNotes, setModalNotes] = React.useState<string>('');
@@ -285,16 +297,26 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none font-medium focus:border-indigo-400 transition-colors"
                 >
                   <option value="">Lütfen ders seçimi yapınız</option>
-                  <optgroup label="TYT Dersleri">
-                    {YKS_SUBJECTS.TYT.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="AYT Dersleri">
-                    {YKS_SUBJECTS.AYT.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </optgroup>
+                  {isIntermediate ? (
+                    <optgroup label={`${currentGrade}. Sınıf Müfredat Dersleri`}>
+                      {Object.keys(currentCurriculum).map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </optgroup>
+                  ) : (
+                    <>
+                      <optgroup label="TYT Dersleri">
+                        {YKS_SUBJECTS.TYT.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="AYT Dersleri">
+                        {YKS_SUBJECTS.AYT.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </optgroup>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -398,34 +420,39 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
                       <span>Konu Seçimi</span>
                       <span className="text-[10px] text-slate-500 font-normal">🌟 Uzmanlaşıldı • ✅ Çalışıldı • ⚡ Zor Geldi</span>
                     </label>
-                    <select
-                      value={topic}
-                      onChange={(e) => setTopic(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400 font-medium text-indigo-300"
-                    >
-                      <option value="">-- Konu Seçiniz --</option>
-                      <option value="Genel">Genel</option>
-                      <option value="Diğer">Diğer</option>
-                      {(YKS_CURRICULUM_TOPICS[subject] || []).map((t) => {
-                        const status = topicStatuses?.[t];
-                        const isPastDone = completedPastTopics?.includes(t);
-                        let badge = '';
-                        if (status === 'Uzmanlaştım') {
-                          badge = '🌟 ';
-                        } else if (status === 'Çalıştım') {
-                          badge = '✅ ';
-                        } else if (status === 'Zor Geldi') {
-                          badge = '⚡ ';
-                        } else if (isPastDone) {
-                          badge = '✅ ';
-                        }
-                        return (
-                          <option key={t} value={t}>
-                            {badge ? `${badge}${t}` : t}
-                          </option>
-                        );
-                      })}
-                    </select>
+                    {(() => {
+                      const availableTopics = currentCurriculum[subject] || (isIntermediate ? [] : YKS_CURRICULUM_TOPICS[subject]) || [];
+                      return (
+                        <select
+                          value={topic}
+                          onChange={(e) => setTopic(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400 font-medium text-indigo-300"
+                        >
+                          <option value="">-- Konu Seçiniz --</option>
+                          <option value="Genel">Genel</option>
+                          <option value="Diğer">Diğer</option>
+                          {availableTopics.map((t) => {
+                            const status = topicStatuses?.[t];
+                            const isPastDone = completedPastTopics?.includes(t);
+                            let badge = '';
+                            if (status === 'Uzmanlaştım') {
+                              badge = '🌟 ';
+                            } else if (status === 'Çalıştım') {
+                              badge = '✅ ';
+                            } else if (status === 'Zor Geldi') {
+                              badge = '⚡ ';
+                            } else if (isPastDone) {
+                              badge = '✅ ';
+                            }
+                            return (
+                              <option key={t} value={t}>
+                                {badge ? `${badge}${t}` : t}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      );
+                    })()}
                     {topic && topic !== 'Genel' && topic !== 'Diğer' && (topicStatuses?.[topic] || completedPastTopics?.includes(topic)) && (
                       <div className="mt-1.5 flex items-center gap-1.5 text-[11px] animate-fade-in">
                         <span className="text-slate-400 font-medium">Mevcut Durum:</span>
@@ -641,16 +668,26 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
                   onChange={(e) => setEditingPlan({ ...editingPlan, subject: e.target.value })}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
                 >
-                  <optgroup label="TYT Dersleri">
-                    {YKS_SUBJECTS.TYT.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="AYT Dersleri">
-                    {YKS_SUBJECTS.AYT.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </optgroup>
+                  {isIntermediate ? (
+                    <optgroup label={`${currentGrade}. Sınıf Müfredat Dersleri`}>
+                      {Object.keys(currentCurriculum).map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </optgroup>
+                  ) : (
+                    <>
+                      <optgroup label="TYT Dersleri">
+                        {YKS_SUBJECTS.TYT.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="AYT Dersleri">
+                        {YKS_SUBJECTS.AYT.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </optgroup>
+                    </>
+                  )}
                 </select>
               </div>
 
@@ -659,34 +696,39 @@ export const StudyPlannerModals: React.FC<StudyPlannerModalsProps> = ({
                   <span>Konu Seçimi (Otomatik Liste)</span>
                   <span className="text-[10px] text-slate-500 font-normal">🌟 Uzmanlaşıldı • ✅ Çalışıldı • ⚡ Zor Geldi</span>
                 </label>
-                <select
-                  onChange={(e) => {
-                    if (e.target.value) setEditingPlan({ ...editingPlan, topic: e.target.value });
-                  }}
-                  value={(YKS_CURRICULUM_TOPICS[editingPlan.subject] || []).includes(editingPlan.topic) ? editingPlan.topic : ''}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400 font-medium text-indigo-300 mb-2"
-                >
-                  <option value="">-- {editingPlan.subject} Konusu Seçin --</option>
-                  {(YKS_CURRICULUM_TOPICS[editingPlan.subject] || []).map((t) => {
-                    const status = topicStatuses?.[t];
-                    const isPastDone = completedPastTopics?.includes(t);
-                    let badge = '';
-                    if (status === 'Uzmanlaştım') {
-                      badge = '🌟 ';
-                    } else if (status === 'Çalıştım') {
-                      badge = '✅ ';
-                    } else if (status === 'Zor Geldi') {
-                      badge = '⚡ ';
-                    } else if (isPastDone) {
-                      badge = '✅ ';
-                    }
-                    return (
-                      <option key={t} value={t}>
-                        {badge ? `${badge}${t}` : t}
-                      </option>
-                    );
-                  })}
-                </select>
+                {(() => {
+                  const availableTopics = currentCurriculum[editingPlan.subject] || (isIntermediate ? [] : YKS_CURRICULUM_TOPICS[editingPlan.subject]) || [];
+                  return (
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) setEditingPlan({ ...editingPlan, topic: e.target.value });
+                      }}
+                      value={availableTopics.includes(editingPlan.topic) ? editingPlan.topic : ''}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400 font-medium text-indigo-300 mb-2"
+                    >
+                      <option value="">-- {editingPlan.subject} Konusu Seçin --</option>
+                      {availableTopics.map((t) => {
+                        const status = topicStatuses?.[t];
+                        const isPastDone = completedPastTopics?.includes(t);
+                        let badge = '';
+                        if (status === 'Uzmanlaştım') {
+                          badge = '🌟 ';
+                        } else if (status === 'Çalıştım') {
+                          badge = '✅ ';
+                        } else if (status === 'Zor Geldi') {
+                          badge = '⚡ ';
+                        } else if (isPastDone) {
+                          badge = '✅ ';
+                        }
+                        return (
+                          <option key={t} value={t}>
+                            {badge ? `${badge}${t}` : t}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  );
+                })()}
 
                 {editingPlan.topic && (topicStatuses?.[editingPlan.topic] || completedPastTopics?.includes(editingPlan.topic)) && (
                   <div className="mb-2 flex items-center gap-1.5 text-[11px] animate-fade-in">

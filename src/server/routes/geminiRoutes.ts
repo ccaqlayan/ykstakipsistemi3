@@ -813,6 +813,7 @@ router.post('/coach-chat', async (req, res) => {
 
   try {
     const isTeacherMode = !!classContext || req.body.userRole === 'class_teacher' || req.body.userRole === 'school_counselor' || req.body.userRole === 'teacher' || req.body.userRole === 'admin';
+    const studentClass = profile?.className || '';
     let contextPrompt = '';
 
     if (isTeacherMode && classContext) {
@@ -827,7 +828,6 @@ KULLANICI: Öğretmen / Okul Rehberlik Uzmanı
 `;
     } else {
       const isDilField = profile?.targetField === 'DİL' || profile?.targetField === 'DIL';
-      const studentClass = profile?.className || '';
       let gradeNote = '';
       if (studentClass.startsWith('9') || studentClass.includes('9-')) {
         gradeNote = '- Kademe: 9. Sınıf (Lise 1 - Maarif Modeli). Öğrencinin odağı lise ders başarısı, yazılı sınavlar ve OBP temelidir.';

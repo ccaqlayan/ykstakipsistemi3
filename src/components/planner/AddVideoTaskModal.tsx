@@ -23,8 +23,10 @@ import {
   CheckCheck,
   RotateCcw
 } from 'lucide-react';
-import { StudyPlanItem, DayOfWeek, YouTubeVideoItem } from '../../types';
+import { StudyPlanItem, DayOfWeek, YouTubeVideoItem, UserAccount } from '../../types';
 import { YKS_SUBJECTS } from '../../data/initialData';
+import { getCurriculumForGrade } from '../../data/curriculum';
+import { getGradeLevel, isIntermediateGrade, GradeLevel } from '../../utils/gradeUtils';
 
 interface AddVideoTaskModalProps {
   isOpen: boolean;
@@ -34,6 +36,9 @@ interface AddVideoTaskModalProps {
   DAYS: DayOfWeek[];
   onAddPlan: (plan: Omit<StudyPlanItem, 'id'>) => void;
   weekLabel: string;
+  currentUser?: UserAccount;
+  profile?: any;
+  gradeLevel?: GradeLevel;
 }
 
 const formatDuration = (totalMinutes?: number): string => {
@@ -75,8 +80,14 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
   defaultDay,
   DAYS,
   onAddPlan,
-  weekLabel
+  weekLabel,
+  currentUser,
+  profile,
+  gradeLevel: explicitGradeLevel
 }) => {
+  const currentGrade: GradeLevel = explicitGradeLevel || getGradeLevel(currentUser?.className || profile?.className);
+  const isIntermediate = isIntermediateGrade(currentGrade);
+  const currentCurriculum = getCurriculumForGrade(currentGrade);
   const [activeTab, setActiveTab] = useState<'tracker' | 'manual'>('tracker');
   const [targetDay, setTargetDay] = useState<DayOfWeek>(defaultDay);
   const [targetMinutes, setTargetMinutes] = useState<number>(45);
@@ -931,16 +942,26 @@ export const AddVideoTaskModal: React.FC<AddVideoTaskModalProps> = ({
                 className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-bold outline-none cursor-pointer focus:border-red-500"
               >
                 <option value="">Ders Seçiniz...</option>
-                <optgroup label="AYT Dersleri">
-                  {YKS_SUBJECTS.AYT.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </optgroup>
-                <optgroup label="TYT Dersleri">
-                  {YKS_SUBJECTS.TYT.map(s => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </optgroup>
+                {isIntermediate ? (
+                  <optgroup label={`${currentGrade}. Sınıf Müfredat Dersleri`}>
+                    {Object.keys(currentCurriculum).map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </optgroup>
+                ) : (
+                  <>
+                    <optgroup label="AYT Dersleri">
+                      {YKS_SUBJECTS.AYT.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="TYT Dersleri">
+                      {YKS_SUBJECTS.TYT.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </optgroup>
+                  </>
+                )}
               </select>
             </div>
 

@@ -2674,6 +2674,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
         clearFutureWeekConfirm={clearFutureWeekConfirm}
         setClearFutureWeekConfirm={setClearFutureWeekConfirm}
         handleConfirmClearFutureWeek={handleConfirmClearFutureWeek}
+        currentUser={currentUser}
+        profile={profile}
       />
 
       <AddVideoTaskModal
@@ -2687,6 +2689,8 @@ export const StudyPlannerView: React.FC<StudyPlannerViewProps> = ({
           onAddPlan({ ...plan, date, weekLabel });
         }}
         weekLabel={currentWeekLabel}
+        currentUser={currentUser}
+        profile={profile}
       />
 
       <StudyPlannerPrintModal
