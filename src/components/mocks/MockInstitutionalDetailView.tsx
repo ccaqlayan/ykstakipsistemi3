@@ -6,7 +6,18 @@ import {
   History, 
   X, 
   Sparkles,
-  BarChart2
+  BarChart2,
+  Search,
+  Award,
+  CheckCircle2,
+  AlertTriangle,
+  TrendingUp,
+  Zap,
+  BookOpen,
+  ChevronRight,
+  Filter,
+  Flame,
+  Target
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -42,6 +53,9 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
     type: 'correct' | 'wrong' | 'empty';
     char: string;
   } | null>(null);
+
+  const [topicSearchQuery, setTopicSearchQuery] = useState('');
+  const [topicFilterType, setTopicFilterType] = useState<'ALL' | 'ERRORS_ONLY' | 'PERFECT_ONLY'>('ALL');
 
   useEffect(() => {
     if (!activeBubble) return;
@@ -623,6 +637,81 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
     }).filter(sec => sec.groups.length > 0);
   }, [subjects, isAyt]);
 
+  // Filtered topics according to search query and error filter
+  const filteredTopicSections = useMemo(() => {
+    return topicSections.map(sec => {
+      const filteredGroups = sec.groups.map(grp => {
+        const filteredTopics = grp.topics.filter(t => {
+          // Search query filter
+          if (topicSearchQuery.trim()) {
+            const q = normalizeText(topicSearchQuery);
+            const topNorm = normalizeText(t.topicName);
+            if (!topNorm.includes(q)) return false;
+          }
+          // Filter type
+          if (topicFilterType === 'ERRORS_ONLY') {
+            return (t.wrong > 0 || t.empty > 0) || t.successRate < 100;
+          }
+          if (topicFilterType === 'PERFECT_ONLY') {
+            return t.successRate === 100 && t.wrong === 0 && t.empty === 0;
+          }
+          return true;
+        });
+
+        return {
+          ...grp,
+          topics: filteredTopics
+        };
+      }).filter(grp => grp.topics.length > 0);
+
+      return {
+        ...sec,
+        groups: filteredGroups
+      };
+    }).filter(sec => sec.groups.length > 0);
+  }, [topicSections, topicSearchQuery, topicFilterType]);
+
+  // AI & Exam Insights Summary calculation
+  const examAnalysis = useMemo(() => {
+    if (!subjects || subjects.length === 0) return null;
+    const validSubs = subjects.filter(s => (s.questionCount || 0) > 0 && !s.subjectName.includes('Toplam'));
+    if (validSubs.length === 0) return null;
+
+    let bestSub: InstitutionalSubjectDetail | null = null;
+    let weakestSub: InstitutionalSubjectDetail | null = null;
+    let aboveClassCount = 0;
+    let totalComparedClass = 0;
+
+    validSubs.forEach(s => {
+      if (s.net > 0 && (!bestSub || s.successRate > bestSub.successRate || (s.successRate === bestSub.successRate && s.net > bestSub.net))) {
+        bestSub = s;
+      }
+      if ((s.wrong > 0 || s.empty > 0) && (!weakestSub || s.successRate < weakestSub.successRate)) {
+        weakestSub = s;
+      }
+      if (s.classAvgNet !== undefined && s.classAvgNet !== null && s.classAvgNet > 0) {
+        totalComparedClass++;
+        if (s.net >= s.classAvgNet) aboveClassCount++;
+      }
+    });
+
+    const totalQuestions = validSubs.reduce((sum, s) => sum + (s.questionCount || 0), 0);
+    const totalCorrect = validSubs.reduce((sum, s) => sum + (s.correct || 0), 0);
+    const totalWrong = validSubs.reduce((sum, s) => sum + (s.wrong || 0), 0);
+    const totalEmpty = validSubs.reduce((sum, s) => sum + (s.empty || Math.max(0, (s.questionCount || 0) - (s.correct || 0) - (s.wrong || 0))), 0);
+
+    return {
+      bestSub,
+      weakestSub,
+      aboveClassCount,
+      totalComparedClass,
+      totalQuestions,
+      totalCorrect,
+      totalWrong,
+      totalEmpty
+    };
+  }, [subjects]);
+
   // Helper for generating illustrative or authentic optical answer bubbled indicators
   const renderOpticalRow = (title: string, correct: number, wrong: number, count: number, optAnswers?: string, ansKey?: string) => {
     // Look up optical answers and answer keys if not passed directly
@@ -1034,53 +1123,141 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
       )}
 
       {/* Top Action Bar / Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 no-print bg-slate-900/90 backdrop-blur-md p-3 sm:p-4 rounded-2xl border border-slate-800 shadow-xl">
-        <div className="flex items-center space-x-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 no-print bg-slate-900/90 backdrop-blur-xl p-4 rounded-3xl border border-slate-800 shadow-2xl">
+        <div className="flex items-center space-x-3">
           <button
             type="button"
             onClick={() => setSelectedInstitutionalExam(null)}
-            className="flex items-center space-x-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-bold border border-slate-700 transition-all cursor-pointer shadow-sm"
+            className="flex items-center space-x-2 px-4 py-2.5 bg-slate-800/90 hover:bg-slate-800 text-slate-200 hover:text-white rounded-2xl text-xs font-extrabold border border-white/10 transition-all cursor-pointer shadow-md hover:scale-105"
           >
-            <ArrowLeft className="w-4 h-4 text-indigo-400" />
-            <span>Sınav Listesine Dön</span>
+            <ArrowLeft className="w-4 h-4 text-emerald-400" />
+            <span>Karnelerime Dön</span>
           </button>
-          <span className="text-slate-600 text-xs">/</span>
-          <span className="text-slate-300 text-xs font-semibold truncate max-w-sm font-mono">
+          <span className="text-slate-600 text-xs hidden sm:inline">/</span>
+          <span className="text-slate-200 text-xs sm:text-sm font-bold truncate max-w-xs sm:max-w-md">
             {selectedInstitutionalExam.examTitle}
           </span>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2.5">
           <button
             type="button"
             onClick={handlePrint}
-            className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all shadow-lg shadow-indigo-600/30 cursor-pointer"
+            className="flex items-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold px-4 py-2.5 rounded-2xl transition-all shadow-lg shadow-emerald-950/50 cursor-pointer hover:scale-105"
           >
             <Printer className="w-4 h-4" />
-            <span>Yazdır / PDF Olarak Kaydet</span>
+            <span>Yazdır / PDF İndir</span>
           </button>
           <button
             type="button"
             onClick={() => setSelectedInstitutionalExam(null)}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer border border-slate-700"
+            className="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold px-4 py-2.5 rounded-2xl transition-all cursor-pointer border border-white/10"
           >
             Kapat
           </button>
         </div>
       </div>
 
+      {/* ─── AI KOÇ KARNE DEĞERLENDİRMESİ VE GÜÇLÜ/ZAYIF ANALİZ KARTI (Digital Pro Mode) ─── */}
+      {examAnalysis && (
+        <div className="no-print bg-gradient-to-r from-slate-900 via-slate-900/95 to-indigo-950/90 border border-indigo-500/20 rounded-3xl p-5 sm:p-6 shadow-2xl backdrop-blur-xl space-y-4">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-2 bg-indigo-500/20 border border-indigo-500/30 rounded-xl text-indigo-400">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-white flex items-center gap-2">
+                  <span>Yapay Zeka Karne Hızlı Analizi</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    Akıllı Özet
+                  </span>
+                </h3>
+                <p className="text-[11px] text-slate-400">Bu sınavdaki güçlü yönleriniz ve gelişim fırsatları</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 font-mono text-xs text-slate-300">
+              <span className="text-emerald-400 font-bold">{examAnalysis.totalCorrect}D</span>
+              <span>•</span>
+              <span className="text-rose-400 font-bold">{examAnalysis.totalWrong}Y</span>
+              <span>•</span>
+              <span className="text-slate-400 font-bold">{examAnalysis.totalEmpty}B</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* En Güçlü Ders */}
+            {examAnalysis.bestSub && (
+              <div className="bg-slate-950/70 border border-emerald-500/20 rounded-2xl p-3.5 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">En Başarılı Ders</span>
+                  <Award className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="text-sm font-black text-emerald-300 truncate">
+                  {examAnalysis.bestSub.subjectName}
+                </div>
+                <div className="text-[11px] font-mono text-slate-300">
+                  {examAnalysis.bestSub.net} Net • %{examAnalysis.bestSub.successRate} Başarı
+                </div>
+              </div>
+            )}
+
+            {/* Geliştirilmesi Gereken Alan */}
+            {examAnalysis.weakestSub && (
+              <div className="bg-slate-950/70 border border-rose-500/20 rounded-2xl p-3.5 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Gelişim Alanı</span>
+                  <Target className="w-4 h-4 text-rose-400" />
+                </div>
+                <div className="text-sm font-black text-rose-300 truncate">
+                  {examAnalysis.weakestSub.subjectName}
+                </div>
+                <div className="text-[11px] font-mono text-slate-300">
+                  {examAnalysis.weakestSub.wrong} Yanlış • %{examAnalysis.weakestSub.successRate} Başarı
+                </div>
+              </div>
+            )}
+
+            {/* Sınıf Ortalaması Üstünlüğü */}
+            <div className="bg-slate-950/70 border border-indigo-500/20 rounded-2xl p-3.5 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sınıf Kıyası</span>
+                <TrendingUp className="w-4 h-4 text-indigo-400" />
+              </div>
+              <div className="text-sm font-black text-indigo-300">
+                {examAnalysis.totalComparedClass > 0 ? `${examAnalysis.aboveClassCount} / ${examAnalysis.totalComparedClass} Derste` : 'Kayıt Yok'}
+              </div>
+              <div className="text-[11px] text-slate-400">
+                {examAnalysis.aboveClassCount >= (examAnalysis.totalComparedClass / 2) ? 'Sınıf ortalamasının üstündesiniz' : 'Sınıf ortalamasına yakın'}
+              </div>
+            </div>
+
+            {/* Stratejik İpucu */}
+            <div className="bg-slate-950/70 border border-amber-500/20 rounded-2xl p-3.5 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Koçluk Tavsiyesi</span>
+                <Zap className="w-4 h-4 text-amber-400" />
+              </div>
+              <div className="text-xs font-bold text-amber-200 line-clamp-2 leading-tight">
+                {examAnalysis.weakestSub ? `${examAnalysis.weakestSub.subjectName} kazanımlarına odaklanarak netlerinizi artırabilirsiniz.` : 'Tüm derslerde dengeli bir performans gösterdiniz.'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ─── AUTHENTIC PDF RESULTS SHEET (SONUÇ BELGESİ) CONTAINER ─── */}
       <div 
         id="printable-report-card" 
-        className="bg-white text-slate-900 border-2 border-slate-400 rounded-2xl p-6 sm:p-8 shadow-2xl font-sans max-w-6xl mx-auto space-y-4"
+        className="bg-white text-slate-900 border-2 border-slate-400 rounded-3xl p-6 sm:p-8 shadow-2xl font-sans max-w-6xl mx-auto space-y-4"
       >
         {/* TOP HEADER BOX */}
-        <div className="border border-slate-800 divide-y divide-slate-800 text-xs">
+        <div className="border border-slate-800 divide-y divide-slate-800 text-xs rounded-xl overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-2">
-            <div className="p-3 font-black text-center md:text-left text-sm uppercase tracking-wider border-b md:border-b-0 md:border-r border-slate-800 bg-slate-50">
+            <div className="p-3 font-black text-center md:text-left text-sm uppercase tracking-wider border-b md:border-b-0 md:border-r border-slate-800 bg-slate-100">
               SONUÇ BELGESİ
             </div>
-            <div className="p-3 font-black text-center md:text-right text-sm uppercase tracking-wider bg-slate-50">
+            <div className="p-3 font-black text-center md:text-right text-sm uppercase tracking-wider bg-slate-100">
               {selectedInstitutionalExam.examTitle}
             </div>
           </div>
@@ -1090,20 +1267,20 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
         </div>
 
         {/* STUDENT INFO BOX */}
-        <div className="border border-slate-800 grid grid-cols-3 text-xs bg-slate-50">
-          <div className="p-2.5 border-r border-slate-800 flex flex-col justify-center">
+        <div className="border border-slate-800 grid grid-cols-3 text-xs bg-slate-50 rounded-xl overflow-hidden">
+          <div className="p-3 border-r border-slate-800 flex flex-col justify-center">
             <span className="text-[10px] text-slate-500 font-bold uppercase">Öğrenci</span>
             <strong className="text-sm font-black text-slate-900 mt-0.5 truncate">
               {selectedInstitutionalExam.studentName}
             </strong>
           </div>
-          <div className="p-2.5 border-r border-slate-800 text-center flex flex-col justify-center">
+          <div className="p-3 border-r border-slate-800 text-center flex flex-col justify-center">
             <span className="text-[10px] text-slate-500 font-bold uppercase">Numara</span>
             <strong className="text-sm font-black text-slate-900 font-mono mt-0.5">
               {selectedInstitutionalExam.schoolNumber || '-'}
             </strong>
           </div>
-          <div className="p-2.5 text-center flex flex-col justify-center">
+          <div className="p-3 text-center flex flex-col justify-center">
             <span className="text-[10px] text-slate-500 font-bold uppercase">Sınıf</span>
             <strong className="text-sm font-black text-slate-900 mt-0.5">
               {selectedInstitutionalExam.className || '12-A'}
@@ -1112,14 +1289,14 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
         </div>
 
         {/* SCORE & RANK TABLE */}
-        <div className="border border-slate-800 overflow-x-auto text-xs">
+        <div className="border border-slate-800 overflow-x-auto text-xs rounded-xl">
           <table className="w-full text-center border-collapse">
             <thead>
               <tr className="bg-slate-100 border-b border-slate-800 text-[11px] font-bold">
-                <th className="p-2 border-r border-slate-800 w-20">Puan Türü</th>
-                <th className="p-2 border-r border-slate-800 w-24">Puan</th>
-                <th className="p-2 border-r border-slate-800 w-24">Genel Ortalama</th>
-                <th colSpan={5} className="p-2">Dereceler</th>
+                <th className="p-2.5 border-r border-slate-800 w-20">Puan Türü</th>
+                <th className="p-2.5 border-r border-slate-800 w-24">Puan</th>
+                <th className="p-2.5 border-r border-slate-800 w-24">Genel Ortalama</th>
+                <th colSpan={5} className="p-2.5">Dereceler</th>
               </tr>
               <tr className="bg-slate-50 border-b border-slate-800 text-[10px] font-semibold text-slate-600">
                 <th className="border-r border-slate-800"></th>
@@ -1271,22 +1448,22 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
 
               {/* Katılımlar */}
               <tr className="bg-slate-100/70 text-[10px] text-slate-600 font-sans">
-                <td colSpan={3} className="p-1.5 text-right font-bold border-r border-slate-800 pr-3">
+                <td colSpan={3} className="p-2 text-right font-bold border-r border-slate-800 pr-3">
                   Katılımlar:
                 </td>
-                <td className="p-1.5 border-r border-slate-800 font-mono font-bold">
+                <td className="p-2 border-r border-slate-800 font-mono font-bold">
                   {scores.classParticipantCount || rankStats.classTotal || (isAyt ? '9' : '18')}
                 </td>
-                <td className="p-1.5 border-r border-slate-800 font-mono font-bold">
+                <td className="p-2 border-r border-slate-800 font-mono font-bold">
                   {scores.institutionParticipantCount || rankStats.instTotal || (isAyt ? '30' : '102')}
                 </td>
-                <td className="p-1.5 border-r border-slate-800 font-mono">
+                <td className="p-2 border-r border-slate-800 font-mono">
                   {scores.districtParticipantCount || rankStats.districtTotal || (isAyt ? '59' : '381')}
                 </td>
-                <td className="p-1.5 border-r border-slate-800 font-mono">
+                <td className="p-2 border-r border-slate-800 font-mono">
                   {scores.cityParticipantCount || rankStats.cityTotal || (isAyt ? '3.847' : '1.709')}
                 </td>
-                <td className="p-1.5 font-mono font-bold">
+                <td className="p-2 font-mono font-bold">
                   {scores.generalParticipantCount ? scores.generalParticipantCount.toLocaleString('tr-TR') : (rankStats.genTotal ? rankStats.genTotal.toLocaleString('tr-TR') : (isAyt ? '91.056' : '57.432'))}
                 </td>
               </tr>
@@ -1301,7 +1478,7 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
           <div className="lg:col-span-8 space-y-4">
             
             {/* NETS TABLE */}
-            <div className="border border-slate-800 overflow-x-auto text-xs">
+            <div className="border border-slate-800 overflow-x-auto text-xs rounded-xl">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-800 text-[10px] font-black text-slate-700 uppercase">
@@ -1360,7 +1537,10 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
                           {String(item.net).replace('.', ',')}
                         </td>
                         <td className="p-2 border-r border-slate-800 text-center font-semibold">
-                          {item.successRate}
+                          <div className="flex items-center justify-center gap-1">
+                            <span>{item.successRate}</span>
+                            <span className="text-[9px] text-slate-400">%</span>
+                          </div>
                         </td>
 
                         {/* Sınıf Ort. */}
@@ -1418,7 +1598,7 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
             </div>
 
             {/* OPTICAL ANSWER COMPARISON STRIP */}
-            <div className="border border-slate-800 p-3 bg-slate-50 rounded-lg space-y-2">
+            <div className="border border-slate-800 p-3 bg-slate-50 rounded-xl space-y-2">
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-600 border-b border-slate-300 pb-1 flex items-center justify-between">
                 <span>Cevap ve Optik Kağıt Şeridi Önizlemesi</span>
                 <div className="flex items-center space-x-3 text-[9px] font-sans">
@@ -1452,7 +1632,7 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
             </div>
 
             {/* RECHARTS BAR CHART */}
-            <div className="border border-slate-800 p-3 bg-white rounded-lg space-y-2">
+            <div className="border border-slate-800 p-3 bg-white rounded-xl space-y-2">
               <div className="text-[10px] font-bold uppercase tracking-wider text-slate-700">
                 Ders Netleri & Karşılaştırma Grafiği
               </div>
@@ -1482,27 +1662,88 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
           </div>
 
           {/* RIGHT 4 COLUMNS: DERSLERE GÖRE ANALİZ (TOPIC BREAKDOWN) */}
-          <div className="lg:col-span-4 border border-slate-800 bg-white rounded-lg p-3 space-y-3">
-            <div className="bg-slate-100 p-2 text-center border-b border-slate-800 font-black text-xs uppercase tracking-wider text-slate-900">
+          <div className="lg:col-span-4 border border-slate-800 bg-white rounded-xl p-3 space-y-3">
+            <div className="bg-slate-100 p-2 text-center border-b border-slate-800 font-black text-xs uppercase tracking-wider text-slate-900 rounded-lg">
               DERSLERE GÖRE ANALİZ
             </div>
 
-            {topicSections.length === 0 ? (
+            {/* Topic Search and Filters (Non-printable) */}
+            <div className="space-y-2 no-print">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Kazanım / konu ara..."
+                  value={topicSearchQuery}
+                  onChange={(e) => setTopicSearchQuery(e.target.value)}
+                  className="w-full bg-slate-100 border border-slate-300 rounded-lg pl-8 pr-7 py-1 text-[11px] text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-600 transition-colors"
+                />
+                {topicSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setTopicSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1 text-[9px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setTopicFilterType('ALL')}
+                  className={`px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                    topicFilterType === 'ALL'
+                      ? 'bg-slate-800 text-white border-slate-800'
+                      : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                  }`}
+                >
+                  Tümü
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTopicFilterType('ERRORS_ONLY')}
+                  className={`px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                    topicFilterType === 'ERRORS_ONLY'
+                      ? 'bg-rose-600 text-white border-rose-600'
+                      : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                  }`}
+                >
+                  Yanlış / Boş Olanlar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTopicFilterType('PERFECT_ONLY')}
+                  className={`px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                    topicFilterType === 'PERFECT_ONLY'
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                  }`}
+                >
+                  %100 Başarı
+                </button>
+              </div>
+            </div>
+
+            {filteredTopicSections.length === 0 ? (
               <div className="py-12 text-center text-slate-400 text-xs italic">
-                Bu karne için kazanım konu analizi bulunamadı.
+                {topicSearchQuery || topicFilterType !== 'ALL'
+                  ? 'Filtre kriterlerine uygun kazanım bulunamadı.'
+                  : 'Bu karne için kazanım konu analizi bulunamadı.'}
               </div>
             ) : (
               <div className="space-y-3 max-h-[850px] overflow-y-auto pr-1 scrollbar-thin text-[10px]">
-                {topicSections.map((sec, secIdx) => (
+                {filteredTopicSections.map((sec, secIdx) => (
                   <div key={secIdx} className="space-y-2">
-                    {/* Main Section Header Banner (e.g. TYT Sosyal, TYT Matematik, TYT Fen) */}
+                    {/* Main Section Header Banner */}
                     {sec.sectionName && (
                       <div className="font-black text-slate-900 text-xs uppercase tracking-wide border-t-2 border-slate-900 pt-1.5 pb-0.5">
                         {sec.sectionName}
                       </div>
                     )}
 
-                    {/* Sub-subjects (e.g. Tarih-1, Coğrafya-1, Felsefe, Din Kül. ve Ahl. Bil., Felsefe (Seçmeli)) */}
+                    {/* Sub-subjects */}
                     {sec.groups.map((grp, gIdx) => (
                       <div key={gIdx} className="space-y-0.5">
                         <div className="font-bold text-slate-900 uppercase text-[11px] border-b border-slate-900 pb-0.5 flex items-center justify-between">
@@ -1519,15 +1760,17 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
                           {grp.topics.map((t, tIdx) => (
                             <div 
                               key={tIdx} 
-                              className={`py-0.5 px-1 flex items-start justify-between gap-1 hover:bg-indigo-50/70 cursor-pointer transition-colors group ${
-                                tIdx % 2 === 0 ? 'bg-slate-100/80' : 'bg-white'
+                              className={`py-1 px-1 flex items-center justify-between gap-1 hover:bg-indigo-50/80 cursor-pointer transition-colors group ${
+                                tIdx % 2 === 0 ? 'bg-slate-50' : 'bg-white'
                               }`}
                               onClick={() => setSelectedTopicHistory({ subjectName: grp.subjectName, topicName: t.topicName })}
                               title="Bu kazanımın geçmiş deneme performansını görmek için tıklayın"
                             >
-                              <span className="text-slate-800 leading-tight group-hover:text-indigo-600 font-medium">
-                                {t.topicName}
-                              </span>
+                              <div className="min-w-0 flex-1 pr-2">
+                                <span className="text-slate-800 leading-tight group-hover:text-indigo-600 font-medium block truncate">
+                                  {t.topicName}
+                                </span>
+                              </div>
                               <div className="flex items-center space-x-3 font-mono font-bold shrink-0 text-slate-900">
                                 <span className="w-3 text-center text-slate-600">{t.questionCount || (t.correct + t.wrong + t.empty)}</span>
                                 <span className="w-3 text-center text-emerald-700">{t.correct}</span>
@@ -1536,10 +1779,10 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
                                   t.successRate >= 70 
                                     ? 'text-emerald-700 font-black' 
                                     : t.successRate >= 40 
-                                      ? 'text-indigo-700' 
+                                      ? 'text-indigo-700 font-bold' 
                                       : 'text-rose-700 font-black'
                                 }`}>
-                                  {t.successRate}
+                                  %{t.successRate}
                                 </span>
                               </div>
                             </div>
@@ -1558,17 +1801,17 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
       </div>
 
       {/* Footer Guidance (Non-printable) */}
-      <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-2xl flex items-center justify-between text-xs text-indigo-200 no-print max-w-6xl mx-auto">
+      <div className="bg-indigo-500/10 border border-indigo-500/20 p-4 rounded-3xl flex items-center justify-between text-xs text-indigo-200 no-print max-w-6xl mx-auto backdrop-blur-md shadow-xl">
         <div className="flex items-center space-x-3">
           <Sparkles className="w-5 h-5 text-indigo-400 shrink-0" />
           <span>
-            Kazanım analizindeki konu başlıklarına tıklayarak öğrencinin o konudaki geçmiş deneme sınavı performans grafiğini ve soru geçmişini inceleyebilirsiniz.
+            Kazanım analizindeki konu başlıklarına tıklayarak o konudaki geçmiş kurumsal deneme başarı trendinizi ve soru analizlerinizi inceleyebilirsiniz.
           </span>
         </div>
         <button
           type="button"
           onClick={handlePrint}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all cursor-pointer shrink-0 ml-4"
+          className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition-all cursor-pointer shrink-0 ml-4 shadow-md hover:scale-105"
         >
           Yazdır
         </button>
@@ -1577,3 +1820,4 @@ export const MockInstitutionalDetailView: React.FC<MockInstitutionalDetailViewPr
     </div>
   );
 };
+
