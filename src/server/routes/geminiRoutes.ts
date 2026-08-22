@@ -1266,7 +1266,7 @@ Yanıtını YALNIZCA geçerli bir JSON objesi olarak dön:
 }
 
 ÖNEMLİ MATEMATİKSEL BİÇİMLENDİRME KURALLARI:
-- Matematiksel formülleri ve denklemleri standart LaTeX ($...$ veya $$...$$) formatında yaz.`;
+- Soruda, şıklarda ve çözümde geçen TÜM matematiksel/fiziksel ifadeleri, fonksiyon tanımlarını (örn: $f(x) = 2x^3 - 9x^2 + 12x - 1$), aralıkları (örn: $[0, 3]$), denklemleri (örn: $x = 1$, $f'(x) = 0$), kesirleri (örn: $\\frac{a}{b}$), köklü ifadeleri (örn: $\\sqrt{x}$) ve şıkları KESİNLİKLE dolar işareti arasına alarak ($...$) standart LaTeX formatında yaz.`;
     } else {
       if (!imagePart && !imageUrl) {
         return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
@@ -1284,7 +1284,7 @@ Yanıtını YALNIZCA geçerli bir JSON objesi olarak dön:
 }
 
 ÖNEMLİ MATEMATİKSEL BİÇİMLENDİRME KURALLARI:
-- Matematiksel formülleri ve denklemleri standart LaTeX ($...$ veya $$...$$) formatında yaz.`;
+- Soruda, şıklarda ve çözümde geçen TÜM matematiksel/fiziksel ifadeleri, fonksiyon tanımlarını (örn: $f(x) = 2x^3 - 9x^2 + 12x - 1$), aralıkları (örn: $[0, 3]$), denklemleri (örn: $x = 1$, $f'(x) = 0$), kesirleri (örn: $\\frac{a}{b}$), köklü ifadeleri (örn: $\\sqrt{x}$) ve şıkları KESİNLİKLE dolar işareti arasına alarak ($...$) standart LaTeX formatında yaz.`;
     }
 
     const targetModel = featureModelConfig['SIMILAR_QUESTION'] || 'SYSTEM_DEFAULT';
@@ -1477,12 +1477,13 @@ Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'G
 - Görseldeki soruyu adım adım son derece anlaşılır Türkçe ile çöz.
 - ASLA "Merhaba" veya selamlama cümleleri kullanma, doğrudan Konu Özeti ile başla.
 - Metin içinde paragraflar, adımlar (Adım 1:, Adım 2: vb.), Konu Özeti, Doğru Cevap: ve Pratik Taktik: bölümleri arasında KESİNLİKLE yeni satır (\\n\\n) kullan. ASLA tüm çözümü tek parça düz metin olarak yazma.
-- Matematiksel/fiziksel denklemleri standart LaTeX ($...$ veya $$...$$) formatında yaz.
+- Sorudaki ve çözümdeki tüm matematiksel/fiziksel denklemleri, fonksiyonları, aralıkları ve kesirleri standart LaTeX ($...$ veya $$...$$) formatında yaz.
 - correctAnswerLetter alanına sorunun doğru cevap şıkkını (SADECE tek büyük harf: A, B, C, D veya E) yaz.
 
 2. BENZER SORULAR (similarQuestions alanı için - TAM 3 ADET):
 - Görseldeki soruya benzer tarzda, Türkiye YKS (TYT/AYT) müfredatına %100 uygun TAM 3 ADET özgün soru üret.
 - Her biri için: soru metni, şıkları (options dizisi: A, B, C, D, E), adım adım detaylı çözümü ve doğru cevabını hazırla.
+- Soru metnindeki, şıklardaki ve çözümdeki TÜM matematiksel fonksiyonları (örn: $f(x) = 2x^3 - 9x^2 + 12x - 1$), aralıkları (örn: $[0, 3]$), denklemleri (örn: $x = 1$) KESİNLİKLE dolar işareti arasına alarak ($...$) standart LaTeX formatında yaz.
 
 3. DETAYLI SORU KARNESİ (analysis alanı için):
 - Sorunun ders, konu, MEB kazanımı, müfredat uygunluğu, zorluk (örn: 6/10 - Orta), okuma süresi, çözme süresi, ayırt edicilik ve TÜM ŞIKLARIN çeldirici analizini içeren tam bir Markdown Tablo oluştur.

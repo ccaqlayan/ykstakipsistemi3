@@ -27,15 +27,144 @@ const renderKatexSafe = (mathStr: string, displayMode: boolean = false): string 
 };
 
 /**
+ * Automatically detects and wraps un-delimited mathematical expressions with $...$
+ * e.g. "f(x) = 2x^3 - 9x^2 + 12x - 1" -> "$f(x) = 2x^3 - 9x^2 + 12x - 1$"
+ * e.g. "[0, 3] aralığında" -> "$[0, 3]$ aralığında"
+ * e.g. "x = 1 ve x = 2" -> "$x = 1$ ve $x = 2$"
+ */
+const autoWrapMathExpressions = (text: string): string => {
+  if (!text) return '';
+
+  const isValidKaTeX = (str: string): boolean => {
+    if (!str || str.length < 2) return false;
+    try {
+      katex.renderToString(str.trim(), { throwOnError: true });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const tokens: Array<{ type: 'math' | 'text'; value: string }> = [];
+  let remaining = text;
+
+  // 1. Regex for already delimited math: $$...$$, $...$, \[...\], \(...\)
+  const delimitedRegex = /^(\$\$[\s\S]+?\$\$|\$[^\$\n]+?\$|\\\[[\s\S]+?\\\]|\\\([^\\]+?\\\))/;
+
+  // 2. Regex for raw LaTeX commands: \frac{a}{b}, \sqrt{x}, \int_a^b, \lim_{x \to 0}, \vec{v}, \alpha
+  const rawLatexRegex = /^(\\(?:frac|sqrt|sum|int|lim|vec|alpha|beta|gamma|theta|pi|Delta|times|div|cdot|approx|equiv|le|ge|ne|pm|infty|log|ln|sin|cos|tan|cot|partial|binom)[a-zA-Z0-9_\{\}\(\)\^\+\-\*\/\s\.,\\]*)/;
+
+  // 3. Regex for equations / functions: e.g. f(x) = 2x^3 - 9x^2 + 12x - 1 or y = 3x^2 - 4x + 1 or f'(x) = 6x^2 - 18x + 12 = 0
+  const funcEqRegex = /^([a-zA-Z_](?:'{1,3}|\b)\s*(?:\([a-zA-Z0-9_\+\-\s,]+\))?\s*=\s*[-0-9a-zA-Z_\+\-\*\/\^\(\)\s\.,\\]+?)(?=[,\.]*(?:\s+(?:fonksiyon|polinom|denklem|bağıntı|eşitlik|olduğuna|için|aralığında|aralığı|eğrisi|doğrusu|kuralı|ifadesi|ise|ve\b|veya\b|olmak\b|veriliyor\b|noktası\b|şeklinde\b|değeri\b|olur\b|bulunur\b|yazılır\b)|[,\.\?!;]\s|\n|$))/i;
+
+  // 4. Regex for expressions with exponents/subscripts: e.g. 2x^3 - 9x^2 + 12x - 1 or x^2 + y^2 = r^2
+  const expExprRegex = /^([0-9a-zA-Z_\(\)\\]*(?:\^|_)\{?[0-9a-zA-Z_\+\-\*\/]+\}?(?:\s*[\+\-\*\/=]\s*[-0-9a-zA-Z_\(\)\^\/\.,\\]+)*)(?=[,\.]*(?:\s+[a-zA-ZğüşıöçİĞÜŞİÖÇ]|[,\.\?!;]\s|\n|$))/;
+
+  // 5. Regex for mathematical intervals: e.g. [0, 3], (-1, 5], [a, b)
+  const intervalRegex = /^(\[[^\]\n]+\]|\([0-9\s,\.\-+]+?\))(?=[,\.]*(?:\s*(?:aralığ|nokta|küme|için|ise|ve\b|veya\b|\n|$)))/i;
+
+  // 6. Regex for simple equations or values: e.g. x = 1, x = -2, f(0) = -1, f(3) = 8
+  const simpleEqRegex = /^([a-zA-Z_](?:'{1,3}|\b)(?:\([a-zA-Z0-9_\+\-]+\))?\s*=\s*-?\d+(?:[\.,]\d+)?)(?=[,\.]*(?:\s+[a-zA-ZğüşıöçİĞÜŞİÖÇ]|[,\.\?!;]\s|\n|$))/;
+
+  // 7. Regex for factored equations: e.g. (x - 1)(x - 2) = 0 or (x - 2)
+  const factoredRegex = /^(\((?:[a-zA-Z0-9_\+\-\*\/\^\s]+)\)(?:\((?:[a-zA-Z0-9_\+\-\*\/\^\s]+)\))*\s*(?:=\s*[-0-9a-zA-Z_\+\-\*\/\^\(\)\s\.,\\]+)?)(?=[,\.]*(?:\s+(?:ile|ve\b|veya\b|için|ise|olduğuna|kuralı|ifadesi|polinomu)|[,\.\?!;]\s|\n|$))/i;
+
+  let maxIterations = 5000;
+  while (remaining.length > 0 && maxIterations-- > 0) {
+    // 1. Check delimited math
+    const delimitedMatch = remaining.match(delimitedRegex);
+    if (delimitedMatch) {
+      tokens.push({ type: 'math', value: delimitedMatch[1] });
+      remaining = remaining.slice(delimitedMatch[1].length);
+      continue;
+    }
+
+    // 2. Check function equation
+    const funcMatch = remaining.match(funcEqRegex);
+    if (funcMatch && funcMatch[1].length > 3) {
+      const trimmed = funcMatch[1].trim().replace(/[,\.]$/, '');
+      if (isValidKaTeX(trimmed)) {
+        tokens.push({ type: 'math', value: `$${trimmed}$` });
+        remaining = remaining.slice(funcMatch[1].length);
+        continue;
+      }
+    }
+
+    // 3. Check exponent/subscript expression
+    const expMatch = remaining.match(expExprRegex);
+    if (expMatch && expMatch[1].length > 2) {
+      const trimmed = expMatch[1].trim().replace(/[,\.]$/, '');
+      if (isValidKaTeX(trimmed)) {
+        tokens.push({ type: 'math', value: `$${trimmed}$` });
+        remaining = remaining.slice(expMatch[1].length);
+        continue;
+      }
+    }
+
+    // 4. Check raw LaTeX commands
+    const rawMatch = remaining.match(rawLatexRegex);
+    if (rawMatch && rawMatch[1].length > 2) {
+      const trimmed = rawMatch[1].trim().replace(/[,\.]$/, '');
+      if (isValidKaTeX(trimmed)) {
+        tokens.push({ type: 'math', value: `$${trimmed}$` });
+        remaining = remaining.slice(rawMatch[1].length);
+        continue;
+      }
+    }
+
+    // 5. Check interval
+    const intMatch = remaining.match(intervalRegex);
+    if (intMatch && intMatch[1].length >= 4) {
+      const trimmed = intMatch[1].trim().replace(/[,\.]$/, '');
+      tokens.push({ type: 'math', value: `$${trimmed}$` });
+      remaining = remaining.slice(intMatch[1].length);
+      continue;
+    }
+
+    // 6. Check simple equation
+    const simpleMatch = remaining.match(simpleEqRegex);
+    if (simpleMatch && simpleMatch[1].length >= 3) {
+      const trimmed = simpleMatch[1].trim().replace(/[,\.]$/, '');
+      tokens.push({ type: 'math', value: `$${trimmed}$` });
+      remaining = remaining.slice(simpleMatch[1].length);
+      continue;
+    }
+
+    // 7. Check factored polynomial / binomial
+    const factoredMatch = remaining.match(factoredRegex);
+    if (factoredMatch && factoredMatch[1].length >= 3) {
+      const trimmed = factoredMatch[1].trim().replace(/[,\.]$/, '');
+      tokens.push({ type: 'math', value: `$${trimmed}$` });
+      remaining = remaining.slice(factoredMatch[1].length);
+      continue;
+    }
+
+    // Otherwise consume character as text
+    if (tokens.length > 0 && tokens[tokens.length - 1].type === 'text') {
+      tokens[tokens.length - 1].value += remaining[0];
+    } else {
+      tokens.push({ type: 'text', value: remaining[0] });
+    }
+    remaining = remaining.slice(1);
+  }
+
+  return tokens.map(t => t.value).join('');
+};
+
+/**
  * Parses a single text chunk that may contain inline math $...$ or \(...\)
  */
 const parseInlineMathAndMarkdown = (text: string): React.ReactNode[] => {
   if (!text) return [];
 
+  // Auto-detect and wrap un-delimited math expressions (e.g. f(x) = 2x^3 - 9x^2 + 12x - 1, [0, 3], etc.)
+  const normalizedText = autoWrapMathExpressions(text);
+
   // Match inline math: $...$ or \(...\)
   // Non-greedy match for $...$ ensuring it's not empty and doesn't span multiple paragraphs
   const inlineMathRegex = /(\$(?:\\\$|[^\$])+?\$|\\\((?:\\\)|\s\S|[^\\])+?\\\))/g;
-  const parts = text.split(inlineMathRegex);
+  const parts = normalizedText.split(inlineMathRegex);
+
 
   return parts.map((part, index) => {
     if (!part) return null;
