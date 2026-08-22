@@ -1477,43 +1477,79 @@ router.post('/analyze-photo-question-full', async (req, res) => {
       return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
     }
 
-    const textPrompt = `Sen Türkiye YKS (TYT-AYT) sınavlarına öğrenci hazırlayan kıdemli bir branş öğretmeni ve soru analistisin.
-Görseldeki soruyu (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'Genel'}) dikkatle incele ve yanıtını YALNIZCA geçerli bir JSON nesnesi olarak döndür.
+    const textPrompt = `Sen Türkiye YKS (TYT-AYT) sınavlarında öğrencilere soru çözen kıdemli ve uzman bir matematik/fen öğretmenisin.
 
-KURALLAR:
-1. Soru Çözümü (solution):
-   - Görseldeki soru metnini, verilen tüm sayıları, denklemleri ve seçenekleri dikkatle incele.
-   - Sadece görseldeki gerçek sayı ve ifadelerle işlem yap.
-   - Varsa durumları (1. Durum, 2. Durum vb.) ve tüm ara basamakları satır satır yaz.
-   - Tüm formülleri standart LaTeX ($...$) formatında yaz.
-   - Çözümün sonunda "Doğru Cevap: [Harf] ([Değer])" ve "İpucu: [Püf noktası]" bölümlerini ekle.
+KRİTİK ÖN KOŞUL — GÖRSELİ OKU:
+Görseldeki soruyu (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'Genel'}) kelimesi kelimesine dikkatle oku.
+- Soru kökünü, tüm sayıları, denklemleri, fonksiyon tanımlarını, sembolleri ve seçenekleri (A, B, C, D, E) dikkatle tespit et.
+- YALNIZCA görselde yer alan gerçek sayı, sembol ve ifadeleri kullan.
+- Görselde olmayan sayı, denklem veya ifade UYDURMA, İCAT ETME, TAHMİN ETME. Bu kural ihlal edilirse çözüm geçersizdir.
 
-2. Doğru Seçenek (correctAnswerLetter):
-   - Bulduğun nihai sonuç görseldeki seçeneklerden hangisiyle eşleşiyorsa yalnızca o harfi yaz (A, B, C, D veya E).
+Yanıtını YALNIZCA geçerli bir JSON nesnesi olarak döndür.
 
-3. Soru Analiz Karnesi (analysis):
-   - Markdown tablosu formatında MEB kazanımı, tahmini zorluk ve seçeneklerin çeldirici analizini oluştur.
+═══════════════════════════════════════
+BÖLÜM 1 — ADIM ADIM SORU ÇÖZÜMÜ ("solution")
+═══════════════════════════════════════
+Bu bölüm çözümün EN ÖNEMLİ parçasıdır. Aşağıdaki kuralları MUTLAKA uygula:
 
-4. 2 Adet Özgün Benzer Soru (similarQuestions):
-   - Aynı konuyu ölçen, farklı sayılar içeren 2 adet özgün soru, 5 şık ve adım adım çözümlerini hazırla.
+1. Görseldeki Soruyu Tanımla:
+   - Önce sorunun ne istediğini ve verilen bilgileri kısaca özetle.
+   - Hangi formül/kavram/teorem kullanılacağını belirt.
+
+2. Doğrudan İşlemsel Çözüm Yap:
+   - Genel geçer veya teorik açıklama yapma, doğrudan sorudaki sayılarla işleme başla.
+   - Tüm ara işlem basamaklarını satır satır, atlama yapmadan yaz.
+   - Soruda durumlar varsa (mutlak değer, parçalı fonksiyon, logaritma vb.) her durumu ayrı başlık altında (1. Durum, 2. Durum) incele.
+   - Bulunan her ara sonucu (kökler, değerler, eşitsizlik aralıkları vb.) açıkça yaz.
+
+3. LaTeX Formatı:
+   - Tüm matematiksel ifadeleri, formülleri, denklemleri, kesirleri ($\\\\frac{a}{b}$), kökleri ($\\\\sqrt{x}$), üsleri ($x^2$) ve fonksiyonları ($f(x)$) standart LaTeX formatında ($...$) yaz.
+
+4. Nihai Sonuç ve Seçenek Eşleştirmesi:
+   - Soruda istenen nihai değeri (toplam, çarpım, en büyük, en küçük, oran vb.) açıkça hesapla.
+   - Bulduğun sonucu seçeneklerle (A, B, C, D, E) karşılaştır.
+   - Şu formatta bitir: "**Doğru Cevap: [Harf] ([Değer])**"
+
+5. İpucu:
+   - Bu soru tipinde sınavda dikkat edilmesi gereken 1 pratik püf noktası yaz.
+
+═══════════════════════════════════════
+BÖLÜM 2 — DOĞRU SEÇENEK ("correctAnswerLetter")
+═══════════════════════════════════════
+Bulduğun nihai sonuç görseldeki seçeneklerden hangisiyle eşleşiyorsa YALNIZCA o harfi yaz (A, B, C, D veya E).
+
+═══════════════════════════════════════
+BÖLÜM 3 — SORU ANALİZ KARNESİ ("analysis")
+═══════════════════════════════════════
+Markdown tablosu formatında:
+- Ders, Konu, MEB Kazanımı, Müfredat Uygunluğu
+- Zorluk (1-10/10), Tahmini Çözme Süresi
+- HER şık (A-E) için ayrı ayrı çeldirici analizi (hangi yanlış yaklaşım o şıkka götürür?)
+
+═══════════════════════════════════════
+BÖLÜM 4 — 2 ADET ÖZGÜN BENZER SORU ("similarQuestions")
+═══════════════════════════════════════
+- Görseldeki soruyla aynı konuyu ve çözüm mantığını ölçen, FARKLI SAYILARLA 2 adet özgün soru üret.
+- Her soru için 5 şık (A-E), adım adım çözüm ve doğru cevap yaz.
+- Matematiksel ifadeleri LaTeX ($...$) formatında yaz.
 
 JSON ŞEMASI:
 {
-  "solution": "1. Durum:\\n[Tüm işlemler]\\n\\n2. Durum:\\n[Tüm işlemler]\\n\\nDoğru Cevap: [Şık] ([Değer])\\n\\nİpucu: [Püf noktası]",
-  "correctAnswerLetter": "A",
-  "analysis": "**SORU ANALİZİ**\\n\\n| Kriter | Değerlendirme |\\n| :--- | :--- |\\n| **Ders** | ${subject || 'YKS'} |\\n| **Konu** | ${topicName || 'Genel'} |\\n| **Kazanım** | [Kazanım] |\\n| **Zorluk** | [Zorluk] |\\n| **Çeldirici Analizi** | [Şıkların analizi] |",
+  "solution": "**Sorunun Çözümü**\\n\\nVerilen: [görseldeki veriler]\\n\\n**1. Adım:** [İlk işlem]\\n$[LaTeX formül]$\\n$[ara sonuç]$\\n\\n**2. Adım:** [Sonraki işlem]\\n$[LaTeX formül]$\\n$[ara sonuç]$\\n\\n**3. Adım:** [Nihai işlem]\\n$[LaTeX formül]$\\n\\n**Doğru Cevap: [Harf] ([Değer])**\\n\\n**İpucu:** [Sınavda bu soru tipinde dikkat edilecek püf noktası]",
+  "correctAnswerLetter": "C",
+  "analysis": "**SORU ANALİZİ**\\n\\n| Kriter | Değerlendirme |\\n| :--- | :--- |\\n| **Ders** | ${subject || 'YKS'} |\\n| **Konu** | [Konu adı] |\\n| **Kazanım** | [MEB kazanımı] |\\n| **Müfredat Uygunluğu** | [Uygun/Uygun Değil] |\\n| **Zorluk** | [X/10] - [Seviye] |\\n| **Çözme Süresi** | [X dk] |\\n| **A Şıkkı Çeldiricisi** | [Hangi yanlış bu şıkka götürür] |\\n| **B Şıkkı Çeldiricisi** | [Hangi yanlış bu şıkka götürür] |\\n| **C Şıkkı Çeldiricisi** | [Hangi yanlış bu şıkka götürür] |\\n| **D Şıkkı Çeldiricisi** | [Hangi yanlış bu şıkka götürür] |\\n| **E Şıkkı Çeldiricisi** | [Hangi yanlış bu şıkka götürür] |",
   "similarQuestions": [
     {
-      "question": "Özgün soru metni...",
+      "question": "Özgün soru metni ve 5 şık (LaTeX formatında)...",
       "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
-      "solution": "Adım adım çözüm...",
+      "solution": "Adım adım detaylı çözüm (LaTeX formatında)...",
       "correctAnswer": "A"
     },
     {
-      "question": "Özgün soru metni...",
+      "question": "Özgün soru metni ve 5 şık (LaTeX formatında)...",
       "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
-      "solution": "Adım adım çözüm...",
-      "correctAnswer": "B"
+      "solution": "Adım adım detaylı çözüm (LaTeX formatında)...",
+      "correctAnswer": "D"
     }
   ]
 }`;
@@ -1528,7 +1564,7 @@ JSON ŞEMASI:
       requireJson: true,
       featureKey: 'PHOTO_QUESTION_FULL_ANALYSIS',
       modelOverride: targetModel,
-      maxTokens: 6000
+      maxTokens: 8000
     });
 
     const responseText = unifiedResult.text;
