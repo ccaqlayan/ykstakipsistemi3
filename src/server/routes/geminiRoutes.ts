@@ -1152,62 +1152,62 @@ router.post('/solve-question', async (req, res) => {
 
     if (solutionText || existingAnalysis) {
       promptText = `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru çözen uzman bir öğretmenisin.
-Aşağıda öğrencinin aynı sorusuna ait önceki çözüm/analiz verisi bulunmaktadır:
+Aşağıda öğrencinin aynı sorusuna ait önceki soru verisi bulunmaktadır:
 ---
 Ders: ${subject || ''}
 Konu: ${topicName || ''}
-Önceki Soru Metni/Çözümü/Analizi:
+Soru Metni/Verisi:
 ${solutionText || existingAnalysis}
 ---
-Bu verilerden faydalanarak sorunun son derece anlaşılır, adım adım detaylı çözümünü sun.
+Bu sorunun son derece anlaşılır, matematiksel/fiziksel işlemleri eksiksiz içeren adım adım detaylı çözümünü sun.
 
-ASLA "Merhaba değerli öğrencim" veya benzeri giriş/selamlama cümleleri ya da sohbet ifadeleri kullanma. Doğrudan çözümle başla.
+ASLA "Merhaba değerli öğrencim" veya benzeri giriş/selamlama cümleleri ya da sohbet ifadeleri kullanma. Doğrudan 1. Adım veya çözüm adımları ile başla.
 
-İçerik Şunları Kapsamalıdır:
-1. Konu Özeti: Soru hangi konuyla ilgiliyse (${subject} - ${topicName}) o konunun temel kuralını veya formülünü kısaca hatırlat.
-2. Adım Adım Çözüm (ÇOK ÖNEMLİ - İŞLEM BASAMAKLARI EKSİKSİZ OLMALIDIR):
-- KESİNLİKLE sadece ne yapılacağını söyleyen teorik/yüzeysel tavsiye cümleleri yazıp bırakma (Örn: "Adım 1: Kritik noktaları belirleyelim", "Adım 2: Denklemi çözelim" gibi işlemlerin yapılmadığı özetler YASAKTIR).
-- HER ADIMDA, sorudaki sayıları ve denklemleri bizzat kullanarak TÜM MATEMATİKSEL İŞLEMLERİ AÇIK AÇIK VE EKSİKSİZ YAP:
-  * Adım 1: Sorudaki denklemi/ifadeyi yaz, ilk işlem basamağını uygula ve ara sonucu hesapla (Örn: $|2x - 6| = 0 \\implies 2x = 6 \\implies x = 3$).
-  * Adım 2: Durum analizini, türev/integral alma işlemini veya denklem çözümünü adım adım işlemleriyle çöz (Örn: $x \\ge 3$ için $2x - 6 + x = 12 \\implies 3x = 18 \\implies x = 6$).
-  * Adım 3: Varsa diğer durumları incele veya sonuca ulaştıracak nihai hesaplamaları satır satır yap.
-- Öğrenci çözümü okuduğunda sorunun tüm sayısal ve cebirsel işlemlerini satır satır eksiksiz görebilmelidir.
-3. Doğru Cevap: Doğru seçeneği ve bulunan sonucu belirgin şekilde yaz (Örn: **Doğru Cevap: C şıkkıdır (x = 6)**).
-4. İpucu: Bu tarz sorularda öğrencilerin yaptığı yaygın hataları hatırlatan ve zaman kazandıran 1 pratik taktik ver.
+KRİTİK ÇÖZÜM KURALLARI (TAM HESAPLAMA VE SIFIR HATA):
+1. Adım Adım Eksiksiz Çözüm:
+- KESİNLİKLE sadece yöntemi anlatan teorik özetler yazma.
+- Soruda verilen denklemleri, durumları (1. Durum, 2. Durum vb.), türevleri, integralleri veya cebirsel bağıntıları satır satır yaz.
+- Tüm ara işlemleri ve hesaplamaları adım adım bizzat yap (Örn: $||x - 2| - 4| = 3 \\implies |x - 2| - 4 = 3 \\implies |x - 2| = 7 \\implies x = 9$ ve $x = -5$).
+- Bulunan tüm kökleri/değerleri listele ve soruda istenen nihai işlemi (örn. kökler toplamı: $9 + (-5) + 3 + 1 = 8$) açıkça topla/hesapla.
+2. Doğru Cevap:
+- Bulunan nihai sonucu ve seçeneklerdeki karşılığını kesin ve net olarak yaz (Örn: **Doğru Cevap: A şıkkıdır (8)**).
+3. İpucu:
+- Bu tarz sorularda yapılan tipik dikkat ve işlem hatalarını hatırlatan 1 pratik taktik ver.
 
-ÖNEMLİ MATEMATİKSEL VE BİÇİMLENDİRME KURALLARI:
-- Matematiksel ve fiziksel formülleri, denklemleri, kesirleri, kökleri ve sembolleri standart LaTeX ($...$ veya $$...$$) formatında yaz (Örn: $\\frac{a}{b}$, $\\sqrt{x^2+1}$, $\\int f(x)dx$, $\\lim_{x \\to 0}$, $x^2$, $\\alpha$, $\\vec{F} = m \\cdot \\vec{a}$).
-- Sade metin ve açıklamalar için Türkçe kullan.`;
+ÖNEMLİ BİÇİMLENDİRME KURALLARI:
+- Tüm formülleri, denklemleri, kökleri, mutlak değerleri ve sembolleri standart LaTeX ($...$ veya $$...$$) formatında yaz.
+- Açıklamalar için anlaşılır Türkçe kullan.`;
     } else {
       if (!imagePart && !imageUrl) {
         return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
       }
 
       promptText = `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru çözen uzman bir öğretmenisin.
-Görseldeki soruyu son derece dikkatli incele ve adım adım detaylı, hatasız bir çözüm sun.
+Görseldeki soruyu son derece dikkatli incele ve adım adım detaylı, hatasız bir matematiksel/fiziksel çözüm sun.
 
-ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, selamlama ya da sohbet cümlesi yazma. Doğrudan 1. Konu Özeti veya çözüm adımları ile başla.
+ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, selamlama ya da sohbet cümlesi yazma. Doğrudan 1. Adım veya çözüm adımları ile başla.
 
-KRİTİK GÖRSEL OKUMA VE SIFIR HATA KURALLARI:
-- Çözüme geçmeden önce görseldeki soru metnini, kesir çizgisini, pay ve paydadaki TÜM TERİMLERİ, kök derecelerini ve işaretleri (+, -, *, /) DİKKATLE VE PİKSEL PİKSEL OKU.
-- SADECE görselde basılı olan gerçek sayıları kullan.
-- ASLA ezbere/hafızaya dayalı benzer ders kitabı sayıları uydurma veya karıştırma (Örn: Görselde paydada $\\sqrt{108} - \\sqrt{27}$ yazıyorsa bunu $\\sqrt{108}$ ve $\\sqrt{27}$ olarak oku; görselde yazmayan $\\sqrt{12}$ veya başka sayıları KESİNLİKLE uydurma).
+KRİTİK GÖRSEL OKUMA VE ÇÖZÜM KURALLARI (TAM HESAPLAMA VE SIFIR HATA):
+1. Görseli ve Soruyu Harfi Harfine Oku:
+- Görseldeki soru kökünü, tüm sayıları, denklemleri, fonksiyonları, mutlak değerleri, kesirleri ve seçenekleri (A, B, C, D, E) dikkatle ve birebir oku.
+- SADECE görselde basılı olan gerçek değerleri kullan. Görselde olmayan sayıları asla ezberden uydurma veya karıştırma.
 
-İçerik Şunları Kapsamalıdır:
-1. Konu Özeti: Soru hangi konuyla ilgiliyse (${subject} - ${topicName}) o konunun temel kuralını veya formülünü kısaca hatırlat.
-2. Adım Adım Çözüm (ÇOK ÖNEMLİ - TÜM SAYISAL İŞLEM BASAMAKLARI EKSİKSİZ OLMALIDIR):
-- KESİNLİKLE sadece ne yapılacağını söyleyen teorik/yüzeysel tavsiye cümleleri yazıp bırakma.
-- HER ADIMDA, sorudaki sayıları ve denklemleri bizzat kullanarak TÜM MATEMATİKSEL İŞLEMLERİ AÇIK AÇIK VE EKSİKSİZ YAP:
-  * Adım 1: Sorudaki pay ve payda terimlerini tek tek en sade kök dışı biçimlerine dönüştür (Örn: $\\sqrt{48} = 4\\sqrt{3}$, $\\sqrt{75} = 5\\sqrt{3}$, $\\sqrt{108} = 6\\sqrt{3}$, $\\sqrt{27} = 3\\sqrt{3}$).
-  * Adım 2: Pay ve payda işlemlerini ayrı ayrı topla/çıkar (Örn: Pay $= 4\\sqrt{3} + 5\\sqrt{3} = 9\\sqrt{3}$, Payda $= 6\\sqrt{3} - 3\\sqrt{3} = 3\\sqrt{3}$).
-  * Adım 3: Bölme/sadeleştirme işlemini yap ve nihai sonucu bul (Örn: $\\frac{9\\sqrt{3}}{3\\sqrt{3}} = 3$).
-- Öğrenci çözümü okuduğunda sorunun tüm sayısal ve cebirsel işlemlerini satır satır eksiksiz görebilmelidir.
-3. Doğru Cevap: Görseldeki seçenekleri kontrol ederek doğru seçeneği ve bulunan sonucu belirgin şekilde yaz (Örn: **Doğru Cevap: C şıkkıdır (3)**).
-4. İpucu: Bu tarz sorularda öğrencilerin yaptığı yaygın hataları hatırlatan ve zaman kazandıran 1 pratik taktik ver.
+2. Adım Adım Eksiksiz Çözüm:
+- KESİNLİKLE sadece yöntemi anlatan teorik özetler yazma.
+- Soruda verilen denklemleri, durumları (1. Durum, 2. Durum vb.), türevleri, integralleri veya cebirsel bağıntıları satır satır yaz.
+- Tüm ara işlemleri ve hesaplamaları adım adım bizzat yap (Örn: $||x - 2| - 4| = 3 \\implies |x - 2| - 4 = 3 \\implies |x - 2| = 7 \\implies x = 9$ ve $x = -5$).
+- Bulunan tüm kökleri/değerleri listele ve soruda istenen nihai işlemi (örn. kökler toplamı: $9 + (-5) + 3 + 1 = 8$) açıkça topla/hesapla.
 
-ÖNEMLİ MATEMATİKSEL VE BİÇİMLENDİRME KURALLARI:
-- Matematiksel ve fiziksel formülleri, denklemleri, kesirleri, kökleri ve sembolleri standart LaTeX ($...$ veya $$...$$) formatında yaz (Örn: $\\frac{a}{b}$, $\\sqrt{x^2+1}$, $\\int f(x)dx$, $\\lim_{x \\to 0}$, $x^2$, $\\alpha$, $\\vec{F} = m \\cdot \\vec{a}$).
-- Sade metin ve açıklamalar için anlaşılır Türkçe kullan.`;
+3. Doğru Seçenek:
+- Bulduğun nihai sayısal veya cebirsel sonucu, görseldeki A, B, C, D, E seçenekleriyle karşılaştır.
+- Hangi seçenekteki değere tam olarak eşitse o seçeneği doğru cevap olarak belirt (Örn: **Doğru Cevap: A şıkkıdır (8)**).
+
+4. İpucu:
+- Bu tarz sorularda yapılan tipik dikkat ve işlem hatalarını hatırlatan 1 pratik taktik ver.
+
+ÖNEMLİ BİÇİMLENDİRME KURALLARI:
+- Tüm formülleri, denklemleri, kökleri, mutlak değerleri ve sembolleri standart LaTeX ($...$ veya $$...$$) formatında yaz.
+- Açıklamalar için anlaşılır Türkçe kullan.`;
     }
 
     const targetModel = featureModelConfig['SOLVE_QUESTION'] || 'SYSTEM_DEFAULT';
@@ -1487,58 +1487,48 @@ router.post('/analyze-photo-question-full', async (req, res) => {
     }
 
     const textPrompt = `
-Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden uzman bir branş öğretmeni ve soru analistisin.
-Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'Genel'}) TEK BİR İNCELEMEDE 3 farklı açıdan analiz et ve yanıtını YALNIZCA belirtilen JSON formatında dön.
+Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden uzman bir matematik ve fen branş öğretmeni, aynı zamanda profesyonel soru analistisin.
+Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'Genel'}) son derece dikkatli incele ve yanıtını YALNIZCA belirtilen JSON formatında dön.
 
-KRİTİK GÖRSEL OKUMA VE SIFIR HATA KURALLARI (ZORUNLU):
-- Çözüme geçmeden önce görseldeki soru metnini, kesir çizgisini, pay ve paydadaki TÜM TERİMLERİ, kök derecelerini ve işaretleri (+, -, *, /) DİKKATLE VE PİKSEL PİKSEL OKU.
-- SADECE görselde basılı olan gerçek sayıları kullan.
-- ASLA ezbere/hafızaya dayalı benzer ders kitabı sayıları uydurma veya karıştırma (Örn: Görselde paydada $\\sqrt{108} - \\sqrt{27}$ yazıyorsa bunu $\\sqrt{108}$ ve $\\sqrt{27}$ olarak oku; görselde yazmayan $\\sqrt{12}$ veya başka sayıları KESİNLİKLE uydurma).
-- Çözümün adımlarında görseldeki sayılarla işlemleri eksiksiz ve açıkça yap:
-  * Paydaki terimler: $\\sqrt{48} = 4\\sqrt{3}$, $\\sqrt{75} = 5\\sqrt{3} \\implies \\text{Pay} = 4\\sqrt{3} + 5\\sqrt{3} = 9\\sqrt{3}$
-  * Paydadaki terimler: $\\sqrt{108} = 6\\sqrt{3}$, $\\sqrt{27} = 3\\sqrt{3} \\implies \\text{Payda} = 6\\sqrt{3} - 3\\sqrt{3} = 3\\sqrt{3}$
-  * Oran: $\\frac{9\\sqrt{3}}{3\\sqrt{3}} = 3$
-- Şıkları (A, B, C, D, E) görselden oku ve bulunan sonuca (${3}$) tam uyan seçeneği (C şıkkı) net olarak belirt.
+KRİTİK GÖRSEL OKUMA VE MATEMATİKSEL ÇÖZÜM KURALLARI (ZORUNLU & SIFIR HATA):
+1. Görseli ve Soruyu Harfi Harfine Oku:
+- Soru kökünü, tüm denklemleri, mutlak değerleri, kesirleri, üslü/köklü ifadeleri, fonksiyonları ve seçenekleri (A, B, C, D, E) piksel piksel ve harfi harfine oku.
+- SADECE görselde basılı olan gerçek sayıları ve sembolleri kullan. Soruda yazmayan hiçbir değeri asla ezberden uydurma veya karıştırma.
 
-1. ÇÖZÜM REHBERİ (solution alanı için):
-- Görseldeki soruyu adım adım son derece anlaşılır Türkçe ile ve TÜM İŞLEM BASAMAKLARINI EKSİKSİZ HESAPLAYARAK çöz.
-- ASLA "Merhaba" veya selamlama cümleleri kullanma, doğrudan Konu Özeti ile başla.
-- KESİNLİKLE sadece ne yapılacağını anlatan teorik/yüzeysel tavsiyeler yazma. HER ADIMDA sorudaki sayıları, denklemleri ve fonksiyonları bizzat kullanarak gerçek matematiksel/fiziksel işlemleri adım adım ve satır satır hesapla.
-- Metin içinde paragraflar, adımlar (Adım 1:, Adım 2: vb.), Konu Özeti, Doğru Cevap: ve Pratik Taktik: bölümleri arasında KESİNLİKLE yeni satır (\\n\\n) kullan. ASLA tüm çözümü tek parça düz metin olarak yazma.
-- Sorudaki ve çözümdeki tüm matematiksel/fiziksel denklemleri, fonksiyonları, aralıkları ve kesirleri standart LaTeX ($...$ veya $$...$$) formatında yaz.
-- correctAnswerLetter alanına sorunun doğru cevap şıkkını (SADECE tek büyük harf: A, B, C, D veya E) yaz.
+2. Çözüm Alanında Adım Adım Eksiksiz Matematiksel Hesaplama (ÇOK ÖNEMLİ):
+- KESİNLİKLE sadece ne yapılacağını anlatan teorik/yüzeysel tavsiyeler yazma.
+- Sorudaki denklemleri, mutlak değer durumlarını (1. Durum, 2. Durum vb.), türevleri veya cebirsel bağıntıları satır satır yaz.
+- Her durum için kökleri/değerleri ara basamaklarıyla birlikte açıkça hesapla (Örn: $||x - 2| - 4| = 3 \\implies |x - 2| - 4 = 3 \\implies |x - 2| = 7 \\implies x = 9, x = -5$ ve $|x - 2| - 4 = -3 \\implies |x - 2| = 1 \\implies x = 3, x = 1$).
+- İstenen nihai sonucu açıkça topla/hesapla (Örn: $9 + (-5) + 3 + 1 = 8$).
+- Metin içinde adımlar (1. Adım:, 2. Adım: veya 1. Durum:, 2. Durum:), Doğru Cevap: ve İpucu: bölümleri arasında yeni satır (\\n\\n) kullan.
+- Tüm matematiksel ifadeleri standart LaTeX ($...$) formatında yaz.
 
-2. BENZER SORULAR (similarQuestions alanı için - TAM 3 ADET):
-- Görseldeki soruya benzer tarzda, Türkiye YKS (TYT/AYT) müfredatına %100 uygun TAM 3 ADET özgün soru üret.
-- Her biri için: soru metni, şıkları (options dizisi: A, B, C, D, E), adım adım detaylı matematiksel hesaplamaları içeren çözümü ve doğru cevabını hazırla.
-- Soru metnindeki, şıklardaki ve çözümdeki TÜM matematiksel fonksiyonları (örn: $f(x) = 2x^3 - 9x^2 + 12x - 1$), aralıkları (örn: $[0, 3]$), denklemleri (örn: $x = 1$) KESİNLİKLE dolar işareti arasına alarak ($...$) standart LaTeX formatında yaz.
+3. Doğru Cevap Şıkkı Tespiti:
+- Bulduğun nihai sayısal veya cebirsel sonucu, görseldeki A, B, C, D, E seçenekleriyle karşılaştır.
+- Hangi seçenekteki değere tam olarak eşitse (Örn: bulunan değer 8 ise ve A şıkkı 8 ise), correctAnswerLetter alanına O ŞIKKIN HARFİNİ yaz (A, B, C, D veya E).
+- KESİNLİKLE ezberden rastgele bir harf seçme; bizzat hesapladığın sonuç hangi şıktaysa o harfi yaz.
 
-3. DETAYLI SORU KARNESİ (analysis alanı için):
-- Sorunun ders, konu, MEB kazanımı, müfredat uygunluğu, zorluk (örn: 6/10 - Orta), okuma süresi, çözme süresi, ayırt edicilik ve TÜM ŞIKLARIN çeldirici analizini içeren tam bir Markdown Tablo oluştur.
+4. Benzer Sorular ve Analiz:
+- Türkiye YKS müfredatına %100 uygun 2 adet özgün benzer soru, A-E şıkları ve detaylı çözümlerini hazırla.
+- Soru analiz tablosunda bulunan doğru şıkkı ve diğer seçeneklerin çeldiricilerini açıkla.
 
 AŞAĞIDAKİ JSON ŞEMASINA KESİNLİKLE UY VE YALNIZCA GEÇERLİ JSON DÖNDÜR:
 {
-  "solution": "Konu Özeti:\\n...\\n\\nAdım 1: ...\\n\\nAdım 2: ...\\n\\nDoğru Cevap: ...\\n\\nPratik Taktik: ...",
-  "correctAnswerLetter": "C",
-  "analysis": "**SORU ANALİZİ**\\n\\n| Kriter | Değerlendirme |\\n| :--- | :--- |\\n| **Ders** | ${subject || 'YKS'} |\\n| **Konu** | ${topicName || 'Genel'} |\\n| **Kazanım** | [MEB Kazanımı] |\\n| **Zorluk** | 6/10 - Orta |\\n| **Okuma Süresi** | 0.8 dk |\\n| **Çözme Süresi** | 1.5 dk |\\n| **Ayırt Edicilik** | Yüksek |\\n| **Çeldirici Analizi** | |\\n| **A Şıkkı Çeldiricisi** | [Analiz] |\\n| **B Şıkkı Çeldiricisi** | [Analiz] |\\n| **C Şıkkı Çeldiricisi** | [Doğru Şık] |\\n| **D Şıkkı Çeldiricisi** | [Analiz] |\\n| **E Şıkkı Çeldiricisi** | [Analiz] |",
+  "solution": "1. Adım: ...\\n\\n2. Adım: ...\\n\\nDoğru Cevap: ...\\n\\nİpucu: ...",
+  "correctAnswerLetter": "A",
+  "analysis": "**SORU ANALİZİ**\\n\\n| Kriter | Değerlendirme |\\n| :--- | :--- |\\n| **Ders** | ${subject || 'YKS'} |\\n| **Konu** | ${topicName || 'Genel'} |\\n| **Kazanım** | [MEB Kazanımı] |\\n| **Zorluk** | 6/10 - Orta |\\n| **Okuma Süresi** | 0.8 dk |\\n| **Çözme Süresi** | 1.5 dk |\\n| **Ayırt Edicilik** | Yüksek |\\n| **Çeldirici Analizi** | [Şıkların Analizi] |",
   "similarQuestions": [
     {
-      "question": "1. Benzer soru metni ve şıkları...",
+      "question": "1. Benzer soru metni ve A, B, C, D, E şıkları...",
       "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
-      "solution": "1. Sorunun adım adım detaylı çözümü...",
+      "solution": "1. Sorunun adım adım detaylı matematiksel çözümü...",
       "correctAnswer": "A"
     },
     {
-      "question": "2. Benzer soru metni ve şıkları...",
+      "question": "2. Benzer soru metni ve A, B, C, D, E şıkları...",
       "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
-      "solution": "2. Sorunun adım adım detaylı çözümü...",
+      "solution": "2. Sorunun adım adım detaylı matematiksel çözümü...",
       "correctAnswer": "B"
-    },
-    {
-      "question": "3. Benzer soru metni ve şıkları...",
-      "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
-      "solution": "3. Sorunun adım adım detaylı çözümü...",
-      "correctAnswer": "C"
     }
   ]
 }

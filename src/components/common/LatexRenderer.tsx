@@ -262,7 +262,7 @@ export const LatexRenderer: React.FC<LatexRendererProps> = ({
 
     // Header matchers
     const isSummaryHeader = (l: string) => /^(?:#+\s*)?(?:1\.\s*)?(?:Konu Özeti|Temel Kural|Kavram Özeti|Ön Bilgi)[:\.-]?/i.test(l.trim());
-    const isStepHeader = (l: string) => /^(?:#+\s*)?(?:(?:2\.\s*)?Adım\s*(\d+)[:\.-]?|(\d+)\.\s*Adım[:\.-]?|Çözüm\s*Adımı\s*(\d+)[:\.-]?)/i.test(l.trim());
+    const isStepHeader = (l: string) => /^(?:#+\s*)?(?:(?:2\.\s*)?Adım\s*(\d+)[:\.-]?|(\d+)\.\s*Adım[:\.-]?|Çözüm\s*Adımı\s*(\d+)[:\.-]?|(\d+)\.\s*Durum[:\.-]?|Durum\s*(\d+)[:\.-]?|(\d+)\.\s*Aşama[:\.-]?)/i.test(l.trim());
     const isAnswerHeader = (l: string) => /^(?:#+\s*)?(?:3\.\s*)?(?:Doğru Cevap|Cevap|Sonuç)[:\.-]?/i.test(l.trim());
     const isTipHeader = (l: string) => /^(?:#+\s*)?(?:4\.\s*)?(?:İpucu(?:\s*\/\s*Pratik Taktik)?|Pratik Taktik|Taktik|Püf Noktası|Önemli Not)[:\.-]?/i.test(l.trim());
 
@@ -302,13 +302,15 @@ export const LatexRenderer: React.FC<LatexRendererProps> = ({
 
         if (isStepHeader(trimmed)) {
           if (currentBlock) blocks.push(currentBlock);
-          const stepMatch = trimmed.match(/^(?:#+\s*)?(?:(?:2\.\s*)?Adım\s*(\d+)[:\.-]?|(\d+)\.\s*Adım[:\.-]?|Çözüm\s*Adımı\s*(\d+)[:\.-]?)/i);
-          const stepNum = stepMatch ? parseInt(stepMatch[1] || stepMatch[2] || stepMatch[3] || '1', 10) : undefined;
-          const contentAfterHeader = trimmed.replace(/^(?:#+\s*)?(?:(?:2\.\s*)?Adım\s*\d+[:\.-]?|\d+\.\s*Adım[:\.-]?|Çözüm\s*Adımı\s*\d+[:\.-]?)\s*/i, '').trim();
+          const stepMatch = trimmed.match(/^(?:#+\s*)?(?:(?:2\.\s*)?Adım\s*(\d+)[:\.-]?|(\d+)\.\s*Adım[:\.-]?|Çözüm\s*Adımı\s*(\d+)[:\.-]?|(\d+)\.\s*Durum[:\.-]?|Durum\s*(\d+)[:\.-]?|(\d+)\.\s*Aşama[:\.-]?)/i);
+          const stepNum = stepMatch ? parseInt(stepMatch[1] || stepMatch[2] || stepMatch[3] || stepMatch[4] || stepMatch[5] || stepMatch[6] || '1', 10) : undefined;
+          const isDurum = /durum/i.test(trimmed);
+          const titleText = isDurum ? `${stepNum || ''}. DURUM` : `${stepNum || ''}. ADIM`;
+          const contentAfterHeader = trimmed.replace(/^(?:#+\s*)?(?:(?:2\.\s*)?Adım\s*\d+[:\.-]?|\d+\.\s*Adım[:\.-]?|Çözüm\s*Adımı\s*\d+[:\.-]?|\d+\.\s*Durum[:\.-]?|Durum\s*\d+[:\.-]?|\d+\.\s*Aşama[:\.-]?)\s*/i, '').trim();
           currentBlock = {
             type: 'step',
             stepNumber: stepNum,
-            title: `${stepNum || ''}. ADIM`,
+            title: titleText,
             content: contentAfterHeader ? [contentAfterHeader] : []
           };
           return;
