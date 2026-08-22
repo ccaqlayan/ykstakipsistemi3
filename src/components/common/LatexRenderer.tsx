@@ -229,6 +229,13 @@ const parseInlineMathAndMarkdown = (text: string): React.ReactNode[] => {
   });
 };
 
+interface SectionBlock {
+  type: 'summary' | 'step' | 'answer' | 'tip' | 'paragraph' | 'block-math';
+  title?: string;
+  stepNumber?: number;
+  content: string[];
+}
+
 export const LatexRenderer: React.FC<LatexRendererProps> = ({
   content,
   className = '',
@@ -243,15 +250,7 @@ export const LatexRenderer: React.FC<LatexRendererProps> = ({
     const preprocessed = content
       .replace(/\\r\\n/g, '\n')
       .replace(/\\n/g, '\n')
-      .replace(/\r\n/g, '\n')
-      // Ensure double line breaks before standard solution section headers if squashed
-      .replace(/([^\n])\s*(Adım \d+[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(\d+\.\s+Adım[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(Konu Özeti[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(Doğru Cevap[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(Pratik Taktik[:\.-]|İpucu[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(Çözüm[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(Sonuç[:\.-])/gi, '$1\n\n$2');
+      .replace(/\r\n/g, '\n');
 
     if (inline) {
       return (
@@ -261,157 +260,249 @@ export const LatexRenderer: React.FC<LatexRendererProps> = ({
       );
     }
 
-    // Split content by block math ($$...$$ or \[...\])
-    const blockMathRegex = /(\$\$(?:\\\$|[^\$])+?\$\$|\\\[(?:\\\]|\s\S|[^\\])+?\\\])/g;
-    const segments = preprocessed.split(blockMathRegex);
+    // Header matchers
+    const isSummaryHeader = (l: string) => /^(?:#+\s*)?(?:1\.\s*)?(?:Konu Özeti|Temel Kural|Kavram Özeti|Ön Bilgi)[:\.-]?/i.test(l.trim());
+    const isStepHeader = (l: string) => /^(?:#+\s*)?(?:(?:2\.\s*)?Adım\s*(\d+)[:\.-]?|(\d+)\.\s*Adım[:\.-]?|Çözüm\s*Adımı\s*(\d+)[:\.-]?)/i.test(l.trim());
+    const isAnswerHeader = (l: string) => /^(?:#+\s*)?(?:3\.\s*)?(?:Doğru Cevap|Cevap|Sonuç)[:\.-]?/i.test(l.trim());
+    const isTipHeader = (l: string) => /^(?:#+\s*)?(?:4\.\s*)?(?:İpucu(?:\s*\/\s*Pratik Taktik)?|Pratik Taktik|Taktik|Püf Noktası|Önemli Not)[:\.-]?/i.test(l.trim());
 
-    const elements: React.ReactNode[] = [];
-    let elementKey = 0;
+    // Group lines into logical section blocks
+    const rawLines = preprocessed.split('\n');
+    const blocks: SectionBlock[] = [];
+    let currentBlock: SectionBlock | null = null;
 
-    segments.forEach((segment) => {
-      if (!segment) return;
+    rawLines.forEach((line) => {
+      const trimmed = line.trim();
 
-      // 1. Is this a display / block math segment? ($$...$$ or \[...\])
-      if (segment.startsWith('$$') && segment.endsWith('$$') && segment.length > 3) {
-        const math = segment.slice(2, -2);
-        const html = renderKatexSafe(math, true);
-        elements.push(
-          <div 
-            key={`block-math-${elementKey++}`}
-            className="my-3 py-2.5 px-4 bg-slate-950/80 rounded-2xl border border-indigo-500/20 overflow-x-auto text-center font-sans shadow-inner scrollbar-thin"
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
-        );
+      // Check for standalone display math: $$...$$ or \[...\]
+      if ((trimmed.startsWith('$$') && trimmed.endsWith('$$') && trimmed.length > 3) ||
+          (trimmed.startsWith('\\[') && trimmed.endsWith('\\]') && trimmed.length > 3)) {
+        if (currentBlock) {
+          blocks.push(currentBlock);
+          currentBlock = null;
+        }
+        blocks.push({
+          type: 'block-math',
+          content: [trimmed]
+        });
         return;
       }
 
-      if (segment.startsWith('\\[') && segment.endsWith('\\]') && segment.length > 3) {
-        const math = segment.slice(2, -2);
-        const html = renderKatexSafe(math, true);
-        elements.push(
-          <div 
-            key={`block-math-${elementKey++}`}
-            className="my-3 py-2.5 px-4 bg-slate-950/80 rounded-2xl border border-indigo-500/20 overflow-x-auto text-center font-sans shadow-inner scrollbar-thin"
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
-        );
-        return;
-      }
-
-      // 2. Normal text lines processing
-      const lines = segment.split('\n');
-      lines.forEach((line) => {
-        const trimmed = line.trim();
-        if (!trimmed) {
-          elements.push(<div key={`blank-${elementKey++}`} className="h-1.5" />);
+      if (enableFormatting) {
+        if (isSummaryHeader(trimmed)) {
+          if (currentBlock) blocks.push(currentBlock);
+          const contentAfterHeader = trimmed.replace(/^(?:#+\s*)?(?:1\.\s*)?(?:Konu Özeti|Temel Kural|Kavram Özeti|Ön Bilgi)[:\.-]?\s*/i, '').trim();
+          currentBlock = {
+            type: 'summary',
+            title: 'Konu Özeti',
+            content: contentAfterHeader ? [contentAfterHeader] : []
+          };
           return;
         }
 
-        const lower = trimmed.toLowerCase();
-
-        // ─── Özel Formatlanmış Bloklar (EnableFormatting aktifse) ───
-        if (enableFormatting) {
-          // A) KONU ÖZETİ / TEMEL FORMÜL KARTI
-          if (lower.startsWith('konu özeti') || lower.startsWith('1. konu özeti') || lower.startsWith('## konu özeti')) {
-            const cleanTitle = trimmed.replace(/^#+\s*/, '');
-            elements.push(
-              <div 
-                key={`summary-${elementKey++}`}
-                className="my-2.5 p-3 sm:p-4 bg-indigo-950/30 border border-indigo-500/30 rounded-2xl space-y-1.5 shadow-md backdrop-blur-sm"
-              >
-                <div className="flex items-center space-x-2 text-indigo-400 font-extrabold text-xs uppercase tracking-wider">
-                  <BookOpen className="w-4 h-4 text-indigo-400 shrink-0" />
-                  <span>{parseInlineMathAndMarkdown(cleanTitle)}</span>
-                </div>
-              </div>
-            );
-            return;
-          }
-
-          // B) DOĞRU CEVAP KARTI
-          if (lower.startsWith('doğru cevap') || lower.startsWith('3. doğru cevap') || lower.startsWith('cevap:')) {
-            elements.push(
-              <div 
-                key={`answer-${elementKey++}`}
-                className="my-2.5 p-3 sm:p-3.5 bg-gradient-to-r from-emerald-950/50 via-emerald-900/30 to-slate-950/60 border-2 border-emerald-500/40 rounded-2xl flex items-center space-x-3 shadow-lg"
-              >
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div className="text-xs sm:text-sm font-black text-emerald-300">
-                  {parseInlineMathAndMarkdown(trimmed)}
-                </div>
-              </div>
-            );
-            return;
-          }
-
-          // C) PRATİK TAKTİK / İPUCU KARTI
-          if (lower.startsWith('ipucu') || lower.startsWith('4. ipucu') || lower.startsWith('pratik taktik') || lower.startsWith('taktik:')) {
-            elements.push(
-              <div 
-                key={`tip-${elementKey++}`}
-                className="my-2.5 p-3 sm:p-3.5 bg-gradient-to-r from-amber-950/40 to-slate-950/60 border border-amber-500/30 rounded-2xl flex items-start space-x-2.5 shadow-md"
-              >
-                <div className="p-1 bg-amber-500/20 rounded-lg text-amber-400 shrink-0 mt-0.5">
-                  <Lightbulb className="w-4 h-4" />
-                </div>
-                <div className="text-xs text-amber-200/90 leading-relaxed">
-                  {parseInlineMathAndMarkdown(trimmed)}
-                </div>
-              </div>
-            );
-            return;
-          }
-
-          // D) ÇÖZÜM ADIMLARI (Adım 1, 1. Adım, 2. Adım...)
-          const stepMatch = trimmed.match(/^(?:(?:2\.\s*)?Adım\s*(\d+)[:\.-]?|(\d+)\.\s*Adım[:\.-]?)/i);
-          if (stepMatch || (trimmed.startsWith('Adım ') || (lower.startsWith('çözüm:') && !lower.includes('rehberi')))) {
-            const stepNum = stepMatch ? (stepMatch[1] || stepMatch[2]) : null;
-            elements.push(
-              <div 
-                key={`step-${elementKey++}`}
-                className="my-2 p-3 sm:p-3.5 bg-slate-900/90 border border-slate-800 hover:border-purple-500/30 rounded-2xl text-xs text-slate-200 leading-relaxed shadow-sm transition-all border-l-4 border-l-purple-500"
-              >
-                {stepNum && showStepNumbers && (
-                  <div className="flex items-center space-x-1.5 text-purple-400 font-extrabold text-[11px] mb-1">
-                    <Zap className="w-3 h-3 text-purple-400" />
-                    <span>{stepNum}. ADIM</span>
-                  </div>
-                )}
-                <div className="text-slate-200">
-                  {parseInlineMathAndMarkdown(trimmed)}
-                </div>
-              </div>
-            );
-            return;
-          }
-
-          // E) LİSTE MADDELERİ (- veya *)
-          if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-            const listContent = trimmed.slice(2);
-            elements.push(
-              <div 
-                key={`list-${elementKey++}`}
-                className="ml-3 sm:ml-4 pl-2 py-1 flex items-start space-x-2 text-xs text-slate-300 leading-relaxed"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
-                <div className="flex-1">
-                  {parseInlineMathAndMarkdown(listContent)}
-                </div>
-              </div>
-            );
-            return;
-          }
+        if (isStepHeader(trimmed)) {
+          if (currentBlock) blocks.push(currentBlock);
+          const stepMatch = trimmed.match(/^(?:#+\s*)?(?:(?:2\.\s*)?Adım\s*(\d+)[:\.-]?|(\d+)\.\s*Adım[:\.-]?|Çözüm\s*Adımı\s*(\d+)[:\.-]?)/i);
+          const stepNum = stepMatch ? parseInt(stepMatch[1] || stepMatch[2] || stepMatch[3] || '1', 10) : undefined;
+          const contentAfterHeader = trimmed.replace(/^(?:#+\s*)?(?:(?:2\.\s*)?Adım\s*\d+[:\.-]?|\d+\.\s*Adım[:\.-]?|Çözüm\s*Adımı\s*\d+[:\.-]?)\s*/i, '').trim();
+          currentBlock = {
+            type: 'step',
+            stepNumber: stepNum,
+            title: `${stepNum || ''}. ADIM`,
+            content: contentAfterHeader ? [contentAfterHeader] : []
+          };
+          return;
         }
 
-        // F) STANDART PARAGRAF
+        if (isAnswerHeader(trimmed)) {
+          if (currentBlock) blocks.push(currentBlock);
+          const contentAfterHeader = trimmed.replace(/^(?:#+\s*)?(?:3\.\s*)?(?:Doğru Cevap|Cevap|Sonuç)[:\.-]?\s*/i, '').trim();
+          currentBlock = {
+            type: 'answer',
+            title: 'Doğru Cevap',
+            content: contentAfterHeader ? [contentAfterHeader] : []
+          };
+          return;
+        }
+
+        if (isTipHeader(trimmed)) {
+          if (currentBlock) blocks.push(currentBlock);
+          const contentAfterHeader = trimmed.replace(/^(?:#+\s*)?(?:4\.\s*)?(?:İpucu(?:\s*\/\s*Pratik Taktik)?|Pratik Taktik|Taktik|Püf Noktası|Önemli Not)[:\.-]?\s*/i, '').trim();
+          currentBlock = {
+            type: 'tip',
+            title: 'İpucu / Pratik Taktik',
+            content: contentAfterHeader ? [contentAfterHeader] : []
+          };
+          return;
+        }
+      }
+
+      // Normal line
+      if (trimmed === '') {
+        if (currentBlock && currentBlock.content.length > 0 && currentBlock.content[currentBlock.content.length - 1] !== '') {
+          currentBlock.content.push('');
+        }
+        return;
+      }
+
+      if (currentBlock) {
+        currentBlock.content.push(trimmed);
+      } else {
+        currentBlock = {
+          type: 'paragraph',
+          content: [trimmed]
+        };
+      }
+    });
+
+    if (currentBlock) blocks.push(currentBlock);
+
+    // Now render each SectionBlock
+    const elements: React.ReactNode[] = [];
+    let elementKey = 0;
+
+    blocks.forEach((block) => {
+      // 1. Block Math
+      if (block.type === 'block-math') {
+        const math = block.content[0].replace(/^(\$\$|\\\[)/, '').replace(/(\$\$|\\\])$/, '');
+        const html = renderKatexSafe(math, true);
         elements.push(
-          <p key={`p-${elementKey++}`} className="text-xs text-slate-300 leading-relaxed py-0.5">
-            {parseInlineMathAndMarkdown(trimmed)}
-          </p>
+          <div 
+            key={`block-math-${elementKey++}`}
+            className="my-3 py-2.5 px-4 bg-slate-950/80 rounded-2xl border border-indigo-500/20 overflow-x-auto text-center font-sans shadow-inner scrollbar-thin"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
         );
-      });
+        return;
+      }
+
+      // 2. Summary Card
+      if (block.type === 'summary') {
+        elements.push(
+          <div 
+            key={`summary-${elementKey++}`}
+            className="my-3 p-3.5 sm:p-4 bg-indigo-950/30 border border-indigo-500/30 rounded-2xl space-y-2 shadow-md backdrop-blur-sm"
+          >
+            <div className="flex items-center space-x-2 text-indigo-400 font-extrabold text-xs uppercase tracking-wider">
+              <BookOpen className="w-4 h-4 text-indigo-400 shrink-0" />
+              <span>{block.title || 'Konu Özeti'}</span>
+            </div>
+            <div className="text-slate-200 space-y-1.5 font-medium">
+              {block.content.filter(Boolean).map((line, lIdx) => (
+                <p key={lIdx} className="text-xs text-indigo-200/90 leading-relaxed py-0.5">
+                  {parseInlineMathAndMarkdown(line)}
+                </p>
+              ))}
+            </div>
+          </div>
+        );
+        return;
+      }
+
+      // 3. Step Card (⚡ 1. ADIM, ⚡ 2. ADIM...)
+      if (block.type === 'step') {
+        elements.push(
+          <div 
+            key={`step-${elementKey++}`}
+            className="my-3 p-3.5 sm:p-4 bg-slate-900/90 border border-slate-800 hover:border-purple-500/40 rounded-2xl text-xs leading-relaxed shadow-sm transition-all border-l-4 border-l-purple-500 space-y-2"
+          >
+            {showStepNumbers && (
+              <div className="flex items-center space-x-1.5 text-purple-400 font-extrabold text-xs uppercase tracking-wider">
+                <Zap className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                <span>{block.title || `${block.stepNumber}. ADIM`}</span>
+              </div>
+            )}
+            <div className="text-slate-200 space-y-1.5 font-medium">
+              {block.content.filter(Boolean).map((line, lIdx) => {
+                if (line.startsWith('- ') || line.startsWith('* ')) {
+                  return (
+                    <div key={lIdx} className="ml-3 pl-2 py-0.5 flex items-start space-x-2 text-xs text-slate-300">
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-1.5 shrink-0" />
+                      <div className="flex-1">{parseInlineMathAndMarkdown(line.slice(2))}</div>
+                    </div>
+                  );
+                }
+                return (
+                  <p key={lIdx} className="text-xs text-slate-200 leading-relaxed py-0.5">
+                    {parseInlineMathAndMarkdown(line)}
+                  </p>
+                );
+              })}
+            </div>
+          </div>
+        );
+        return;
+      }
+
+      // 4. Correct Answer Card
+      if (block.type === 'answer') {
+        elements.push(
+          <div 
+            key={`answer-${elementKey++}`}
+            className="my-3 p-3.5 sm:p-4 bg-gradient-to-r from-emerald-950/50 via-emerald-900/30 to-slate-950/60 border-2 border-emerald-500/40 rounded-2xl flex items-start space-x-3 shadow-lg"
+          >
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Doğru Cevap</span>
+              <div className="text-xs sm:text-sm font-black text-emerald-300">
+                {block.content.filter(Boolean).map((line, lIdx) => (
+                  <div key={lIdx}>{parseInlineMathAndMarkdown(line)}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+        return;
+      }
+
+      // 5. Tip / Tactic Card
+      if (block.type === 'tip') {
+        elements.push(
+          <div 
+            key={`tip-${elementKey++}`}
+            className="my-3 p-3.5 sm:p-4 bg-gradient-to-r from-amber-950/40 to-slate-950/60 border border-amber-500/30 rounded-2xl flex items-start space-x-3 shadow-md"
+          >
+            <div className="p-1.5 bg-amber-500/20 rounded-xl text-amber-400 shrink-0 mt-0.5">
+              <Lightbulb className="w-4 h-4" />
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">İpucu / Pratik Taktik</span>
+              <div className="text-xs text-amber-200/90 leading-relaxed font-medium">
+                {block.content.filter(Boolean).map((line, lIdx) => (
+                  <p key={lIdx} className="py-0.5">{parseInlineMathAndMarkdown(line)}</p>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+        return;
+      }
+
+      // 6. Normal Paragraph Group
+      if (block.type === 'paragraph') {
+        elements.push(
+          <div key={`p-group-${elementKey++}`} className="my-2 space-y-1">
+            {block.content.filter(Boolean).map((line, lIdx) => {
+              if (line.startsWith('- ') || line.startsWith('* ')) {
+                return (
+                  <div key={lIdx} className="ml-3 sm:ml-4 pl-2 py-0.5 flex items-start space-x-2 text-xs text-slate-300 leading-relaxed">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
+                    <div className="flex-1">{parseInlineMathAndMarkdown(line.slice(2))}</div>
+                  </div>
+                );
+              }
+              return (
+                <p key={lIdx} className="text-xs text-slate-300 leading-relaxed py-0.5">
+                  {parseInlineMathAndMarkdown(line)}
+                </p>
+              );
+            })}
+          </div>
+        );
+        return;
+      }
     });
 
     return elements;
@@ -425,3 +516,4 @@ export const LatexRenderer: React.FC<LatexRendererProps> = ({
     </div>
   );
 };
+
