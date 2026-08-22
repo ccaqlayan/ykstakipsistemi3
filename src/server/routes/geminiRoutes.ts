@@ -1551,40 +1551,75 @@ AŞAĞIDAKİ JSON ŞEMASINA KESİNLİKLE UY VE YALNIZCA GEÇERLİ JSON DÖNDÜR:
     console.log(`[PHOTO_ANALYSIS] Raw response length=${responseText?.length}, provider=${unifiedResult.providerUsed}, model=${unifiedResult.modelUsed}`);
     
     let parsedData: any = {};
-    try {
-      let cleanJson = (responseText || '').trim();
-      const codeBlockMatch = cleanJson.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      if (codeBlockMatch) {
-        cleanJson = codeBlockMatch[1].trim();
-      }
-      const firstBrace = cleanJson.indexOf('{');
-      const lastBrace = cleanJson.lastIndexOf('}');
-      if (firstBrace >= 0 && lastBrace > firstBrace) {
-        cleanJson = cleanJson.slice(firstBrace, lastBrace + 1);
-      }
-      parsedData = JSON.parse(cleanJson);
-    } catch (parseErr) {
-      console.warn('[PHOTO_ANALYSIS] JSON parse failed, falling back to field extraction:', (responseText || '').substring(0, 200));
-      
-      const extractField = (fieldName: string): string => {
-        const regex = new RegExp(`"${fieldName}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, 's');
-        const match = (responseText || '').match(regex);
-        if (match) {
-          try {
-            return JSON.parse(`"${match[1]}"`);
-          } catch {
-            return match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
-          }
-        }
-        return '';
-      };
+    const raw = responseText || '';
 
-      parsedData = {
-        solution: extractField('solution'),
-        correctAnswerLetter: extractField('correctAnswerLetter'),
-        analysis: extractField('analysis'),
-        similarQuestions: []
-      };
+    let cleaned = raw.trim();
+    const codeBlockMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (codeBlockMatch) {
+      cleaned = codeBlockMatch[1].trim();
+    }
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+    }
+
+    try {
+      parsedData = JSON.parse(cleaned);
+    } catch (e1) {
+      try {
+        // Fix unescaped newlines/tabs inside string literals
+        const sanitized = cleaned.replace(/"((?:\\.|[^"\\])*)"/gs, (match) => {
+          return match
+            .replace(/\n/g, '\\n')
+            .replace(/\r/g, '\\r')
+            .replace(/\t/g, '\\t');
+        });
+        parsedData = JSON.parse(sanitized);
+      } catch (e2) {
+        console.warn('[PHOTO_ANALYSIS] JSON parse failed, falling back to robust regex extraction:', raw.substring(0, 150));
+        parsedData = {
+          solution: '',
+          correctAnswerLetter: '',
+          analysis: '',
+          similarQuestions: []
+        };
+
+        // Extract solution
+        const solMatch = cleaned.match(/"solution"\s*:\s*"([\s\S]*?)(?="\s*,\s*"(?:correctAnswerLetter|analysis|similarQuestions)|"\s*})/);
+        if (solMatch) {
+          parsedData.solution = solMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        }
+
+        // Extract correctAnswerLetter
+        const ansMatch = cleaned.match(/"correctAnswerLetter"\s*:\s*"([A-Ea-e])"/);
+        if (ansMatch) {
+          parsedData.correctAnswerLetter = ansMatch[1].toUpperCase();
+        }
+
+        // Extract analysis
+        const anaMatch = cleaned.match(/"analysis"\s*:\s*"([\s\S]*?)(?="\s*,\s*"(?:similarQuestions|solution|correctAnswerLetter)|"\s*})/);
+        if (anaMatch) {
+          parsedData.analysis = anaMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        }
+
+        // Extract similarQuestions
+        const simMatch = cleaned.match(/"similarQuestions"\s*:\s*(\[[\s\S]*?\])/);
+        if (simMatch) {
+          try {
+            parsedData.similarQuestions = JSON.parse(simMatch[1]);
+          } catch {}
+        }
+      }
+    }
+
+    // Safety fallback: If solution is still empty, use the raw responseText
+    if (!parsedData.solution && raw) {
+      parsedData.solution = raw
+        .replace(/^```(?:json)?\s*/, '')
+        .replace(/\s*```$/, '')
+        .replace(/"solution"\s*:\s*"/, '')
+        .trim();
     }
 
     let simQs: any[] = [];
