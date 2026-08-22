@@ -1150,65 +1150,55 @@ router.post('/solve-question', async (req, res) => {
     const imagePart = imageUrl ? await resolveImagePart(imageUrl) : null;
     let promptText = '';
 
-    if (solutionText || existingAnalysis) {
-      promptText = `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru çözen uzman bir öğretmenisin.
-Aşağıda öğrencinin aynı sorusuna ait önceki soru verisi bulunmaktadır:
+    if (imagePart || imageUrl) {
+      promptText = `Sen Türkiye YKS (TYT-AYT) sınavlarında öğrencilere soru çözen kıdemli ve uzman bir matematik/fen öğretmenisin.
+Görseldeki soruyu dikkatle incele (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'Genel'}).
+Öğrencinin konuyu tam olarak kavramasını sağlayacak açık, anlaşılır ve hatasız bir çözüm sun.
+
+KURALLAR VE ÇÖZÜM DÜZENİ:
+1. Görseldeki Soruyu Oku:
+   - Soru kökünü, tüm sayıları, denklemleri, sembolleri ve seçenekleri (A, B, C, D, E) dikkatle incele.
+   - Sadece görselde yer alan gerçek sayı ve sembolleri kullan.
+
+2. Adım Adım İşlemsel Çözüm:
+   - Doğrudan matematiksel/fiziksel işlemleri yap, genel geçer veya teorik tavsiyeler yazma.
+   - Soruda durumlar varsa (örneğin mutlak değer veya parçalı fonksiyon için 1. Durum, 2. Durum vb.) her durumu ayrı başlık altında incele.
+   - Tüm ara işlem basamaklarını ve bulunan kökleri/değerleri satır satır yaz.
+   - Soruda istenen nihai işlemi (kökler toplamı, en büyük/en küçük değer, oran vb.) açıkça hesapla.
+   - Tüm formülleri ve matematiksel sembolleri LaTeX ($...$ veya $$...$$) formatında yaz.
+
+3. Doğru Cevap:
+   - Bulduğun sonucu seçeneklerle (A, B, C, D, E) karşılaştır ve doğru seçeneği belirt:
+   **Doğru Cevap: [Harf] ([Değer])**
+
+4. İpucu:
+   - Bu soru tipinde dikkat edilmesi gereken önemli bir püf noktasını kısaca belirt.
+
+Doğrudan çözüme başla, selamlama veya giriş cümlesi yazma.`;
+    } else {
+      promptText = `Sen Türkiye YKS (TYT-AYT) sınavlarında öğrencilere soru çözen kıdemli ve uzman bir matematik/fen öğretmenisin.
+Aşağıdaki soru metnini dikkatle incele (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'Genel'}):
 ---
-Ders: ${subject || ''}
-Konu: ${topicName || ''}
-Soru Metni/Verisi:
 ${solutionText || existingAnalysis}
 ---
-Bu sorunun son derece anlaşılır, matematiksel/fiziksel işlemleri eksiksiz içeren adım adım detaylı çözümünü sun.
+Öğrencinin konuyu tam olarak kavramasını sağlayacak açık, anlaşılır ve hatasız bir adım adım çözüm sun.
 
-ASLA "Merhaba değerli öğrencim" veya benzeri giriş/selamlama cümleleri ya da sohbet ifadeleri kullanma. Doğrudan 1. Adım veya çözüm adımları ile başla.
+KURALLAR VE ÇÖZÜM DÜZENİ:
+1. Adım Adım İşlemsel Çözüm:
+   - Doğrudan matematiksel/fiziksel işlemleri yap.
+   - Durumları (1. Durum, 2. Durum vb.) ayrı başlıklar altında incele.
+   - Tüm ara işlem basamaklarını ve bulunan kökleri/değerleri satır satır yaz.
+   - Soruda istenen nihai işlemi açıkça hesapla.
+   - Tüm formülleri ve matematiksel sembolleri LaTeX ($...$ veya $$...$$) formatında yaz.
 
-KRİTİK ÇÖZÜM KURALLARI (TAM HESAPLAMA VE SIFIR HATA):
-1. Adım Adım Eksiksiz Çözüm:
-- KESİNLİKLE sadece yöntemi anlatan teorik özetler yazma.
-- Soruda verilen denklemleri, durumları (1. Durum, 2. Durum vb.), türevleri, integralleri veya cebirsel bağıntıları satır satır yaz.
-- Tüm ara işlemleri ve hesaplamaları adım adım bizzat yap (Örn: $||x - 2| - 4| = 3 \\implies |x - 2| - 4 = 3 \\implies |x - 2| = 7 \\implies x = 9$ ve $x = -5$).
-- Bulunan tüm kökleri/değerleri listele ve soruda istenen nihai işlemi (örn. kökler toplamı: $9 + (-5) + 3 + 1 = 8$) açıkça topla/hesapla.
 2. Doğru Cevap:
-- Bulunan nihai sonucu ve seçeneklerdeki karşılığını kesin ve net olarak yaz (Örn: **Doğru Cevap: A şıkkıdır (8)**).
+   - Bulduğun sonucu ve doğru seçeneği belirt:
+   **Doğru Cevap: [Harf] ([Değer])**
+
 3. İpucu:
-- Bu tarz sorularda yapılan tipik dikkat ve işlem hatalarını hatırlatan 1 pratik taktik ver.
+   - Bu soru tipinde dikkat edilmesi gereken önemli bir püf noktasını kısaca belirt.
 
-ÖNEMLİ BİÇİMLENDİRME KURALLARI:
-- Tüm formülleri, denklemleri, kökleri, mutlak değerleri ve sembolleri standart LaTeX ($...$ veya $$...$$) formatında yaz.
-- Açıklamalar için anlaşılır Türkçe kullan.`;
-    } else {
-      if (!imagePart && !imageUrl) {
-        return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
-      }
-
-      promptText = `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden uzman bir öğretmenisin (Ders: ${subject || 'Genel'}, Konu: ${topicName || 'Genel'}).
-Görseldeki soruyu son derece dikkatli incele ve adım adım hatasız bir matematiksel çözüm sun.
-
-ASLA selamlama, giriş cümlesi ya da sohbet ifadesi yazma. Doğrudan çözüme başla.
-
-ZORUNLU ADIMLAR (BU SIRAYA KESİNLİKLE UY):
-
-1. SORU METNİNİ BİREBİR OKU VE YAZ:
-- Görseldeki soru kökünü, tüm sayıları, sembolleri, kesirleri, kök işaretlerini, mutlak değerleri, üsleri ve seçenekleri (A, B, C, D, E) pixel pixel ve hatasız oku.
-- Çözüme başlamadan önce sorudaki tüm sayısal değerleri ve sembolleri açıkça listele.
-- ASLA görselde yazmayan sayı veya sembol üretme; ezbere veya yaklaşık okuma yapma.
-- Eğer görselde 12 yazıyorsa 12 yaz; 108 yazıyorsa 108 yaz; 3 yazıyorsa 3 yaz.
-
-2. ADIM ADIM EKSİKSİZ MATEMATİKSEL HESAPLAMA:
-- KESİNLİKLE teorik özet veya "bu yöntemi uygularız" gibi boş cümleler yazma.
-- Sorudaki denklemi, mutlak değer durumlarını, türev kuralını veya cebirsel bağıntıları satır satır kur ve çöz.
-- Her durumu (1. Durum, 2. Durum vb.) ayrı ayrı, ara basamaklarıyla birlikte çöz.
-- Kökleri, değerleri ve nihai toplamı/sonucu açıkça hesapla.
-- Tüm matematiksel ifadeleri LaTeX ($...$) formatında yaz.
-
-3. DOĞRU CEVAP:
-- Hesapladığın nihai sonucu görseldeki A, B, C, D, E seçenekleriyle karşılaştır.
-- Bulduğun değer hangi seçenekle tam olarak eşleşiyorsa onu yaz: **Doğru Cevap: [harf] şıkkıdır ([değer])**
-- Asla tahmin etme; bizzat hesapladığın sonucu kullan.
-
-4. İPUCU:
-- Bu tür sorularda yapılan tipik hataları hatırlatan 1 pratik taktik yaz.`;`
+Doğrudan çözüme başla, selamlama veya giriş cümlesi yazma.`;
     }
 
     const targetModel = featureModelConfig['SOLVE_QUESTION'] || 'SYSTEM_DEFAULT';
@@ -1487,53 +1477,46 @@ router.post('/analyze-photo-question-full', async (req, res) => {
       return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
     }
 
-    const textPrompt = `
-Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden uzman bir öğretmen ve soru analistisin (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'Genel'}).
-Sana verilen soru görselini son derece dikkatli incele ve yanıtını YALNIZCA aşağıdaki JSON formatında dön.
+    const textPrompt = `Sen Türkiye YKS (TYT-AYT) sınavlarına öğrenci hazırlayan kıdemli bir branş öğretmeni ve soru analistisin.
+Görseldeki soruyu (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'Genel'}) dikkatle incele ve yanıtını YALNIZCA geçerli bir JSON nesnesi olarak döndür.
 
-ZORUNLU ADIMLAR (BU SIRAYA KESİNLİKLE UY):
+KURALLAR:
+1. Soru Çözümü (solution):
+   - Görseldeki soru metnini, verilen tüm sayıları, denklemleri ve seçenekleri dikkatle incele.
+   - Sadece görseldeki gerçek sayı ve ifadelerle işlem yap.
+   - Varsa durumları (1. Durum, 2. Durum vb.) ve tüm ara basamakları satır satır yaz.
+   - Tüm formülleri standart LaTeX ($...$) formatında yaz.
+   - Çözümün sonunda "Doğru Cevap: [Harf] ([Değer])" ve "İpucu: [Püf noktası]" bölümlerini ekle.
 
-1. SORU METNİNİ BİREBİR OKU:
-- Görseldeki soru kökünü, tüm sayıları, sembolleri, kesirleri, kök işaretlerini, mutlak değerleri, üsleri ve seçenekleri (A, B, C, D, E) pixel pixel oku.
-- ASLA görselde yazmayan sayı veya sembol üretme; ezbere veya tahmine dayalı okuma yapma.
-- Kendi okuduğun sayıları "solution" alanındaki ilk satırda şu formatta yaz: "Soru Verileri: [okuduğun değerleri buraya yaz]"
+2. Doğru Seçenek (correctAnswerLetter):
+   - Bulduğun nihai sonuç görseldeki seçeneklerden hangisiyle eşleşiyorsa yalnızca o harfi yaz (A, B, C, D veya E).
 
-2. ADIM ADIM EKSİKSİZ MATEMATİKSEL HESAPLAMA:
-- KESİNLİKLE teorik özet veya "bu yöntemi uygularız" gibi boş cümleler yazma.
-- Sorudaki denklemi, mutlak değer durumlarını (1. Durum, 2. Durum vb.), türev/integral kuralını, geometrik bağıntıyı vb. satır satır yaz ve çöz.
-- Her durumu ara basamaklarıyla birlikte ayrıca hesapla.
-- Tüm kökleri/değerleri ve nihai toplamı/sonucu açıkça hesapla.
-- Adımlar arasına boş satır (\\n\\n) koy. Tüm formülleri LaTeX ($...$) ile yaz.
+3. Soru Analiz Karnesi (analysis):
+   - Markdown tablosu formatında MEB kazanımı, tahmini zorluk ve seçeneklerin çeldirici analizini oluştur.
 
-3. DOĞRU ŞIK TESPİTİ:
-- Hesapladığın nihai sonucu görseldeki A, B, C, D, E şıklarıyla karşılaştır.
-- Hangi şıktaki değerle tam eşleşiyorsa "correctAnswerLetter" alanına o harfi yaz.
-- Asla tahmin etme veya şablon harfi kopyalama.
+4. 2 Adet Özgün Benzer Soru (similarQuestions):
+   - Aynı konuyu ölçen, farklı sayılar içeren 2 adet özgün soru, 5 şık ve adım adım çözümlerini hazırla.
 
-4. BENZER SORULAR:
-- YKS müfredatına %100 uygun 2 adet özgün benzer soru, şıklar ve detaylı çözümler hazırla.
-
-YALNIZCA GEÇERLİ JSON DÖNDÜR (başka hiçbir metin ekleme):
+JSON ŞEMASI:
 {
-  "solution": "Soru Verileri: [görseldeki sayı ve sembolleri buraya aynen yaz]\\n\\n1. Adım: [işlemler]\\n\\n2. Adım: [işlemler]\\n\\nDoğru Cevap: [harf] şıkkıdır ([değer])\\n\\nİpucu: [pratik taktik]",
-  "correctAnswerLetter": "[A/B/C/D/E - hesapladığın sonuca göre doldur]",
-  "analysis": "**SORU ANALİZİ**\\n\\n| Kriter | Değerlendirme |\\n| :--- | :--- |\\n| **Ders** | ${subject || 'YKS'} |\\n| **Konu** | ${topicName || 'Genel'} |\\n| **Kazanım** | [MEB Kazanımı] |\\n| **Zorluk** | [X/10] |\\n| **Okuma Süresi** | [X dk] |\\n| **Çözme Süresi** | [X dk] |\\n| **Çeldirici Analizi** | [Şıkların Analizi] |",
+  "solution": "1. Durum:\\n[Tüm işlemler]\\n\\n2. Durum:\\n[Tüm işlemler]\\n\\nDoğru Cevap: [Şık] ([Değer])\\n\\nİpucu: [Püf noktası]",
+  "correctAnswerLetter": "A",
+  "analysis": "**SORU ANALİZİ**\\n\\n| Kriter | Değerlendirme |\\n| :--- | :--- |\\n| **Ders** | ${subject || 'YKS'} |\\n| **Konu** | ${topicName || 'Genel'} |\\n| **Kazanım** | [Kazanım] |\\n| **Zorluk** | [Zorluk] |\\n| **Çeldirici Analizi** | [Şıkların analizi] |",
   "similarQuestions": [
     {
-      "question": "[Özgün benzer soru 1 - görseldeki sorununla aynı sayıları KULLANMA]",
+      "question": "Özgün soru metni...",
       "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
-      "solution": "[Adım adım çözüm]",
-      "correctAnswer": "[A/B/C/D/E]"
+      "solution": "Adım adım çözüm...",
+      "correctAnswer": "A"
     },
     {
-      "question": "[Özgün benzer soru 2 - görseldeki sorununla aynı sayıları KULLANMA]",
+      "question": "Özgün soru metni...",
       "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
-      "solution": "[Adım adım çözüm]",
-      "correctAnswer": "[A/B/C/D/E]"
+      "solution": "Adım adım çözüm...",
+      "correctAnswer": "B"
     }
   ]
-}
-`;
+}`;
 
     console.log(`[PHOTO_ANALYSIS] Starting unified analysis for subject=${subject}, topic=${topicName}, hasImage=${!!imagePart || !!imageUrl}`);
     const targetModel = featureModelConfig['SOLVE_QUESTION'] || featureModelConfig['SIMILAR_QUESTION'] || 'SYSTEM_DEFAULT';

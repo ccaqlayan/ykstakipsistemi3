@@ -985,7 +985,8 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
     const parts = title.split(' - ');
     const subject = parts[0] || '';
     const topicName = parts[1] || '';
-    const solutionContext = matchingError?.aiAnalysis || supportAnalysisText || undefined;
+    // If imageUrl is present, do NOT pass old analysis text as solutionText to prevent hallucination
+    const solutionContext = imageUrl ? undefined : (matchingError?.aiAnalysis || supportAnalysisText || undefined);
 
     try {
       const response = await fetch('/api/gemini/solve-question', {
@@ -1624,7 +1625,8 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
           imageUrl: errorItem.imageUrl,
           subject: errorItem.subject,
           topicName: errorItem.topicName,
-          solutionText: force ? undefined : (existingSol || existingAnalysis || undefined)
+          // Only pass solutionText if force is false and no imageUrl is present
+          solutionText: (force || errorItem.imageUrl) ? undefined : (existingSol || existingAnalysis || undefined)
         })
       });
       clearTimeout(timeoutId);
