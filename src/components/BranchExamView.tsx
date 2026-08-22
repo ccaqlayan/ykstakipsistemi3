@@ -1624,7 +1624,7 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
           imageUrl: errorItem.imageUrl,
           subject: errorItem.subject,
           topicName: errorItem.topicName,
-          solutionText: existingSol || existingAnalysis || undefined
+          solutionText: force ? undefined : (existingSol || existingAnalysis || undefined)
         })
       });
       clearTimeout(timeoutId);

@@ -1184,20 +1184,25 @@ ASLA "Merhaba değerli öğrencim" veya benzeri giriş/selamlama cümleleri ya d
       }
 
       promptText = `Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden ve soru çözen uzman bir öğretmenisin.
-Görseldeki soruyu incele ve son derece anlaşılır, adım adım detaylı bir çözüm sun.
+Görseldeki soruyu son derece dikkatli incele ve adım adım detaylı, hatasız bir çözüm sun.
 
 ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, selamlama ya da sohbet cümlesi yazma. Doğrudan 1. Konu Özeti veya çözüm adımları ile başla.
 
+KRİTİK GÖRSEL OKUMA VE SIFIR HATA KURALLARI:
+- Çözüme geçmeden önce görseldeki soru metnini, kesir çizgisini, pay ve paydadaki TÜM TERİMLERİ, kök derecelerini ve işaretleri (+, -, *, /) DİKKATLE VE PİKSEL PİKSEL OKU.
+- SADECE görselde basılı olan gerçek sayıları kullan.
+- ASLA ezbere/hafızaya dayalı benzer ders kitabı sayıları uydurma veya karıştırma (Örn: Görselde paydada $\\sqrt{108} - \\sqrt{27}$ yazıyorsa bunu $\\sqrt{108}$ ve $\\sqrt{27}$ olarak oku; görselde yazmayan $\\sqrt{12}$ veya başka sayıları KESİNLİKLE uydurma).
+
 İçerik Şunları Kapsamalıdır:
 1. Konu Özeti: Soru hangi konuyla ilgiliyse (${subject} - ${topicName}) o konunun temel kuralını veya formülünü kısaca hatırlat.
-2. Adım Adım Çözüm (ÇOK ÖNEMLİ - İŞLEM BASAMAKLARI EKSİKSİZ OLMALIDIR):
-- KESİNLİKLE sadece ne yapılacağını söyleyen teorik/yüzeysel tavsiye cümleleri yazıp bırakma (Örn: "Adım 1: Kritik noktaları belirleyelim", "Adım 2: Denklemi çözelim" gibi işlemlerin yapılmadığı özetler YASAKTIR).
+2. Adım Adım Çözüm (ÇOK ÖNEMLİ - TÜM SAYISAL İŞLEM BASAMAKLARI EKSİKSİZ OLMALIDIR):
+- KESİNLİKLE sadece ne yapılacağını söyleyen teorik/yüzeysel tavsiye cümleleri yazıp bırakma.
 - HER ADIMDA, sorudaki sayıları ve denklemleri bizzat kullanarak TÜM MATEMATİKSEL İŞLEMLERİ AÇIK AÇIK VE EKSİKSİZ YAP:
-  * Adım 1: Sorudaki denklemi/ifadeyi yaz, ilk işlem basamağını uygula ve ara sonucu hesapla (Örn: $|2x - 6| = 0 \\implies 2x = 6 \\implies x = 3$).
-  * Adım 2: Durum analizini, türev/integral alma işlemini veya denklem çözümünü adım adım işlemleriyle çöz (Örn: $x \\ge 3$ için $2x - 6 + x = 12 \\implies 3x = 18 \\implies x = 6$).
-  * Adım 3: Varsa diğer durumları incele veya sonuca ulaştıracak nihai hesaplamaları satır satır yap.
+  * Adım 1: Sorudaki pay ve payda terimlerini tek tek en sade kök dışı biçimlerine dönüştür (Örn: $\\sqrt{48} = 4\\sqrt{3}$, $\\sqrt{75} = 5\\sqrt{3}$, $\\sqrt{108} = 6\\sqrt{3}$, $\\sqrt{27} = 3\\sqrt{3}$).
+  * Adım 2: Pay ve payda işlemlerini ayrı ayrı topla/çıkar (Örn: Pay $= 4\\sqrt{3} + 5\\sqrt{3} = 9\\sqrt{3}$, Payda $= 6\\sqrt{3} - 3\\sqrt{3} = 3\\sqrt{3}$).
+  * Adım 3: Bölme/sadeleştirme işlemini yap ve nihai sonucu bul (Örn: $\\frac{9\\sqrt{3}}{3\\sqrt{3}} = 3$).
 - Öğrenci çözümü okuduğunda sorunun tüm sayısal ve cebirsel işlemlerini satır satır eksiksiz görebilmelidir.
-3. Doğru Cevap: Doğru seçeneği ve bulunan sonucu belirgin şekilde yaz (Örn: **Doğru Cevap: C şıkkıdır (x = 6)**).
+3. Doğru Cevap: Görseldeki seçenekleri kontrol ederek doğru seçeneği ve bulunan sonucu belirgin şekilde yaz (Örn: **Doğru Cevap: C şıkkıdır (3)**).
 4. İpucu: Bu tarz sorularda öğrencilerin yaptığı yaygın hataları hatırlatan ve zaman kazandıran 1 pratik taktik ver.
 
 ÖNEMLİ MATEMATİKSEL VE BİÇİMLENDİRME KURALLARI:
@@ -1484,6 +1489,16 @@ router.post('/analyze-photo-question-full', async (req, res) => {
     const textPrompt = `
 Sen Türkiye YKS (Yükseköğretim Kurumları Sınavı) hazırlık sürecindeki öğrencilere rehberlik eden uzman bir branş öğretmeni ve soru analistisin.
 Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'Genel'}) TEK BİR İNCELEMEDE 3 farklı açıdan analiz et ve yanıtını YALNIZCA belirtilen JSON formatında dön.
+
+KRİTİK GÖRSEL OKUMA VE SIFIR HATA KURALLARI (ZORUNLU):
+- Çözüme geçmeden önce görseldeki soru metnini, kesir çizgisini, pay ve paydadaki TÜM TERİMLERİ, kök derecelerini ve işaretleri (+, -, *, /) DİKKATLE VE PİKSEL PİKSEL OKU.
+- SADECE görselde basılı olan gerçek sayıları kullan.
+- ASLA ezbere/hafızaya dayalı benzer ders kitabı sayıları uydurma veya karıştırma (Örn: Görselde paydada $\\sqrt{108} - \\sqrt{27}$ yazıyorsa bunu $\\sqrt{108}$ ve $\\sqrt{27}$ olarak oku; görselde yazmayan $\\sqrt{12}$ veya başka sayıları KESİNLİKLE uydurma).
+- Çözümün adımlarında görseldeki sayılarla işlemleri eksiksiz ve açıkça yap:
+  * Paydaki terimler: $\\sqrt{48} = 4\\sqrt{3}$, $\\sqrt{75} = 5\\sqrt{3} \\implies \\text{Pay} = 4\\sqrt{3} + 5\\sqrt{3} = 9\\sqrt{3}$
+  * Paydadaki terimler: $\\sqrt{108} = 6\\sqrt{3}$, $\\sqrt{27} = 3\\sqrt{3} \\implies \\text{Payda} = 6\\sqrt{3} - 3\\sqrt{3} = 3\\sqrt{3}$
+  * Oran: $\\frac{9\\sqrt{3}}{3\\sqrt{3}} = 3$
+- Şıkları (A, B, C, D, E) görselden oku ve bulunan sonuca (${3}$) tam uyan seçeneği (C şıkkı) net olarak belirt.
 
 1. ÇÖZÜM REHBERİ (solution alanı için):
 - Görseldeki soruyu adım adım son derece anlaşılır Türkçe ile ve TÜM İŞLEM BASAMAKLARINI EKSİKSİZ HESAPLAYARAK çöz.

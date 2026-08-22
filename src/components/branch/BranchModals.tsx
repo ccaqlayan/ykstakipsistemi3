@@ -1214,9 +1214,20 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                     <div className="flex items-center justify-between pb-1">
                       <span className="text-[11px] font-semibold text-slate-400">Görsel Soru Çözüm Rehberi</span>
                       {solveSolution && (
-                        <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
-                          Çözüldü
-                        </span>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
+                            Çözüldü
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => triggerFullPhotoAnalysis('solution', true)}
+                            className="text-[10px] text-purple-300 hover:text-white bg-purple-950/60 hover:bg-purple-800/80 border border-purple-500/40 px-2 py-0.5 rounded-full font-bold flex items-center space-x-1 cursor-pointer transition-all shadow-sm"
+                            title="Yapay zeka ile çözümü sıfırdan yeniden üret"
+                          >
+                            <Sparkles className="w-2.5 h-2.5 text-purple-300" />
+                            <span>Yeniden Çöz</span>
+                          </button>
+                        </div>
                       )}
                     </div>
 
