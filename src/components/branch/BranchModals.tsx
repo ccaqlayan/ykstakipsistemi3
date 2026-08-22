@@ -25,6 +25,7 @@ import { BranchExam, TopicErrorItem, ErrorReason, GeneralMockExam, ResourceItem 
 import { ConfirmDeleteModal } from '../ConfirmDeleteModal';
 import { formatDisplayDate, formatShortDisplayDate } from '../../utils/dateUtils';
 import { getRepetitionStageInfo } from '../../services/spacedRepetition';
+import { LatexRenderer } from '../common/LatexRenderer';
 
 interface BranchModalsProps {
   // Error Modal
@@ -326,122 +327,13 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
 
   const formatSolutionText = (text: string, showTopAnswerBadge: boolean = true) => {
     if (!text) return null;
-
-    // Handle literal \n and insert double line breaks before section headers if missing
-    const cleanText = text
-      .replace(/\\n/g, '\n')
-      .replace(/([^\n])\s*(Adım \d+[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(Konu Özeti[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(Doğru Cevap[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(Pratik Taktik[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(Çözüm[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(Sonuç[:\.-])/gi, '$1\n\n$2');
-
-    // Extract correct answer line if present
-    let extractedCorrectAnswer: string | null = null;
-    const rawLines = cleanText.split('\n');
-    rawLines.forEach(l => {
-      const trimmed = l.trim();
-      if (trimmed.toLowerCase().startsWith('doğru cevap') || trimmed.toLowerCase().startsWith('cevap:')) {
-        const val = trimmed.replace(/^(doğru cevap|cevap)[:\.-]?\s*/i, '').replace(/\*\*/g, '').trim();
-        if (val) extractedCorrectAnswer = val;
-      }
-    });
-
-    // Normalize math symbols only (no LaTeX)
-    const cleanMath = (s: string) => s
-      .replace(/\$\$/g, '')
-      .replace(/\$/g, '')
-      .replace(/\\implies/g, ' ➔ ')
-      .replace(/\\cdot/g, ' · ')
-      .replace(/\\equiv/g, ' ≡ ')
-      .replace(/\\approx/g, ' ≈ ')
-      .replace(/\\ne/g, ' ≠ ')
-      .replace(/\\le/g, ' ≤ ')
-      .replace(/\\ge/g, ' ≥ ')
-      .replace(/\\infty/g, ' ∞ ')
-      .replace(/\\pm/g, ' ± ')
-      .replace(/\\times/g, ' × ')
-      .replace(/\\div/g, ' ÷ ')
-      .replace(/\\alpha/g, 'α')
-      .replace(/\\beta/g, 'β')
-      .replace(/\\theta/g, 'θ')
-      .replace(/\\pi/g, 'π')
-      .replace(/\\sqrt\{([^}]+)\}/g, 'kök($1)')
-      .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1 / $2)')
-      .replace(/\\Delta/g, 'Δ');
-
-    // Section headers that should be bold/highlighted
-    const isHeader = (line: string) => {
-      const t = line.trim().toLowerCase();
-      return (
-        t.startsWith('konu özeti') ||
-        t.startsWith('pratik taktik') ||
-        t.startsWith('çözüm rehberi') ||
-        t.startsWith('adım adım')
-      );
-    };
-
     return (
       <div className="space-y-2">
-        {/* Top Green Correct Answer Badge (matching Benzer Sorular style) */}
-        {showTopAnswerBadge && extractedCorrectAnswer && (
-          <div className="bg-slate-900/90 border border-slate-800 p-3 rounded-xl space-y-1 mb-2">
-            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Çözüm & Doğru Cevap</span>
-            <div className="inline-block bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-3 py-1 rounded-lg text-xs font-bold mt-1">
-              ✅ {extractedCorrectAnswer}
-            </div>
-          </div>
-        )}
-
-        {rawLines.map((line, idx) => {
-          const cleaned = cleanMath(line);
-          const trimmed = cleaned.trim();
-
-          if (trimmed === '') return <div key={idx} className="h-1.5" />;
-
-          // Skip rendering the original "Doğru Cevap:" line if we rendered the top badge or if already handled
-          if (trimmed.toLowerCase().startsWith('doğru cevap') || trimmed.toLowerCase().startsWith('cevap:')) {
-            return null;
-          }
-
-          // Section header lines — bold amber text with margin
-          if (isHeader(trimmed)) {
-            return (
-              <p key={idx} className="text-xs font-extrabold text-amber-300 mt-3 mb-1 tracking-wide">
-                {trimmed.replace(/\*\*/g, '')}
-              </p>
-            );
-          }
-
-          // Step headings like "Adım 1: ..."
-          if (trimmed.toLowerCase().startsWith('adım ')) {
-            return (
-              <p key={idx} className="text-xs font-bold text-indigo-300 mt-2 mb-0.5">
-                {trimmed.replace(/\*\*/g, '')}
-              </p>
-            );
-          }
-
-          // List items (- or *)
-          if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-            return (
-              <li key={idx} className="ml-4 list-disc text-xs text-slate-300 pl-1 py-0.5 leading-relaxed">
-                {trimmed.slice(2).replace(/\*\*/g, '')}
-              </li>
-            );
-          }
-
-          // All other lines — plain text paragraph
-          return (
-            <p key={idx} className="text-xs text-slate-300 leading-relaxed py-0.5">
-              {trimmed.replace(/\*\*/g, '')}
-            </p>
-          );
-        })}
+        <LatexRenderer content={text} />
       </div>
     );
   };
+
 
   return (
     <>
@@ -1442,8 +1334,8 @@ export const BranchModals: React.FC<BranchModalsProps> = ({
                             {/* Soru Metni */}
                             <div className="bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl space-y-2">
                               <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider block">Özgün Benzer Soru #{activeSimilarIdx + 1}</span>
-                              <div className="text-xs text-slate-200 whitespace-pre-wrap leading-relaxed font-medium">
-                                {activeQ.question}
+                              <div className="text-xs text-slate-200 leading-relaxed font-medium">
+                                <LatexRenderer content={activeQ.question} />
                               </div>
                             </div>
 

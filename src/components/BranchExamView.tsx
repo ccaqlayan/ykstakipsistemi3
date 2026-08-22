@@ -70,6 +70,8 @@ import {
   getUserRepetitionIntervals,
   getTodayDateString 
 } from '../services/spacedRepetition';
+import { LatexRenderer } from './common/LatexRenderer';
+
 
 const ERROR_REASON_COLORS: Record<string, string> = {
   'bilgi_eksigi': '#ef4444',      // Red
@@ -1164,71 +1166,13 @@ export const BranchExamView: React.FC<BranchExamViewProps> = ({
 
   const formatSolutionText = (text: string) => {
     if (!text) return null;
-    // Pre-process text to insert line breaks before step markers or section headings if squished into a single block
-    let formattedText = text
-      .replace(/([^\n])\s*(Adım \d+[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(\d+\.\s+)/g, '$1\n$2')
-      .replace(/([^\n])\s*([A-E]\)\s+)/g, '$1\n$2')
-      .replace(/([^\n])\s*(Çözüm[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(Doğru Cevap[:\.-])/gi, '$1\n\n$2')
-      .replace(/([^\n])\s*(Sonuç[:\.-])/gi, '$1\n\n$2');
-
-    return formattedText.split('\n').map((line, idx) => {
-      let cleaned = line
-        .replace(/\$\$/g, '')
-        .replace(/\$/g, '')
-        .replace(/\\implies/g, ' ➔ ')
-        .replace(/\\cdot/g, ' · ')
-        .replace(/\\equiv/g, ' ≡ ')
-        .replace(/\\approx/g, ' ≈ ')
-        .replace(/\\ne/g, ' ≠ ')
-        .replace(/\\le/g, ' ≤ ')
-        .replace(/\\ge/g, ' ≥ ')
-        .replace(/\\infty/g, ' ∞ ')
-        .replace(/\\pm/g, ' ± ')
-        .replace(/\\times/g, ' × ')
-        .replace(/\\div/g, ' ÷ ')
-        .replace(/\\alpha/g, 'α')
-        .replace(/\\beta/g, 'β')
-        .replace(/\\theta/g, 'θ')
-        .replace(/\\pi/g, 'π')
-        .replace(/\\sqrt\{([^}]+)\}/g, 'kök($1)')
-        .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1 / $2)')
-        .replace(/\\Delta/g, 'Δ');
-
-      // Replace **bold** with <strong>
-      const parts = cleaned.split('**');
-      const elements = parts.map((part, i) => {
-        if (i % 2 === 1) {
-          return <strong key={i} className="text-amber-300 font-bold">{part}</strong>;
-        }
-        return part;
-      });
-
-      if (cleaned.trim().startsWith('- ') || cleaned.trim().startsWith('* ')) {
-        return (
-          <li key={idx} className="ml-4 list-disc text-slate-300 pl-1 py-0.5 text-xs leading-relaxed">
-            {elements}
-          </li>
-        );
-      }
-      if (cleaned.trim().match(/^\d+\./) || cleaned.trim().toLowerCase().startsWith('adım ')) {
-        return (
-          <div key={idx} className="text-xs text-slate-200 pl-3 font-semibold leading-relaxed my-2 border-l-2 border-emerald-400 py-1 bg-emerald-950/30 rounded-r-lg space-y-1">
-            {elements}
-          </div>
-        );
-      }
-      if (cleaned.trim() === '') {
-        return <div key={idx} className="h-2" />;
-      }
-      return (
-        <p key={idx} className="text-xs text-slate-300 leading-relaxed font-normal py-0.5">
-          {elements}
-        </p>
-      );
-    });
+    return (
+      <div className="space-y-2">
+        <LatexRenderer content={text} />
+      </div>
+    );
   };
+
 
   const matchingBooks = React.useMemo(() => {
     if (!errorSubject) return [];

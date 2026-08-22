@@ -1,7 +1,7 @@
 {
   "name": "react-example",
   "private": true,
-  "version": "2.0.43",
+  "version": "2.0.44",
   "type": "module",
   "scripts": {
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
@@ -13,6 +13,7 @@
   "dependencies": {
     "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
+    "@types/katex": "^0.16.8",
     "@types/qrcode": "^1.5.6",
     "@types/react-is": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
@@ -25,6 +26,7 @@
     "firebase-admin": "^14.2.0",
     "googleapis": "^173.0.0",
     "jsonwebtoken": "^9.0.3",
+    "katex": "^0.18.4",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "nodemailer": "^9.0.3",

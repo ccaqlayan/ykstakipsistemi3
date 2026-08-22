@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "katex/dist/katex.min.css";
 
 html, body {
   scroll-behavior: smooth;
@@ -868,6 +869,48 @@ body.modal-open .mobile-bottom-nav {
   .bg-white {
     background-color: #ffffff !important;
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   KATEX & LATEX FORMÜL GÖRSEL İYİLEŞTİRMELERİ
+   Koyu ve açık temada matematiksel ve fiziksel formüllerin kusursuz okunabilirliği
+   ───────────────────────────────────────────────────────────────────────────── */
+.katex {
+  font-size: 1.08em;
+  text-rendering: auto;
+  line-height: 1.25;
+}
+
+.katex-display {
+  margin: 0.5em 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}
+
+/* Koyu modda formüllerin parlak ve net görünmesi */
+.katex .mord, 
+.katex .mbin, 
+.katex .mrel, 
+.katex .mopen, 
+.katex .mclose, 
+.katex .mpunct, 
+.katex .minner {
+  color: inherit;
+}
+
+.inline-latex .katex {
+  color: #e2e8f0;
+}
+
+.light .inline-latex .katex {
+  color: #0f172a;
+}
+
+/* Kesir çizgileri ve kök sembolleri */
+.katex .frac-line,
+.katex .sqrt-line {
+  border-bottom-color: currentColor !important;
 }
 
 

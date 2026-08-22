@@ -1169,9 +1169,9 @@ ASLA "Merhaba değerli öğrencim" veya benzeri giriş/selamlama cümleleri ya d
 3. Doğru Cevap: Doğru seçeneği/cevabı belirgin şekilde yaz (Örn: **Doğru Cevap: C şıkkıdır**).
 4. İpucu: Bu tarz sorularda öğrencilerin yaptığı yaygın hataları hatırlatan ve zaman kazandıran 1 pratik taktik ver.
 
-ÖNEMLİ MATEMATİKSEL BİÇİMLENDİRME KURALLARI:
-- KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
-- Matematiksel ifadeleri normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`;
+ÖNEMLİ MATEMATİKSEL VE BİÇİMLENDİRME KURALLARI:
+- Matematiksel ve fiziksel formülleri, denklemleri, kesirleri, kökleri ve sembolleri standart LaTeX ($...$ veya $$...$$) formatında yaz (Örn: $\\frac{a}{b}$, $\\sqrt{x^2+1}$, $\\int f(x)dx$, $\\lim_{x \\to 0}$, $x^2$, $\\alpha$, $\\vec{F} = m \\cdot \\vec{a}$).
+- Sade metin ve açıklamalar için Türkçe kullan.`;
     } else {
       if (!imagePart && !imageUrl) {
         return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
@@ -1188,9 +1188,9 @@ ASLA "Merhaba değerli öğrencim", "Merhaba" veya benzeri herhangi bir giriş, 
 3. Doğru Cevap: Doğru seçeneği/cevabı belirgin şekilde yaz (Örn: **Doğru Cevap: C şıkkıdır**).
 4. İpucu: Bu tarz sorularda öğrencilerin yaptığı yaygın hataları hatırlatan ve zaman kazandıran 1 pratik taktik ver.
 
-ÖNEMLİ MATEMATİKSEL BİÇİMLENDİRME KURALLARI:
-- KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
-- Matematiksel ve geometrik ifadeleri herkesin kolayca okuyabileceği, normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`;
+ÖNEMLİ MATEMATİKSEL VE BİÇİMLENDİRME KURALLARI:
+- Matematiksel ve fiziksel formülleri, denklemleri, kesirleri, kökleri ve sembolleri standart LaTeX ($...$ veya $$...$$) formatında yaz (Örn: $\\frac{a}{b}$, $\\sqrt{x^2+1}$, $\\int f(x)dx$, $\\lim_{x \\to 0}$, $x^2$, $\\alpha$, $\\vec{F} = m \\cdot \\vec{a}$).
+- Sade metin ve açıklamalar için anlaşılır Türkçe kullan.`;
     }
 
     const targetModel = featureModelConfig['SOLVE_QUESTION'] || 'SYSTEM_DEFAULT';
@@ -1266,8 +1266,7 @@ Yanıtını YALNIZCA geçerli bir JSON objesi olarak dön:
 }
 
 ÖNEMLİ MATEMATİKSEL BİÇİMLENDİRME KURALLARI:
-- KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
-- Matematiksel ve geometrik ifadeleri herkesin kolayca okuyabileceği, normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`;
+- Matematiksel formülleri ve denklemleri standart LaTeX ($...$ veya $$...$$) formatında yaz.`;
     } else {
       if (!imagePart && !imageUrl) {
         return res.status(400).json({ error: 'Görsel dosyasına ulaşılamadı veya format geçersiz.' });
@@ -1285,8 +1284,7 @@ Yanıtını YALNIZCA geçerli bir JSON objesi olarak dön:
 }
 
 ÖNEMLİ MATEMATİKSEL BİÇİMLENDİRME KURALLARI:
-- KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
-- Matematiksel ve geometrik ifadeleri herkesin kolayca okuyabileceği, normal bilgisayar klavyesi karakterleriyle düz metin olarak yaz.`;
+- Matematiksel formülleri ve denklemleri standart LaTeX ($...$ veya $$...$$) formatında yaz.`;
     }
 
     const targetModel = featureModelConfig['SIMILAR_QUESTION'] || 'SYSTEM_DEFAULT';
@@ -1377,7 +1375,7 @@ BİÇİMLENDİRME:
 
 ÖNEMLİ KURALLAR:
 - Çeldirici Analizi Kuralı: Soruda şıklar (A, B, C, D, E) varsa TÜM şıkların ayrı ayrı çeldirici analizini yap. Eğer soruda şık yoksa "Olası Hatalı Yaklaşımlar / Hatalı Cevaplar" analizi yap.
-- KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
+- Matematiksel/fiziksel ifadelerde standart LaTeX ($...$) veya net semboller kullanabilirsin.
 - Tablonun Markdown sözdizimini bozacak karakterler kullanmaktan kaçın.`;
     } else {
       if (!imagePart && !imageUrl) {
@@ -1411,7 +1409,7 @@ BİÇİMLENDİRME:
 
 ÖNEMLİ KURALLAR:
 - Çeldirici Analizi Kuralı: Soruda şıklar (A, B, C, D, E) varsa TÜM şıkların ayrı ayrı çeldirici analizini yap. Eğer soruda şık yoksa "Olası Hatalı Yaklaşımlar / Hatalı Cevaplar" analizi yap.
-- KESİNLİKLE LaTeX formatı ($...$, $$...$$, \\implies, \\cdot, \\frac vb.) KULLANMA.
+- Matematiksel/fiziksel ifadelerde standart LaTeX ($...$) veya net semboller kullanabilirsin.
 - Tablonun Markdown sözdizimini bozacak karakterler kullanmaktan kaçın.`;
     }
 
@@ -1479,7 +1477,7 @@ Sana verilen soru görselini (Ders: ${subject || 'YKS'}, Konu: ${topicName || 'G
 - Görseldeki soruyu adım adım son derece anlaşılır Türkçe ile çöz.
 - ASLA "Merhaba" veya selamlama cümleleri kullanma, doğrudan Konu Özeti ile başla.
 - Metin içinde paragraflar, adımlar (Adım 1:, Adım 2: vb.), Konu Özeti, Doğru Cevap: ve Pratik Taktik: bölümleri arasında KESİNLİKLE yeni satır (\\n\\n) kullan. ASLA tüm çözümü tek parça düz metin olarak yazma.
-- KESİNLİKLE LaTeX ($...$) kullanma, düz metin ve klavye karakterleri kullan.
+- Matematiksel/fiziksel denklemleri standart LaTeX ($...$ veya $$...$$) formatında yaz.
 - correctAnswerLetter alanına sorunun doğru cevap şıkkını (SADECE tek büyük harf: A, B, C, D veya E) yaz.
 
 2. BENZER SORULAR (similarQuestions alanı için - TAM 3 ADET):

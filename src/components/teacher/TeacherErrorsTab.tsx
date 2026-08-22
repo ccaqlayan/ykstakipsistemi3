@@ -35,6 +35,8 @@ import { TopicErrorItem, BranchExam, ResourceItem, GeneralMockExam, UserAccount,
 import { YKS_CURRICULUM_TOPICS } from '../../data/initialData';
 import { calculateNextReviewDate, getTodayDateString, getUserRepetitionIntervals } from '../../services/spacedRepetition';
 import { formatDisplayDate } from '../../utils/dateUtils';
+import { LatexRenderer } from '../common/LatexRenderer';
+
 
 const ALL_SUBJECTS = Object.keys(YKS_CURRICULUM_TOPICS);
 
@@ -763,19 +765,21 @@ export const TeacherErrorsTab: React.FC<TeacherErrorsTabProps> = ({
                     </button>
 
                     {isAiExpanded && (
-                      <div className="pt-2 border-t border-purple-500/20 text-xs text-slate-200 space-y-2 leading-relaxed whitespace-pre-wrap">
+                      <div className="pt-2 border-t border-purple-500/20 text-xs text-slate-200 space-y-3 leading-relaxed">
                         {errItem.aiSolution && (
-                          <div>
+                          <div className="space-y-1">
                             <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">Adım Adım Çözüm:</span>
-                            <p className="text-xs text-slate-300 font-mono bg-slate-950/60 p-2.5 rounded-xl border border-white/5 mt-1">
-                              {errItem.aiSolution}
-                            </p>
+                            <div className="bg-slate-950/70 p-3 rounded-xl border border-white/5">
+                              <LatexRenderer content={errItem.aiSolution} />
+                            </div>
                           </div>
                         )}
                         {errItem.aiAnalysis && (
-                          <div>
+                          <div className="space-y-1">
                             <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Kazanım & Çeldirici Analizi:</span>
-                            <p className="text-xs text-slate-300 mt-1">{errItem.aiAnalysis}</p>
+                            <div className="bg-slate-950/70 p-3 rounded-xl border border-white/5">
+                              <LatexRenderer content={errItem.aiAnalysis} />
+                            </div>
                           </div>
                         )}
                       </div>
